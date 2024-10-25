@@ -92,13 +92,13 @@ float ADC::get_value(uint8_t id) {
 	uint16_t raw = emulated_pin.PinData.ADC.value;
 	switch (resolution) {
 		case ADCResolution::ADC_RES_16BITS:
-			return (raw * ADC_MAX_VOLTAGE) / MAX_16BIT;
+			return (raw * ADC_MAX_VOLTAGE) / (float)MAX_16BIT;
 		case ADCResolution::ADC_RES_14BITS:
-			return (raw * ADC_MAX_VOLTAGE) / MAX_14BIT;
+			return (raw * ADC_MAX_VOLTAGE) / (float)MAX_14BIT;
 		case ADCResolution::ADC_RES_12BITS:
-			return (raw * ADC_MAX_VOLTAGE) / MAX_12BIT;
+			return (raw * ADC_MAX_VOLTAGE) / (float)MAX_12BIT;
 		case ADCResolution::ADC_RES_10BITS:
-			return (raw * ADC_MAX_VOLTAGE) / MAX_10BIT;
+			return (raw * ADC_MAX_VOLTAGE) / (float)MAX_10BIT;
 		default:
 			ErrorHandler("ADC Resolution not supported");
 			return 0;
