@@ -84,8 +84,6 @@ void SPI::assign_RS(uint8_t id, Pin& RSPin) {
 void SPI::start() {
     for (auto iter : SPI::registered_spi) {
         SPI::init(iter.second);
-        HAL_GPIO_WritePin(iter.second->SS->port, iter.second->SS->gpio_pin,
-                          (GPIO_PinState)PinState::ON);
     }
 }
 
