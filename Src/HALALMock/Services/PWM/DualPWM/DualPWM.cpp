@@ -1,121 +1,83 @@
-/*
- * DualPWM.cpp
- *
- *  Created on: Feb 27, 2023
- *      Author: aleja
- */
-
-#include "PWM/DualPWM/DualPWM.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
-#include "stm32h7xx_hal_def.h"
+#include "HALALMock/Services/PWM/DualPWM/DualPWM.hpp"
 
 DualPWM::DualPWM(Pin& pin, Pin& pin_negated) {
-	if (not TimerPeripheral::available_dual_pwms.contains({pin, pin_negated})) {
-		ErrorHandler("Pins %s and %s are not registered as an available Dual PWM", pin.to_string(), pin_negated.to_string());
+	EmulatedPin &pin_positive = SharedMemory::get_pin(pin);
+	EmulatedPin &pin_negative = SharedMemory::get_pin(pin_negated);
+
+	if(pin_positive.type==PinType::NOT_USED && pin_negative.type==PinType::NOT_USED){
+		pin_positive.type=PinType::DualPWM;
+		// for common values between positive and negative pin, class variables
+		// point to the positive pin memory location, then the negative pin 
+		// copies the value
+		this->duty_cycle=&(pin_positive.PinData.DualPWM.duty_cycle);
+		this->frequency=&(pin_positive.PinData.DualPWM.frequency);
+		positive_is_on=&(pin_positive.PinData.DualPWM.is_on);
+		this->dead_time_ns=&(pin_positive.PinData.DualPWM.dead_time_ns);
+
+		pin_negative.type=PinType::DualPWM;
+		negative_is_on=&(pin_negative.PinData.DualPWM.is_on);
+
+		//default values
+
+		*(this->duty_cycle)=0.0f;
+		pin_negative.PinData.DualPWM.duty_cycle=*(this->duty_cycle);
+		*(this->frequency)=0;
+		pin_negative.PinData.DualPWM.frequency=*(this->frequency);
+		*positive_is_on=false;
+		*negative_is_on=false;
+		*(this->dead_time_ns)=0;
+		pin_negative.PinData.DualPWM.dead_time_ns=*(this->dead_time_ns);
+
+	}else{
+		ErrorHandler("Pin %s or %s is already in use", pin.to_string(), pin_negated.to_string());
 	}
-
-	TimerPeripheral& timer = TimerPeripheral::available_dual_pwms.at({pin, pin_negated}).first;
-	TimerPeripheral::PWMData& pwm_data = TimerPeripheral::available_dual_pwms.at({pin, pin_negated}).second;
-
-	peripheral = &timer;
-	channel = pwm_data.channel;
-
-	if (pwm_data.mode != TimerPeripheral::PWM_MODE::NORMAL) {
-		ErrorHandler("Pins %s and %s are not registered as a DUAL PWM", pin.to_string(), pin_negated.to_string());
-	}
-
-	Pin::inscribe(pin, TIMER_ALTERNATE_FUNCTION);
-	Pin::inscribe(pin_negated, TIMER_ALTERNATE_FUNCTION);
-	timer.init_data.pwm_channels.push_back(pwm_data);
-
-	duty_cycle = 0;
 }
 
-void DualPWM::turn_on() {
-  if (HAL_TIM_PWM_Start(peripheral->handle, channel) != HAL_OK) {
-    ErrorHandler("Dual PWM positive channel did not start correctly", 0);
-  }
 
-  if (HAL_TIMEx_PWMN_Start(peripheral->handle, channel) != HAL_OK) {
-    ErrorHandler("Dual PWM negative channel did not start correctly", 0);
-  }
+void DualPWM::turn_on() {
+	*positive_is_on=true;
+	*negative_is_on=true;
 }
 
 void DualPWM::turn_off() {
-
-  if (HAL_TIM_PWM_Stop(peripheral->handle, channel) != HAL_OK) {
-    ErrorHandler("Dual PWM positive channel did not stop correctly", 0);
-  }
-
-  if (HAL_TIMEx_PWMN_Stop(peripheral->handle, channel) != HAL_OK) {
-    ErrorHandler("Dual PWM negative channel did not stop correctly", 0);
-  }
+	*positive_is_on=false;
+	*negative_is_on=false;
 }
 
 void DualPWM::turn_on_positive() {
-  if (HAL_TIM_PWM_Start(peripheral->handle, channel) != HAL_OK) {
-	ErrorHandler("Dual PWM positive channel did not start correctly", 0);
-  }
+	*positive_is_on=true;
 }
 
 void DualPWM::turn_on_negated() {
-  if (HAL_TIMEx_PWMN_Start(peripheral->handle, channel) != HAL_OK) {
-	ErrorHandler("Dual PWM negative channel did not start correctly", 0);
-  }
+	*negative_is_on=true;
 }
 
 void DualPWM::turn_off_positive() {
-  if (HAL_TIM_PWM_Stop(peripheral->handle, channel) != HAL_OK) {
-	ErrorHandler("Dual PWM positive channel did not stop correctly", 0);
-  }
+  	*positive_is_on=false;
 }
 
 void DualPWM::turn_off_negated() {
-  if (HAL_TIMEx_PWMN_Stop(peripheral->handle, channel) != HAL_OK) {
-	ErrorHandler("Dual PWM negative channel did not stop correctly", 0);
-  }
+	*negative_is_on=false;
 }
 
 void DualPWM::set_duty_cycle(float duty_cycle){
-	uint16_t raw_duty = __HAL_TIM_GET_AUTORELOAD(peripheral->handle) / 100.0 * duty_cycle;
-	__HAL_TIM_SET_COMPARE(peripheral->handle, channel, raw_duty);
-	this->duty_cycle = duty_cycle;
+	*(this->duty_cycle) = duty_cycle;
 }
 void DualPWM::set_frequency(uint32_t freq_in_hz){
-  	this->frequency = freq_in_hz;
-	TIM_TypeDef& timer = *peripheral->handle->Instance;
-	timer.ARR = (HAL_RCC_GetPCLK1Freq()*2 / (timer.PSC+1)) / frequency;
-	set_duty_cycle(duty_cycle);
+  	*(this->frequency) = freq_in_hz;
 }
 uint32_t DualPWM::get_frequency()const{
-  return frequency;
+  return *(this->frequency);
 }
 float DualPWM::get_duty_cycle()const{
-  return duty_cycle;
+  return *(this->duty_cycle);
 }
 void DualPWM::set_dead_time(std::chrono::nanoseconds dead_time_ns)
 {
-	TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
-	
-	// per https://hasanyavuz.ozderya.net/?p=437
-	auto time = dead_time_ns.count();
-
-	if(time <= 127 * clock_period_ns){
-		sBreakDeadTimeConfig.DeadTime = time/clock_period_ns;
-	}else if (time >127 * clock_period_ns && time  <= 2 * clock_period_ns * 127)
-	{
-		sBreakDeadTimeConfig.DeadTime = time /(2 * clock_period_ns) - 64 + 128;
-	}else if(time > 2 * clock_period_ns * 127 && time <= 8 * clock_period_ns * 127){
-		sBreakDeadTimeConfig.DeadTime = time/(8 * clock_period_ns) -32 + 192;
-	}else if(time > 8 * clock_period_ns * 127 && time <=16 * clock_period_ns*127){
-		sBreakDeadTimeConfig.DeadTime = time/(16 * clock_period_ns) -32 + 224;
-	}else{
-		ErrorHandler("Invalid dead time configuration");
+	*(this->dead_time_ns)=dead_time_ns;
+	if(*positive_is_on || *negative_is_on){
+		ErrorHandler("%s","This function can not be called if the PWM is on");
 	}
-	//sBreakDeadTimeConfig.LockLevel = 0;
-	//sBreakDeadTimeConfig.BreakState = 1;
-	HAL_TIMEx_ConfigBreakDeadTime(peripheral->handle,&sBreakDeadTimeConfig);
-	peripheral->handle->Instance->BDTR |= TIM_BDTR_MOE;
 	return;
 
 }
