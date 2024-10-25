@@ -5,9 +5,9 @@
  *      Author: Pablo
  */
 
-#include "Communication/SPI/SPI.hpp"
-
-#include "MPUManager/MPUManager.hpp"
+#include "HALALMock/Services/Communication/SPI/SPI.hpp"
+#include "HALALMock/Models/MPUManager/MPUManager.hpp"
+#include <HALALMock/Services/SharedMemory/SharedMemory.hpp>
 
 #ifdef HAL_SPI_MODULE_ENABLED
 
@@ -31,27 +31,27 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
 
     SPI::Instance* spi_instance = SPI::available_spi[spi];
 
-    // this three lines don t do nothing yet, as the alternative_function on a
-    // pin is hardcoded on the hal_msp.c
-    spi_instance->SCK->alternative_function = AF5;
-    spi_instance->MOSI->alternative_function = AF5;
-    spi_instance->MISO->alternative_function = AF5;
+    EmulatedPin &SCK_pin = SharedMemory::get_pin(*spi_instance->SCK);
+    EmulatedPin &MOSI_pin = SharedMemory::get_pin(*spi_instance->MOSI);
+    EmulatedPin &MISO_pin = SharedMemory::get_pin(*spi_instance->MISO);
 
-    spi_instance->SPIOrderID =
-        (uint16_t*)MPUManager::allocate_non_cached_memory(32);
-    spi_instance->available_end =
-        (uint16_t*)MPUManager::allocate_non_cached_memory(32);
-    spi_instance->rx_buffer = (uint8_t*)MPUManager::allocate_non_cached_memory(
-        SPI_MAXIMUM_PACKET_SIZE_BYTES);
-    spi_instance->tx_buffer = (uint8_t*)MPUManager::allocate_non_cached_memory(
-        SPI_MAXIMUM_PACKET_SIZE_BYTES);
+    if (SCK_pin.type != PinType::NOT_USED || MOSI_pin.type != PinType::NOT_USED ||
+        MISO_pin.type != PinType::NOT_USED) {
+        ErrorHandler("The SPI pins are already used");
+        return 0;
+    }
 
-    Pin::inscribe(*spi_instance->SCK, ALTERNATIVE);
-    Pin::inscribe(*spi_instance->MOSI, ALTERNATIVE);
-    Pin::inscribe(*spi_instance->MISO, ALTERNATIVE);
+    SCK_pin.type = PinType::SPI;
+    MOSI_pin.type = PinType::SPI;
+    MISO_pin.type = PinType::SPI;
 
     if (spi_instance->mode == SPI_MODE_MASTER) {
-        Pin::inscribe(*spi_instance->SS, OUTPUT);
+        EmulatedPin &SS_pin = SharedMemory::get_pin(*spi_instance->SS);
+
+        if (SS_pin.type != PinType::NOT_USED) {
+            ErrorHandler("The SPI SS pin is already used");
+            return 0;
+        }
     }
 
     uint8_t id = SPI::id_counter++;
