@@ -105,6 +105,7 @@ struct EmulatedPin {
 		} PWM;
 		struct {
 			uint16_t value;
+			bool is_on;
 		} ADC;
 		// TODO Add more types
 	} PinData;
