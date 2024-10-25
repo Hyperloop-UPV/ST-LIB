@@ -70,7 +70,7 @@ void Encoder::reset(uint8_t id) {
     }
     std::pair<Pin,Pin> pair_pin = Encoder::registered_encoder[id];
     EmulatedPin &pin1_data = SharedMemory::get_pin(pair_pin.first);
-    pin1_data.PinData.ENCODER.count_value = INT32_MAX/2;
+    pin1_data.PinData.ENCODER.count_value = UINT32_MAX/2;
 }
 
 uint32_t Encoder::get_counter(uint8_t id) {
