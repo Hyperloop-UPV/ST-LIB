@@ -6,8 +6,7 @@
 
 class SharedMemory {
    public:
-    // Number of pins per GPIO port
-    constexpr static uint8_t pins_per_port = 16;
+	constexpr static uint8_t total_pins= 114;
     // do not use before SharedMemory::start, uninitialized!!!
     static EmulatedPin *gpio_memory;
     static EmulatedPin &get_pin(Pin pin);
