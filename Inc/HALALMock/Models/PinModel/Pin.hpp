@@ -83,7 +83,8 @@ enum class PinType {
 	DigitalOutput,
 	DigitalInput,
 	PWM,
-	ADC
+	ADC,
+	SPI
 	// TODO: Add more types
 };
 
@@ -106,6 +107,9 @@ struct EmulatedPin {
 		struct {
 			// TODO FW-54
 		} ADC;
+		struct {
+			// EMPTY because SPI mock doesn't use shared memory
+		} SPI;
 		// TODO Add more types
 	} PinData;
 };
