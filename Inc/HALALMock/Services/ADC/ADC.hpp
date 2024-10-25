@@ -35,7 +35,7 @@ public:
 
 	/// In STM32H723ZG, the ADC1 and ADC2 has 16 bits as their maximum resolution,
 	/// while the ADC3 has 12 bits. Both of them can be configured to has less resolution than its maximum
-	enum ADCResolution : uint32_t {
+	enum class ADCResolution : uint32_t {
 		ADC_RES_16BITS = 0x00000000,
 		ADC_RES_14BITS = 0x00000004,
 		ADC_RES_12BITS = 0x00000008,
