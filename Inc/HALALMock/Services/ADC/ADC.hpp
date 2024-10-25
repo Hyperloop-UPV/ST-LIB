@@ -46,8 +46,6 @@ public:
 	public:
 		ADC_TypeDef* adc;
 		uint32_t resolution;
-		/// @brief Resolution of the emulated ADC translated to an enum
-		ADCResolution emulated_resolution;
 		uint32_t external_trigger;
 		vector<uint32_t> channels;
 		DMA::Stream dma_stream;
