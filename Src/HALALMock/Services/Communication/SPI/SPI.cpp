@@ -514,15 +514,9 @@ void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
                                 size_to_send);
 }
 
-void SPI::turn_on_chip_select(SPI::Instance* spi) {
-    HAL_GPIO_WritePin(spi->SS->port, spi->SS->gpio_pin,
-                      (GPIO_PinState)PinState::ON);
-}
+void SPI::turn_on_chip_select(SPI::Instance* spi) {}
 
-void SPI::turn_off_chip_select(SPI::Instance* spi) {
-    HAL_GPIO_WritePin(spi->SS->port, spi->SS->gpio_pin,
-                      (GPIO_PinState)PinState::OFF);
-}
+void SPI::turn_off_chip_select(SPI::Instance* spi) {}
 
 void SPI::mark_slave_ready(SPI::Instance* spi) {
     if (spi->using_ready_slave) {
