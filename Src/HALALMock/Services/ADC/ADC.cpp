@@ -17,22 +17,7 @@ unordered_map<uint8_t, ADC::Instance> ADC::active_instances = {};
 
 
 ADC::InitData::InitData(ADC_TypeDef* adc, uint32_t resolution, uint32_t external_trigger, vector<uint32_t>& channels, DMA::Stream dma_stream, string name) :
-		adc(adc), resolution(resolution), external_trigger(external_trigger), channels(channels), dma_stream(dma_stream), name(name) {
-			switch (resolution) {
-				case 0x00000000UL: // 16 bits
-					emulated_resolution = ADCResolution::ADC_RES_16BITS;
-					break;
-				case 0x00000004UL: // 14 bits
-					emulated_resolution = ADCResolution::ADC_RES_14BITS;
-					break;
-				case 0x00000008UL: // 12 bits
-					emulated_resolution = ADCResolution::ADC_RES_12BITS;
-					break;
-				case 0x0000000CUL: // 10 bits
-					emulated_resolution = ADCResolution::ADC_RES_10BITS;
-					break;
-			}
-		}
+		adc(adc), resolution(resolution), external_trigger(external_trigger), channels(channels), dma_stream(dma_stream), name(name) {}
 
 ADC::Peripheral::Peripheral(ADC_HandleTypeDef* handle, LowPowerTimer& timer, InitData& init_data) :
 	handle(handle), timer(timer), init_data(init_data) {
