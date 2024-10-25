@@ -99,6 +99,9 @@ float ADC::get_value(uint8_t id) {
 			return raw / MAX_12BIT * ADC_MAX_VOLTAGE;
 		case ADCResolution::ADC_RES_10BITS:
 			return raw / MAX_10BIT * ADC_MAX_VOLTAGE;
+		default:
+			ErrorHandler("ADC Resolution not supported");
+			return 0;
 	}
 }
 
@@ -113,7 +116,7 @@ uint16_t ADC::get_int_value(uint8_t id) {
 
 	uint16_t raw = emulated_pin.PinData.ADC.value;
 
-	ADCResolution resolution = instance.peripheral->init_data.emulated_resolution;
+	ADCResolution resolution = static_cast<ADCResolution>(instance.peripheral->init_data.resolution);
 	uint16_t raw = emulated_pin.PinData.ADC.value;
 	switch (resolution) {
 		case ADCResolution::ADC_RES_16BITS:
@@ -124,6 +127,9 @@ uint16_t ADC::get_int_value(uint8_t id) {
 			return raw << 4;
 		case ADCResolution::ADC_RES_10BITS:
 			return raw << 6;
+		default:
+			ErrorHandler("ADC Resolution not supported");
+			return 0;
 	}
 }
 
