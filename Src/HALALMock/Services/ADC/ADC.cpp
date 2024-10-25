@@ -103,7 +103,7 @@ float ADC::get_value(uint8_t id) {
 		ErrorHandler("Pin %s is not configured to be used for ADC usage", emulated_pin);
 		return 0;
 	}
-	ADCResolution resolution = instance.peripheral->init_data.emulated_resolution;
+	ADCResolution resolution = static_cast<ADCResolution>(instance.peripheral->init_data.resolution);
 	uint16_t raw = emulated_pin.PinData.ADC.value;
 	switch (resolution) {
 		case ADCResolution::ADC_RES_16BITS:
