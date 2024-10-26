@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "PWM/PWM/PWM.hpp"
+#include "HALAL/Services/PWM/PWM/PWM.hpp"
 
 class DualPWM{
 protected:

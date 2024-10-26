@@ -5,7 +5,7 @@
  *      Author: aleja
  */
 
-#include "PWM/DualPhasedPWM/DualPhasedPWM.hpp"
+#include "HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 
 DualPhasedPWM::DualPhasedPWM(Pin& pin, Pin& pin_negated) {
 	if (not TimerPeripheral::available_dual_pwms.contains({pin, pin_negated})) {

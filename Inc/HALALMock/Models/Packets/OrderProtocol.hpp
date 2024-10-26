@@ -1,5 +1,5 @@
 #pragma once
-#include "Packets/Packet.hpp"
+#include "HALALMock/Models/Packets/Packet.hpp"
 
 class Order;
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "Packets/Packet.hpp"
+#include "HALAL/Models/Packets/Packet.hpp"
 
 class Order;
 

@@ -5,7 +5,8 @@
  *      Author: aleja
  */
 
-#include "PWM/PhasedPWM/PhasedPWM.hpp"
+#include "HALALMock/Services/PWM/PhasedPWM/PhasedPWM.hpp"
+#include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
 
 /**
  * The function initializes a PhasedPWM object with a given pin and sets its duty cycle and phase to 0.
