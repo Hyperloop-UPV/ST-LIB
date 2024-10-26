@@ -5,7 +5,7 @@
  *      Author: stefan
  */
 
-#include "PinModel/Pin.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 Pin::Pin(){}

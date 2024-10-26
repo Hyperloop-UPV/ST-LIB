@@ -8,8 +8,8 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "PinModel/Pin.hpp"
-#include "Packets/RawPacket.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
+#include "HALALMock/Models/Packets/RawPacket.hpp"
 
 #ifdef HAL_UART_MODULE_ENABLED
 

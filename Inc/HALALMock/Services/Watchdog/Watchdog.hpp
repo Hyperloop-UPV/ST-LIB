@@ -1,5 +1,5 @@
 #pragma once
-#include "PinModel/Pin.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 

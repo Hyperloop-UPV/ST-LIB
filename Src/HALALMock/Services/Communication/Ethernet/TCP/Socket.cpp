@@ -4,7 +4,7 @@
  *  Created on: Nov 23, 2022
  *      Author: stefa
  */
-#include "Communication/Ethernet/TCP/Socket.hpp"
+#include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 

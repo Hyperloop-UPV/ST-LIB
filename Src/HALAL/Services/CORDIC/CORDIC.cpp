@@ -5,7 +5,7 @@
  * 		Author: Ricardo
  */
 
-#include "CORDIC/CORDIC.hpp"
+#include "HALAL/Services/CORDIC/CORDIC.hpp"
 
 
 Operation_Computation RotationComputer::mode = NONE;
