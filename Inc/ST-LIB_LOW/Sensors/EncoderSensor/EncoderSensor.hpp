@@ -38,6 +38,7 @@ protected:
 	double times[N_FRAMES];
 	double speeds[N_FRAMES];
 	uint64_t last_clock_time;
+	uint32_t idx_buff;
 
 private:
 	void update_arrays();
