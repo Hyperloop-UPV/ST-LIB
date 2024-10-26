@@ -301,43 +301,6 @@ void SPI::init(SPI::Instance* spi) {
         return;
     }
 
-    spi->hspi->Instance = spi->instance;
-    spi->hspi->Init.Mode = spi->mode;
-    spi->hspi->Init.Direction = SPI_DIRECTION_2LINES;
-    spi->hspi->Init.DataSize = spi->data_size;
-    spi->hspi->Init.CLKPolarity = spi->clock_polarity;
-    spi->hspi->Init.CLKPhase = spi->clock_phase;
-
-    if (spi->mode == SPI_MODE_MASTER) {
-        spi->hspi->Init.NSS = SPI_NSS_SOFT;
-        spi->hspi->Init.BaudRatePrescaler = spi->baud_rate_prescaler;
-    } else {
-        spi->hspi->Init.NSS = SPI_NSS_SOFT;
-    }
-
-    spi->hspi->Init.FirstBit = spi->first_bit;
-    spi->hspi->Init.TIMode = SPI_TIMODE_DISABLE;
-    spi->hspi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-    spi->hspi->Init.CRCPolynomial = 0x0;
-    spi->hspi->Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-    spi->hspi->Init.NSSPolarity = spi->nss_polarity;
-    spi->hspi->Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
-    spi->hspi->Init.TxCRCInitializationPattern =
-        SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-    spi->hspi->Init.RxCRCInitializationPattern =
-        SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-    spi->hspi->Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
-    spi->hspi->Init.MasterInterDataIdleness =
-        SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
-    spi->hspi->Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
-    spi->hspi->Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
-    spi->hspi->Init.IOSwap = SPI_IO_SWAP_DISABLE;
-
-    if (HAL_SPI_Init(spi->hspi) != HAL_OK) {
-        ErrorHandler("Unable to init %s", spi->name);
-        return;
-    }
-
     spi->initialized = true;
 }
 
