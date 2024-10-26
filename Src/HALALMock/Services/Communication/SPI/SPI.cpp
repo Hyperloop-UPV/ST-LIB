@@ -432,8 +432,17 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi) {
 void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
                                      uint8_t* value_to_receive,
                                      uint16_t size_to_send) {
-    HAL_SPI_TransmitReceive_DMA(spi->hspi, value_to_send, value_to_receive,
-                                size_to_send);
+    // Search for the id of the SPI instance
+    uint8_t id;
+    for (auto iter : registered_spi) {
+        if (iter.second == spi) {
+            id = iter.first;
+            break;
+        }
+    }
+    
+    SPI::transmit_and_receive(id, span<uint8_t>(value_to_send, size_to_send), 
+                              span<uint8_t>(value_to_receive, size_to_send));
 }
 
 void SPI::turn_on_chip_select(SPI::Instance* spi) {}
