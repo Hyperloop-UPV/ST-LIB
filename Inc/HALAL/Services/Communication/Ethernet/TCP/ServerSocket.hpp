@@ -6,11 +6,11 @@
  */
 #pragma once
 
-#include "Communication/Ethernet/EthernetNode.hpp"
-#include "Communication/Ethernet/Ethernet.hpp"
-#include "Packets/Packet.hpp"
-#include "Packets/Order.hpp"
-#include "Packets/OrderProtocol.hpp"
+#include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
+#include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
+#include "HALAL/Models/Packets/Packet.hpp"
+#include "HALAL/Models/Packets/Order.hpp"
+#include "HALAL/Models/Packets/OrderProtocol.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
 #define PBUF_POOL_MEMORY_DESC_POSITION 8

@@ -1,7 +1,6 @@
 #include "Protections/ProtectionManager.hpp"
 
 #include "Protections/Notification.hpp"
-#include "Time/Time.hpp"
 
 StateMachine* ProtectionManager::general_state_machine = nullptr;
 Notification ProtectionManager::fault_notification = {

@@ -5,7 +5,7 @@
  *      Author: aleja
  */
 
-#include "TimerPeripheral/TimerPeripheral.hpp"
+#include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
 
 map<TIM_HandleTypeDef*, TIM_TypeDef*> TimerPeripheral::handle_to_timer= {
 		{&htim1, TIM1},

@@ -4,7 +4,7 @@
  *  Created on: 30 oct. 2022
  *      Author: alejandro
  */
-#include "InputCapture/InputCapture.hpp"
+#include "HALALMock/Services/InputCapture/InputCapture.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 uint8_t InputCapture::id_counter = 0;

@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "PinModel/Pin.hpp"
-#include "TimerPeripheral/TimerPeripheral.hpp"
+#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #ifdef HAL_TIM_MODULE_ENABLED
