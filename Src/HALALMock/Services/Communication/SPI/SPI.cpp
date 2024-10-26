@@ -164,8 +164,12 @@ bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
         return false;
     }
 
-    if(SPI::transmit(id, command_data) && SPI::receive(id, receive_data)) return true;
-    else return false;
+    if(SPI::transmit(id, command_data) && SPI::receive(id, receive_data)) {
+        HAL_SPI_TxRxCpltCallback(SPI::registered_spi[id]->hspi);
+        return true;
+    } else {
+        return false;
+    }
 
 }
 
@@ -440,7 +444,7 @@ void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
             break;
         }
     }
-    
+
     SPI::transmit_and_receive(id, span<uint8_t>(value_to_send, size_to_send), 
                               span<uint8_t>(value_to_receive, size_to_send));
 }
