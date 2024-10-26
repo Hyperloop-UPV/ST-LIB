@@ -6,11 +6,11 @@
  */
 #pragma once
 
-#include "Communication/Ethernet/EthernetNode.hpp"
-#include "Communication/Ethernet/Ethernet.hpp"
-#include "Packets/Packet.hpp"
-#include "Packets/Order.hpp"
-#include "Packets/OrderProtocol.hpp"
+#include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
+#include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
+#include "HALALMock/Models/Packets/Packet.hpp"
+#include "HALALMock/Models/Packets/Order.hpp"
+#include "HALALMock/Models/Packets/OrderProtocol.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
 #define PBUF_POOL_MEMORY_DESC_POSITION 8

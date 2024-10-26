@@ -8,8 +8,8 @@
 #pragma once
 
 
-#include "PinModel/Pin.hpp"
-#include "TimerPeripheral/TimerPeripheral.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
+#include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 

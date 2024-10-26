@@ -5,7 +5,7 @@
  *      Author: Pablo
  */
 #pragma once
-#include "Flash/Flash.hpp"
+#include "HALAL/Services/Flash/Flash.hpp"
 namespace FlashTest{
 
 	bool test1_writing_1_float();

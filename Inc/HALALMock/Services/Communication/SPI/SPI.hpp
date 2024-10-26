@@ -7,11 +7,11 @@
 
 #pragma once
 
-#include "PinModel/Pin.hpp"
-#include "Packets/SPIOrder.hpp"
-#include "DigitalOutputService/DigitalOutputService.hpp"
-#include "DigitalInputService/DigitalInputService.hpp"
-#include "DMA/DMA.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
+#include "HALALMock/Models/Packets/SPIOrder.hpp"
+#include "HALALMock/Services/DigitalOutputService/DigitalOutputService.hpp"
+#include "HALALMock/Services/DigitalInputService/DigitalInputService.hpp"
+#include "HALALMock/Models/DMA/DMA.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #ifdef HAL_SPI_MODULE_ENABLED
