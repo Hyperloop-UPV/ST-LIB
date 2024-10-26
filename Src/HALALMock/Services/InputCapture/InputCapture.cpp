@@ -24,6 +24,8 @@ InputCapture::Instance::Instance(Pin& pin, void* peripheral, uint32_t channel_ri
 		EmulatedPin& sim_pin = SharedMemory::get_pin(pin);
 		duty_cycle = &(sim_pin.PinData.InputCapture.duty_cycle);
 		frequency = &(sim_pin.PinData.InputCapture.frequency);
+		*duty_cycle = 0;
+		*frequency = 0;
 	}
 
 uint8_t InputCapture::inscribe(Pin& pin){
