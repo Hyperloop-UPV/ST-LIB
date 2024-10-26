@@ -6,7 +6,7 @@
  */
 
 
-#include "SPIPacket.hpp"
+#include "HALAL/Models/Packets/SPIPacket.hpp"
 
 #define ALIGN_NUMBER_TO_32(x) (((x + 31)/32)*32)
 

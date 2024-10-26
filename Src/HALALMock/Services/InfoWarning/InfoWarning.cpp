@@ -5,7 +5,7 @@
  *      Author: gonzalo
  */
 
-#include "InfoWarning/InfoWarning.hpp"
+#include "HALALMock/Services/InfoWarning/InfoWarning.hpp"
 
 string InfoWarning::description = "Error-No-Description-Found";
 string InfoWarning::line = "Error-No-Line-Found";

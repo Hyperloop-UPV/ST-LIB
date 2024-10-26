@@ -5,7 +5,7 @@
  *      Author: aleja
  */
 
-#include "DMA/DMA.hpp"
+#include "HALAL/Models/DMA/DMA.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 vector<DMA::Stream> DMA::available_streams = {
