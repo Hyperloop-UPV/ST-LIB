@@ -8,6 +8,9 @@
 #include "HALALMock/Services/Communication/SPI/SPI.hpp"
 #include "HALALMock/Models/MPUManager/MPUManager.hpp"
 #include <HALALMock/Services/SharedMemory/SharedMemory.hpp>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
 
 #ifdef HAL_SPI_MODULE_ENABLED
 
@@ -62,6 +65,35 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
     SPI::registered_spi[id] = spi_instance;
     SPI::registered_spi_by_handler[spi_instance->hspi] = spi_instance;
 
+    // Create socket for this SPI peripheral
+    int spi_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    // Bind this socket to the local port 200x
+    sockaddr_in local_address;
+    local_address.sin_family = AF_INET;
+    local_address.sin_port = htons(2000 + id_counter);
+    local_address.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(spi_socket, (struct sockaddr*)&local_address, sizeof(local_address)) < 0) {
+        ErrorHandler("Bind error: %s", strerror(errno));
+        close(spi_socket);
+        return 0;
+    }
+
+    // Connect this peripheral with slave simulator
+    sockaddr_in server_address;
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(2000 + id_counter);
+    server_address.sin_addr.s_addr = INADDR_ANY;
+
+    if (connect(spi_socket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
+        ErrorHandler("Connect error: %s", strerror(errno));
+        close(spi_socket);
+        return 0;
+    }
+
+    spi_sockets[id] = spi_socket;
+
     return id;
 }
 
@@ -102,54 +134,15 @@ bool SPI::transmit(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    SPI::Instance* spi = SPI::registered_spi[id];
-    turn_off_chip_select(spi);
-    HAL_StatusTypeDef errorcode =
-        HAL_SPI_Transmit(spi->hspi, data.data(), data.size(), 10);
-    turn_on_chip_select(spi);
-    switch (errorcode) {
-        case HAL_OK:
-            return true;
-            break;
-        case HAL_BUSY:
-            return false;
-            break;
-        default:
-            ErrorHandler(
-                "Error while transmiting and receiving with spi DMA. Errorcode "
-                "%u",
-                (uint8_t)errorcode);
-            return false;
-            break;
-    }
-}
-
-bool SPI::transmit_DMA(uint8_t id, span<uint8_t> data) {
-    if (!SPI::registered_spi.contains(id)) {
-        ErrorHandler("No SPI registered with id %u", id);
+    if(send(spi_sockets[id], data.data(), data.size(), 0) < 0) {
+        ErrorHandler("Send error: %s", strerror(errno));
         return false;
     }
 
-    SPI::Instance* spi = SPI::registered_spi[id];
+}
 
-    HAL_StatusTypeDef errorcode =
-        HAL_SPI_Transmit_DMA(spi->hspi, data.data(), data.size());
-    turn_on_chip_select(spi);
-    switch (errorcode) {
-        case HAL_OK:
-            return true;
-            break;
-        case HAL_BUSY:
-            return false;
-            break;
-        default:
-            ErrorHandler(
-                "Error while transmiting and receiving with spi DMA. Errorcode "
-                "%u",
-                (uint8_t)errorcode);
-            return false;
-            break;
-    }
+bool SPI::transmit_DMA(uint8_t id, span<uint8_t> data) {
+    return SPI::transmit(id, data);
 }
 
 bool SPI::receive(uint8_t id, span<uint8_t> data) {
@@ -158,25 +151,9 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    SPI::Instance* spi = SPI::registered_spi[id];
-
-    HAL_StatusTypeDef errorcode =
-        HAL_SPI_Receive_DMA(spi->hspi, data.data(), data.size());
-    turn_on_chip_select(spi);
-    switch (errorcode) {
-        case HAL_OK:
-            return true;
-            break;
-        case HAL_BUSY:
-            return false;
-            break;
-        default:
-            ErrorHandler(
-                "Error while transmiting and receiving with spi DMA. Errorcode "
-                "%u",
-                (uint8_t)errorcode);
-            return false;
-            break;
+    if(recv(spi_sockets[id], data.data(), data.size(), 0) < 0) {
+        ErrorHandler("Receive error: %s", strerror(errno));
+        return false;
     }
 }
 
@@ -187,27 +164,9 @@ bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
         return false;
     }
 
-    SPI::Instance* spi = SPI::registered_spi[id];
+    if(SPI::transmit(id, command_data) && SPI::receive(id, receive_data)) return true;
+    else return false;
 
-    HAL_StatusTypeDef errorcode =
-        HAL_SPI_TransmitReceive_DMA(spi->hspi, command_data.data(),
-                                    receive_data.data(), command_data.size());
-    turn_on_chip_select(spi);
-    switch (errorcode) {
-        case HAL_OK:
-            return true;
-            break;
-        case HAL_BUSY:
-            return false;
-            break;
-        default:
-            ErrorHandler(
-                "Error while transmiting and receiving with spi DMA. Errorcode "
-                "%u",
-                (uint8_t)errorcode);
-            return false;
-            break;
-    }
 }
 
 /*=============================================

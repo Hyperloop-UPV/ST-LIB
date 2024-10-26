@@ -339,6 +339,8 @@ private:
      * @param spi Peripheral instance to be initialized.
      */
     static void init(SPI::Instance* spi);
+
+    static unordered_map<uint8_t, int> spi_sockets; /** Map that associates registered SPI peripheral with their corresponding TCP socket */
 };
 
 #endif
