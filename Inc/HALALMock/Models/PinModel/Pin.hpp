@@ -90,37 +90,36 @@ struct EmulatedPin {
     PinType type =
         PinType::NOT_USED;  // Always check type before using the union
 
-    union {
-        struct {
-            // TODO FW-52
-        } DigitalOutput;
-        struct {
-            // TODO FW-53
-        } DigitalInput;
-        struct {
-            float duty_cycle;
-            uint32_t frequency;
-            bool is_on;
-            std::chrono::nanoseconds dead_time_ns;
-        } PWM;
-        struct {
-            float duty_cycle;
-            uint32_t frequency;
-            bool is_on = false;
-            std::chrono::nanoseconds dead_time_ns;
-        } DualPWM;
-        struct {
-            // TODO FW-54
-        } ADC;
-        struct {
-            uint32_t priority = 0;
-            bool is_on;
-            bool trigger_signal;
-            TRIGGER trigger_mode;
-
-        } EXTIPin;
-        // TODO Add more types
-    } PinData;
+	union  {
+		struct {
+			bool state;
+		} DigitalOutput;
+		struct  {
+			PinState curr_state;
+		} DigitalInput;
+		struct  {
+			float duty_cycle;
+			uint32_t frequency;
+			bool is_on;
+			std::chrono::nanoseconds dead_time_ns;
+		} PWM;
+		struct {
+			float duty_cycle;
+			uint32_t frequency;
+			bool is_on = false;
+			std::chrono::nanoseconds dead_time_ns;
+		}DualPWM;
+		struct {
+			// TODO FW-54
+		} ADC;
+    struct {
+        uint32_t priority = 0;
+        bool is_on;
+        bool trigger_signal;
+        TRIGGER trigger_mode;
+    } EXTIPin;
+		// TODO Add more types
+	} PinData;
 };
 
 class Pin {
