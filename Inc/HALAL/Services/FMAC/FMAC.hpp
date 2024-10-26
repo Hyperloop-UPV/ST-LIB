@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "DMA/DMA.hpp"
+#include "HALAL/Models/DMA/DMA.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #ifndef FMAC_ERROR_CHECK

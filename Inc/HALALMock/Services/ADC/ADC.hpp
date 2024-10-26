@@ -8,9 +8,9 @@
 #pragma once
 #include <string>
 
-#include "PinModel/Pin.hpp"
-#include "LowPowerTimer/LowPowerTimer.hpp"
-#include "DMA/DMA.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
+#include "HALALMock/Models/LowPowerTimer/LowPowerTimer.hpp"
+#include "HALALMock/Models/DMA/DMA.hpp"
 
 #if defined(HAL_ADC_MODULE_ENABLED) && defined(HAL_LPTIM_MODULE_ENABLED)
 

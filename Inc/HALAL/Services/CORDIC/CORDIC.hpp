@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "PinModel/Pin.hpp"
+#include "HALAL/Models/PinModel/Pin.hpp"
 #ifdef HAL_CORDIC_MODULE_ENABLED
 #define RESET_MASK 0x007F07FF
 #define COSINE_CONFIG 0x00000050

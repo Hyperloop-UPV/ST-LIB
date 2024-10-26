@@ -5,7 +5,7 @@
  *      Author: stefa
  */
 
-#include "Communication/Ethernet/TCP/ServerSocket.hpp"
+#include "HALALMock/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 #include "lwip/priv/tcp_priv.h"
 #include "ErrorHandler/ErrorHandler.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED

@@ -1,7 +1,5 @@
 cmake_minimum_required (VERSION 3.4)
 
-include(arm-none-eabi.cmake)
-
 project (ST-LIB ASM C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -14,6 +12,41 @@ file(GLOB_RECURSE SOURCE_C ${CMAKE_SOURCE_DIR}/ *.c)
 file(GLOB_RECURSE SOURCE_CPP ${CMAKE_SOURCE_DIR}/ *.cpp)
 file(GLOB_RECURSE SOURCE_H ${CMAKE_SOURCE_DIR}/ *.h)
 file(GLOB_RECURSE SOURCE_HPP ${CMAKE_SOURCE_DIR}/ *.hpp)
+
+if(${SIMULATE})
+  include(linux-64.cmake)
+  add_definitions(-DSIM_ON)
+  list(FILTER SOURCE_C EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Src/HALAL/.*" )
+  list(FILTER SOURCE_CPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Src/HALAL/.*" )
+  list(FILTER SOURCE_H EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Src/HALAL/.*" )
+  list(FILTER SOURCE_HPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Src/HALAL/.*" )
+
+
+  list(FILTER SOURCE_C EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Drivers/.*" )
+  list(FILTER SOURCE_CPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Drivers/.*" )
+  list(FILTER SOURCE_H EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Drivers/.*" )
+  list(FILTER SOURCE_HPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Drivers/.*" )
+
+  list(FILTER SOURCE_C EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/LWIP/.*" )
+  list(FILTER SOURCE_CPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/LWIP/.*" )
+  list(FILTER SOURCE_H EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/LWIP/.*" )
+  list(FILTER SOURCE_HPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/LWIP/.*" )
+
+  list(FILTER SOURCE_C EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Middlewares/.*" )
+  list(FILTER SOURCE_CPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Middlewares/.*" )
+  list(FILTER SOURCE_H EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Middlewares/.*" )
+  list(FILTER SOURCE_HPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Middlewares/.*" )
+else()
+  include(arm-none-eabi.cmake)
+  list(FILTER SOURCE_C EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Src/HALALMock/.*" )
+  list(FILTER SOURCE_CPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Src/HALALMock/.*" )
+  list(FILTER SOURCE_H EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Src/HALALMock/.*" )
+  list(FILTER SOURCE_HPP EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/Src/HALALMock/.*" )
+endif()
+
+message("Using ${CMAKE_C_COMPILER} for C")
+message("Using ${CMAKE_ASM_COMPILER} for ASM")
+message("Using ${CMAKE_CXX_COMPILER} for CXX")
 
 if(${NUCLEO})
   add_definitions(-DNUCLEO)
@@ -79,10 +112,10 @@ target_compile_definitions(${LIBRARY} PUBLIC
 )
 
 target_compile_options(${LIBRARY} PUBLIC
-  -mcpu=cortex-m7
-  -mfpu=fpv5-d16
-  -mfloat-abi=hard
-  -mthumb
+  $<$<STREQUAL:${SIMULATE},FALSE>:-mcpu=cortex-m7>
+  $<$<STREQUAL:${SIMULATE},FALSE>:-mfpu=fpv5-d16>
+  $<$<STREQUAL:${SIMULATE},FALSE>:-mfloat-abi=hard>
+  $<$<STREQUAL:${SIMULATE},FALSE>:-mthumb>
   ${OPTIMIZATION}
   ${DEBUG_CONFIGURATION}
   -ffunction-sections
@@ -96,38 +129,34 @@ target_compile_options(${LIBRARY} PUBLIC
   $<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>
   $<$<COMPILE_LANGUAGE:CXX>:-Werror>
   -Wno-psabi
-  -specs=nosys.specs
+  $<$<STREQUAL:${SIMULATE},FALSE>:-specs=nosys.specs>
 )
 
 target_include_directories(${LIBRARY} PUBLIC
-  Drivers/CMSIS/Device/ST/STM32H7xx/Include
-  Drivers/CMSIS/Include
-  Drivers/STM32H7xx_HAL_Driver/Inc
-  Drivers/STM32H7xx_HAL_Driver/Inc/Legacy
-  Middlewares/Third_Party/LwIP/src/include
-  Middlewares/Third_Party/LwIP/system
-  Middlewares/Third_Party/LwIP/src/netif/ppp
-  Middlewares/Third_Party/LwIP/src/include/lwip
-  Middlewares/Third_Party/LwIP/src/include/lwip/apps
-  Middlewares/Third_Party/LwIP/src/include/lwip/priv
-  Middlewares/Third_Party/LwIP/src/include/lwip/prot
-  Middlewares/Third_Party/LwIP/src/include/netif
-  Middlewares/Third_Party/LwIP/src/include/compat
-  Middlewares/Third_Party/LwIP/src/include/compat/posix
-  Middlewares/Third_Party/LwIP/src/include/compat/posix/arpa
-  Middlewares/Third_Party/LwIP/src/include/compat/posix/net
-  Middlewares/Third_Party/LwIP/src/include/compat/posix/sys
-  Middlewares/Third_Party/LwIP/src/include/compat/stdc
-  Middlewares/Third_Party/LwIP/system/arch
-  Drivers/BSP/Components
-  Drivers/BSP/Components/lan8742
-  LWIP/App
-  LWIP/Target
-  Inc
-  Inc/HALAL
-  Inc/HALALMock
-  Inc/HALAL/Models
-  Inc/HALAL/Services
-  Inc/ST-LIB_LOW
-  Inc/ST-LIB_HIGH
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Include>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/system>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/netif/ppp>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/apps>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/priv>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/prot>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/netif>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/arpa>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/net>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/sys>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/stdc>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/system/arch>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Components>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Components/lan8742>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/LWIP/App>
+  $<$<STREQUAL:${SIMULATE},FALSE>:${CMAKE_CURRENT_SOURCE_DIR}/LWIP/Target>
+  ${CMAKE_CURRENT_SOURCE_DIR}/Inc
+  ${CMAKE_CURRENT_SOURCE_DIR}/Inc/ST-LIB_LOW
+  ${CMAKE_CURRENT_SOURCE_DIR}/Inc/ST-LIB_HIGH
 )

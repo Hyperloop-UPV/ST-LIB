@@ -5,7 +5,7 @@
  *      Author: alejandro
  */
 
-#include "ADC/ADC.hpp"
+#include "HALAL/Services/ADC/ADC.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #if defined(HAL_ADC_MODULE_ENABLED) && defined(HAL_LPTIM_MODULE_ENABLED)

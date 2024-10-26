@@ -5,7 +5,7 @@
  *      Author: stefan
  */
 
-#include "DigitalOutputService/DigitalOutputService.hpp"
+#include "HALAL/Services/DigitalOutputService/DigitalOutputService.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 uint8_t DigitalOutputService::id_counter = 0;

@@ -5,7 +5,7 @@
  *      Author: stefan
  */
 
-#include "DigitalInputService/DigitalInputService.hpp"
+#include "HALALMock/Services/DigitalInputService/DigitalInputService.hpp"
 
 uint8_t DigitalInput::id_counter = 0;
 map<uint8_t,Pin> DigitalInput::service_ids = {};

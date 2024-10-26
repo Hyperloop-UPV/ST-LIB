@@ -5,7 +5,7 @@
  *      Author: Ricardo
  */
 
-#include "FMAC/FMAC.hpp"
+#include "HALAL/Services/FMAC/FMAC.hpp"
 
 MultiplierAccelerator::FMACMemoryLayout MultiplierAccelerator::MemoryLayout;
 MultiplierAccelerator::FMACProcessInstance MultiplierAccelerator::Process;
