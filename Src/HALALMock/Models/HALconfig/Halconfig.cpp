@@ -5,7 +5,7 @@
  *      Author: aleja
  */
 
-#include "HALconfig/HALconfig.hpp"
+#include "HALALMock/Models/HALconfig/HALconfig.hpp"
 
 void HALconfig::system_clock() {
 	RCC_OscInitTypeDef RCC_OscInitStruct = {0};

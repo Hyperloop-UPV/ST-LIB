@@ -6,11 +6,11 @@
  */
 #pragma once
 
-#include "PinModel/Pin.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
 #include "C++Utilities/CppUtils.hpp"
-#include "Packets/I2CPacket.hpp"
+#include "HALALMock/Models/Packets/I2CPacket.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "DMA/DMA.hpp"
+#include "HALALMock/Models/DMA/DMA.hpp"
 
 #define HALAL_I2C_EMPTY_ID (uint16_t)0
 

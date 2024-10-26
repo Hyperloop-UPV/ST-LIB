@@ -5,10 +5,10 @@
  *      Author: Dani
  */
 
-#include "Time/Time.hpp"
+#include "HALALMock/Services/Time/Time.hpp"
 
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "TimerPeripheral/TimerPeripheral.hpp"
+#include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
 
 TIM_HandleTypeDef* Time::low_precision_timer = &htim7;
 

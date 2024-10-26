@@ -5,9 +5,9 @@
  *      Author: Pablo
  */
 
-#include "Communication/SPI/SPI.hpp"
+#include "HALAL/Services/Communication/SPI/SPI.hpp"
 
-#include "MPUManager/MPUManager.hpp"
+#include "HALAL/Models/MPUManager/MPUManager.hpp"
 
 #ifdef HAL_SPI_MODULE_ENABLED
 
