@@ -137,7 +137,7 @@ bool SPI::transmit(uint8_t id, span<uint8_t> data) {
 }
 
 bool SPI::transmit_DMA(uint8_t id, span<uint8_t> data) {
-    return SPI::transmit(id, data);
+    return SPI::transmit(id, data); // DMA is not used in simulator mode
 }
 
 bool SPI::receive(uint8_t id, span<uint8_t> data) {
