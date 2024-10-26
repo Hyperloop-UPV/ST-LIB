@@ -1,9 +1,11 @@
 #include "HALALMock/Services/Communication/SPI/SPI.hpp"
-#include "HALALMock/Models/MPUManager/MPUManager.hpp"
-#include <HALALMock/Services/SharedMemory/SharedMemory.hpp>
-#include <sys/socket.h>
+
 #include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
+
+#include "HALALMock/Models/MPUManager/MPUManager.hpp"
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
 #ifdef HAL_SPI_MODULE_ENABLED
 
@@ -29,11 +31,12 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
 
     SPI::Instance* spi_instance = SPI::available_spi[spi];
 
-    EmulatedPin &SCK_pin = SharedMemory::get_pin(*spi_instance->SCK);
-    EmulatedPin &MOSI_pin = SharedMemory::get_pin(*spi_instance->MOSI);
-    EmulatedPin &MISO_pin = SharedMemory::get_pin(*spi_instance->MISO);
+    EmulatedPin& SCK_pin = SharedMemory::get_pin(*spi_instance->SCK);
+    EmulatedPin& MOSI_pin = SharedMemory::get_pin(*spi_instance->MOSI);
+    EmulatedPin& MISO_pin = SharedMemory::get_pin(*spi_instance->MISO);
 
-    if (SCK_pin.type != PinType::NOT_USED || MOSI_pin.type != PinType::NOT_USED ||
+    if (SCK_pin.type != PinType::NOT_USED ||
+        MOSI_pin.type != PinType::NOT_USED ||
         MISO_pin.type != PinType::NOT_USED) {
         ErrorHandler("The SPI pins are already used");
         return 0;
@@ -44,7 +47,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
     MISO_pin.type = PinType::SPI;
 
     if (spi_instance->mode == SPI_MODE_MASTER) {
-        EmulatedPin &SS_pin = SharedMemory::get_pin(*spi_instance->SS);
+        EmulatedPin& SS_pin = SharedMemory::get_pin(*spi_instance->SS);
 
         if (SS_pin.type != PinType::NOT_USED) {
             ErrorHandler("The SPI SS pin is already used");
@@ -69,7 +72,8 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
     local_address.sin_port = htons(SPI_PORT_BASE + id_counter);
     local_address.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(spi_socket, (struct sockaddr*)&local_address, sizeof(local_address)) < 0) {
+    if (bind(spi_socket, (struct sockaddr*)&local_address,
+             sizeof(local_address)) < 0) {
         ErrorHandler("Bind error: %s", strerror(errno));
         close(spi_socket);
         return 0;
@@ -81,7 +85,8 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
     server_address.sin_port = htons(2000 + id_counter);
     server_address.sin_addr.s_addr = INADDR_ANY;
 
-    if (connect(spi_socket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
+    if (connect(spi_socket, (struct sockaddr*)&server_address,
+                sizeof(server_address)) < 0) {
         ErrorHandler("Connect error: %s", strerror(errno));
         close(spi_socket);
         return 0;
@@ -129,15 +134,14 @@ bool SPI::transmit(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    if(send(spi_sockets[id], data.data(), data.size(), 0) < 0) {
+    if (send(spi_sockets[id], data.data(), data.size(), 0) < 0) {
         ErrorHandler("Send error: %s", strerror(errno));
         return false;
     }
-
 }
 
 bool SPI::transmit_DMA(uint8_t id, span<uint8_t> data) {
-    return SPI::transmit(id, data); // DMA is not used in simulator mode
+    return SPI::transmit(id, data);  // DMA is not used in simulator mode
 }
 
 bool SPI::receive(uint8_t id, span<uint8_t> data) {
@@ -146,7 +150,7 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    if(recv(spi_sockets[id], data.data(), data.size(), 0) < 0) {
+    if (recv(spi_sockets[id], data.data(), data.size(), 0) < 0) {
         ErrorHandler("Receive error: %s", strerror(errno));
         return false;
     }
@@ -159,13 +163,12 @@ bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
         return false;
     }
 
-    if(SPI::transmit(id, command_data) && SPI::receive(id, receive_data)) {
+    if (SPI::transmit(id, command_data) && SPI::receive(id, receive_data)) {
         HAL_SPI_TxRxCpltCallback(SPI::registered_spi[id]->hspi);
         return true;
     } else {
         return false;
     }
-
 }
 
 /*=============================================
@@ -440,7 +443,7 @@ void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
         }
     }
 
-    SPI::transmit_and_receive(id, span<uint8_t>(value_to_send, size_to_send), 
+    SPI::transmit_and_receive(id, span<uint8_t>(value_to_send, size_to_send),
                               span<uint8_t>(value_to_receive, size_to_send));
 }
 

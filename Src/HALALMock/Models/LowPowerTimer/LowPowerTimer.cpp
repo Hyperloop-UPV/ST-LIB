@@ -5,7 +5,7 @@
  *      Author: aleja
  */
 
-#include "LowPowerTimer/LowPowerTimer.hpp"
+#include "HALALMock/Models/LowPowerTimer/LowPowerTimer.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 void LowPowerTimer::init() {

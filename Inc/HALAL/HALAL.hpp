@@ -33,6 +33,11 @@
 #include "HALAL/Services/Watchdog/Watchdog.hpp"
 #include "HALAL/Models/Packets/Order.hpp"
 #include "HALAL/Services/Time/RTC.hpp"
+#include "HALAL/Models/Packets/Packet.hpp"
+#include "HALAL/Models/Packets/OrderProtocol.hpp"
+#include "HALAL/Models/BoardID/BoardID.hpp"
+#include "HALAL/Models/Concepts/Concepts.hpp"
+#include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 #else
 #include "HALALMock/Models/HALconfig/HALconfig.hpp"
 #include "HALALMock/Models/DMA/DMA.hpp"
@@ -66,6 +71,11 @@
 #include "HALALMock/Services/Watchdog/Watchdog.hpp"
 #include "HALALMock/Models/Packets/Order.hpp"
 #include "HALALMock/Services/Time/RTC.hpp"
+#include "HALALMock/Models/Packets/Packet.hpp"
+#include "HALALMock/Models/Packets/OrderProtocol.hpp"
+#include "HALALMock/Models/BoardID/BoardID.hpp"
+#include "HALALMock/Models/Concepts/Concepts.hpp"
+#include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
 #endif
 
 namespace HALAL {

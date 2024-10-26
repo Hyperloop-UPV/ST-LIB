@@ -5,7 +5,7 @@
  *      Author: Ricardo
  */
 
-#include "Communication/SNTP/SNTP.hpp"
+#include "HALALMock/Services/Communication/SNTP/SNTP.hpp"
 
 #define SUBSECONDS_PER_SECOND 32767
 #define TRANSFORMATION_FACTOR (SUBSECONDS_PER_SECOND/999999.0)

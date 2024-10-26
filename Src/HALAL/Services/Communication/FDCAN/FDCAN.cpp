@@ -5,7 +5,7 @@
  *      Author: Pablo
  */
 
-#include "Communication/FDCAN/FDCAN.hpp"
+#include "HALAL/Services/Communication/FDCAN/FDCAN.hpp"
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
 

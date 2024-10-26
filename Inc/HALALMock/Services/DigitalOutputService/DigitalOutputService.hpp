@@ -5,7 +5,9 @@
  *      Author: stefan
  */
 #pragma once
-#include "PinModel/Pin.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
+#include "ErrorHandler/ErrorHandler.hpp"
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
 class DigitalOutputService{
 public:
