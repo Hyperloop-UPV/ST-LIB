@@ -93,7 +93,7 @@ struct EmulatedPin {
 
 	union  {
 		struct {
-			// TODO FW-52
+			bool state;
 		} DigitalOutput;
 		struct  {
 			PinState curr_state;
