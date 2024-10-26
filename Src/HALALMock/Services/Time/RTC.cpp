@@ -1,4 +1,4 @@
-#include "HALAL/Services/Time/RTC.hpp"
+#include "HALALMock/Services/Time/RTC.hpp"
 
 RTC_HandleTypeDef hrtc;
 RTCData Global_RTC::global_RTC;

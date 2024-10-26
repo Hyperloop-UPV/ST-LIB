@@ -14,7 +14,7 @@
 #ifdef HAL_TIM_MODULE_ENABLED
 
 #include "C++Utilities/CppUtils.hpp"
-#include "HALAL/Services/Time/RTC.hpp"
+#include "HALALMock/Services/Time/RTC.hpp"
 // HIGH RESOLUTION TIMERS
 extern TIM_HandleTypeDef htim2;		// Used for the global timer (3,36nS step)
 extern TIM_HandleTypeDef htim5;		// Used for the high precision alarms (1uS)

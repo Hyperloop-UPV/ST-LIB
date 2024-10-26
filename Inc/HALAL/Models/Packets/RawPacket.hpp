@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <malloc.h>
+
 /**
  * @brief Raw data packet class. Contains a pointer to the data stored
  *            in bytes and the number of bytes.

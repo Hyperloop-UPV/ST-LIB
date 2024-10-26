@@ -4,7 +4,7 @@
  *  Created on: Oct 20, 2022
  *      Author: Pablo
  */
-#include "Flash/FlashTests/Flash_Test.hpp"
+#include "HALALMock/Services/Flash/FlashTests/Flash_Test.hpp"
 
 #define NUMERIC_PI 		3.1415
 #define NUMERIC_E  			2.7183

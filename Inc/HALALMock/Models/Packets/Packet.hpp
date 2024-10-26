@@ -1,7 +1,7 @@
 #pragma once
 
-#include "PacketValue.hpp"
-#include "DataStructures/StackTuple.hpp"
+#include "HALALMock/Models/Packets/PacketValue.hpp"
+#include "HALALMock/Models/DataStructures/StackTuple.hpp"
 
 class Packet{
 public:
