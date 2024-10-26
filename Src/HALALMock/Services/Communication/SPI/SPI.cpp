@@ -7,6 +7,8 @@
 
 #ifdef HAL_SPI_MODULE_ENABLED
 
+#define SPI_PORT_BASE 2000
+
 map<uint8_t, SPI::Instance*> SPI::registered_spi{};
 map<SPI_HandleTypeDef*, SPI::Instance*> SPI::registered_spi_by_handler{};
 
@@ -64,7 +66,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
     // Bind this socket to the local port 200x
     sockaddr_in local_address;
     local_address.sin_family = AF_INET;
-    local_address.sin_port = htons(2000 + id_counter);
+    local_address.sin_port = htons(SPI_PORT_BASE + id_counter);
     local_address.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(spi_socket, (struct sockaddr*)&local_address, sizeof(local_address)) < 0) {
