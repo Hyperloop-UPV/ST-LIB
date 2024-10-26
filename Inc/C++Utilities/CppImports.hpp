@@ -16,7 +16,11 @@
 #include <array>
 #include <bitset>
 #include <ctype.h>
-#include <malloc.h>
+#ifdef __APPLE__
+#include <stdlib.h>  // macOS
+#else
+#include <malloc.h>  // Linux/Unix
+#endif
 #include <math.h>
 #include <deque>
 #include <queue>
