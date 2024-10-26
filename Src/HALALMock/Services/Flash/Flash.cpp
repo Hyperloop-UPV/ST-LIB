@@ -5,7 +5,7 @@
  *      Author: Pablo
  */
 
-#include "Flash/Flash.hpp"
+#include "HALALMock/Services/Flash/Flash.hpp"
 
 void Flash::read(uint32_t source_addr, uint32_t* result, uint32_t number_of_words){
 	if (source_addr < FLASH_START_ADDRESS || source_addr > FLASH_END_ADDRESS) {

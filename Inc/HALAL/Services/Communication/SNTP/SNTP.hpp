@@ -8,8 +8,8 @@
 #pragma once
 
 #include "sntp.h"
-#include "IPV4/IPV4.hpp"
-#include "Time/Time.hpp"
+#include "HALAL/Models/IPV4/IPV4.hpp"
+#include "HALAL/Services/Time/Time.hpp"
 #include "C++Utilities/CppUtils.hpp"
 
 class SNTP {

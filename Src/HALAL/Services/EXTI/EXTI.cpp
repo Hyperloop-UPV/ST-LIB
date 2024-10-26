@@ -5,7 +5,7 @@
  *      Author: alejandro 
  */
 
-#include "EXTI/EXTI.hpp"
+#include "HALAL/Services/EXTI/EXTI.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 uint8_t ExternalInterrupt::id_counter = 0;

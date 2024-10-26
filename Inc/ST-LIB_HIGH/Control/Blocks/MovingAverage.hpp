@@ -2,7 +2,7 @@
 
 #include "stdio.h"
 #include "../ControlSystem.hpp"
-#include "Concepts/Concepts.hpp"
+#include "HALAL/HALAL.hpp"
 
 template<size_t N>
 class MovingAverage : public ControlBlock<double,double> {
