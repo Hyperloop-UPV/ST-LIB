@@ -1,10 +1,3 @@
-/*
- * SPI.hpp
- *
- *  Created on: 5 nov. 2022
- *      Author: Pablo
- */
-
 #include "HALALMock/Services/Communication/SPI/SPI.hpp"
 #include "HALALMock/Models/MPUManager/MPUManager.hpp"
 #include <HALALMock/Services/SharedMemory/SharedMemory.hpp>
