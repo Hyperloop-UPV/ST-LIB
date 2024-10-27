@@ -340,7 +340,8 @@ private:
      */
     static void init(SPI::Instance* spi);
 
-    static unordered_map<uint8_t, int> spi_sockets; /** Map that associates registered SPI peripheral with their corresponding TCP socket */
+    static unordered_map<uint8_t, std::pair<int, int>> spi_master_sockets; /** Map that associates registered SPI master with its server socket and slave's client socket */
+    static unordered_map<uint8_t, int> spi_slave_sockets; /** Map that associates registered SPI client with their corresponding TCP socket */
 };
 
 #endif

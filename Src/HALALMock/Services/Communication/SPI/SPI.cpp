@@ -46,22 +46,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
     MOSI_pin.type = PinType::SPI;
     MISO_pin.type = PinType::SPI;
 
-    if (spi_instance->mode == SPI_MODE_MASTER) {
-        EmulatedPin& SS_pin = SharedMemory::get_pin(*spi_instance->SS);
-
-        if (SS_pin.type != PinType::NOT_USED) {
-            ErrorHandler("The SPI SS pin is already used");
-            return 0;
-        }
-    }
-
     uint8_t id = SPI::id_counter++;
-    if (spi_instance->use_DMA) {
-        DMA::inscribe_stream(spi_instance->hdma_rx);
-        DMA::inscribe_stream(spi_instance->hdma_tx);
-    }
-    SPI::registered_spi[id] = spi_instance;
-    SPI::registered_spi_by_handler[spi_instance->hspi] = spi_instance;
 
     // Create socket for this SPI peripheral
     int spi_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -79,20 +64,50 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
         return 0;
     }
 
-    // Connect this peripheral with slave simulator
-    sockaddr_in server_address;
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(2000 + id_counter);
-    server_address.sin_addr.s_addr = INADDR_ANY;
+    if (spi_instance->mode == SPI_MODE_MASTER) {
+        EmulatedPin& SS_pin = SharedMemory::get_pin(*spi_instance->SS);
 
-    if (connect(spi_socket, (struct sockaddr*)&server_address,
-                sizeof(server_address)) < 0) {
-        ErrorHandler("Connect error: %s", strerror(errno));
-        close(spi_socket);
-        return 0;
+        if (SS_pin.type != PinType::NOT_USED) {
+            ErrorHandler("The SPI SS pin is already used");
+            close(spi_socket);
+            return 0;
+        }
+
+        SS_pin.type = PinType::SPI;
+        SS_pin.PinData.SPI.is_on = false; // When this pin turns on, the simulator has to connect.
+
+        // This peripheral acts as a SPI master, so it acts as a TCP server
+
+        if (listen(spi_socket, 10) < 0) {
+            ErrorHandler("Listen error: %s", strerror(errno));
+            close(spi_socket);
+            return 0;
+        }
+
+        spi_master_sockets[id].first = spi_socket;
+
+    } else { // This peripheral acts as a SPI slave, so it acts as a TCP client
+        sockaddr_in server_address;
+        server_address.sin_family = AF_INET;
+        server_address.sin_port = htons(2000 + id_counter);
+        server_address.sin_addr.s_addr = INADDR_ANY;
+
+        if (connect(spi_socket, (struct sockaddr*)&server_address,
+                    sizeof(server_address)) < 0) {
+            ErrorHandler("Connect error: %s", strerror(errno));
+            close(spi_socket);
+            return 0;
+        }
+
+        spi_slave_sockets[id] = spi_socket;
     }
 
-    spi_sockets[id] = spi_socket;
+    if (spi_instance->use_DMA) {
+        DMA::inscribe_stream(spi_instance->hdma_rx);
+        DMA::inscribe_stream(spi_instance->hdma_tx);
+    }
+    SPI::registered_spi[id] = spi_instance;
+    SPI::registered_spi_by_handler[spi_instance->hspi] = spi_instance;
 
     return id;
 }
@@ -114,8 +129,21 @@ void SPI::assign_RS(uint8_t id, Pin& RSPin) {
 }
 
 void SPI::start() {
-    for (auto iter : SPI::registered_spi) {
-        SPI::init(iter.second);
+    for (auto [_, spi] : SPI::registered_spi) {
+        SPI::init(spi);
+        EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
+        SS_pin.PinData.SPI.is_on = true; // This pin tells the simulator to connect
+    }
+
+    // For each registered SPI master, accept the connection from the slave
+    for (auto& [id, sockets] : SPI::spi_master_sockets) {
+        auto& [master_socket, slave_socket] = sockets;
+        if (slave_socket = accept(master_socket, nullptr, nullptr) < 0) {
+            ErrorHandler("Accept error: %s", strerror(errno));
+            close(master_socket);
+            close(slave_socket);
+            return;
+        }
     }
 }
 
@@ -134,7 +162,7 @@ bool SPI::transmit(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    if (send(spi_sockets[id], data.data(), data.size(), 0) < 0) {
+    if (send(spi_master_sockets[id].second, data.data(), data.size(), 0) < 0) {
         ErrorHandler("Send error: %s", strerror(errno));
         return false;
     }
@@ -150,7 +178,7 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    if (recv(spi_sockets[id], data.data(), data.size(), 0) < 0) {
+    if (recv(spi_master_sockets[id].second, data.data(), data.size(), 0) < 0) {
         ErrorHandler("Receive error: %s", strerror(errno));
         return false;
     }
