@@ -112,7 +112,7 @@ struct EmulatedPin {
             // TODO FW-54
         } ADC;
         struct {
-            // EMPTY because SPI mock doesn't use shared memory
+            bool is_on;
         } SPI;
         // TODO Add more types
     } PinData;

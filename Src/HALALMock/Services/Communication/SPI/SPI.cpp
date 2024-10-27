@@ -447,9 +447,15 @@ void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
                               span<uint8_t>(value_to_receive, size_to_send));
 }
 
-void SPI::turn_on_chip_select(SPI::Instance* spi) {}
+void SPI::turn_on_chip_select(SPI::Instance* spi) {
+    EmulatedPin& SS_pin = SharedMemory::get_pin(spi->SS);
+    SS_pin.PinData.SPI.is_on = true;
+}
 
-void SPI::turn_off_chip_select(SPI::Instance* spi) {}
+void SPI::turn_off_chip_select(SPI::Instance* spi) {
+    EmulatedPin& SS_pin = SharedMemory::get_pin(spi->SS);
+    SS_pin.PinData.SPI.is_on = false;
+}
 
 void SPI::mark_slave_ready(SPI::Instance* spi) {
     if (spi->using_ready_slave) {
