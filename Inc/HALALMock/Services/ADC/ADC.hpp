@@ -23,10 +23,10 @@ using std::string;
 #define LPTIM3_PERIOD 6875
 
 #define ADC_MAX_VOLTAGE 3.3
-#define MAX_16BIT ((1 << 16) - 1)
-#define MAX_14BIT ((1 << 14) - 1)
-#define MAX_12BIT ((1 << 12) - 1)
-#define MAX_10BIT ((1 << 10) - 1)
+#define MAX_16BIT 0b1111111111111111
+#define MAX_14BIT 0b0011111111111111
+#define MAX_12BIT 0b0000111111111111
+#define MAX_10BIT 0b0000001111111111
 
 class ADC {
    public:
