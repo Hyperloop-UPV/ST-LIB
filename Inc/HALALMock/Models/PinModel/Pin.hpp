@@ -91,25 +91,25 @@ struct EmulatedPin {
 
     union {
         struct {
-            // TODO FW-52
+          bool state;
         } DigitalOutput;
-        struct {
-            // TODO FW-53
+        struct  {
+          PinState curr_state;
         } DigitalInput;
-        struct {
-            float duty_cycle;
-            uint32_t frequency;
-            bool is_on;
-            std::chrono::nanoseconds dead_time_ns;
+        struct  {
+          float duty_cycle;
+          uint32_t frequency;
+          bool is_on;
+          std::chrono::nanoseconds dead_time_ns;
         } PWM;
         struct {
-            float duty_cycle;
-            uint32_t frequency;
-            bool is_on = false;
-            std::chrono::nanoseconds dead_time_ns;
-        } DualPWM;
+          float duty_cycle;
+          uint32_t frequency;
+          bool is_on = false;
+          std::chrono::nanoseconds dead_time_ns;
+        }DualPWM;
         struct {
-            // TODO FW-54
+          // TODO FW-54
         } ADC;
         struct {
             bool is_on;
