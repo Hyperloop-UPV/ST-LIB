@@ -436,9 +436,9 @@ void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
                                      uint16_t size_to_send) {
     // Search for the id of the SPI instance
     uint8_t id;
-    for (auto iter : registered_spi) {
-        if (iter.second == spi) {
-            id = iter.first;
+    for (auto [registered_id, registered_instance] : registered_spi) {
+        if (registered_instance == spi) {
+            id = registered_id;
             break;
         }
     }
