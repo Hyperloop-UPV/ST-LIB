@@ -5,7 +5,7 @@
  *      Author: Stefan Costea
  */
 
-#include "Inc/HALALMock/Services/Time/Time.hpp"
+#include "HALALMock/Services/Time/Time.hpp"
 #include <iostream>
 
 std::mutex Time::mutex;
