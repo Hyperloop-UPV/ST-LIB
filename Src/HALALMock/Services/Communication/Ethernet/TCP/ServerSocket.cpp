@@ -7,7 +7,6 @@
 
 #include "HALALMock/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 #include "lwip/priv/tcp_priv.h"
-#include "ErrorHandler/ErrorHandler.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
 uint8_t ServerSocket::priority = 1;

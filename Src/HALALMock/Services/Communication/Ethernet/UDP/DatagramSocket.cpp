@@ -1,12 +1,6 @@
-/*
- * DatagramSocket.cpp
- *
- *  Created on: 2 nov. 2022
- *      Author: stefa
- */
+
 
 #include "HALALMock/Services/Communication/Ethernet/UDP/DatagramSocket.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
 
 #ifdef HAL_ETH_MODULE_ENABLED
 

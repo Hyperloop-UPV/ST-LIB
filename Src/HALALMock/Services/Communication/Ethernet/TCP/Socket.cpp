@@ -1,11 +1,5 @@
-/*
- * Socket.cpp
- *
- *  Created on: Nov 23, 2022
- *      Author: stefa
- */
+
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
 unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
