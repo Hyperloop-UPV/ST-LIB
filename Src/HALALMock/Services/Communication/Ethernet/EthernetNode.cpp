@@ -1,9 +1,3 @@
-/*
- * EthernetNode.cpp
- *
- *  Created on: Nov 23, 2022
- *      Author: stefa
- */
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
