@@ -7,11 +7,12 @@
 
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALALMock/Models/MPUManager/MPUManager.hpp"
-
+#include "HALALMock/Models/PinModel/Pin.hpp"
+#include <iostream>
 #ifdef HAL_ETH_MODULE_ENABLED
-
-extern uint32_t EthernetLinkTimer;
-extern struct netif gnetif;
+//We won't need EthernetLinkerTimer and gnetif however the other extenrn should be in a file to work
+//extern uint32_t EthernetLinkTimer;
+//extern struct netif gnetif;
 extern ip4_addr_t ipaddr, netmask, gw;
 extern uint8_t IP_ADDRESS[4], NETMASK_ADDRESS[4], GATEWAY_ADDRESS[4];
 
@@ -41,14 +42,13 @@ void Ethernet::start(IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway){
 		GATEWAY_ADDRESS[1] = (gw.addr >> 8) & 0xFF;
 		GATEWAY_ADDRESS[2] = (gw.addr >> 16) & 0xFF;
 		GATEWAY_ADDRESS[3] = (gw.addr >> 24) & 0xFF;
-		MX_LWIP_Init();
 		is_running = true;
 	}else{
-		ErrorHandler("Unable to start Ethernet!");
+		std::cout<<"Unable to start Ethernet!"<<std::endl;
 	}
 
 	if (not is_ready) {
-		ErrorHandler("Ethernet is not ready");
+		std::cout<<"Ethernet is not ready"<<std::endl;
 		return;
 	}
 
@@ -56,42 +56,27 @@ void Ethernet::start(IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway){
 
 void Ethernet::inscribe(){
 	if(!is_ready){
-		Pin::inscribe(PA1, ALTERNATIVE);
-		Pin::inscribe(PA2, ALTERNATIVE);
-		Pin::inscribe(PA7, ALTERNATIVE);
-		Pin::inscribe(PB13, ALTERNATIVE);
-		Pin::inscribe(PC1, ALTERNATIVE);
-		Pin::inscribe(PC4, ALTERNATIVE);
-		Pin::inscribe(PC5, ALTERNATIVE);
-		Pin::inscribe(PG11, ALTERNATIVE);
-		Pin::inscribe(PG0, ALTERNATIVE);
-		Pin::inscribe(PG13, ALTERNATIVE);
-		is_ready = true;
+		uint8_t number_pin_ethernet = 10;
+		Pin pin_list_ethernet[number_pin_ethernet] = {PA1,PA2,PA7,PB13,PC1,PC4,PC5,PG11,PG0,PG13};
+		for(size_t i = 0; i < number_pin_ethernet; i++){
+			EmulatedPin &pin_data = SharedMemory::get_pin(pin_list_ethernet[i]);
+			if(pin_data.type == PinType::NOT_USED){
+			pin_data.type = PinType::Ethernet;
+			}else{
+				std::cout<<"Error inscribing ethernet Pins, PA1,PA2,PA7,PB13,PC1,PC4,PC5,PG11,PG0,PG13 must be free"<<std::endl;
+				return;
+			}
+		}
 	}else{
-		ErrorHandler("Unable to inscribe Ethernet because is already ready!");
+		std::cout<<"Unable to inscribe Ethernet because is already ready!"<<std::endl;
 	}
-
-
 }
-
 void Ethernet::update(){
+	//I'm going to leave the case is not running so it warn the user to check if you have done inscribed
 	if(not is_running) {
-		ErrorHandler("Ethernet is not running, check if its been inscribed");
+		std::cout<<"Ethernet is not running, check if its been inscribed"<<std::endl;
 		return;
 	}
-
-	ethernetif_input(&gnetif);
-	sys_check_timeouts();
-
-	if (HAL_GetTick() - EthernetLinkTimer >= 100) {
-		EthernetLinkTimer = HAL_GetTick();
-		ethernet_link_check_state(&gnetif);
-		
-		if(gnetif.flags == 15){
-			netif_set_up(&gnetif);
-		}
-	}
-
 }
 
 #endif

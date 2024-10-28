@@ -84,7 +84,8 @@ enum class PinType {
 	DigitalInput,
 	PWM,
 	DualPWM,
-	ADC
+	ADC,
+	Ethernet,
 	// TODO: Add more types
 };
 
