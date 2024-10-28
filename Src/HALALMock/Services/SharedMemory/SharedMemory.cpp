@@ -11,7 +11,7 @@ void SharedMemory::start() {
 	const char* 
 	int shm_gpio_fd;
 	//create shared memory object
-	shm_gpio_fd = shm_open(gpio_memory_name, O_CREAT | O_RDWR,0666);
+	shm_gpio_fd = shm_open(gpio_memory_name, O_CREAT | O_RDWR,0660);
 	if(shm_gpio_fd == -1){
 		ErrorHandler("%s","Error to Open de Shared Memory");
 		return;
