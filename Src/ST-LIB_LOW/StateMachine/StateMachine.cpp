@@ -5,6 +5,10 @@
 #include "StateMachine/StateMachine.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
+#ifdef SIM_ON
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
+#endif
+
 void State::enter() {
 	for (function<void()>& action : on_enter_actions) {
 		action();
@@ -105,6 +109,13 @@ StateMachine::StateMachine(uint8_t initial_state) :
 	initial_state(initial_state), current_state(initial_state) {
 	add_state(initial_state);
 	enter_state(initial_state);
+
+	#ifdef SIM_ON
+		SharedMemory::start_emulated_state_machine();
+		uint8_t counter=SharedMemory::state_machine_sm[0]+1;
+		SharedMemory::update_state_machine_counter(counter);
+		SharedMemory::update_current_state(counter,initial_state);
+	#endif
 }
 
 /**
@@ -269,11 +280,20 @@ void StateMachine::force_change_state(uint8_t new_state) {
 
 	unregister_all_timed_actions(current_state);
 	exit_state(current_state);
-
+	#ifdef SIM_ON
+		old_state=current_state;
+	#endif
 	current_state = new_state;
 
 	enter_state(current_state);
 	register_all_timed_actions(current_state);
+
+	#ifdef SIM_ON
+		for(uint8_t i=1; i<=SharedMemory::state_machine_sm[0]; i++){
+			if(SharedMemory::state_machine_sm[i] == old_state)
+				SharedMemory::update_current_state(i,current_state);
+		}
+	#endif
 }
 
 void StateMachine::remove_cyclic_action(TimedAction* action) {

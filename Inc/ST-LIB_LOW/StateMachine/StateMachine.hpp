@@ -8,7 +8,9 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "StateMachine/StateOrder.hpp"
 
-
+#ifdef SIM_ON
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
+#endif
 
 #ifdef HAL_TIM_MODULE_ENABLED
 
