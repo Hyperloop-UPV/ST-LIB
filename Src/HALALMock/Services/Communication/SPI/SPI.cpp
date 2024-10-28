@@ -7,8 +7,6 @@
 #include "HALALMock/Models/MPUManager/MPUManager.hpp"
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
-#ifdef HAL_SPI_MODULE_ENABLED
-
 #define SPI_PORT_BASE 2000
 
 map<uint8_t, SPI::Instance*> SPI::registered_spi{};
@@ -521,5 +519,3 @@ void SPI::spi_check_bus_collision(SPI::Instance* spi) {
         SPI::spi_recover(spi, spi->hspi);
     }
 }
-
-#endif

@@ -7,8 +7,6 @@
 #include "HALALMock/Models/DMA/DMA.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
-#ifdef HAL_SPI_MODULE_ENABLED
-
 #define MASTER_SPI_CHECK_DELAY 100000 //how often the master should check if the slave is ready, in nanoseconds
 
 #define MASTER_MAXIMUM_QUEUE_LEN 10
@@ -343,5 +341,3 @@ private:
     static unordered_map<uint8_t, std::pair<int, int>> spi_master_sockets; /** Map that associates registered SPI master with its server socket and slave's client socket */
     static unordered_map<uint8_t, int> spi_slave_sockets; /** Map that associates registered SPI client with their corresponding TCP socket */
 };
-
-#endif
