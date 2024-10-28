@@ -10,8 +10,15 @@ class SharedMemory {
 
     // do not use before SharedMemory::start, uninitialized!!!
     static EmulatedPin *gpio_memory;
+	static void* emulated_state_machine;
     static EmulatedPin &get_pin(Pin pin);
     static void start();
+	static void start_emulated_state_machine();
+	constexpr static size_t emulated_state_machine_size=16;
+	constexpr char* emulated_state_machine_name="/Shared_Memory_Emulated_State_Machine";
+	static uint8_t* state_machine_sm;
+	static void update_state_machine_counter(uint8_t counter);
+	static void update_current_state(uint8_t index, uint8_t state);
 };
 unordered_map<Pin, size_t> pin_offsets = {
 	{PA0, 0}, {PA1, 1}, {PA2, 2}, {PA3, 3}, {PA4, 4},
