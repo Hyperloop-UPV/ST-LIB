@@ -9,7 +9,10 @@
 #include <string>
 
 #include "HALALMock/Models/PinModel/Pin.hpp"
+#include "HALALMock/Models/LowPowerTimer/LowPowerTimer.hpp"
+#include "HALALMock/Models/DMA/DMA.hpp"
 
+#if defined(HAL_ADC_MODULE_ENABLED) && defined(HAL_LPTIM_MODULE_ENABLED)
 
 using std::string;
 
@@ -151,3 +154,5 @@ private:
 
 	static void init(Peripheral& peripheral);
 };
+
+#endif
