@@ -23,21 +23,21 @@ void SharedMemory::start_emulated_state_machine(){
 	// create the shared memory object
 	shm_state_machine_fd=shm_open(emulated_state_machine_name.c_str(),O_CREAT | O_RDWR, 0666);
 	if(shm_state_machine_fd==-1){
-		ErrorHandler("%s","Error creating the shared memory object");
-		return;
+		std::cout<<"Error creating the shared memory object\n";
+		std::terminate();
 	}
 	// configure the size of the shared memory object
 	if(ftruncate(shm_state_machine_fd,emulated_state_machine_size)==-1){
-		ErrorHandler("%s","Error configuring the size of the shared memory object");
+		std::cout<<"Error configuring the size of the shared memory object\n";
 		close(shm_state_machine_fd);
-		return;
+		std::terminate();
 	}
 	// memory map the shared memory object
 	emulated_state_machine=mmap(NULL,emulated_state_machine_size,PROT_WRITE | PROT_READ,MAP_SHARED,shm_state_machine_fd,0);
 	if(emulated_state_machine==MAP_FAILED){
-		ErrorHandler("%s","Error mapping the shared memory object");
+		std::cout<<"Error mapping the shared memory object\n";
 		close(shm_state_machine_fd);
-		return;
+		std::terminate();
 	}
 
 	// cast of the void pointer that the shared memory object returns to a uint8_t pointer
