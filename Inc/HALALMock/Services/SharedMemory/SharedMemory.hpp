@@ -8,7 +8,7 @@ class SharedMemory {
    public:
 	constexpr static uint8_t total_pins= 114;
 	constexpr int gpio_memory_size = total_pins * sizeof(EmulatedPin);
-	constexpr char *gpio_memory_name = "/Shared_Memory_GPIO";
+	extern constexpr char *gpio_memory_name;
     // do not use before SharedMemory::start, uninitialized!!!
     static EmulatedPin *gpio_memory;
     static EmulatedPin &get_pin(Pin pin);
