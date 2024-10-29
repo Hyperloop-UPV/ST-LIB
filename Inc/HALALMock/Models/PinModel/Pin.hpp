@@ -6,90 +6,89 @@
  */
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
-
 #include "stm32h7xx_hal.h"
 
 #define PERIPHERAL_BASE 0x40000000UL
-#define DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 PERIPHERAL_BASE+0x18020000UL
+#define DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 PERIPHERAL_BASE + 0x18020000UL
 
-enum GPIOPin : uint16_t{
-	PIN_0 = 0x0001,
-	PIN_1 = 0x0002,
-	PIN_2 = 0x0004,
-	PIN_3 = 0x0008,
-	PIN_4 = 0x0010,
-	PIN_5 = 0x0020,
-	PIN_6 = 0x0040,
-	PIN_7 = 0x0080,
-	PIN_8 = 0x0100,
-	PIN_9 = 0x0200,
-	PIN_10 = 0x0400,
-	PIN_11 = 0x0800,
-	PIN_12 = 0x1000,
-	PIN_13 = 0x2000,
-	PIN_14 = 0x4000,
-	PIN_15 = 0x8000,
-	PIN_ALL = 0xFFFF
+enum GPIOPin : uint16_t {
+    PIN_0 = 0x0001,
+    PIN_1 = 0x0002,
+    PIN_2 = 0x0004,
+    PIN_3 = 0x0008,
+    PIN_4 = 0x0010,
+    PIN_5 = 0x0020,
+    PIN_6 = 0x0040,
+    PIN_7 = 0x0080,
+    PIN_8 = 0x0100,
+    PIN_9 = 0x0200,
+    PIN_10 = 0x0400,
+    PIN_11 = 0x0800,
+    PIN_12 = 0x1000,
+    PIN_13 = 0x2000,
+    PIN_14 = 0x4000,
+    PIN_15 = 0x8000,
+    PIN_ALL = 0xFFFF
 };
 
 enum GPIOPort : uint32_t {
-	PORT_A = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0000UL,
-	PORT_B = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0400UL,
-	PORT_C = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0800UL,
-	PORT_D = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0C00UL,
-	PORT_E = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x1000UL,
-	PORT_F = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x1400UL,
-	PORT_G = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x1800UL,
-	PORT_H = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x1C00UL,
+    PORT_A = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0000UL,
+    PORT_B = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0400UL,
+    PORT_C = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0800UL,
+    PORT_D = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0C00UL,
+    PORT_E = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x1000UL,
+    PORT_F = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x1400UL,
+    PORT_G = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x1800UL,
+    PORT_H = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x1C00UL,
 };
 
-enum AlternativeFunction: uint8_t {
-	AF0 = 0x00,
-	AF1 = 0x01,
-	AF2 = 0x02,
-	AF3 = 0x03,
-	AF4 = 0x04,
-	AF5 = 0x05,
-	AF6 = 0x06,
-	AF7 = 0x07,
-	AF8 = 0x08,
-	AF9 = 0x09,
-	AF10 = 0x0A,
-	AF11 = 0x0B,
-	AF12 = 0x0C,
-	AF13 = 0x0D,
-	AF14 = 0x0E,
-	AF15 = 0x0F,
+enum AlternativeFunction : uint8_t {
+    AF0 = 0x00,
+    AF1 = 0x01,
+    AF2 = 0x02,
+    AF3 = 0x03,
+    AF4 = 0x04,
+    AF5 = 0x05,
+    AF6 = 0x06,
+    AF7 = 0x07,
+    AF8 = 0x08,
+    AF9 = 0x09,
+    AF10 = 0x0A,
+    AF11 = 0x0B,
+    AF12 = 0x0C,
+    AF13 = 0x0D,
+    AF14 = 0x0E,
+    AF15 = 0x0F,
 };
 
-enum OperationMode{
-	NOT_USED,
-	INPUT,
-	OUTPUT,
-	ANALOG,
-	EXTERNAL_INTERRUPT_RISING,
-	EXTERNAL_INTERRUPT_FALLING,
-	TIMER_ALTERNATE_FUNCTION,
-	ALTERNATIVE,
+enum OperationMode {
+    NOT_USED,
+    INPUT,
+    OUTPUT,
+    ANALOG,
+    EXTERNAL_INTERRUPT_RISING,
+    EXTERNAL_INTERRUPT_FALLING,
+    TIMER_ALTERNATE_FUNCTION,
+    ALTERNATIVE,
 };
 
-enum PinState{
-	OFF,
-	ON
-};
+enum PinState { OFF, ON };
 
 enum class PinType {
-	NOT_USED,
-	DigitalOutput,
-	DigitalInput,
-	PWM,
-	DualPWM,
-	ADC
-	// TODO: Add more types
+    NOT_USED,
+    DigitalOutput,
+    DigitalInput,
+    PWM,
+    DualPWM,
+    ADC,
+    EXTIPin,  // Usando temporalmente este nombre por que hay colisión entre
+              // nombres
+    // TODO: Add more types
 };
 
 struct EmulatedPin {
-	PinType type = PinType::NOT_USED; //Always check type before using the union
+    PinType type =
+        PinType::NOT_USED;  // Always check type before using the union
 
 	union  {
 		struct {
@@ -113,49 +112,56 @@ struct EmulatedPin {
 		struct {
 			// TODO FW-54
 		} ADC;
+    struct {
+        uint32_t priority = 0;
+        bool is_on;
+        bool trigger_signal;
+        TRIGGER trigger_mode;
+    } EXTIPin;
 		// TODO Add more types
 	} PinData;
 };
 
 class Pin {
-public:
-	GPIO_TypeDef * port;
-	GPIOPin gpio_pin;
-	AlternativeFunction alternative_function;
-	OperationMode mode = OperationMode::NOT_USED;
-	static const vector<reference_wrapper<Pin>> pinVector;
-	static const map<GPIO_TypeDef*,const string> port_to_string;
-	static const map<GPIOPin,const string> gpio_pin_to_string;
-	Pin();
-	Pin(GPIOPort port, GPIOPin pin);
-	Pin(GPIOPort port, GPIOPin pin, AlternativeFunction alternative_function);
-	const string to_string() const;
-	static void inscribe(Pin& pin, OperationMode mode);
-	static void start();
+   public:
+    GPIO_TypeDef* port;
+    GPIOPin gpio_pin;
+    AlternativeFunction alternative_function;
+    OperationMode mode = OperationMode::NOT_USED;
+    static const vector<reference_wrapper<Pin>> pinVector;
+    static const map<GPIO_TypeDef*, const string> port_to_string;
+    static const map<GPIOPin, const string> gpio_pin_to_string;
+    Pin();
+    Pin(GPIOPort port, GPIOPin pin);
+    Pin(GPIOPort port, GPIOPin pin, AlternativeFunction alternative_function);
+    const string to_string() const;
+    static void inscribe(Pin& pin, OperationMode mode);
+    static void start();
 
-	bool operator== (const Pin &other) const {
-		return (gpio_pin == other.gpio_pin && port == other.port);
-	}
+    bool operator==(const Pin& other) const {
+        return (gpio_pin == other.gpio_pin && port == other.port);
+    }
 
-	bool operator< (const Pin &other) const {
-		if (port == other.port)
-			return gpio_pin < other.gpio_pin;
-		return port < other.port;
-	}
+    bool operator<(const Pin& other) const {
+        if (port == other.port) return gpio_pin < other.gpio_pin;
+        return port < other.port;
+    }
 };
 
 namespace std {
-	template <>
-	struct hash<Pin> {
-		std::size_t operator()(const Pin& k) const {
-		    using std::size_t;
-		    using std::hash;
-		    using std::string;
+template <>
+struct hash<Pin> {
+    std::size_t operator()(const Pin& k) const {
+        using std::hash;
+        using std::size_t;
+        using std::string;
 
-		    return ((hash<uint16_t>()(k.gpio_pin) ^ (hash<uint32_t>()((uint32_t)(k.port)) << 1)) >> 1);
-		}
-	  };
-}
+        return ((hash<uint16_t>()(k.gpio_pin) ^
+                 (hash<uint32_t>()((uint32_t)(k.port)) << 1)) >>
+                1);
+    }
+};
+}  // namespace std
 
 extern Pin PA0;
 extern Pin PA1;
