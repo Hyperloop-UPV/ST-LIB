@@ -173,7 +173,7 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
         ErrorHandler("Receive error: %s", strerror(errno));
     }
     });
-    receiverThread.detach();
+    receiver_thread.detach();
 
     return true;
 }
