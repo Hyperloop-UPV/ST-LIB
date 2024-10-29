@@ -5,7 +5,7 @@
  *      Author: aleja
  */
 
-#include "PWM/PhasedPWM/PhasedPWM.hpp"
+#include "HALAL/Services/PWM/PhasedPWM/PhasedPWM.hpp"
 
 /**
  * The function initializes a PhasedPWM object with a given pin and sets its duty cycle and phase to 0.

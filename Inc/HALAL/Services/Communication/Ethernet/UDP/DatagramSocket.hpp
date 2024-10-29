@@ -1,7 +1,7 @@
 #pragma once
-#include "Communication/Ethernet/EthernetNode.hpp"
-#include "Communication/Ethernet/Ethernet.hpp"
-#include "Packets/Packet.hpp"
+#include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
+#include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
+#include "HALAL/Models/Packets/Packet.hpp"
 
 #ifdef HAL_ETH_MODULE_ENABLED
 #define PBUF_POOL_MEMORY_DESC_POSITION 8

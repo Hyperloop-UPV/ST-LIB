@@ -9,7 +9,7 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "stm32h7xx_hal.h"
-#include "MPUManager/MPUManager.hpp"
+#include "HALALMock/Models/MPUManager/MPUManager.hpp"
 
 
 class DMA {

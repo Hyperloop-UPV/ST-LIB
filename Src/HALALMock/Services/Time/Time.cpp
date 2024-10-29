@@ -5,7 +5,7 @@
  *      Author: Stefan Costea
  */
 
-#include "HALALMock/Services/Time/Time.hpp"
+
 #include <iostream>
 
 std::mutex Time::mutex;
@@ -14,6 +14,7 @@ std::thread Time::worker_thread;
 std::atomic<bool> Time::running{false};
 std::map<uint8_t, Time::Alarm> Time::alarms;
 uint8_t Time::next_alarm_id = 0;
+
 
 Time::RealTimePoint Time::simulation_start_time;
 Time::SimDuration Time::simulation_time{0};

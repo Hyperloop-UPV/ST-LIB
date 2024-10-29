@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "PWM/PWM/PWM.hpp"
+#include "HALALMock/Services/PWM/PWM/PWM.hpp"
 
 #define STLIB_TIMER_CCMR_PWM_MODE_1 0x0
 #define STLIB_TIMER_CCMR_PWM_MODE_2 (16+4096)

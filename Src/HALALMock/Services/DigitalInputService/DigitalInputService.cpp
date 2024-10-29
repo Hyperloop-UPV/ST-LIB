@@ -5,7 +5,7 @@
  *      Author: stefan
  */
 
-#include "DigitalInputService/DigitalInputService.hpp"
+#include "HALALMock/Services/DigitalInputService/DigitalInputService.hpp"
 
 uint8_t DigitalInput::id_counter = 0;
 map<uint8_t,Pin> DigitalInput::service_ids = {};
@@ -23,5 +23,6 @@ PinState DigitalInput::read_pin_state(uint8_t id){
 	}
 
 	Pin pin = DigitalInput::service_ids[id];
-	return (PinState)HAL_GPIO_ReadPin(pin.port, pin.gpio_pin);
+	EmulatedPin& pin_data = SharedMemory::get_pin(pin);
+	return (PinState)pin_data.curr_state;
 }

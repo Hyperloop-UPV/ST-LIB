@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "PWM/PhasedPWM/PhasedPWM.hpp"
-#include "PWM/DualPWM/DualPWM.hpp"
+#include "HALAL/Services/PWM/PhasedPWM/PhasedPWM.hpp"
+#include "HALAL/Services/PWM/DualPWM/DualPWM.hpp"
 
 class DualPhasedPWM : public DualPWM{
 private:
