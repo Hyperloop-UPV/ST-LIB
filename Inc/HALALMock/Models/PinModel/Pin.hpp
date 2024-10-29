@@ -6,7 +6,6 @@
  */
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
-#include "stm32h7xx_hal.h"
 
 #define PERIPHERAL_BASE 0x40000000UL
 #define DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 PERIPHERAL_BASE + 0x18020000UL
@@ -73,7 +72,11 @@ enum OperationMode {
 };
 
 enum PinState { OFF, ON };
-
+enum TRIGGER{
+    RISING_EDGE = 1,
+    FAILING_EDGE = 0,
+    BOTH_EDGES = 2
+};
 enum class PinType {
     NOT_USED,
     DigitalOutput,
@@ -119,7 +122,7 @@ struct EmulatedPin {
         TRIGGER trigger_mode;
     } EXTIPin;
     struct {
-        uin32_t count_value;
+        uint32_t count_value;
         bool direction;
         bool is_on;
     } ENCODER;
@@ -129,12 +132,12 @@ struct EmulatedPin {
 
 class Pin {
    public:
-    GPIO_TypeDef* port;
+    GPIOPort* port;
     GPIOPin gpio_pin;
     AlternativeFunction alternative_function;
     OperationMode mode = OperationMode::NOT_USED;
     static const vector<reference_wrapper<Pin>> pinVector;
-    static const map<GPIO_TypeDef*, const string> port_to_string;
+    static const map<GPIOPort*, const string> port_to_string;
     static const map<GPIOPin, const string> gpio_pin_to_string;
     Pin();
     Pin(GPIOPort port, GPIOPin pin);
