@@ -3,11 +3,11 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 #include "HALALMock/Models/MPUManager/MPUManager.hpp"
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
-
-#define SPI_PORT_BASE 2000
+#include <thread>
 
 map<uint8_t, SPI::Instance*> SPI::registered_spi{};
 map<SPI_HandleTypeDef*, SPI::Instance*> SPI::registered_spi_by_handler{};
@@ -47,20 +47,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
     uint8_t id = SPI::id_counter++;
 
     // Create socket for this SPI peripheral
-    int spi_socket = socket(AF_INET, SOCK_STREAM, 0);
-
-    // Bind this socket to the local port 200x
-    sockaddr_in local_address;
-    local_address.sin_family = AF_INET;
-    local_address.sin_port = htons(SPI_PORT_BASE + id_counter);
-    local_address.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(spi_socket, (struct sockaddr*)&local_address,
-             sizeof(local_address)) < 0) {
-        ErrorHandler("Bind error: %s", strerror(errno));
-        close(spi_socket);
-        return 0;
-    }
+    int spi_socket = socket(AF_INET, SOCK_DGRAM, 0);
 
     if (spi_instance->mode == SPI_MODE_MASTER) {
         EmulatedPin& SS_pin = SharedMemory::get_pin(*spi_instance->SS);
@@ -74,30 +61,33 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
         SS_pin.type = PinType::SPI;
         SS_pin.PinData.SPI.is_on = false; // When this pin turns on, the simulator has to connect.
 
-        // This peripheral acts as a SPI master, so it acts as a TCP server
+        // This peripheral acts as a SPI master, so it acts as a UDP server
 
-        if (listen(spi_socket, 10) < 0) {
-            ErrorHandler("Listen error: %s", strerror(errno));
+        sockaddr_in local_address;
+        local_address.sin_family = AF_INET; // Set IPv4
+        local_address.sin_port = htons(peripheral_ports.at(spi)); // Set port
+        int result = inet_pton(AF_INET, ip.c_str(), &local_address.sin_addr); // Set IP
+        if (result <= 0) {
+            if (result == 0) {
+                ErrorHandler("Invalid address");
+            } else {
+                ErrorHandler("Error setting IP: %s", strerror(errno));
+            }
+            close(spi_socket);
+            return 0;
+        }
+
+        // Bind this socket to the local port of the SPI peripheral
+        if (bind(spi_socket, (struct sockaddr*)&local_address,
+                sizeof(local_address)) < 0) {
+            ErrorHandler("Bind error: %s", strerror(errno));
             close(spi_socket);
             return 0;
         }
 
         spi_master_sockets[id].first = spi_socket;
+        spi_master_sockets[id].second = peripheral_ports.at(spi);
 
-    } else { // This peripheral acts as a SPI slave, so it acts as a TCP client
-        sockaddr_in server_address;
-        server_address.sin_family = AF_INET;
-        server_address.sin_port = htons(2000 + id_counter);
-        server_address.sin_addr.s_addr = INADDR_ANY;
-
-        if (connect(spi_socket, (struct sockaddr*)&server_address,
-                    sizeof(server_address)) < 0) {
-            ErrorHandler("Connect error: %s", strerror(errno));
-            close(spi_socket);
-            return 0;
-        }
-
-        spi_slave_sockets[id] = spi_socket;
     }
 
     if (spi_instance->use_DMA) {
@@ -132,17 +122,6 @@ void SPI::start() {
         EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
         SS_pin.PinData.SPI.is_on = true; // This pin tells the simulator to connect
     }
-
-    // For each registered SPI master, accept the connection from the slave
-    for (auto& [id, sockets] : SPI::spi_master_sockets) {
-        auto& [master_socket, slave_socket] = sockets;
-        if (slave_socket = accept(master_socket, nullptr, nullptr) < 0) {
-            ErrorHandler("Accept error: %s", strerror(errno));
-            close(master_socket);
-            close(slave_socket);
-            return;
-        }
-    }
 }
 
 /*=========================================
@@ -160,7 +139,20 @@ bool SPI::transmit(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    if (send(spi_master_sockets[id].second, data.data(), data.size(), 0) < 0) {
+    sockaddr_in broadcast_address;
+    broadcast_address.sin_family = AF_INET; // Set IPv4
+    broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
+    int result = inet_pton(AF_INET, "192.168.0.255", &broadcast_address.sin_addr); // Set broadcast IP, supposing that whe have a mask = 255.255.255.0
+    if (result <= 0) {
+        if (result == 0) {
+            ErrorHandler("Invalid broadcast address");
+        } else {
+            ErrorHandler("Error setting IP: %s", strerror(errno));
+        }
+        return false;
+    }
+
+    if (sendto(spi_master_sockets[id].first, data.data(), data.size(), 0, (struct sockaddr*)&broadcast_address, sizeof(broadcast_address)) < 0) {
         ErrorHandler("Send error: %s", strerror(errno));
         return false;
     }
@@ -176,10 +168,14 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    if (recv(spi_master_sockets[id].second, data.data(), data.size(), 0) < 0) {
+    std::thread receiver_thread([id, data]() {
+        if (recv(spi_master_sockets[id].second, data.data(), data.size(), MSG_WAITALL) < 0) {
         ErrorHandler("Receive error: %s", strerror(errno));
-        return false;
     }
+    });
+    receiverThread.detach();
+
+    return true;
 }
 
 bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
@@ -189,12 +185,25 @@ bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
         return false;
     }
 
-    if (SPI::transmit(id, command_data) && SPI::receive(id, receive_data)) {
+    std::thread transmit_receive_thread([id, command_data, receive_data]() {
+        sockaddr_in broadcast_address;
+        broadcast_address.sin_family = AF_INET; // Set IPv4
+        broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
+        inet_pton(AF_INET, "192.168.0.255", &broadcast_address.sin_addr); // Set broadcast IP, supposing that whe have a mask = 255.255.255.0
+        
+        if(sendto(spi_master_sockets[id].first, command_data.data(), command_data.size(), 0, (struct sockaddr*)&broadcast_address, sizeof(broadcast_address)) < 0) {
+            ErrorHandler("Send error: %s", strerror(errno));
+        }
+
+        if (recv(spi_master_sockets[id].second, receive_data.data(), receive_data.size(), MSG_WAITALL) < 0) {
+            ErrorHandler("Receive error: %s", strerror(errno));
+        }
+
         HAL_SPI_TxRxCpltCallback(SPI::registered_spi[id]->hspi);
-        return true;
-    } else {
-        return false;
-    }
+    });
+    transmit_receive_thread.detach();
+
+    return true;
 }
 
 /*=============================================

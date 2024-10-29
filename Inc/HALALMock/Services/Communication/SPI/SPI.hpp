@@ -338,6 +338,9 @@ private:
      */
     static void init(SPI::Instance* spi);
 
-    static unordered_map<uint8_t, std::pair<int, int>> spi_master_sockets; /** Map that associates registered SPI master with its server socket and slave's client socket */
-    static unordered_map<uint8_t, int> spi_slave_sockets; /** Map that associates registered SPI client with their corresponding TCP socket */
+    static unordered_map<uint8_t, std::pair<int, int>> spi_master_sockets; /** Map that associates registered SPI master with its server socket and its port */
+
 };
+
+extern std::array<int, 6> peripheral_ports; // Array of SPI peripheral ports, it should be defined on a .hpp file configuration
+extern std::string ip; // IP address of this VMCU, it should be defined on a .hpp file configuration
