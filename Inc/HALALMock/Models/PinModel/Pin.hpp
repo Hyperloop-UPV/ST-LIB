@@ -81,6 +81,7 @@ enum class PinType {
     PWM,
     DualPWM,
     ADC,
+    ENCODER,
     EXTIPin,  // Usando temporalmente este nombre por que hay colisión entre
               // nombres
     // TODO: Add more types
@@ -89,7 +90,6 @@ enum class PinType {
 struct EmulatedPin {
     PinType type =
         PinType::NOT_USED;  // Always check type before using the union
-
 	union  {
 		struct {
 			bool state;
@@ -118,6 +118,11 @@ struct EmulatedPin {
         bool trigger_signal;
         TRIGGER trigger_mode;
     } EXTIPin;
+    struct {
+        uin32_t count_value;
+        bool direction;
+        bool is_on;
+    } ENCODER;
 		// TODO Add more types
 	} PinData;
 };
