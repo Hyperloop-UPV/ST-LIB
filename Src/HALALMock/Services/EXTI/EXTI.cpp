@@ -26,25 +26,23 @@ uint8_t ExternalInterrupt::inscribe(Pin& pin, function<void()>&& action, TRIGGER
 		ErrorHandler(" The pin %s is already used or isn t available for EXTI usage", pin.to_string().c_str());
 		return 0;
 	}
+	EmulatedPin &pin_data = SharedMemory::get_pin(pin);
+	if(pin_data.type != PinType::EXTIPin) {
+		ErrorHandler("ID %d is not registered as a EXTIPin",id);
+		return;
+	}
 
-	if (trigger == RISING) {
-		Pin::inscribe(pin, EXTERNAL_INTERRUPT_RISING);
-	}
-	else if (trigger == FALLING) {
-		Pin::inscribe(pin, EXTERNAL_INTERRUPT_FALLING);
-	}
+	(pin_data.PinData.EXTIPin.trigger_mode) = trigger;
 
 	service_ids[id_counter] = pin;
 	instances[pin.gpio_pin].action = action;
 
 	return id_counter++;
 }
-
+//TODO: assigne priority on the emulated pin
 void ExternalInterrupt::start() {
 	for(auto id_instance : instances) {
 		Instance& instance = id_instance.second;
-		  HAL_NVIC_SetPriority(instance.interrupt_request_number, 0, 0);
-		  HAL_NVIC_EnableIRQ(instance.interrupt_request_number);
 	}
 }
 
@@ -55,7 +53,13 @@ void ExternalInterrupt::turn_on(uint8_t id) {
 	}
 
 	Instance& instance = instances[service_ids[id].gpio_pin];
-	instance.is_on = true;
+	Pin& pin = service_ids[id];
+	EmulatedPin &pin_data = SharedMemory::get_pin(pin);
+	if(pin_data.type != PinType::EXTIPin) {
+		ErrorHandler("ID %d is not registered as a EXTIPin",id);
+		return;
+	}
+	(pin_data.PinData.EXTIPin.is_on) = true;
 }
 
 bool ExternalInterrupt::get_pin_value(uint8_t id) {
@@ -65,5 +69,10 @@ bool ExternalInterrupt::get_pin_value(uint8_t id) {
 	}
 
 	Pin& pin = service_ids[id];
-	return HAL_GPIO_ReadPin(GPIO_PORT, pin.gpio_pin);
+	EmulatedPin &pin_data = SharedMemory::get_pin(pin);
+	if(pin_data.type != PinType::EXTIPin) {
+		ErrorHandler("ID %d is not registered as a EXTIPin",id);
+		return;
+	}
+	return (pin_data.PinData.EXTIPin.trigger_signal);
 }
