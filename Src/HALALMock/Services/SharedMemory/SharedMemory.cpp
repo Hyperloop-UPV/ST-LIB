@@ -11,12 +11,17 @@ void SharedMemory::start() {
     // TODO: create / open shared memory
 }
 
+std::string SharedMemory::generate_shared_memory_name(){
+	return "SharedMemory_emulated_state_machine_"+std::to_string(getpid());
+}
+
 void SharedMemory::start_emulated_state_machine(){
 	// shared memory file descriptor
 	int shm_state_machine_fd;
+	emulated_state_machine_name=generate_shared_memory_name();
 
 	// create the shared memory object
-	shm_state_machine_fd=shm_open(emulated_state_machine_name,0_CREAT | 0_RDWR, 0666);
+	shm_state_machine_fd=shm_open(emulated_state_machine_name.c_str(),O_CREAT | O_RDWR, 0666);
 	if(shm_state_machine_fd==-1){
 		ErrorHandler("%s","Error creating the shared memory object");
 		return;
