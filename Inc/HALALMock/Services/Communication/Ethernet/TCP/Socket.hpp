@@ -11,9 +11,12 @@
 #include "HALALMock/Models/Packets/Packet.hpp"
 #include "HALALMock/Models/Packets/Order.hpp"
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
+#include <cstring>
+#include <iostream>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #ifdef HAL_ETH_MODULE_ENABLED
-
-#define PBUF_POOL_MEMORY_DESC_POSITION 8
 
 class Socket : public OrderProtocol{
 public:
@@ -27,11 +30,12 @@ public:
 	uint32_t local_port;
 	IPV4 remote_ip;
 	uint32_t remote_port;
-	tcp_pcb* connection_control_block;
-	tcp_pcb* socket_control_block;
 	SocketState state;
-	queue<struct pbuf*> tx_packet_buffer;
-	queue<struct pbuf*> rx_packet_buffer;
+	//Change the data type of tx/rx packet_buffer
+	queue<std::vector<uint8_t>> tx_packet_buffer;
+	queue<std::vector<uint8_t>> rx_packet_buffer;
+	//socket_descriptor
+	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;
 	bool pending_connection_reset = false;
 	bool use_keep_alives{true};

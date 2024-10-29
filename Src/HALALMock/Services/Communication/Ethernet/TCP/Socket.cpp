@@ -7,14 +7,13 @@ unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
 
 Socket::Socket() = default;
 
-Socket::Socket(Socket&& other):remote_port(move(remote_port)), connection_control_block(move(other.connection_control_block)),
+Socket::Socket(Socket&& other):remote_port(move(remote_port)),
 	 state(other.state){
 	EthernetNode remote_node(other.remote_ip, other.remote_port);
 	connecting_sockets[remote_node] = this;
 }
 
 void Socket::operator=(Socket&& other){
-	connection_control_block = move(other.connection_control_block);
 	remote_port = move(other.remote_port);
 	state = other.state;
 	EthernetNode remote_node(other.remote_ip, other.remote_port);
@@ -33,23 +32,36 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 		local_ip(local_ip), local_port(local_port),remote_ip(remote_ip), remote_port(remote_port),use_keep_alives{use_keep_alive}
 		{
 	if(not Ethernet::is_running) {
-		ErrorHandler("Cannot declare TCP socket before Ethernet::start()");
+		std::cout<<"Cannot declare TCP socket before Ethernet::start()";
 		return;
 	}
 	state = INACTIVE;
 	tx_packet_buffer = {};
 	rx_packet_buffer = {};
 	EthernetNode remote_node(remote_ip, remote_port);
-
-	connection_control_block = tcp_new();
-	tcp_bind(connection_control_block, &local_ip.address, local_port);
-	tcp_nagle_disable(connection_control_block);
-	tcp_arg(connection_control_block, this);
-	tcp_poll(connection_control_block,connection_poll_callback,1);
-	tcp_err(connection_control_block, connection_error_callback);
-
+	//create socket
+	socket_fd = ::socket(AF_INET,SOCK_STREAM,0);
+	//inset the local address and port
+	struct sockadd_in socket_Address;
+	socket_Address.sin_family = AF_INET;
+	socket_Address.sin_addr.s_addr = inet_addr(local_ip);
+	socket_Address.sin_port = htons(local_port);
+	if(bind(socket_fd, (struct sockaddr*)&socket_Address, sizeof(socket_Address)) < 0){
+		std::cout<<"Bind error\n";
+	}
+	//disable naggle algorithm
+	int flag = 1;
+	if (setsockopt(socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
+		std::cout<<"It has been an error disabling Nagle's algorithm\n";
+	}
+	//tcp_poll(connection_control_block,connection_poll_callback,1);
 	connecting_sockets[remote_node] = this;
-	tcp_connect(connection_control_block, &remote_ip.address , remote_port, connect_callback);
+	//insert the remote address and port and connect
+	struct sockaddr_in remote_addr;
+	remote_addr.sin_family = AF_INET;
+	remote_addr.sin_addr.s_addr = inet_addr(remote_ip); // IP remota en formato adecuado
+	remote_addr.sin_port = htons(remote_port);
+	connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
 	OrderProtocol::sockets.push_back(this);
 }
 
@@ -62,23 +74,14 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 Socket::Socket(EthernetNode local_node, EthernetNode remote_node):Socket(local_node.ip, local_node.port, remote_node.ip, remote_node.port){}
 
 void Socket::close(){
-  tcp_arg(socket_control_block, nullptr);
-  tcp_sent(socket_control_block, nullptr);
-  tcp_recv(socket_control_block, nullptr);
-  tcp_err(socket_control_block, nullptr);
-  tcp_poll(socket_control_block, nullptr, 0);
-
 	while(!tx_packet_buffer.empty()){
-		pbuf_free(tx_packet_buffer.front());
 		tx_packet_buffer.pop();
 	}
 	while(!rx_packet_buffer.empty()){
-		pbuf_free(rx_packet_buffer.front());
 		rx_packet_buffer.pop();
 	}
-
-  tcp_close(socket_control_block);
-  state = INACTIVE;
+	close(socket_fd);
+    state = INACTIVE;
 }
 
 void Socket::reconnect(){

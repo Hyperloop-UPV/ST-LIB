@@ -6,9 +6,6 @@
  */
 
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
-#include "HALALMock/Models/MPUManager/MPUManager.hpp"
-#include "HALALMock/Models/PinModel/Pin.hpp"
-#include <iostream>
 #ifdef HAL_ETH_MODULE_ENABLED
 //We won't need EthernetLinkerTimer and gnetif however the other extenrn should be in a file to work
 //extern uint32_t EthernetLinkTimer;
