@@ -8,27 +8,10 @@
 #include "HALALMock/Services/ADC/ADC.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
-#if defined(HAL_ADC_MODULE_ENABLED) && defined(HAL_LPTIM_MODULE_ENABLED)
 
-extern ADC_HandleTypeDef hadc3;
 
 uint8_t ADC::id_counter = 0;
 unordered_map<uint8_t, ADC::Instance> ADC::active_instances = {};
-
-
-ADC::InitData::InitData(ADC_TypeDef* adc, uint32_t resolution, uint32_t external_trigger, vector<uint32_t>& channels, DMA::Stream dma_stream, string name) :
-		adc(adc), resolution(resolution), external_trigger(external_trigger), channels(channels), dma_stream(dma_stream), name(name) {}
-
-ADC::Peripheral::Peripheral(ADC_HandleTypeDef* handle, LowPowerTimer& timer, InitData& init_data) :
-	handle(handle), timer(timer), init_data(init_data) {
-}
-
-bool ADC::Peripheral::is_registered() {
-	return init_data.channels.size();
-}
-
-ADC::Instance::Instance(ADC::Peripheral* peripheral, uint32_t channel) :
-		peripheral(peripheral), channel(channel) {}
 
 uint8_t ADC::inscribe(Pin pin) {
 	if (not available_instances.contains(pin)) {
@@ -46,20 +29,11 @@ uint8_t ADC::inscribe(Pin pin) {
 	Pin::inscribe(pin, OperationMode::ANALOG);
 	active_instances[id_counter] = available_instances[pin];
 
-	InitData& init_data = active_instances[id_counter].peripheral->init_data;
-	DMA::inscribe_stream(init_data.dma_stream);
 	active_instances[id_counter].rank = init_data.channels.size();
-	init_data.channels.push_back(active_instances[id_counter].channel);
 	return id_counter++;
 }
 
 void ADC::start() {
-	for(Peripheral& peripheral : peripherals) {
-		if (peripheral.is_registered()) {
-			ADC::init(peripheral);
-		}
-	}
-
 	// Storing emulated pins with their corresponding instance
 	for (auto& [pin, instance] : available_instances) {
 		EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
@@ -72,12 +46,7 @@ void ADC::turn_on(uint8_t id){
 		return;
 	}
 
-	Peripheral* peripheral = active_instances[id].peripheral;
-	if (peripheral->is_on) {
-		return;
-	}
-
-	peripheral->is_on = true;
+	active_instances[id]->is_on = true;
 }
 
 float ADC::get_value(uint8_t id) {
@@ -88,7 +57,7 @@ float ADC::get_value(uint8_t id) {
 		ErrorHandler("Pin %s is not configured to be used for ADC usage", emulated_pin);
 		return 0;
 	}
-	ADCResolution resolution = static_cast<ADCResolution>(instance.peripheral->init_data.resolution);
+	ADCResolution resolution = static_cast<ADCResolution>(instance.resolution);
 	uint16_t raw = emulated_pin.PinData.ADC.value;
 	switch (resolution) {
 		case ADCResolution::ADC_RES_16BITS:
@@ -134,10 +103,5 @@ uint16_t ADC::get_int_value(uint8_t id) {
 }
 
 uint16_t* ADC::get_value_pointer(uint8_t id) {
-	Instance& instance = active_instances[id];
-	return &available_emulated_instances[instance].PinData.ADC.value;
+	return &available_emulated_instances[active_instances[id]].PinData.ADC.value;
 }
-
-// Empty function because no need to initialize the ADC in the mock
-void ADC::init(Peripheral& peripheral) {}
-#endif

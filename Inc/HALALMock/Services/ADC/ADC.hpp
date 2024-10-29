@@ -8,12 +8,10 @@
 #pragma once
 #include <string>
 
-#include "HALALMock/Models/DMA/DMA.hpp"
-#include "HALALMock/Models/LowPowerTimer/LowPowerTimer.hpp"
+
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
-#if defined(HAL_ADC_MODULE_ENABLED) && defined(HAL_LPTIM_MODULE_ENABLED)
 
 using std::string;
 
@@ -40,44 +38,13 @@ class ADC {
         ADC_RES_10BITS = 0x0000000C
     };
 
-    struct InitData {
-       public:
-        ADC_TypeDef* adc;
-        uint32_t resolution;
-        uint32_t external_trigger;
-        vector<uint32_t> channels;
-        DMA::Stream dma_stream;
-        string name;
 
-        InitData() = default;
-        InitData(ADC_TypeDef* adc, uint32_t resolution,
-                 uint32_t external_trigger, vector<uint32_t>& channels,
-                 DMA::Stream dma_stream, string name);
-    };
-
-    class Peripheral {
-       public:
-        ADC_HandleTypeDef* handle;
-        uint16_t* dma_data_buffer;
-        LowPowerTimer timer;
-        InitData init_data;
-        bool is_on = false;
-
-        Peripheral() = default;
-        Peripheral(ADC_HandleTypeDef* handle, LowPowerTimer& timer,
-                   InitData& init_data);
-
-        bool is_registered();
-    };
-
-    class Instance {
-       public:
-        Peripheral* peripheral;
-        uint32_t channel;
-        uint32_t rank;
-
-        Instance() = default;
-        Instance(Peripheral* peripheral, uint32_t channel);
+    //modified the Instance to store the resolution, as this is Pin and even
+    //routing specific, should be defined in config file by user.
+    // the new map will be slightly different though, in order to remove all the dependencies
+    struct Instance {
+        ADCResolution resolution;
+        bool is_on{false};
     };
 
     /// @brief In this method we set the emulated pin as using as an ADC
@@ -105,7 +72,6 @@ class ADC {
 
     static uint16_t* get_value_pointer(uint8_t id);
 
-    static Peripheral peripherals[3];
 
    private:
     static uint32_t ranks[16];
@@ -120,8 +86,6 @@ class ADC {
     static unordered_map<uint8_t, Instance> active_instances;
 
     static uint8_t id_counter;
-
-    static void init(Peripheral& peripheral);
 };
 
 #endif
