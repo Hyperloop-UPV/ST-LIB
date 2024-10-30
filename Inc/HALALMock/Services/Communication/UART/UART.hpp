@@ -8,8 +8,6 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "HALAL/Models/PinModel/Pin.hpp"
-#include "HALAL/Models/Packets/RawPacket.hpp"
 
 #ifdef HAL_UART_MODULE_ENABLED
 
@@ -107,14 +105,14 @@ public:
      * @param uart UART peripheral to register.
      * @return uint8_t Id of the service.
      */
-    static uint8_t inscribe(UART::Peripheral& uart);
+    static uint8_t inscribe(UART::Peripheral& uart){return 0;};
 
     /**
      * @brief This method initializes all registered UARTs. The peripherals
      * 		  must be enrolled before calling this method.
      * 
      */
-    static void start();
+    static void start(){ return;}
 
     /**@brief	Transmits 1 byte by DMA and interrupts.
      *          To send various packets in a row you must check if the UART is busy
@@ -127,7 +125,7 @@ public:
      *            successfully. Returns false if the UART is busy or a problem
      *            has occurred.
      */
-    static bool transmit(uint8_t id, uint8_t data);
+    static bool transmit(uint8_t id, uint8_t data){return true;};
 
     /**@brief	Transmits size number of bytes by DMA and interrupts.
 	 *          To send various packets in a row you must check if the UART is busy
@@ -141,7 +139,7 @@ public:
 	 *            has occurred.
 	 */
 
-    static bool transmit(uint8_t id, span<uint8_t> data);
+    static bool transmit(uint8_t id, span<uint8_t> data){return true;};
 
     /**@brief	Transmits 1 byte by polling.
 	 *
@@ -151,7 +149,7 @@ public:
 	 *            successfully. Returns false if the UART is busy or a problem
 	 *            has occurred.
 	 */
-    static bool transmit_polling(uint8_t id, uint8_t data);
+    static bool transmit_polling(uint8_t id, uint8_t data){return true;};
 
     /**@brief	Transmits size bytes by polling.
 	 *
@@ -160,7 +158,7 @@ public:
 	 * @return bool Returns true if the packet has been send successfully.
 	 * 			    Returns false if the UART is busy or a problem has occurred.
 	 */
-    static bool transmit_polling(uint8_t id, span<uint8_t> data);
+    static bool transmit_polling(uint8_t id, span<uint8_t> data){return true;};
 
     /**						
      * @brief This method request the receive of size bytes
@@ -177,7 +175,7 @@ public:
      *            processed correctly. Return false if the UART is busy or a
      *            problem has occurred.
      */
-    static bool receive(uint8_t id, span<uint8_t> data);
+    static bool receive(uint8_t id, span<uint8_t> data){return true;};
 
     /**
 	* @brief This method receive size number of bytes by polling.
@@ -189,7 +187,7 @@ public:
 	* @return bool Return true if the data has been read successfully.
 	* 			   Return false if the UART is busy or a problem has occurred.
 	*/
-    static bool receive_polling(uint8_t id, span<uint8_t> data);
+    static bool receive_polling(uint8_t id, span<uint8_t> data){return true;};
 
     /**
      * @brief This method is used to check if the UART receive operation has finished and data is ready.
@@ -197,7 +195,7 @@ public:
      * @param id Id of the UART
      * @return bool Return true if the packet is ready to use and false if not.
      */
-    static bool has_next_packet(uint8_t id);
+    static bool has_next_packet(uint8_t id){return;};
 
     /**
      * @brief This method is used to check if the UART transmit operations busy.
@@ -205,7 +203,7 @@ public:
      * @param id Id of the UART
      * @return bool Return true if the UART transmit operation is busy and false if not.
      */
-    static bool is_busy(uint8_t id);
+    static bool is_busy(uint8_t id){return false;};
 
     /**
 	 * @brief This method is used to set up the printf. It's inscribe and configure the selected UART to work
@@ -214,7 +212,7 @@ public:
 	 * @param uart Uart peripheral to be configured.
 	 * @return bool True if everything went well. False if something has gone wrong.
 	 */
-    static bool set_up_printf(UART::Peripheral& uart);
+    static bool set_up_printf(UART::Peripheral& uart){return true;};
 
     /**
   	 * @brief This method is used to print a message through the uart configured for printf.
@@ -223,7 +221,7 @@ public:
   	 * @param ptr Pointer to the character string.
   	 * @return bool True if everything went well. False if something has gone wrong.
   	 */
-    static void print_by_uart(char* ptr, int len);
+    static void print_by_uart(char* ptr, int len){return;};
 
     private:
     /**
@@ -231,7 +229,7 @@ public:
      * 
      * @param uart Peripheral instance to be initialized.
      */
-    static void init(UART::Instance* uart);
+    static void init(UART::Instance* uart){return;};
 
 };
 
