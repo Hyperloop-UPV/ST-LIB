@@ -5,7 +5,7 @@
  *      Author: stefan
  */
 #pragma once
-#include "PinModel/Pin.hpp"
+#include "HALAL/Models/PinModel/Pin.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #ifdef HAL_GPIO_MODULE_ENABLED

@@ -5,7 +5,7 @@
  *      Author: Pablo
  */
 
-#include "Encoder/Encoder.hpp"
+#include "HALAL/Services/Encoder/Encoder.hpp"
 
 #ifdef HAL_TIM_MODULE_ENABLED
 

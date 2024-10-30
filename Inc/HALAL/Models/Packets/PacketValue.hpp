@@ -1,7 +1,7 @@
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"
-#include "Concepts/Concepts.hpp"
+#include "HALAL/Models/Concepts/Concepts.hpp"
 
 struct empty_type {};
 

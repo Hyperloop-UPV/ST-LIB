@@ -5,9 +5,9 @@
  *      Author: stefa
  */
 
-#include "Communication/Ethernet/Ethernet.hpp"
+#include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "MPUManager/MPUManager.hpp"
+#include "HALALMock/Models/MPUManager/MPUManager.hpp"
 
 #ifdef HAL_ETH_MODULE_ENABLED
 

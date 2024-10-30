@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IPV4/IPV4.hpp"
+#include "HALALMock/Models/IPV4/IPV4.hpp"
 
 #ifdef HAL_ETH_MODULE_ENABLED
 

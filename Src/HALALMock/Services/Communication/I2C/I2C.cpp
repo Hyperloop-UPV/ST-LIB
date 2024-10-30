@@ -4,7 +4,7 @@
  *  Created on: 12 dec. 2022
  *      Author: Pablo, Ricardo
  */
-#include "Communication/I2C/I2C.hpp"
+#include "HALALMock/Services/Communication/I2C/I2C.hpp"
 
 #ifdef HAL_I2C_MODULE_ENABLED
 
