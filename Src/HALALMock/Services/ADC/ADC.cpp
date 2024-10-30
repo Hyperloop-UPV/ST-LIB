@@ -33,9 +33,14 @@ uint8_t ADC::inscribe(Pin pin) {
 
 void ADC::start() {
 	// Storing emulated pins with their corresponding instance
+	uint8_t idx = 0;
 	for (auto& [pin, instance] : available_instances) {
+		for(auto& [id,inst] : active_instances){
+			if(inst == instance)
+				idx = id;
+		}
 		EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
-		active_emulated_instances[instance] = emulated_pin;
+		active_emulated_instances[idx] = emulated_pin;
 	}
 }
 
