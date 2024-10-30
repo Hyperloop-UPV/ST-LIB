@@ -18,6 +18,13 @@
 class Socket : public OrderProtocol{
 private:
 	void tcp_connection_sim();
+	std::thread receiving_thread;
+	std::atomic<bool> is_receiving;
+	std::mutex mtx; 
+	void start_receiving();
+	void stop_receiving();
+	void receive();
+
 public:
 	enum SocketState{
 		INACTIVE,
@@ -31,8 +38,8 @@ public:
 	uint32_t remote_port;
 	SocketState state;
 	//Change the data type of tx/rx packet_buffer
-	queue<uint8_t*> tx_packet_buffer;
-	queue<uint8_t*> rx_packet_buffer;
+	queue<vector<uint8_t>> tx_packet_buffer;
+	queue<vector<uint8_t>> rx_packet_buffer;
 	//socket_descriptor
 	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;

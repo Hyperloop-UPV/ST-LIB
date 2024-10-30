@@ -1,10 +1,13 @@
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
+#include <atomic> 
+#include <mutex> 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h> 
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <thread>
 #ifdef HAL_ETH_MODULE_ENABLED
 
 using std::stringstream;

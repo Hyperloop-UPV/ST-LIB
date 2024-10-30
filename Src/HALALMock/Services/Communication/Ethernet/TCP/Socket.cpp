@@ -185,17 +185,58 @@ void Socket::reset(){
 
 
 void Socket::send(){
-	
+	while (!tx_packet_buffer.empty()) {
+        vector<uint8_t> packet = tx_packet_buffer.front();
+        ssize_t sent_bytes = ::send(socket_fd, packet.data(), packet.size(), 0);
+        if (sent_bytes < 0) {
+            std::cerr << "Error sending packet\n";
+            return;
+        }
+        tx_packet_buffer.pop();
+    }
 }
 
+void Socket::start_receiving(){
+	is_receiving = true;
+    receiving_thread = std::thread(&Socket::receive, this);
+}
+void Socket::stop_receiving() {
+    if (is_receiving) {
+        is_receiving = false;
+        if (receiving_thread.joinable()) {
+            receiving_thread.join(); // wait until the thread finish
+        }
+    }
+}
+void Socket::receive() {
+    while (is_receiving) {
+        uint8_t buffer[1024]; // Buffer for the data
+        ssize_t received_bytes = ::recv(socket_fd, buffer, sizeof(buffer), 0);
+        if (received_bytes > 0) {
+            std::vector<uint8_t> packet(buffer, buffer + received_bytes); 
+            {
+                std::lock_guard<std::mutex> lock(mtx); 
+                rx_packet_buffer.push(packet);
+				process_data(); 
+            }
+        } else if (received_bytes < 0) {
+            std::cout << "Error receiving data\n";
+			socket->state = CLOSING;
+            stop_receiving(); 
+			close();
+        }
+    }
+}
 void Socket::process_data(){
+	
 	while(!rx_packet_buffer.empty()){
-		struct pbuf* packet = rx_packet_buffer.front();
-		rx_packet_buffer.pop();
-		uint8_t* new_data = (uint8_t*)(packet->payload);
-		tcp_recved(socket_control_block, packet->tot_len);
+		{
+			std::std::lock_guard<std::mutex> lock(mtx); 
+			vector<uint8_t> packet = rx_packet_buffer.front();
+			rx_packet_buffer.pop();
+		}
+		uint8_t* new_data = (uint8_t*)(packet.data());
 		Order::process_data(this, new_data);
-		pbuf_free(packet);
 	}
 }
 
@@ -203,17 +244,16 @@ bool Socket::add_order_to_queue(Order& order){
 	if(state == Socket::SocketState::CONNECTED){
 		return false;
 	}
-	struct memp* next_memory_pointer_in_packet_buffer_pool = (*(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION]->tab))->next;
-	if(next_memory_pointer_in_packet_buffer_pool == nullptr){
-		memp_free_pool(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION], next_memory_pointer_in_packet_buffer_pool);
-		return false;
-	}
-
-	uint8_t* order_buffer = order.build();
-
-	struct pbuf* packet = pbuf_alloc(PBUF_TRANSPORT, order.get_size(), PBUF_POOL);
-	pbuf_take(packet, order_buffer, order.get_size());
-	Socket::tx_packet_buffer.push(packet);
+    std::vector<uint8_t> order_buffer = order.build();
+    if (order_buffer.empty()) {
+        std::cout << "Error: building de order buffer\n";
+        return false; 
+    }
+    std::vector<uint8_t> packet(order_buffer); 
+    {
+        std::lock_guard<std::mutex> lock(mutex); 
+        tx_packet_buffer.push(packet); 
+    }
 	return true;
 }
 
@@ -223,92 +263,18 @@ bool Socket::is_connected(){
 
 err_t Socket::connect_callback(void* arg, struct tcp_pcb* client_control_block, err_t error){}
 
-err_t Socket::receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error){
-	Socket* socket = (Socket*)arg;
-	socket->socket_control_block = client_control_block;
-	if(packet_buffer == nullptr){ 		//FIN is received
-		socket->state = CLOSING;
-		return ERR_OK;
-	}
-	if(error != ERR_OK){
-		if(packet_buffer != nullptr){
-			pbuf_free(packet_buffer);
-		}
-		return error;
-	}else if(socket->state == CONNECTED){
-		socket->rx_packet_buffer.push(packet_buffer);
-		tcp_recved(client_control_block, packet_buffer->tot_len);
-		socket->process_data();
-		pbuf_free(packet_buffer);
-		return ERR_OK;
-	}else{
-		tcp_recved(client_control_block, packet_buffer->tot_len);
-		socket->tx_packet_buffer = {};
-		pbuf_free(packet_buffer);
-		return ERR_OK;
-	}
-}
+err_t Socket::receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error){}
 
-err_t Socket::poll_callback(void* arg, struct tcp_pcb* client_control_block){
-	Socket* socket = (Socket*)arg;
-	socket->socket_control_block = client_control_block;
-	if(socket != nullptr){
-		while(not socket->tx_packet_buffer.empty()){
-			socket->send();
-		}
-		if(socket->state == CLOSING){
-			socket->close();
-		}else if(socket->state == INACTIVE){
-			tcp_connect(socket->connection_control_block, &socket->remote_ip.address , socket->remote_port, connect_callback);
-		}
-		return ERR_OK;
-	}else{
-		tcp_abort(client_control_block);
-		return ERR_ABRT;
-	}
-}
+err_t Socket::poll_callback(void* arg, struct tcp_pcb* client_control_block){}
 
-err_t Socket::send_callback(void* arg, struct tcp_pcb* client_control_block, uint16_t length){
-	Socket* socket = (Socket*)arg;
-	socket->socket_control_block = client_control_block;
-	if(not socket->tx_packet_buffer.empty()){
-		socket->send();
-	}else if(socket->state == CLOSING){
-		socket->close();
-	}
-	return ERR_OK;
-}
 
-void Socket::error_callback(void *arg, err_t error){
-	Socket* socket = (Socket*) arg;
-		socket->close();
-		ErrorHandler("Client socket error: %d. Socket closed, remote ip: %s",error,socket->remote_ip.string_address);
-}
+err_t Socket::send_callback(void* arg, struct tcp_pcb* client_control_block, uint16_t length){}
 
-void Socket::connection_error_callback(void *arg, err_t error){
-	if(error == ERR_RST){
-		Socket* socket = (Socket*) arg;
+void Socket::error_callback(void *arg, err_t error){}
 
-		socket->pending_connection_reset = true;
-		return;
-	}else if(error == ERR_ABRT){
-		return;
-	}
-	ErrorHandler("Connection socket error: %d. Couldn t start client socket ", error);
-}
+void Socket::connection_error_callback(void *arg, err_t error){}
 
-err_t Socket::connection_poll_callback(void *arg, struct tcp_pcb* connection_control_block){
-	Socket* socket = (Socket*) arg;
-	if(socket->pending_connection_reset){
-		socket->reset();
-		socket->pending_connection_reset = false;
-		return ERR_ABRT;
-	}
-	else if(socket->connection_control_block->state == SYN_SENT){
-		socket->pending_connection_reset = true;
-	}
-	return ERR_OK;
-}
+err_t Socket::connection_poll_callback(void *arg, struct tcp_pcb* connection_control_block){}
 
 void Socket::config_keepalive(tcp_pcb* control_block, Socket* socket){
 	control_block->so_options |= SOF_KEEPALIVE;
