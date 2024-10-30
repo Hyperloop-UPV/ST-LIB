@@ -36,7 +36,7 @@ void ADC::start() {
 	uint8_t idx = 0;
 	for (auto& [pin, instance] : available_instances) {
 		for(auto& [id,inst] : active_instances){
-			if(inst == instance)
+			if(&inst == &instance)
 				idx = id;
 		}
 		EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
@@ -61,7 +61,7 @@ float ADC::get_value(uint8_t id) {
 		return 0;
 	}
 	ADCResolution resolution = static_cast<ADCResolution>(instance.resolution);
-	uint16_t raw = emulated_pin.PinData.ADC.value;
+	uint16_t raw = emulated_pin.PinData.adc.value;
 	switch (resolution) {
 		case ADCResolution::ADC_RES_16BITS:
 			return (raw * ADC_MAX_VOLTAGE) / (float)MAX_16BIT;
@@ -87,7 +87,7 @@ uint16_t ADC::get_int_value(uint8_t id) {
 	}
 
 	ADCResolution resolution = static_cast<ADCResolution>(instance.resolution);
-	uint16_t raw = emulated_pin.PinData.ADC.value;
+	uint16_t raw = emulated_pin.PinData.adc.value;
 	switch (resolution) {
 		case ADCResolution::ADC_RES_16BITS:
 			return raw;
@@ -104,5 +104,5 @@ uint16_t ADC::get_int_value(uint8_t id) {
 }
 
 uint16_t* ADC::get_value_pointer(uint8_t id) {
-	return &active_emulated_instances[id].PinData.ADC.value;
+	return &active_emulated_instances[id].PinData.adc.value;
 }
