@@ -1,7 +1,7 @@
 #include "Sensors/EncoderSensor/EncoderSensor.hpp"
 
 EncoderSensor::EncoderSensor(Pin pin1, Pin pin2, double *position, double* direction, double *speed, double *acceleration)
-: position(position), direction(direction), speed(speed), acceleration(acceleration), idx_buff(0){
+: position(position), direction(direction), speed(speed), acceleration(acceleration){
 	id = Encoder::inscribe(pin1,pin2);
 }
 
@@ -10,11 +10,11 @@ void EncoderSensor::start(){
 	Encoder::turn_on(id);
 	uint64_t clock_time = Time::get_global_tick();
 	for(int i = 0; i < N_FRAMES; i++){
-		positions[i] = 0.0;
+		positions.push(0.0);
 
-		times[i] = i * FRAME_SIZE_IN_SECONDS - N_FRAMES*FRAME_SIZE_IN_SECONDS + (clock_time / NANO_SECOND);
+		times.push(i * FRAME_SIZE_IN_SECONDS - N_FRAMES*FRAME_SIZE_IN_SECONDS + (clock_time / NANO_SECOND));
 
-		speeds[i] = 0.0;
+		speeds.push(0.0);
 	}
 	time = clock_time / NANO_SECOND;
 	last_clock_time = clock_time;
@@ -33,17 +33,16 @@ void EncoderSensor::read(){
 	last_clock_time = clock_time;
 
 	*position= ((int32_t)(counter - START_COUNTER)) * COUNTER_DISTANCE_IN_METERS;
-	uint32_t last_index = (idx_buff+1)%N_FRAMES;
-	double delta_time = time - times[last_index];
-	double delta_position = *position - positions[last_index];
+	double delta_time = time - times.peek();
+	double delta_position = *position - positions.peek();
 
 	*speed = abs(delta_position) / (delta_time);
 
-	double delta_speed = *speed - speeds[last_index];
+	double delta_speed = *speed - speeds.peek();
 
 	*acceleration = (delta_speed) / (delta_time);
 
-	if(time - times[idx_buff] >= FRAME_SIZE_IN_SECONDS){
+	if(time - times.latest() >= FRAME_SIZE_IN_SECONDS){
 		EncoderSensor::update_arrays();
 	}
 }
@@ -57,8 +56,7 @@ uint8_t EncoderSensor::get_id(){
 }
 
 void EncoderSensor::update_arrays(){
-	idx_buff = (idx_buff+1)%N_FRAMES;
-	positions[idx_buff] = *position;
-	times[idx_buff] = time;
-	speeds[idx_buff] = *speed;
+	positions.push_pop(*position);
+	times.push_pop(time);
+	speeds.push_pop(*speed);
 }
