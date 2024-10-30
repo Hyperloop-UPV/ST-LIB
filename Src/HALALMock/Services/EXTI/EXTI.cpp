@@ -72,7 +72,7 @@ bool ExternalInterrupt::get_pin_value(uint8_t id) {
 	EmulatedPin &pin_data = SharedMemory::get_pin(pin);
 	if(pin_data.type != PinType::EXTIPin) {
 		ErrorHandler("ID %d is not registered as a EXTIPin",id);
-		std::terminate()
+		std::terminate();
 	}
-	return (pin_data.PinData.EXTIPin.trigger_signal);
+	return (pin_data.PinData.exti.trigger_signal);
 }
