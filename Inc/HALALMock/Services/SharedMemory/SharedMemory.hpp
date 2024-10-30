@@ -6,13 +6,25 @@
 
 class SharedMemory {
    public:
-	constexpr static uint8_t total_pins= 114;
+	
+  static EmulatedPin *gpio_memory;
+	static uint8_t* state_machine_memory{};
+  
+  constexpr static uint8_t total_pins= 114;
 	constexpr int gpio_memory_size = total_pins * sizeof(EmulatedPin);
 	extern constexpr char *gpio_memory_name;
-    // do not use before SharedMemory::start, uninitialized!!!
-    static EmulatedPin *gpio_memory;
-    static EmulatedPin &get_pin(Pin pin);
-    static void start();
+  
+	constexpr static size_t state_machine_memory_size=16;
+	extern constexpr char* state_machine_memory_name;
+	static uint8_t* state_machine_count{};
+
+	static void start();
+	static void start_state_machine_memory();
+
+	static EmulatedPin &get_pin(Pin pin);
+
+	static void update_current_state(uint8_t index, uint8_t state);
+  
 	unordered_map<Pin, size_t> pin_offsets = {
 		{PA0, 0}, {PA1, 1}, {PA2, 2}, {PA3, 3}, {PA4, 4},
 		{PA5, 5}, {PA6, 6}, {PA7, 7}, {PA8, 8}, {PA9, 9},
