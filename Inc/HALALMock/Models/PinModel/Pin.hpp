@@ -124,7 +124,7 @@ struct Encoder_MockPin{
 } ;
 struct EmulatedPin {
     PinType type =  PinType::NOT_USED;  // Always check type before using the union
-	 union PinDataU {
+    union PinDataU {
         DigitalOutput_MockPin   digital_output;
         DigitalInput_MockPin    digital_input;
         PWM_MockPin             pwm;
