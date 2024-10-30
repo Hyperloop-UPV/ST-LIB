@@ -8,47 +8,38 @@
 #include <unistd.h>
 
 void SharedMemory::start() {
-    // TODO: create / open shared memory
+    start_state_machine_memory();
 }
 
 std::string SharedMemory::generate_shared_memory_name(){
 	return "SharedMemory_emulated_state_machine_"+std::to_string(getpid());
 }
 
-void SharedMemory::start_emulated_state_machine(){
+void SharedMemory::start_state_machine_memory(){
 	// shared memory file descriptor
 	int shm_state_machine_fd;
-	emulated_state_machine_name=generate_shared_memory_name();
 
 	// create the shared memory object
-	shm_state_machine_fd=shm_open(emulated_state_machine_name.c_str(),O_CREAT | O_RDWR, 0666);
+	shm_state_machine_fd=shm_open(state_machine_memory_name,O_CREAT | O_RDWR, 0660);
 	if(shm_state_machine_fd==-1){
 		std::cout<<"Error creating the shared memory object\n";
 		std::terminate();
 	}
 	// configure the size of the shared memory object
-	if(ftruncate(shm_state_machine_fd,emulated_state_machine_size)==-1){
+	if(ftruncate(shm_state_machine_fd,state_machine_memory_size)==-1){
 		std::cout<<"Error configuring the size of the shared memory object\n";
 		close(shm_state_machine_fd);
 		std::terminate();
 	}
 	// memory map the shared memory object
-	emulated_state_machine=mmap(NULL,emulated_state_machine_size,PROT_WRITE | PROT_READ,MAP_SHARED,shm_state_machine_fd,0);
-	if(emulated_state_machine==MAP_FAILED){
+	state_machine_memory=static_cast<uint8_t*>(mmap(NULL,state_machine_memory_size,PROT_WRITE | PROT_READ,MAP_SHARED,shm_state_machine_fd,0));
+	if(state_machine_memory==MAP_FAILED){
 		std::cout<<"Error mapping the shared memory object\n";
 		close(shm_state_machine_fd);
 		std::terminate();
 	}
 
-	// cast of the void pointer that the shared memory object returns to a uint8_t pointer
-	state_machine_sm=static_cast<uint8_t*>(emulated_state_machine);
-	// initialize the shared memory counter by setting it to 0, when a new state machine is created it will increment
-	state_machine_sm[0]=0;
-	
-}
-
-void SharedMemory::update_state_machine_counter(uint8_t counter){
-	state_machine_sm[0]=counter;
+	state_machine_memory[0]=0; //this byte will act as a state machine counter
 }
 
 void SharedMemory::update_current_state(uint8_t index, uint8_t state){
