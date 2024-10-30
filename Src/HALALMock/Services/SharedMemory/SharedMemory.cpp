@@ -8,12 +8,16 @@
 #include <unistd.h>
 #include <iostream>
 
+uint8_t* SharedMemory::state_machine_memory = nullptr;
+uint8_t* SharedMemory::state_machine_count = nullptr;
+
+
 void SharedMemory::start() {
   start_state_machine_memory(); // initialize the state machine shared memory
     //Create GPIO_Memory
 	int shm_gpio_fd;
 	//create shared memory object
-	shm_gpio_fd = shm_open(gpio_memory_name, O_CREAT | O_RDWR,0660);
+	shm_gpio_fd = shm_open(SHM::gpio_memory_name, O_CREAT | O_RDWR,0660);
 	if(shm_gpio_fd == -1){
 		std::cout<<"Error to Open de Shared Memory";
 		return;
@@ -39,7 +43,7 @@ void SharedMemory::start_state_machine_memory(){
 	int shm_state_machine_fd;
 
 	// create the shared memory object
-	shm_state_machine_fd=shm_open(state_machine_memory_name,O_CREAT | O_RDWR, 0660);
+	shm_state_machine_fd=shm_open(SHM::state_machine_memory_name,O_CREAT | O_RDWR, 0660);
 	if(shm_state_machine_fd==-1){
 		std::cout<<"Error creating the shared memory object\n";
 		std::terminate();

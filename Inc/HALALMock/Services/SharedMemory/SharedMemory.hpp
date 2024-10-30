@@ -3,20 +3,22 @@
 #include <cstdint>
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
+namespace SHM{
+	extern char* state_machine_memory_name;
+	extern char* gpio_memory_name;
 
+}
 class SharedMemory {
    public:
 	
-  static EmulatedPin *gpio_memory;
-	static uint8_t* state_machine_memory{};
+  	static EmulatedPin *gpio_memory;
+	static uint8_t* state_machine_memory;
   
-  constexpr static uint8_t total_pins= 114;
-	constexpr int gpio_memory_size = total_pins * sizeof(EmulatedPin);
-	extern constexpr char *gpio_memory_name;
+  	constexpr static uint8_t total_pins= 114;
+	static constexpr int gpio_memory_size = total_pins * sizeof(EmulatedPin);
   
 	constexpr static size_t state_machine_memory_size=16;
-	extern constexpr char* state_machine_memory_name;
-	static uint8_t* state_machine_count{};
+	static uint8_t* state_machine_count;
 
 	static void start();
 	static void start_state_machine_memory();
