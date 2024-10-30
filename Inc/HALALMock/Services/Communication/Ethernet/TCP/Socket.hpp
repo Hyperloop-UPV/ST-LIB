@@ -16,6 +16,8 @@
 #ifdef HAL_ETH_MODULE_ENABLED
 
 class Socket : public OrderProtocol{
+private:
+	void tcp_connection_sim();
 public:
 	enum SocketState{
 		INACTIVE,
@@ -29,8 +31,8 @@ public:
 	uint32_t remote_port;
 	SocketState state;
 	//Change the data type of tx/rx packet_buffer
-	queue<std::vector<uint8_t>> tx_packet_buffer;
-	queue<std::vector<uint8_t>> rx_packet_buffer;
+	queue<uint8_t*> tx_packet_buffer;
+	queue<uint8_t*> rx_packet_buffer;
 	//socket_descriptor
 	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;

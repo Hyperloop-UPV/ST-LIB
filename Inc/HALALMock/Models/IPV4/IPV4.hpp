@@ -1,8 +1,10 @@
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
-#include <netinet/in.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h> 
 #include <unistd.h>
+#include <arpa/inet.h>
 #ifdef HAL_ETH_MODULE_ENABLED
 
 using std::stringstream;

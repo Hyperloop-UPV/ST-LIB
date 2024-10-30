@@ -30,7 +30,7 @@ Socket::~Socket(){
 
 Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port,bool use_keep_alive):
 		local_ip(local_ip), local_port(local_port),remote_ip(remote_ip), remote_port(remote_port),use_keep_alives{use_keep_alive}
-		{
+{
 	if(not Ethernet::is_running) {
 		std::cout<<"Cannot declare TCP socket before Ethernet::start()";
 		return;
@@ -39,8 +39,19 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 	tx_packet_buffer = {};
 	rx_packet_buffer = {};
 	EthernetNode remote_node(remote_ip, remote_port);
+	tcp_connection_sim();
+	OrderProtocol::sockets.push_back(this);
+}
+Socket::tcp_connection_sim(){
 	//create socket
 	socket_fd = ::socket(AF_INET,SOCK_STREAM,0);
+	//create socket non-blocking
+	int status = fcntl(socketfd, F_SETFL, fcntl(socketfd, F_GETFL, 0) | O_NONBLOCK);
+	if(status == -1){
+		std::cout<< "Error calling fcntl\n";
+		close(socket_fd);
+		return;
+	}
 	//inset the local address and port
 	struct sockadd_in socket_Address;
 	socket_Address.sin_family = AF_INET;
@@ -48,23 +59,75 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 	socket_Address.sin_port = htons(local_port);
 	if(bind(socket_fd, (struct sockaddr*)&socket_Address, sizeof(socket_Address)) < 0){
 		std::cout<<"Bind error\n";
+		close(socket_fd);
+		return;
 	}
 	//disable naggle algorithm
 	int flag = 1;
 	if (setsockopt(socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
 		std::cout<<"It has been an error disabling Nagle's algorithm\n";
+		close(socket_fd);
+		return;
 	}
-	//tcp_poll(connection_control_block,connection_poll_callback,1);
+	//habilitate keepalives
+    int optval = 1;
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
+        std::cout << "ERROR configuring KEEPALIVES\n";
+        close(socket_fd);
+        return;
+    }
+	// Configurar TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
+    float tcp_keepidle_time = static_cast<float>(keepalive_config.inactivity_time_until_keepalive_ms)/1000.0;
+    if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
+        std::cout << "Error configuring TCP_KEEPIDLE\n";
+		close(socket_fd);
+        return;
+    }
+	  //interval between keepalives
+    float keep_interval_time = static_cast<float>(keepalive_config.space_between_tries_ms)/1000.0;
+    if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
+        std::cout << "Error configuring TCP_KEEPINTVL\n";
+        close(socket_fd);
+        return;
+    }
+	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
+	 float keep_cnt = static_cast<float>(keepalive_config.tries_until_disconnection)/1000.0;
+    if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
+        std::cout << "Error to configure TCP_KEEPCNT\n";
+        close(socket_fd);
+        return ;
+    }
 	connecting_sockets[remote_node] = this;
+
 	//insert the remote address and port and connect
 	struct sockaddr_in remote_addr;
 	remote_addr.sin_family = AF_INET;
 	remote_addr.sin_addr.s_addr = inet_addr(remote_ip); // IP remota en formato adecuado
 	remote_addr.sin_port = htons(remote_port);
+	
+	//CONNECT WILL BE NOT BLOCKING AS IT IS IN A MICROCONTROLLER
+	
 	connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
-	OrderProtocol::sockets.push_back(this);
-}
+	
+	//SELECT WILL WAIT TIMEOUT AND IF THE CONNECT HAS BE DONE WE WILL CALL A CALL_BACK_FUNCTION
 
+	fd_set write_fds;
+	FD_ZERO(&write_fds);
+	FD_SET(socket_fd, &write_fds);
+	//timeout
+	struct timeval timeout;
+	timeout.tv_sec = 5; 
+	timeout.tv_usec = 0;
+	//use select to check if fthe socket has established connection
+	int result = select(socket_fd + 1, NULL, &write_fds, NULL, &timeout);
+	if (result > 0 && FD_ISSET(socket_fd, &write_fds)) {
+		//If it's connected we do as connected_callback
+		if(connecting_sockets.contains(remote_node)){
+			connecting_sockets.erase(remote_node);
+			state = CONNECTED;
+		}
+	}
+}
 Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection): Socket(local_ip, local_port, remote_ip, remote_port){
 	keepalive_config.inactivity_time_until_keepalive_ms = inactivity_time_until_keepalive_ms;
 	keepalive_config.space_between_tries_ms = space_between_tries_ms;
@@ -89,7 +152,23 @@ void Socket::reconnect(){
 	if(!connecting_sockets.contains(remote_node)){
 		connecting_sockets[remote_node] = this;
 	}
-	tcp_connect(connection_control_block, &remote_ip.address , remote_port, connect_callback);
+	connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
+	fd_set write_fds;
+	FD_ZERO(&write_fds);
+	FD_SET(socket_fd, &write_fds);
+	//timeout
+	struct timeval timeout;
+	timeout.tv_sec = 5; 
+	timeout.tv_usec = 0;
+	//use select to check if fthe socket has established connection
+	int result = select(socket_fd + 1, NULL, &write_fds, NULL, &timeout);
+	if (result > 0 && FD_ISSET(socket_fd, &write_fds)) {
+		//If it's connected we do as connected_callback
+		if(connecting_sockets.contains(remote_node)){
+			connecting_sockets.erase(remote_node);
+			state = CONNECTED;
+		}
+	}
 }
 
 void Socket::reset(){
@@ -98,39 +177,15 @@ void Socket::reset(){
 		connecting_sockets[remote_node] = this;
 	}
 	state = INACTIVE;
-	tcp_abort(connection_control_block);
-	connection_control_block = tcp_new();
-
-	tcp_bind(connection_control_block, &local_ip.address, local_port);
-	tcp_nagle_disable(connection_control_block);
-	tcp_arg(connection_control_block, this);
-	tcp_poll(connection_control_block,connection_poll_callback,1);
-	tcp_err(connection_control_block, connection_error_callback);
-
-	tcp_connect(connection_control_block, &remote_ip.address , remote_port, connect_callback);
+	close();
+	tcp_connection_sim();
+	
 
 }
 
 
 void Socket::send(){
-	pbuf* temporal_packet_buffer;
-	err_t error = ERR_OK;
-	while(error == ERR_OK && !tx_packet_buffer.empty() && tx_packet_buffer.front()->len <= tcp_sndbuf(socket_control_block)){
-		temporal_packet_buffer = tx_packet_buffer.front();
-		error = tcp_write(socket_control_block, temporal_packet_buffer->payload, temporal_packet_buffer->len, TCP_WRITE_FLAG_COPY);
-		if(error == ERR_OK){
-			tx_packet_buffer.pop();
-			tcp_output(socket_control_block);
-			memp_free_pool(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION],temporal_packet_buffer);
-		}else{
-			if(error == ERR_MEM){
-				close();
-				ErrorHandler("Too many unacked messages on client socket, disconnecting...");
-			}else{
-				ErrorHandler("Cannot write to client socket. Error code: %d",error);
-			}
-		}
-	}
+	
 }
 
 void Socket::process_data(){
@@ -166,30 +221,7 @@ bool Socket::is_connected(){
 	return state == Socket::SocketState::CONNECTED;
 }
 
-err_t Socket::connect_callback(void* arg, struct tcp_pcb* client_control_block, err_t error){
-	IPV4 remote_ip;
-	remote_ip.address = client_control_block->remote_ip;
-	EthernetNode remote_node(remote_ip,client_control_block->remote_port);
-
-	if(connecting_sockets.contains(remote_node)){
-		Socket* socket = connecting_sockets[remote_node];
-		connecting_sockets.erase(remote_node);
-
-		socket->socket_control_block = client_control_block;
-		socket->state = CONNECTED;
-		
-		tcp_nagle_disable(client_control_block);
-		tcp_arg(client_control_block, socket);
-		tcp_recv(client_control_block, receive_callback);
-		tcp_poll(client_control_block, poll_callback,0);
-		tcp_sent(client_control_block, send_callback);
-		tcp_err(client_control_block, error_callback);
-		if(socket->use_keep_alives)
-			config_keepalive(client_control_block, socket);
-
-		return ERR_OK;
-	}else return ERROR;
-}
+err_t Socket::connect_callback(void* arg, struct tcp_pcb* client_control_block, err_t error){}
 
 err_t Socket::receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error){
 	Socket* socket = (Socket*)arg;
