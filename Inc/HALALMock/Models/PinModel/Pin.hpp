@@ -89,44 +89,50 @@ enum class PinType {
               // nombres
     // TODO: Add more types
 };
-
+struct DigitalOutput{
+    bool state;
+} ;
+struct DigitalInput {
+    PinState curr_state;
+} ;
+struct PWM {
+    float duty_cycle;
+    uint32_t frequency;
+    bool is_on;
+    std::chrono::nanoseconds dead_time_ns;
+} ;
+struct DualPWM{
+    float duty_cycle;
+    uint32_t frequency;
+    bool is_on = false;
+    std::chrono::nanoseconds dead_time_ns;
+} ;
+struct ADC{
+    uint16_t value;
+    bool is_on;
+} ;
+struct EXTIPin{
+    uint32_t priority = 0;
+    bool is_on;
+    bool trigger_signal;
+    TRIGGER trigger_mode;
+} ;
+struct Encoder{
+    uint32_t count_value;
+    bool direction;
+    bool is_on;
+} ;
 struct EmulatedPin {
     PinType type =
         PinType::NOT_USED;  // Always check type before using the union
 	union  {
-		struct {
-			bool state;
-		} DigitalOutput;
-		struct  {
-			PinState curr_state;
-		} DigitalInput;
-		struct  {
-			float duty_cycle;
-			uint32_t frequency;
-			bool is_on;
-			std::chrono::nanoseconds dead_time_ns;
-		} PWM;
-    struct {
-			float duty_cycle;
-			uint32_t frequency;
-			bool is_on = false;
-			std::chrono::nanoseconds dead_time_ns;
-		} DualPWM;
-		struct {
-      uint16_t value;
-			bool is_on;
-		} ADC;
-    struct {
-        uint32_t priority = 0;
-        bool is_on;
-        bool trigger_signal;
-        TRIGGER trigger_mode;
-    } EXTIPin;
-    struct {
-        uint32_t count_value;
-        bool direction;
-        bool is_on;
-    } ENCODER;
+        DigitalOutput   digital_output;
+        DigitalInput    digital_input;
+        PWM pwm;
+        DualPWM dual_pwm;
+        ADC adc;
+        EXTIPin exti;
+        Encoder encoder;
 		// TODO Add more types
 	} PinData;
 };
