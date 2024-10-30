@@ -88,4 +88,3 @@ class ADC {
     static uint8_t id_counter;
 };
 
-#endif
