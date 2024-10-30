@@ -7,8 +7,9 @@
 
 #pragma once
 #include "HALALMock/Models/PinModel/Pin.hpp"
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
-#ifdef HAL_EXTI_MODULE_ENABLED
+
 #define GPIO_PORT GPIOE
 
 class ExternalInterrupt {
