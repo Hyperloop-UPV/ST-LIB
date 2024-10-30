@@ -111,7 +111,7 @@ StateMachine::StateMachine(uint8_t initial_state) :
 	enter_state(initial_state);
 
 	#ifdef SIM_ON
-		state_machine_id_in_shm = SharedMemory::state_machine_memory[0]++;
+		state_machine_id_in_shm = ++(*state_machine_count);
 		SharedMemory::update_current_state(state_machine_id_in_shm,initial_state);
 	#endif
 }

@@ -39,7 +39,8 @@ void SharedMemory::start_state_machine_memory(){
 		std::terminate();
 	}
 
-	state_machine_memory[0]=0; //this byte will act as a state machine counter
+	state_machine_count=&state_machine_memory[0];
+	*state_machine_count=0;
 }
 
 void SharedMemory::update_current_state(uint8_t index, uint8_t state){
