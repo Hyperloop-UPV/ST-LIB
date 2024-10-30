@@ -47,8 +47,8 @@ public:
 
 	struct Packet{
 		array<uint8_t,64> rx_data;
-		uint32_t identifier;//4bytes
-		DLC data_length;//4bytes
+		uint32_t identifier;
+		DLC data_length;
 
 	};
 
@@ -61,13 +61,9 @@ private:
      */
     uint8_t Port_counter; //Puede ser inutil, por qie fdcam_number ya esta, pero bueno por si acaso
     struct Instance{
-        //QUitar cosas de aqui
         Pin TX;
         Pin RX;
-        //FDCAN_HandleTypeDef* hfdcan;
-        //FDCAN_GlobalTypeDef* instance;
         DLC dlc;
-       //FDCAN_TxHeaderTypeDef tx_header;
         uint32_t rx_location;
         queue<FDCAN::Packet> rx_queue;
         uint8_t rx_queue_max_size = 64;
