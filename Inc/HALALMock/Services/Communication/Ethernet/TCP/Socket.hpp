@@ -13,9 +13,6 @@
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
 #include <cstring>
 #include <iostream>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #ifdef HAL_ETH_MODULE_ENABLED
 
 class Socket : public OrderProtocol{
