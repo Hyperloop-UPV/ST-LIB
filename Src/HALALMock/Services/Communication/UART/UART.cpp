@@ -4,7 +4,7 @@
  *  Created on: 28 nov. 2022
  *      Author: Pablo
  */
-#include "HALALMock/Services/Communication/UART/UART.hpp"
+#include "HALAL/Services/Communication/UART/UART.hpp"
 
 #ifdef HAL_UART_MODULE_ENABLED
 
