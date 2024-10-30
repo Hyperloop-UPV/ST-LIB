@@ -10,6 +10,7 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "stm32h7xx_hal.h"
+#include <sys/socket.h>
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
 
@@ -17,7 +18,7 @@ using std::unordered_map;
 using std::vector;
 using std::queue;
 
-
+#define FDCAN_PORT_BASE 3000
 
 class FDCAN{
 public:
@@ -46,8 +47,8 @@ public:
 
 	struct Packet{
 		array<uint8_t,64> rx_data;
-		uint32_t identifier;
-		DLC data_length;
+		uint32_t identifier;//4bytes
+		DLC data_length;//4bytes
 
 	};
 
@@ -58,18 +59,21 @@ private:
      *        predefined instances should be used.
      *
      */
+    uint8_t Port_counter; //Puede ser inutil, por qie fdcam_number ya esta, pero bueno por si acaso
     struct Instance{
+        //QUitar cosas de aqui
         Pin TX;
         Pin RX;
-        FDCAN_HandleTypeDef* hfdcan;
-        FDCAN_GlobalTypeDef* instance;
+        //FDCAN_HandleTypeDef* hfdcan;
+        //FDCAN_GlobalTypeDef* instance;
         DLC dlc;
-        FDCAN_TxHeaderTypeDef tx_header;
+       //FDCAN_TxHeaderTypeDef tx_header;
         uint32_t rx_location;
         queue<FDCAN::Packet> rx_queue;
         uint8_t rx_queue_max_size = 64;
         vector<uint8_t> tx_data;
         uint8_t fdcan_number;
+        uint16_t socket;
         bool start = false;
 
     };

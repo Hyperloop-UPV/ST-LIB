@@ -84,7 +84,8 @@ enum class PinType {
 	DigitalInput,
 	PWM,
 	DualPWM,
-	ADC
+	ADC,
+	FDCAN
 	// TODO: Add more types
 };
 
@@ -113,6 +114,9 @@ struct EmulatedPin {
 		struct {
 			// TODO FW-54
 		} ADC;
+		struct{
+
+		}FDCAN;
 		// TODO Add more types
 	} PinData;
 };
