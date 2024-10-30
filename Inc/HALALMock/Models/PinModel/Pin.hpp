@@ -106,14 +106,15 @@ struct EmulatedPin {
 			bool is_on;
 			std::chrono::nanoseconds dead_time_ns;
 		} PWM;
-		struct {
+    struct {
 			float duty_cycle;
 			uint32_t frequency;
 			bool is_on = false;
 			std::chrono::nanoseconds dead_time_ns;
-		}DualPWM;
+		} DualPWM;
 		struct {
-			// TODO FW-54
+      uint16_t value;
+			bool is_on;
 		} ADC;
     struct {
         uint32_t priority = 0;
