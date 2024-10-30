@@ -89,52 +89,51 @@ enum class PinType {
               // nombres
     // TODO: Add more types
 };
-struct DigitalOutput{
+struct DigitalOutput_MockPin{
     bool state;
 } ;
-struct DigitalInput {
+struct DigitalInput_MockPin {
     PinState curr_state;
 } ;
-struct PWM {
+struct PWM_MockPin {
     float duty_cycle;
     uint32_t frequency;
     bool is_on;
     std::chrono::nanoseconds dead_time_ns;
 } ;
-struct DualPWM{
+struct DualPWM_MockPin{
     float duty_cycle;
     uint32_t frequency;
-    bool is_on = false;
+    bool is_on;
     std::chrono::nanoseconds dead_time_ns;
 } ;
-struct ADC{
+struct ADC_MockPin{
     uint16_t value;
     bool is_on;
 } ;
-struct EXTIPin{
-    uint32_t priority = 0;
+struct EXTIPin_MockPin{
+    uint32_t priority;
     bool is_on;
     bool trigger_signal;
     TRIGGER trigger_mode;
 } ;
-struct Encoder{
+struct Encoder_MockPin{
     uint32_t count_value;
     bool direction;
     bool is_on;
 } ;
 struct EmulatedPin {
-    PinType type =
-        PinType::NOT_USED;  // Always check type before using the union
-	union  {
-        DigitalOutput   digital_output;
-        DigitalInput    digital_input;
-        PWM pwm;
-        DualPWM dual_pwm;
-        ADC adc;
-        EXTIPin exti;
-        Encoder encoder;
+    PinType type =  PinType::NOT_USED;  // Always check type before using the union
+	 union PinDataU {
+        DigitalOutput_MockPin   digital_output;
+        DigitalInput_MockPin    digital_input;
+        PWM_MockPin             pwm;
+        DualPWM_MockPin         dual_pwm;
+        ADC_MockPin             adc;
+        EXTIPin_MockPin         exti;
+        Encoder_MockPin         encoder;
 		// TODO Add more types
-	} PinData;
+	}PinData;
 };
 
 class Pin {
