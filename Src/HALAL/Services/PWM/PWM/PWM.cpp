@@ -5,7 +5,7 @@
  *      Author: aleja
  */
 
-#include <PWM/PWM/PWM.hpp>
+#include "HALAL/Services/PWM/PWM/PWM.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "stm32h7xx_hal_def.h"
 

@@ -6,8 +6,8 @@
  */
 #pragma once
 
-#include "Packet.hpp"
-#include "OrderProtocol.hpp"
+#include "HALAL/Models/Packets/Packet.hpp"
+#include "HALAL/Models/Packets/OrderProtocol.hpp"
 
 class Order : public Packet{
 public:

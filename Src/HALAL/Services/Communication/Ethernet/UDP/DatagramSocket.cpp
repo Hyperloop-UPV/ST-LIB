@@ -5,7 +5,7 @@
  *      Author: stefa
  */
 
-#include "Communication/Ethernet/UDP/DatagramSocket.hpp"
+#include "HALAL/Services/Communication/Ethernet/UDP/DatagramSocket.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #ifdef HAL_ETH_MODULE_ENABLED

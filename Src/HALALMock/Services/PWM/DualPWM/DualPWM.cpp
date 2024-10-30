@@ -1,4 +1,13 @@
+/*
+ * DualPWM.cpp
+ *
+ *  Created on: Feb 27, 2023
+ *      Author: aleja
+ */
+
 #include "HALALMock/Services/PWM/DualPWM/DualPWM.hpp"
+#include "ErrorHandler/ErrorHandler.hpp"
+#include "stm32h7xx_hal_def.h"
 
 DualPWM::DualPWM(Pin& pin, Pin& pin_negated) {
 	EmulatedPin &pin_positive = SharedMemory::get_pin(pin);
