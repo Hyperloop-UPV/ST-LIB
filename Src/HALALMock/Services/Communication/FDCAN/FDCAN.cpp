@@ -97,7 +97,7 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
     temp_data[2] = (message_id >> 8);
     temp_data[3] = message_id;
 
-	temp_data[4] = ((uint32_t)lc >> 24);
+	temp_data[4] = ((uint32_t)dlc >> 24);
 	temp_data[5] = ((uint32_t)dlc >> 16);
 	temp_data[6] = ((uint32_t)dlc >> 8);
 	temp_data[7] = (uint32_t)dlc;
@@ -130,7 +130,7 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 		ErrorHandler("Error receiving message by FDCAN %d", instance->fdcan_number);
 		return false;
 	}
-	
+
 	data->identifier = (data->rx_data[0] | data->rx_data[1] | data->rx_data[2] | data->rx_data[3]);
 	data->data_length = static_cast<FDCAN::DLC>((data->rx_data[4] | data->rx_data[5]| data->rx_data[6] | data->rx_data[7]));
 	std::copy(data->rx_data.begin() + 8, data->rx_data.end(), data->rx_data.begin());
