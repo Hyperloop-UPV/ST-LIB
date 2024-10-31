@@ -13,7 +13,7 @@
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
 #include <cstring>
 #include <iostream>
-#ifdef HAL_ETH_MODULE_ENABLED
+
 
 class Socket : public OrderProtocol{
 private:

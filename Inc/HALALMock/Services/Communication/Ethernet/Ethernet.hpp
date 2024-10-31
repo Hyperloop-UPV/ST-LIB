@@ -10,10 +10,7 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
-//#include "lwip.h"
-//#include "ethernetif.h"
 #include "HALALMock/Services/Communication/Ethernet/EthernetHelper.hpp"
-#ifdef HAL_ETH_MODULE_ENABLED
 #define TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS 500
 #define TCP_KEEPALIVE_TRIES_UNTIL_DISCONNECTION 10
 #define TCP_SPACE_BETWEEN_KEEPALIVE_TRIES_MS 100

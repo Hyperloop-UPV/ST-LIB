@@ -1,6 +1,6 @@
 
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
-#ifdef HAL_ETH_MODULE_ENABLED
+
 
 unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
 
@@ -126,6 +126,7 @@ Socket::tcp_connection_sim(){
 			connecting_sockets.erase(remote_node);
 			state = CONNECTED;
 		}
+		start_receiving();
 	}
 }
 Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection): Socket(local_ip, local_port, remote_ip, remote_port){
@@ -169,6 +170,7 @@ void Socket::reconnect(){
 			state = CONNECTED;
 		}
 	}
+	start_receiving();
 }
 
 void Socket::reset(){

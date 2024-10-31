@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <thread>
-#ifdef HAL_ETH_MODULE_ENABLED
 
 using std::stringstream;
 using std::getline;

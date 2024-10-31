@@ -1,13 +1,6 @@
-/*
- * ServerSocket.cpp
- *
- *  Created on: Nov 23, 2022
- *      Author: stefa
- */
 
 #include "HALALMock/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
-#include "lwip/priv/tcp_priv.h"
-#ifdef HAL_ETH_MODULE_ENABLED
+
 
 uint8_t ServerSocket::priority = 1;
 unordered_map<uint32_t,ServerSocket*> ServerSocket::listening_sockets = {};

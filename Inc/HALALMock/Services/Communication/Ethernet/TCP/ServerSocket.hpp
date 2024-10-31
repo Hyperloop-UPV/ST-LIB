@@ -11,10 +11,6 @@
 #include "HALALMock/Models/Packets/Packet.hpp"
 #include "HALALMock/Models/Packets/Order.hpp"
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
-#ifdef HAL_ETH_MODULE_ENABLED
-
-#define PBUF_POOL_MEMORY_DESC_POSITION 8
-
 /**
 * @brief class that handles a single point to point server client connection, emulating the server side.
 *
@@ -42,15 +38,11 @@ public:
 	};
 
 	static unordered_map<uint32_t,ServerSocket*> listening_sockets;
-	struct tcp_pcb* server_control_block = nullptr;
-	//queue<struct pbuf*> tx_packet_buffer;
-	//queue<struct pbuf*> rx_packet_buffer;
 	IPV4 local_ip;
 	uint32_t local_port;
 	IPV4 remote_ip;
 	ServerState state;
 	static uint8_t priority;
-	//struct tcp_pcb* client_control_block;
 
 	struct KeepaliveConfig{
 		uint32_t inactivity_time_until_keepalive_ms = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS;
