@@ -66,6 +66,9 @@ void FDCAN::start(){
 		BroadcastAdress.sin_port = FDCAN_PORT_BASE + Port_counter;
 		BroadcastAdress.sin_addr.s_addr = INADDR_ANY;
 
+		int enabled = 1;
+		setsockopt(instance->socket, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
+
 		if(bind(instance->socket, (struct sockaddr*)&BroadcastAdress, sizeof(BroadcastAdress)) < 0){
 			ErrorHandler("Error binding socket for FDCAN %d", instance->fdcan_number);
 		}
