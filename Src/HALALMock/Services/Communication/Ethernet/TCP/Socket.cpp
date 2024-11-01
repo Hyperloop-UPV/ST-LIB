@@ -105,7 +105,7 @@ Socket::tcp_connection_sim(){
 	remote_addr.sin_addr.s_addr = inet_addr(remote_ip); // IP remota en formato adecuado
 	remote_addr.sin_port = htons(remote_port);
 	
-	//CONNECT WILL BE NOT BLOCKING AS IT IS IN A MICROCONTROLLER
+	// won't block (like in the mcu) due to the previous call to fcntl
 	
 	connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
 	
