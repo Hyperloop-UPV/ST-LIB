@@ -7,8 +7,8 @@ protected:
 	DualPWM() = default;
 	float* duty_cycle{};
 	uint32_t* frequency{};
-	bool positive_is_on*{};
-	bool negative_is_on*{};
+	bool* positive_is_on{};
+	bool* negative_is_on{};
 	std::chrono::nanoseconds *dead_time_ns{};
 public:
 	DualPWM(Pin& pin, Pin& pin_negated);

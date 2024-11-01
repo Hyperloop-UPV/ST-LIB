@@ -4,16 +4,16 @@
  *  Created on: Feb 27, 2023
  *      Author: aleja
  */
-
+/*
 #include "HALALMock/Services/PWM/PhasedPWM/PhasedPWM.hpp"
 #include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
-
+*/
 /**
  * The function initializes a PhasedPWM object with a given pin and sets its duty cycle and phase to 0.
  * 
  * @param pin The pin to which the PhasedPWM object is being attached.
  */
-PhasedPWM::PhasedPWM(Pin& pin) {
+/*PhasedPWM::PhasedPWM(Pin& pin) {
 	if (not TimerPeripheral::available_pwm.contains(pin)) {
 		ErrorHandler("Pin %s is not registered as an available PWM", pin.to_string());
 		return;
@@ -35,7 +35,7 @@ PhasedPWM::PhasedPWM(Pin& pin) {
 	duty_cycle = 0;
 	raw_phase = 0;
 	is_initialized = true;
-}
+}*/
 
 /**
  * This function sets the duty cycle of a PWM signal and calculates the raw duty and phase values based
@@ -44,7 +44,7 @@ PhasedPWM::PhasedPWM(Pin& pin) {
  * @param duty_cycle The duty cycle is a value between 0 and 100 that represents the percentage of time
  * that the PWM signal is high compared to the total period of the signal.
  */
-void PhasedPWM::set_duty_cycle(float duty_cycle) {
+/*void PhasedPWM::set_duty_cycle(float duty_cycle) {
 	this->duty_cycle = duty_cycle;
 	if(raw_phase > 100.0){
 		duty_cycle = 100.0 - duty_cycle;
@@ -85,19 +85,19 @@ void PhasedPWM::set_duty_cycle(float duty_cycle) {
 		TIM_CCxChannelCmd(peripheral->handle->Instance, channel - 4, TIM_CCx_ENABLE);
 		__HAL_TIM_MOE_ENABLE(peripheral->handle);
 	}
-}
+}*/
 
 /**
  * This function sets the frequency of a PWM signal using a timer in a microcontroller.
  * 
  * @param frequency The desired frequency of the PWM signal in Hertz (Hz).
  */
-void PhasedPWM::set_frequency(uint32_t frequency) {
+/*void PhasedPWM::set_frequency(uint32_t frequency) {
 	TIM_TypeDef& timer = *peripheral->handle->Instance;
 	timer.ARR = (HAL_RCC_GetPCLK1Freq()*2 / (timer.PSC+1)) / 2 / frequency;
 	this->frequency = frequency;
 	set_duty_cycle(duty_cycle);
-}
+}*/
 
 /**
  * This function sets the phase of a PhasedPWM object and updates the duty cycle accordingly.
@@ -106,7 +106,7 @@ void PhasedPWM::set_frequency(uint32_t frequency) {
  * PWM signal. In other words, it determines the timing offset of the PWM waveform relative to its center.
  * Only works with duty cycle = 50 for now.
  */
-void PhasedPWM::set_phase(float phase_in_deg) {
+/*void PhasedPWM::set_phase(float phase_in_deg) {
 	if(duty_cycle == 50.0){
 	this->raw_phase = phase_in_deg*(200.0/360.0);
 	}else{
@@ -124,3 +124,4 @@ void PhasedPWM::set_raw_phase(float raw_phase){
 float PhasedPWM::get_phase()const{
 	return raw_phase*360/200;
 }
+*/

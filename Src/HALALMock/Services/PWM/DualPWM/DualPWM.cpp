@@ -6,8 +6,6 @@
  */
 
 #include "HALALMock/Services/PWM/DualPWM/DualPWM.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
-#include "stm32h7xx_hal_def.h"
 
 DualPWM::DualPWM(Pin& pin, Pin& pin_negated) {
 	EmulatedPin &pin_positive = SharedMemory::get_pin(pin);
@@ -18,24 +16,24 @@ DualPWM::DualPWM(Pin& pin, Pin& pin_negated) {
 		// for common values between positive and negative pin, class variables
 		// point to the positive pin memory location, then the negative pin 
 		// copies the value
-		this->duty_cycle=&(pin_positive.PinData.DualPWM.duty_cycle);
-		this->frequency=&(pin_positive.PinData.DualPWM.frequency);
-		positive_is_on=&(pin_positive.PinData.DualPWM.is_on);
-		this->dead_time_ns=&(pin_positive.PinData.DualPWM.dead_time_ns);
+		this->duty_cycle=&(pin_positive.PinData.dual_pwm.duty_cycle);
+		this->frequency=&(pin_positive.PinData.dual_pwm.frequency);
+		positive_is_on=&(pin_positive.PinData.dual_pwm.is_on);
+		this->dead_time_ns=&(pin_positive.PinData.dual_pwm.dead_time_ns);
 
 		pin_negative.type=PinType::DualPWM;
-		negative_is_on=&(pin_negative.PinData.DualPWM.is_on);
+		negative_is_on=&(pin_negative.PinData.dual_pwm.is_on);
 
 		//default values
 
 		*(this->duty_cycle)=0.0f;
-		pin_negative.PinData.DualPWM.duty_cycle=*(this->duty_cycle);
+		pin_negative.PinData.dual_pwm.duty_cycle=*(this->duty_cycle);
 		*(this->frequency)=0;
-		pin_negative.PinData.DualPWM.frequency=*(this->frequency);
+		pin_negative.PinData.dual_pwm.frequency=*(this->frequency);
 		*positive_is_on=false;
 		*negative_is_on=false;
-		*(this->dead_time_ns)=0;
-		pin_negative.PinData.DualPWM.dead_time_ns=*(this->dead_time_ns);
+		*(this->dead_time_ns)=std::chrono::nanoseconds(0);
+		pin_negative.PinData.dual_pwm.dead_time_ns=*(this->dead_time_ns);
 
 	}else{
 		ErrorHandler("Pin %s or %s is already in use", pin.to_string(), pin_negated.to_string());
