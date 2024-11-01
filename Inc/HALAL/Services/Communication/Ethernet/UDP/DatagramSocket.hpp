@@ -8,8 +8,6 @@
 
 class DatagramSocket{
 public:
-
-	struct udp_pcb* udp_control_block;
 	IPV4 local_ip;
 	uint32_t local_port;
 	IPV4 remote_ip;
@@ -41,7 +39,7 @@ public:
 
 private:
 	static void receive_callback(void *args, struct udp_pcb *udp_control_block, struct pbuf *packet_buffer, const ip_addr_t *remote_address, u16_t port);
-	
+	struct udp_pcb* udp_control_block;
 };
 
 
