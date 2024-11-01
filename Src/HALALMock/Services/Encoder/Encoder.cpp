@@ -5,10 +5,10 @@
  *      Author: Pablo
  */
 
-#include "HALALMock/Services/HALALMock/Services/Encoder/Encoder.hpp"
+#include "HALALMock/Services/Encoder/Encoder.hpp"
 
 #include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
-#ifdef HAL_TIM_MODULE_ENABLED
+
 
 map<uint8_t, pair<Pin, Pin>> Encoder::registered_encoder = {};
 
@@ -100,5 +100,3 @@ uint32_t Encoder::get_initial_counter_value(uint8_t id) {
 }
 
 void Encoder::init(TimerPeripheral *encoder) {}
-
-#endif

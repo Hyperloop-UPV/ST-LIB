@@ -9,15 +9,10 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "HALALMock/Models/HALALMock/Models/PinModel/Pin.hpp"
-#include "HALALMock/Models/HALALMock/Services/SharedMemory/SharedMemory.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
-#ifdef HAL_TIM_MODULE_ENABLED
-/**
- * @brief Encoder service class. Abstracts the use of the encoder with the HAL
- * library.
- *
- */
+
 class Encoder {
    public:
     static uint8_t id_counter;
@@ -77,4 +72,3 @@ class Encoder {
 
     static uint32_t get_initial_counter_value(uint8_t id);
 };
-#endif

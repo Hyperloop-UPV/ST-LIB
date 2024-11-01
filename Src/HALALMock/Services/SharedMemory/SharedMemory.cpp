@@ -29,7 +29,7 @@ void SharedMemory::start() {
 		return;
 	}
 	//point gpio_memory to the beginning of shared_memory
-	gpio_memory = mmap(0, gpio_memory_size, PROT_WRITE | PROT_READ, MAP_SHARED, shm_gpio_fd, 0);
+	gpio_memory = static_cast<EmulatedPin*>(mmap(0, gpio_memory_size, PROT_WRITE | PROT_READ, MAP_SHARED, shm_gpio_fd, 0));
 	if(gpio_memory == MAP_FAILED){
 		std::cout<<"Error mapping Shared Memory";
         close(shm_gpio_fd);  // Close the descriptor if there is a problem with the mapping
@@ -67,7 +67,7 @@ void SharedMemory::start_state_machine_memory(){
 }
 
 void SharedMemory::update_current_state(uint8_t index, uint8_t state){
-	state_machine_sm[index]=state;
+	state_machine_memory[index]=state;
 }
 
 EmulatedPin &SharedMemory::get_pin(Pin pin){
