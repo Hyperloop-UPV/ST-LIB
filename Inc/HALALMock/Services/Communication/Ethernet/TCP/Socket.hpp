@@ -17,7 +17,7 @@
 
 class Socket : public OrderProtocol{
 private:
-	void tcp_connection_sim();
+	void configure_socket_and_connect();
 	std::thread receiving_thread;
 	std::atomic<bool> is_receiving;
 	std::mutex mtx; 
@@ -106,17 +106,6 @@ public:
 	void process_data();
 
 	bool is_connected();
-
-	static err_t connect_callback(void* arg, struct tcp_pcb* client_control_block, err_t error);
-	static err_t receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error);
-	static err_t poll_callback(void* arg, struct tcp_pcb* client_control_block);
-	static err_t send_callback(void* arg, struct tcp_pcb* client_control_block, uint16_t length);
-	static void error_callback(void *arg, err_t error);
-
-	static err_t connection_poll_callback(void* arg, struct tcp_pcb* connection_control_block);
-	static void connection_error_callback(void *arg, err_t error);
-
-	static void config_keepalive(tcp_pcb* control_block, Socket* socket);
 
 };
 #endif

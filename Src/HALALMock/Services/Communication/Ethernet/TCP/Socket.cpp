@@ -39,10 +39,10 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 	tx_packet_buffer = {};
 	rx_packet_buffer = {};
 	EthernetNode remote_node(remote_ip, remote_port);
-	tcp_connection_sim();
+	configure_socket_and_connect();
 	OrderProtocol::sockets.push_back(this);
 }
-Socket::tcp_connection_sim(){
+Socket::configure_socket_and_connect(){
 	//create socket
 	socket_fd = ::socket(AF_INET,SOCK_STREAM,0);
 	//create socket non-blocking
@@ -233,7 +233,7 @@ void Socket::process_data(){
 	
 	while(!rx_packet_buffer.empty()){
 		{
-			std::std::lock_guard<std::mutex> lock(mtx); 
+			std::lock_guard<std::mutex> lock(mtx); 
 			vector<uint8_t> packet = rx_packet_buffer.front();
 			rx_packet_buffer.pop();
 		}
@@ -262,28 +262,5 @@ bool Socket::add_order_to_queue(Order& order){
 bool Socket::is_connected(){
 	return state == Socket::SocketState::CONNECTED;
 }
-
-err_t Socket::connect_callback(void* arg, struct tcp_pcb* client_control_block, err_t error){}
-
-err_t Socket::receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error){}
-
-err_t Socket::poll_callback(void* arg, struct tcp_pcb* client_control_block){}
-
-
-err_t Socket::send_callback(void* arg, struct tcp_pcb* client_control_block, uint16_t length){}
-
-void Socket::error_callback(void *arg, err_t error){}
-
-void Socket::connection_error_callback(void *arg, err_t error){}
-
-err_t Socket::connection_poll_callback(void *arg, struct tcp_pcb* connection_control_block){}
-
-void Socket::config_keepalive(tcp_pcb* control_block, Socket* socket){
-	control_block->so_options |= SOF_KEEPALIVE;
-	control_block->keep_idle = socket->keepalive_config.inactivity_time_until_keepalive_ms;
-	control_block->keep_intvl = socket->keepalive_config.space_between_tries_ms;
-	control_block->keep_cnt = socket->keepalive_config.tries_until_disconnection;
-}
-
 #endif
 
