@@ -42,16 +42,9 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 	configure_socket_and_connect();
 	OrderProtocol::sockets.push_back(this);
 }
-Socket::configure_socket_and_connect(){
+void Socket::create_socket(){
 	//create socket
 	socket_fd = ::socket(AF_INET,SOCK_STREAM,0);
-	//create socket non-blocking
-	int status = fcntl(socketfd, F_SETFL, fcntl(socketfd, F_GETFL, 0) | O_NONBLOCK);
-	if(status == -1){
-		std::cout<< "Error calling fcntl\n";
-		close(socket_fd);
-		return;
-	}
 	//inset the local address and port
 	struct sockadd_in socket_Address;
 	socket_Address.sin_family = AF_INET;
@@ -62,6 +55,8 @@ Socket::configure_socket_and_connect(){
 		close(socket_fd);
 		return;
 	}
+}
+void Socket::configure_socket(){
 	//disable naggle algorithm
 	int flag = 1;
 	if (setsockopt(socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
@@ -97,37 +92,35 @@ Socket::configure_socket_and_connect(){
         close(socket_fd);
         return ;
     }
-	connecting_sockets[remote_node] = this;
-
+}
+void Socket::connect_thread(){
 	//insert the remote address and port and connect
 	struct sockaddr_in remote_addr;
 	remote_addr.sin_family = AF_INET;
 	remote_addr.sin_addr.s_addr = inet_addr(remote_ip); // IP remota en formato adecuado
 	remote_addr.sin_port = htons(remote_port);
-	
-	// won't block (like in the mcu) due to the previous call to fcntl
-	
-	connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
-	
-	//SELECT WILL WAIT TIMEOUT AND IF THE CONNECT HAS BE DONE WE WILL CALL A CALL_BACK_FUNCTION
-
-	fd_set write_fds;
-	FD_ZERO(&write_fds);
-	FD_SET(socket_fd, &write_fds);
-	//timeout
-	struct timeval timeout;
-	timeout.tv_sec = 5; 
-	timeout.tv_usec = 0;
-	//use select to check if fthe socket has established connection
-	int result = select(socket_fd + 1, NULL, &write_fds, NULL, &timeout);
-	if (result > 0 && FD_ISSET(socket_fd, &write_fds)) {
-		//If it's connected we do as connected_callback
+	int result = connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
+	if (result == 0){
+		//Callback once the socket is connected
 		if(connecting_sockets.contains(remote_node)){
 			connecting_sockets.erase(remote_node);
 			state = CONNECTED;
 		}
 		start_receiving();
+	}else{
+		std::cout << "Error dirong connection attempt\n";
+		close(socket_fd);
 	}
+	is_connecting = false;
+	
+}
+void Socket::configure_socket_and_connect(){
+	create_socket();
+	configure_socket();
+	connecting_sockets[remote_node] = this;
+	//create thread that will be block while waiting the connection
+	is_connecting = true;
+    connection_thread = std::thread(&Socket::receive, this); 
 }
 Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection): Socket(local_ip, local_port, remote_ip, remote_port){
 	keepalive_config.inactivity_time_until_keepalive_ms = inactivity_time_until_keepalive_ms;
@@ -138,6 +131,13 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 Socket::Socket(EthernetNode local_node, EthernetNode remote_node):Socket(local_node.ip, local_node.port, remote_node.ip, remote_node.port){}
 
 void Socket::close(){
+	if(is_connecting && connection_thread.joinable()){
+		is_connecting = false;
+		connection_thread.join();
+	}
+	if(is_receiving){
+		stop_receiving();
+	}
 	while(!tx_packet_buffer.empty()){
 		tx_packet_buffer.pop();
 	}
@@ -153,24 +153,13 @@ void Socket::reconnect(){
 	if(!connecting_sockets.contains(remote_node)){
 		connecting_sockets[remote_node] = this;
 	}
-	connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
-	fd_set write_fds;
-	FD_ZERO(&write_fds);
-	FD_SET(socket_fd, &write_fds);
-	//timeout
-	struct timeval timeout;
-	timeout.tv_sec = 5; 
-	timeout.tv_usec = 0;
-	//use select to check if fthe socket has established connection
-	int result = select(socket_fd + 1, NULL, &write_fds, NULL, &timeout);
-	if (result > 0 && FD_ISSET(socket_fd, &write_fds)) {
-		//If it's connected we do as connected_callback
-		if(connecting_sockets.contains(remote_node)){
-			connecting_sockets.erase(remote_node);
-			state = CONNECTED;
-		}
+	if(is_connecting && connection_thread.joinable()){
+		is_connecting = false;
+		connection_thread.join();
 	}
-	start_receiving();
+	//create thread that will be block while waiting the connection
+	is_connecting = true;
+    connection_thread = std::thread(&Socket::receive, this);
 }
 
 void Socket::reset(){
@@ -180,9 +169,7 @@ void Socket::reset(){
 	}
 	state = INACTIVE;
 	close();
-	tcp_connection_sim();
-	
-
+	configure_socket_and_connect();
 }
 
 
@@ -200,7 +187,8 @@ void Socket::send(){
 
 void Socket::start_receiving(){
 	is_receiving = true;
-    receiving_thread = std::thread(&Socket::receive, this);
+    receiving_thread = std::thread(&Socket::receive, this); 
+	receiving_thread.detach();
 }
 void Socket::stop_receiving() {
     if (is_receiving) {
