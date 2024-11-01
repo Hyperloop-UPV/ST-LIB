@@ -1,7 +1,6 @@
 #pragma once
 
 #include "HALALMock/Services/PWM/PWM/PWM.hpp"
-#include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
 
 class DualPWM{
 protected:
