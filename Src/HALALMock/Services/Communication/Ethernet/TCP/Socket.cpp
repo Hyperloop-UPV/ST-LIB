@@ -1,6 +1,6 @@
 
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
-
+#define BUFFER_SIZE 1024
 
 unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
 
@@ -120,7 +120,7 @@ void Socket::configure_socket_and_connect(){
 	connecting_sockets[remote_node] = this;
 	//create thread that will be block while waiting the connection
 	is_connecting = true;
-    connection_thread = std::thread(&Socket::receive, this); 
+    connection_thread = std::jthread(&Socket::receive, this); 
 }
 Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection): Socket(local_ip, local_port, remote_ip, remote_port){
 	keepalive_config.inactivity_time_until_keepalive_ms = inactivity_time_until_keepalive_ms;
@@ -131,9 +131,9 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 Socket::Socket(EthernetNode local_node, EthernetNode remote_node):Socket(local_node.ip, local_node.port, remote_node.ip, remote_node.port){}
 
 void Socket::close(){
-	if(is_connecting && connection_thread.joinable()){
+	if(is_connecting){
 		is_connecting = false;
-		connection_thread.join();
+		connection_thread;
 	}
 	if(is_receiving){
 		stop_receiving();
@@ -153,9 +153,8 @@ void Socket::reconnect(){
 	if(!connecting_sockets.contains(remote_node)){
 		connecting_sockets[remote_node] = this;
 	}
-	if(is_connecting && connection_thread.joinable()){
+	if(is_connecting){
 		is_connecting = false;
-		connection_thread.join();
 	}
 	//create thread that will be block while waiting the connection
 	is_connecting = true;
@@ -175,8 +174,8 @@ void Socket::reset(){
 
 void Socket::send(){
 	while (!tx_packet_buffer.empty()) {
-        vector<uint8_t> packet = tx_packet_buffer.front();
-        ssize_t sent_bytes = ::send(socket_fd, packet.data(), packet.size(), 0);
+        HeapPacket packet = tx_packet_buffer.front();
+        ssize_t sent_bytes = ::send(socket_fd, packet.build(), packet.get_size(), 0);
         if (sent_bytes < 0) {
             std::cerr << "Error sending packet\n";
             return;
@@ -187,33 +186,36 @@ void Socket::send(){
 
 void Socket::start_receiving(){
 	is_receiving = true;
-    receiving_thread = std::thread(&Socket::receive, this); 
-	receiving_thread.detach();
+    receiving_thread = std::jthread(&Socket::receive, this); 
 }
 void Socket::stop_receiving() {
     if (is_receiving) {
         is_receiving = false;
-        if (receiving_thread.joinable()) {
-            receiving_thread.join(); // wait until the thread finish
-        }
     }
 }
 void Socket::receive() {
     while (is_receiving) {
-        uint8_t buffer[1024]; // Buffer for the data
+        uint8_t buffer[BUFFER_SIZE]; // Buffer for the data
         ssize_t received_bytes = ::recv(socket_fd, buffer, sizeof(buffer), 0);
         if (received_bytes > 0) {
-            std::vector<uint8_t> packet(buffer, buffer + received_bytes); 
+            HeapPacket packet;
+			packet.parse(received_bytes);
             {
                 std::lock_guard<std::mutex> lock(mtx); 
-                rx_packet_buffer.push(packet);
+                rx_packet_buffer.push(std::move(packet));
 				process_data(); 
             }
         } else if (received_bytes < 0) {
             std::cout << "Error receiving data\n";
 			socket->state = CLOSING;
-            stop_receiving(); 
-			close();
+			while(!tx_packet_buffer.empty()){
+				tx_packet_buffer.pop();
+			}
+			while(!rx_packet_buffer.empty()){
+				rx_packet_buffer.pop();
+			}
+			close(socket_fd);
+			return;
         }
     }
 }
@@ -222,10 +224,10 @@ void Socket::process_data(){
 	while(!rx_packet_buffer.empty()){
 		{
 			std::lock_guard<std::mutex> lock(mtx); 
-			vector<uint8_t> packet = rx_packet_buffer.front();
+			HeapPacket packet = rx_packet_buffer.front();
 			rx_packet_buffer.pop();
 		}
-		uint8_t* new_data = (uint8_t*)(packet.data());
+		uint8_t* new_data = (uint8_t*)(packet.build());
 		Order::process_data(this, new_data);
 	}
 }
@@ -239,7 +241,8 @@ bool Socket::add_order_to_queue(Order& order){
         std::cout << "Error: building de order buffer\n";
         return false; 
     }
-    std::vector<uint8_t> packet(order_buffer); 
+    HeapPacket packet;
+	packet.parse(order_buffer); 
     {
         std::lock_guard<std::mutex> lock(mutex); 
         tx_packet_buffer.push(packet); 

@@ -11,15 +11,14 @@
 #include "HALALMock/Models/Packets/Packet.hpp"
 #include "HALALMock/Models/Packets/Order.hpp"
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
-#include <cstring>
-#include <iostream>
+#include <jtrhead>
 
 
 class Socket : public OrderProtocol{
 private:
 	void configure_socket_and_connect();
-	std::thread receiving_thread;
-	std::thread connection_thread;
+	std::jthread receiving_thread;
+	std::jthread connection_thread;
 	std::atomic<bool> is_receiving;
 	std::atomic<bool> is_connecting;
 	std::mutex mtx; 
@@ -42,9 +41,8 @@ public:
 	IPV4 remote_ip;
 	uint32_t remote_port;
 	SocketState state;
-	//Change the data type of tx/rx packet_buffer
-	queue<vector<uint8_t>> tx_packet_buffer;
-	queue<vector<uint8_t>> rx_packet_buffer;
+	queue<Packet> tx_packet_buffer;
+	queue<Packet> rx_packet_buffer;
 	//socket_descriptor
 	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;
@@ -84,24 +82,7 @@ public:
 			reconnect();
 			return false;
 		}
-		struct memp* next_memory_pointer_in_packet_buffer_pool = (*(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION]->tab))->next;
-		if(next_memory_pointer_in_packet_buffer_pool == nullptr){
-			if(socket_control_block->unsent != nullptr){
-				tcp_output(socket_control_block);
-			}else{
-				memp_free_pool(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION], next_memory_pointer_in_packet_buffer_pool);
-			}
-			return false;
-		}
-
-		uint8_t* order_buffer = order.build();
-		if(order.get_size() > tcp_sndbuf(socket_control_block)){
-			return false;
-		}
-
-		struct pbuf* packet = pbuf_alloc(PBUF_TRANSPORT, order.get_size(), PBUF_POOL);
-		pbuf_take(packet, order_buffer, order.get_size());
-		tx_packet_buffer.push(packet);
+		tx_packet_buffer.push(order);
 		send();
 		return true;
 	}
