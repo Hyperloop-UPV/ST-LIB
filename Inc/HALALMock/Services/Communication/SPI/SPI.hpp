@@ -11,7 +11,6 @@
 #include "HALALMock/Models/Packets/SPIOrder.hpp"
 #include "HALALMock/Services/DigitalOutputService/DigitalOutputService.hpp"
 #include "HALALMock/Services/DigitalInputService/DigitalInputService.hpp"
-#include "HALALMock/Models/DMA/DMA.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #ifdef HAL_SPI_MODULE_ENABLED

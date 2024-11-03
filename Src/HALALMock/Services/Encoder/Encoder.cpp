@@ -7,7 +7,6 @@
 
 #include "HALALMock/Services/Encoder/Encoder.hpp"
 
-#include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
 
 
 map<uint8_t, pair<Pin, Pin>> Encoder::registered_encoder = {};

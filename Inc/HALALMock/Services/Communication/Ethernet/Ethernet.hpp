@@ -10,8 +10,8 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
-#include "lwip.h"
-#include "ethernetif.h"
+// #include "lwip.h"
+// #include "ethernetif.h"
 #include "HALALMock/Services/Communication/Ethernet/EthernetHelper.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 

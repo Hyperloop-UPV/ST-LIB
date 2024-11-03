@@ -9,21 +9,13 @@
 
 uint8_t InputCapture::id_counter = 0;
 map<uint8_t, InputCapture::Instance> InputCapture::active_instances = {};
-static map<uint32_t, uint32_t> channel_dict = {
-	{HAL_TIM_ACTIVE_CHANNEL_1, TIM_CHANNEL_1},
-	{HAL_TIM_ACTIVE_CHANNEL_2, TIM_CHANNEL_2},
-	{HAL_TIM_ACTIVE_CHANNEL_3, TIM_CHANNEL_3},
-	{HAL_TIM_ACTIVE_CHANNEL_4, TIM_CHANNEL_4},
-	{HAL_TIM_ACTIVE_CHANNEL_5, TIM_CHANNEL_5},
-	{HAL_TIM_ACTIVE_CHANNEL_6, TIM_CHANNEL_6}
-};
 
 InputCapture::Instance::Instance(Pin& pin, void* peripheral, uint32_t channel_rising, uint32_t channel_falling) :
 	pin(pin)
 	{
 		EmulatedPin& sim_pin = SharedMemory::get_pin(pin);
-		duty_cycle = &(sim_pin.PinData.InputCapture.duty_cycle);
-		frequency = &(sim_pin.PinData.InputCapture.frequency);
+		duty_cycle = &(sim_pin.PinData.input_capture.duty_cycle);
+		frequency = &(sim_pin.PinData.input_capture.frequency);
 		*duty_cycle = 0;
 		*frequency = 0;
 	}

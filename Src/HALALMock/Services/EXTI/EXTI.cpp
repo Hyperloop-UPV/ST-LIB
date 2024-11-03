@@ -11,7 +11,7 @@
 uint8_t ExternalInterrupt::id_counter = 0;
 map<uint8_t, Pin> ExternalInterrupt::service_ids = {};
 
-ExternalInterrupt::Instance::Instance(IRQn_Type interrupt_request_number) :
+ExternalInterrupt::Instance::Instance(uint32_t interrupt_request_number) :
 		interrupt_request_number(interrupt_request_number) {}
 
 void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin) {

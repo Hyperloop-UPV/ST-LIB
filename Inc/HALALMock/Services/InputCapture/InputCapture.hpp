@@ -7,7 +7,6 @@
 
 #pragma once
 #include "HALALMock/Models/PinModel/Pin.hpp"
-#include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
 

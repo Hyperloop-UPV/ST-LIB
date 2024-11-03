@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "HALALMock/Models/DMA/DMA.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #ifndef FMAC_ERROR_CHECK

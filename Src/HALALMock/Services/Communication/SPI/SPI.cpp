@@ -7,7 +7,7 @@
 
 #include "HALALMock/Services/Communication/SPI/SPI.hpp"
 
-#include "HALALMock/Models/MPUManager/MPUManager.hpp"
+//#include "HALALMock/Models/MPUManager/MPUManager.hpp"
 
 #ifdef HAL_SPI_MODULE_ENABLED
 

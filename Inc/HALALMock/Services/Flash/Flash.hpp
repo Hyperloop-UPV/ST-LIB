@@ -6,11 +6,11 @@
  */
 
 #pragma once
-#include "stm32h7xx_hal.h"
+//#include "stm32h7xx_hal.h"
+#include "C++Utilities/CppUtils.hpp"
 
 #ifdef HAL_FLASH_MODULE_ENABLED
 
-#include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #define FLASH_32BITS_WORLD			((uint8_t) 4U)

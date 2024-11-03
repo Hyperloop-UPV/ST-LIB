@@ -7,6 +7,7 @@
 
 
 #include <iostream>
+#include "HALALMock/Services/Time/Time.hpp"
 
 std::mutex Time::mutex;
 std::condition_variable Time::cv;

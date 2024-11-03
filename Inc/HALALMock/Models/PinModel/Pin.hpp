@@ -84,8 +84,9 @@ enum class PinType {
     PWM,
     DualPWM,
     ADC,
+    INPUTCAPTURE,
     ENCODER,
-    EXTIPin,  // Usando temporalmente este nombre por que hay colisión entre
+    EXTIPin  // Usando temporalmente este nombre por que hay colisión entre
               // nombres
     // TODO: Add more types
 };
@@ -122,6 +123,10 @@ struct Encoder_MockPin{
     bool direction;
     bool is_on;
 } ;
+struct InputCapure_MockPin{
+    uint8_t duty_cycle;
+    uint32_t frequency;
+};
 struct EmulatedPin {
     PinType type =  PinType::NOT_USED;  // Always check type before using the union
     union PinDataU {
@@ -132,6 +137,7 @@ struct EmulatedPin {
         ADC_MockPin             adc;
         EXTIPin_MockPin         exti;
         Encoder_MockPin         encoder;
+        InputCapure_MockPin     input_capture;
 		// TODO Add more types
 	}PinData;
 };

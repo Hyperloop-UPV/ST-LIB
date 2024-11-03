@@ -21,13 +21,14 @@ public:
 
 	class Instance {
 	public:
-		IRQn_Type interrupt_request_number;
+		//IRQn_Type is an enum nodeclared in sim
+		uint32_t interrupt_request_number;
 
 		function<void()> action = nullptr;
 		bool is_on = true;
 
 		Instance() = default;
-		Instance(IRQn_Type interrupt_request_number);
+		Instance(uint32_t interrupt_request_number);
 	};
 
 	static map<uint8_t, Pin> service_ids;

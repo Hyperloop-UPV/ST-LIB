@@ -9,7 +9,7 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "stm32h7xx_hal.h"
+//#include "stm32h7xx_hal.h"
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
 
