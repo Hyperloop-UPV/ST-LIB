@@ -133,10 +133,11 @@ Socket::Socket(EthernetNode local_node, EthernetNode remote_node):Socket(local_n
 void Socket::close(){
 	if(is_connecting){
 		is_connecting = false;
-		connection_thread;
+		~connection_thread;
 	}
 	if(is_receiving){
-		stop_receiving();
+		is_receiving = false;
+		~receiving_thread;
 	}
 	while(!tx_packet_buffer.empty()){
 		tx_packet_buffer.pop();
@@ -188,11 +189,7 @@ void Socket::start_receiving(){
 	is_receiving = true;
     receiving_thread = std::jthread(&Socket::receive, this); 
 }
-void Socket::stop_receiving() {
-    if (is_receiving) {
-        is_receiving = false;
-    }
-}
+
 void Socket::receive() {
     while (is_receiving) {
         uint8_t buffer[BUFFER_SIZE]; // Buffer for the data
