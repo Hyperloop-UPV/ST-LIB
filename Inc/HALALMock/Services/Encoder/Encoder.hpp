@@ -16,7 +16,8 @@
 class Encoder {
    public:
     static uint8_t id_counter;
-    static map<pair<Pin, Pin>, TimerPeripheral*> pin_timer_map;
+    //TimePeriferal* is useless and not declared, now is void*
+    static map<pair<Pin, Pin>, void*> pin_timer_map;
     static map<uint8_t, pair<Pin, Pin>> registered_encoder;
 
     /**
@@ -68,7 +69,7 @@ class Encoder {
      */
     static bool get_direction(uint8_t id);
 
-    static void init(TimerPeripheral* encoder);
+    static void init(void* encoder);
 
     static uint32_t get_initial_counter_value(uint8_t id);
 };
