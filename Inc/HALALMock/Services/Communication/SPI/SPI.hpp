@@ -73,6 +73,22 @@ public:
         uint64_t Order_count = 0; /**< Order completed counter for debugging (success rate)*/
         uint64_t try_count = 0; /**< Tries from the master to communicate a packet with the slave for debugging (affected by how much the slave delays on preparing a packet)*/
         uint64_t error_count = 0; /**< Order error counter for debugging (affected by how much the bits sent are corrupted in any way)*/
+
+        std::thread sender_thread;
+        std::queue<span<uint8_t>> transmission_queue;
+        std::mutex transmission_mx;
+        std::condition_variable cv_transmission;
+
+        std::thread receiver_thread;
+        std::queue<span<uint8_t>> reception_queue;
+        std::mutex reception_mx;
+        std::condition_variable cv_reception;
+
+        std::thread sender_receiver_thread;
+        std::queue<std::pair<span<uint8_t>, span<uint8_t>>> transmission_reception_queue;
+        std::mutex transmission_reception_mx;
+        std::condition_variable cv_transmission_reception;
+
     };
 
     /**

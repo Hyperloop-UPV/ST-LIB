@@ -88,6 +88,80 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
         spi_master_sockets[id].first = spi_socket;
         spi_master_sockets[id].second = peripheral_ports.at(spi);
 
+        // Init sender thread
+        spi_instance->sender_thread = std::thread([spi_instance, id] {
+            sockaddr_in broadcast_address;
+            broadcast_address.sin_family = AF_INET; // Set IPv4
+            broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
+            int result = inet_pton(AF_INET, "192.168.0.255", &broadcast_address.sin_addr); // Set broadcast IP, supposing that whe have a mask = 255.255.255.0
+            if (result <= 0) {
+                if (result == 0) {
+                    ErrorHandler("Invalid broadcast address");
+                } else {
+                    ErrorHandler("Error setting IP: %s", strerror(errno));
+                }
+            }
+
+            while(true) {
+                std::unique_lock lock(spi_instance->transmission_mx);
+                spi_instance->cv_transmission.wait(lock, [spi_instance]{ return !spi_instance->transmission_queue.empty(); });
+                span<uint8_t> data = spi_instance->transmission_queue.front();
+
+                if (sendto(spi_master_sockets[id].first, data.data(), data.size(), 0, (struct sockaddr*)&broadcast_address, sizeof(broadcast_address)) < 0) {
+                    ErrorHandler("Send error: %s", strerror(errno));
+                }
+                spi_instance->transmission_queue.pop();
+                lock.unlock();
+            }
+        });
+
+        // Init receiver thread
+        spi_instance->receiver_thread = std::thread([spi_instance, id] {
+            while(true) {
+                std::unique_lock lock(spi_instance->reception_mx);
+                spi_instance->cv_reception.wait(lock, [spi_instance]{ return !spi_instance->reception_queue.empty(); });
+                span<uint8_t> data = spi_instance->transmission_queue.front();
+
+                if (recv(spi_master_sockets[id].second, data.data(), data.size(), MSG_WAITALL) < 0) {
+                    ErrorHandler("Receive error: %s", strerror(errno));
+                }
+                spi_instance->reception_queue.pop();
+                lock.unlock();
+            }
+        });
+
+        // Init sender and receiver thread
+        spi_instance->sender_receiver_thread = std::thread([spi_instance, id] {
+            sockaddr_in broadcast_address;
+            broadcast_address.sin_family = AF_INET; // Set IPv4
+            broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
+            int result = inet_pton(AF_INET, "192.168.0.255", &broadcast_address.sin_addr); // Set broadcast IP, supposing that whe have a mask = 255.255.255.0
+            if (result <= 0) {
+                if (result == 0) {
+                    ErrorHandler("Invalid broadcast address");
+                } else {
+                    ErrorHandler("Error setting IP: %s", strerror(errno));
+                }
+            }
+
+            while(true) {
+                std::unique_lock lock(spi_instance->transmission_reception_mx);
+                spi_instance->cv_transmission_reception.wait(lock, [spi_instance]{ return !spi_instance->transmission_reception_queue.empty(); });
+                std::pair<span<uint8_t>, span<uint8_t>> data = spi_instance->transmission_reception_queue.front();
+
+                if (sendto(spi_master_sockets[id].first, data.first.data(), data.first.size(), 0, (struct sockaddr*)&broadcast_address, sizeof(broadcast_address)) < 0) {
+                    ErrorHandler("Send error: %s", strerror(errno));
+                }
+                if (recv(spi_master_sockets[id].second, data.second.data(), data.second.size(), MSG_WAITALL) < 0) {
+                    ErrorHandler("Receive error: %s", strerror(errno));
+                } 
+                
+                spi_instance->transmission_reception_queue.pop();  
+                lock.unlock();
+
+                SPI::TxRxCpltCallback(spi_instance->hspi);
+            }
+        });
     }
 
     if (spi_instance->use_DMA) {
@@ -139,23 +213,14 @@ bool SPI::transmit(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    sockaddr_in broadcast_address;
-    broadcast_address.sin_family = AF_INET; // Set IPv4
-    broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
-    int result = inet_pton(AF_INET, "192.168.0.255", &broadcast_address.sin_addr); // Set broadcast IP, supposing that whe have a mask = 255.255.255.0
-    if (result <= 0) {
-        if (result == 0) {
-            ErrorHandler("Invalid broadcast address");
-        } else {
-            ErrorHandler("Error setting IP: %s", strerror(errno));
-        }
-        return false;
-    }
+    SPI::Instance* spi_instance(registered_spi[id]);
 
-    if (sendto(spi_master_sockets[id].first, data.data(), data.size(), 0, (struct sockaddr*)&broadcast_address, sizeof(broadcast_address)) < 0) {
-        ErrorHandler("Send error: %s", strerror(errno));
-        return false;
-    }
+    std::unique_lock lock(spi_instance->transmission_mx);
+    spi_instance->transmission_queue.push(data);
+    lock.unlock();
+    spi_instance->cv_transmission.notify_one();
+
+    return true;
 }
 
 bool SPI::transmit_DMA(uint8_t id, span<uint8_t> data) {
@@ -168,12 +233,12 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    std::thread receiver_thread([id, data]() {
-        if (recv(spi_master_sockets[id].second, data.data(), data.size(), MSG_WAITALL) < 0) {
-        ErrorHandler("Receive error: %s", strerror(errno));
-    }
-    });
-    receiver_thread.detach();
+    SPI::Instance* spi_instance(registered_spi[id]);
+
+    std::unique_lock lock(spi_instance->reception_mx);
+    spi_instance->reception_queue.push(data);
+    lock.unlock();
+    spi_instance->cv_reception.notify_one();
 
     return true;
 }
@@ -185,23 +250,12 @@ bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
         return false;
     }
 
-    std::thread transmit_receive_thread([id, command_data, receive_data]() {
-        sockaddr_in broadcast_address;
-        broadcast_address.sin_family = AF_INET; // Set IPv4
-        broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
-        inet_pton(AF_INET, "192.168.0.255", &broadcast_address.sin_addr); // Set broadcast IP, supposing that whe have a mask = 255.255.255.0
-        
-        if(sendto(spi_master_sockets[id].first, command_data.data(), command_data.size(), 0, (struct sockaddr*)&broadcast_address, sizeof(broadcast_address)) < 0) {
-            ErrorHandler("Send error: %s", strerror(errno));
-        }
+    SPI::Instance* spi_instance(registered_spi[id]);
 
-        if (recv(spi_master_sockets[id].second, receive_data.data(), receive_data.size(), MSG_WAITALL) < 0) {
-            ErrorHandler("Receive error: %s", strerror(errno));
-        }
-
-        TxRxCpltCallback(SPI::registered_spi[id]->hspi);
-    });
-    transmit_receive_thread.detach();
+    std::unique_lock lock(spi_instance->transmission_reception_mx);
+    spi_instance->transmission_reception_queue.push(std::pair<span<uint8_t>, span<uint8_t>>(command_data, receive_data));
+    lock.unlock();
+    spi_instance->cv_transmission_reception.notify_one();
 
     return true;
 }
