@@ -9,12 +9,18 @@ ServerSocket::ServerSocket() = default;
 
 ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port) : local_ip(local_ip),local_port(local_port){
 	if(not Ethernet::is_running) {
-		ErrorHandler("Cannot declare UDP socket before Ethernet::start()");
+		cout<<"Cannot declare UDP socket before Ethernet::start()\n";
 		return;
 	}
 	tx_packet_buffer = {};
 	rx_packet_buffer = {};
 	state = INACTIVE;
+
+	server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(server_socket_fd == -1){
+		std::cout<<"Socket creation failure\n";
+		return
+	}
 	server_control_block = tcp_new();
 	tcp_nagle_disable(server_control_block);
 	ip_set_option(server_control_block, SOF_REUSEADDR);
@@ -154,6 +160,16 @@ void ServerSocket::send(){
 
 bool ServerSocket::is_connected(){
 	return state == ServerSocket::ServerState::ACCEPTED;
+}
+ServerSocket::create_server_socket(){
+	create_server_socket();
+	configure_server_socket();
+}
+ServerSocket::configure_server_socket(){
+
+}
+ServerSocket::configure_server_socket_and_listen(){
+	
 }
 
 err_t ServerSocket::accept_callback(void* arg, struct tcp_pcb* incomming_control_block, err_t error){

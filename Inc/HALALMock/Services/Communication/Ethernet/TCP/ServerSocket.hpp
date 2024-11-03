@@ -43,7 +43,8 @@ public:
 	IPV4 remote_ip;
 	ServerState state;
 	static uint8_t priority;
-
+	//socket_descriptor
+	int server_socket_fd;
 	struct KeepaliveConfig{
 		uint32_t inactivity_time_until_keepalive_ms = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS;
 		uint32_t space_between_tries_ms = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES_MS;
@@ -148,7 +149,9 @@ public:
 	bool is_connected();
 
 private:
-
+	void create_server_socket();
+	void configure_server_socket();
+	void configure_server_socket_and_listen();
 	/**
 	 * @brief the callback for the listener socket receiving a request for connection into the ServerSocket.
 	 *
