@@ -41,8 +41,8 @@ public:
 	IPV4 remote_ip;
 	uint32_t remote_port;
 	SocketState state;
-	queue<Packet> tx_packet_buffer;
-	queue<Packet> rx_packet_buffer;
+	queue<Packet*> tx_packet_buffer;
+	queue<Packet*> rx_packet_buffer;
 	//socket_descriptor
 	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;

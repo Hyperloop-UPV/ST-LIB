@@ -174,8 +174,8 @@ void Socket::reset(){
 
 void Socket::send(){
 	while (!tx_packet_buffer.empty()) {
-        HeapPacket packet = tx_packet_buffer.front();
-        ssize_t sent_bytes = ::send(socket_fd, packet.build(), packet.get_size(), 0);
+        HeapPacket *packet = tx_packet_buffer.front();
+        ssize_t sent_bytes = ::send(socket_fd, packet->build(), packet->get_size(), 0);
         if (sent_bytes < 0) {
             std::cerr << "Error sending packet\n";
             return;
@@ -198,8 +198,8 @@ void Socket::receive() {
         uint8_t buffer[BUFFER_SIZE]; // Buffer for the data
         ssize_t received_bytes = ::recv(socket_fd, buffer, sizeof(buffer), 0);
         if (received_bytes > 0) {
-            HeapPacket packet;
-			packet.parse(received_bytes);
+            HeapPacket *packet;
+			packet->parse(received_bytes);
             {
                 std::lock_guard<std::mutex> lock(mtx); 
                 rx_packet_buffer.push(std::move(packet));
@@ -207,7 +207,7 @@ void Socket::receive() {
             }
         } else if (received_bytes < 0) {
             std::cout << "Error receiving data\n";
-			socket->state = CLOSING;
+			state = CLOSING;
 			while(!tx_packet_buffer.empty()){
 				tx_packet_buffer.pop();
 			}
@@ -224,10 +224,10 @@ void Socket::process_data(){
 	while(!rx_packet_buffer.empty()){
 		{
 			std::lock_guard<std::mutex> lock(mtx); 
-			HeapPacket packet = rx_packet_buffer.front();
+			HeapPacket *packet = rx_packet_buffer.front();
 			rx_packet_buffer.pop();
 		}
-		uint8_t* new_data = (uint8_t*)(packet.build());
+		uint8_t* new_data = (uint8_t*)(packet->build());
 		Order::process_data(this, new_data);
 	}
 }
@@ -241,8 +241,8 @@ bool Socket::add_order_to_queue(Order& order){
         std::cout << "Error: building de order buffer\n";
         return false; 
     }
-    HeapPacket packet;
-	packet.parse(order_buffer); 
+    HeapPacket *packet;
+	packet->parse(order_buffer); 
     {
         std::lock_guard<std::mutex> lock(mutex); 
         tx_packet_buffer.push(packet); 
