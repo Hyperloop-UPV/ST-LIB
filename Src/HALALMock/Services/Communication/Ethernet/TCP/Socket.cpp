@@ -142,11 +142,11 @@ Socket::Socket(EthernetNode local_node, EthernetNode remote_node):Socket(local_n
 void Socket::close(){
 	if(is_connecting){
 		is_connecting = false;
-		~connection_thread;
+		~wait_for_connection_thread();
 	}
 	if(is_receiving){
 		is_receiving = false;
-		~receiving_thread;
+		~receiving_thread();
 	}
 	while(!tx_packet_buffer.empty()){
 		tx_packet_buffer.pop();
@@ -166,7 +166,7 @@ void Socket::reconnect(){
 	}
 	if(is_connecting){
 		is_connecting = false;
-		~connection_thread;
+		~wait_for_connection_thread();
 	}
 	connect_attempt()
 	is_connecting = true;
