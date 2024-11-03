@@ -43,8 +43,8 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 	OrderProtocol::sockets.push_back(this);
 }
 void Socket::create_socket(){
-	//create socket
-	socket_fd = ::socket(AF_INET,SOCK_STREAM,0);
+	//create socket not blocking
+	socket_fd = ::socket(AF_INET,SOCK_STREAM | SOCK_NONBLOCK,0);
 	//inset the local address and port
 	struct sockadd_in socket_Address;
 	socket_Address.sin_family = AF_INET;
@@ -93,34 +93,43 @@ void Socket::configure_socket(){
         return ;
     }
 }
-void Socket::connect_thread(){
+void Socket::connection_callback(){
+	if(connecting_sockets.contains(remote_node)){
+		connecting_sockets.erase(remote_node);
+		state = CONNECTED;
+	}
+	start_receiving();
+	is_connecting = false;
+}
+void Socket::connect_attempt(){
 	//insert the remote address and port and connect
 	struct sockaddr_in remote_addr;
 	remote_addr.sin_family = AF_INET;
 	remote_addr.sin_addr.s_addr = inet_addr(remote_ip); // IP remota en formato adecuado
 	remote_addr.sin_port = htons(remote_port);
-	int result = connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
-	if (result == 0){
-		//Callback once the socket is connected
-		if(connecting_sockets.contains(remote_node)){
-			connecting_sockets.erase(remote_node);
-			state = CONNECTED;
-		}
-		start_receiving();
-	}else{
-		std::cout << "Error dirong connection attempt\n";
-		close(socket_fd);
-	}
-	is_connecting = false;
-	
+	connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
 }
 void Socket::configure_socket_and_connect(){
 	create_socket();
 	configure_socket();
 	connecting_sockets[remote_node] = this;
 	//create thread that will be block while waiting the connection
+	connect_attempt()
 	is_connecting = true;
-    connection_thread = std::jthread(&Socket::receive, this); 
+	//thread to wait for connection
+    wait_for_connection_thread = std::jthread [&](){
+		pollfd socket_event;
+		socket_event.fd = socket_fd; 
+		socket_event.events = POLLIN; 
+		int result = poll(socket_event, 1, -1); // -1 means to never timeout
+		if(result > 0){ //Connection succesfully
+			connection_callback();
+		}else{
+			close(socket_fd);
+			state = INACTIVE;
+		}
+		
+	}
 }
 Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection): Socket(local_ip, local_port, remote_ip, remote_port){
 	keepalive_config.inactivity_time_until_keepalive_ms = inactivity_time_until_keepalive_ms;
@@ -145,8 +154,9 @@ void Socket::close(){
 	while(!rx_packet_buffer.empty()){
 		rx_packet_buffer.pop();
 	}
+	state = CLOSING;
 	close(socket_fd);
-    state = INACTIVE;
+    
 }
 
 void Socket::reconnect(){
@@ -156,10 +166,23 @@ void Socket::reconnect(){
 	}
 	if(is_connecting){
 		is_connecting = false;
+		~connection_thread;
 	}
-	//create thread that will be block while waiting the connection
+	connect_attempt()
 	is_connecting = true;
-    connection_thread = std::thread(&Socket::receive, this);
+	//thread to wait for connection
+    wait_for_connection_thread = std::jthread [&](){
+		pollfd socket_event;
+		socket_event.fd = socket_fd; 
+		socket_event.events = POLLIN; 
+		int result = poll(socket_event, 1, -1); // -1 means to never timeout
+		if(result > 0){ //Connection succesfully
+			connection_callback();
+		}else{
+			close(socket_fd);
+			state = INACTIVE;
+		}
+	}
 }
 
 void Socket::reset(){

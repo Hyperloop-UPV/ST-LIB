@@ -16,9 +16,9 @@
 
 class Socket : public OrderProtocol{
 private:
-	void configure_socket_and_connect();
+	
 	std::jthread receiving_thread;
-	std::jthread connection_thread;
+	std::jthread wait_for_connection_thread;
 	std::atomic<bool> is_receiving;
 	std::atomic<bool> is_connecting;
 	std::mutex mtx; 
@@ -28,6 +28,8 @@ private:
 	void create_socket();
 	void configure_socket();
 	void connect_thread();
+	void configure_socket_and_connect();
+	void connection_callback();
 
 public:
 	enum SocketState{
