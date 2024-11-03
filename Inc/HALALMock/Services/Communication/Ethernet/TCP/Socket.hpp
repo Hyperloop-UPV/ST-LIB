@@ -23,7 +23,6 @@ private:
 	std::atomic<bool> is_connecting;
 	std::mutex mtx; 
 	void start_receiving();
-	void stop_receiving();
 	void receive();
 	void create_socket();
 	void configure_socket();
