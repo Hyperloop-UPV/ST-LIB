@@ -1,6 +1,6 @@
 #include "HALALMock/Services/Time/RTC.hpp"
 
-RTC_HandleTypeDef hrtc;
+/*RTC_HandleTypeDef hrtc;
 RTCData Global_RTC::global_RTC;
 
 void Global_RTC::start_rtc(){
@@ -81,4 +81,4 @@ void Global_RTC::set_rtc_data(uint16_t counter, uint8_t second, uint8_t minute, 
 }
 void Global_RTC::update_rtc_data(){
     global_RTC = get_rtc_timestamp();
-}
+}*/
