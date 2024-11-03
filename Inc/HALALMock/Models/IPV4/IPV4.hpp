@@ -22,7 +22,7 @@ public:
 	IPV4();
 	IPV4(const char* address);
 	IPV4(string address);
-	IPV4(ip_addr_t address);
+	IPV4(in_addr_t address);
 
 	void operator=(const char* address);
 };

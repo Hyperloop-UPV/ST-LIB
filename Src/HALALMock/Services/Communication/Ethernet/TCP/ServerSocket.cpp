@@ -15,16 +15,7 @@ ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port) : local_ip(local_
 	tx_packet_buffer = {};
 	rx_packet_buffer = {};
 	state = INACTIVE;
-
-	server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if(server_socket_fd == -1){
-		std::cout<<"Socket creation failure\n";
-		return
-	}
-	server_control_block = tcp_new();
-	tcp_nagle_disable(server_control_block);
-	ip_set_option(server_control_block, SOF_REUSEADDR);
-	err_t error = tcp_bind(server_control_block, &local_ip.address, local_port);
+	configure_server_socket_and_listen();
 
 	if(error == ERR_OK){
 		server_control_block = tcp_listen(server_control_block);
@@ -162,14 +153,69 @@ bool ServerSocket::is_connected(){
 	return state == ServerSocket::ServerState::ACCEPTED;
 }
 ServerSocket::create_server_socket(){
-	create_server_socket();
-	configure_server_socket();
+	server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(server_socket_fd == -1){
+		std::cout<<"Socket creation failure\n";
+		return;
+	}
+	//inset the local address and port
+	struct sockaddr_in server_socket_Address;
+	server_socket_Address.sin_family = AF_INET;
+	server_socket_Address.sin_addr.s_addr = local_ip.address;
+	server_socket_Address.sin_port = htons(local_port);
+	if(bind(socket_fd, (struct sockaddr*)&server_socket_Address, sizeof(server_socket_Address)) < 0){
+		std::cout<<"Bind error\n";
+		close(socket_fd);
+		return;
+	}
 }
 ServerSocket::configure_server_socket(){
-
+	//to reuse local address:
+	int opt = 1;
+	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    	std::cerr << "Error setting SO_REUSEADDR\n";
+   		close(server_fd);
+    	return;
+	}
+	//disable naggle algorithm
+	int flag = 1;
+	if (setsockopt(server_socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
+		std::cout<<"It has been an error disabling Nagle's algorithm\n";
+		close(server_socket_fd);
+		return;
+	}
+	//habilitate keepalives
+    int optval = 1;
+    if (setsockopt(server_socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
+        std::cout << "ERROR configuring KEEPALIVES\n";
+        close(server_socket_fd);
+        return;
+    }
+	// Configurar TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
+    float tcp_keepidle_time = static_cast<float>(keepalive_config.inactivity_time_until_keepalive_ms)/1000.0;
+    if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
+        std::cout << "Error configuring TCP_KEEPIDLE\n";
+		close(server_socket_fd);
+        return;
+    }
+	  //interval between keepalives
+    float keep_interval_time = static_cast<float>(keepalive_config.space_between_tries_ms)/1000.0;
+    if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
+        std::cout << "Error configuring TCP_KEEPINTVL\n";
+        close(server_socket_fd);
+        return;
+    }
+	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
+	 float keep_cnt = static_cast<float>(keepalive_config.tries_until_disconnection)/1000.0;
+    if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
+        std::cout << "Error to configure TCP_KEEPCNT\n";
+        close(server_socket_fd);
+        return ;
+    }
 }
 ServerSocket::configure_server_socket_and_listen(){
-	
+	create_server_socket();
+	configure_server_socket();
 }
 
 err_t ServerSocket::accept_callback(void* arg, struct tcp_pcb* incomming_control_block, err_t error){

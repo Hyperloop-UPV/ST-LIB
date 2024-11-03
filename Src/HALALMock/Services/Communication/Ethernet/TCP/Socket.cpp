@@ -26,6 +26,7 @@ Socket::~Socket(){
 	auto it = std::find(OrderProtocol::sockets.begin(), OrderProtocol::sockets.end(), this);
 	if(it == OrderProtocol::sockets.end()) return;
 	else OrderProtocol::sockets.erase(it);
+	close();
 }
 
 Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port,bool use_keep_alive):
@@ -46,9 +47,9 @@ void Socket::create_socket(){
 	//create socket not blocking
 	socket_fd = ::socket(AF_INET,SOCK_STREAM | SOCK_NONBLOCK,0);
 	//inset the local address and port
-	struct sockadd_in socket_Address;
+	struct sockaddr_in socket_Address;
 	socket_Address.sin_family = AF_INET;
-	socket_Address.sin_addr.s_addr = inet_addr(local_ip);
+	socket_Address.sin_addr.s_addr = local_ip.address;
 	socket_Address.sin_port = htons(local_port);
 	if(bind(socket_fd, (struct sockaddr*)&socket_Address, sizeof(socket_Address)) < 0){
 		std::cout<<"Bind error\n";
