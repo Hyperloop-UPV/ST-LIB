@@ -340,6 +340,8 @@ private:
 
     static unordered_map<uint8_t, std::pair<int, int>> spi_master_sockets; /** Map that associates registered SPI master with its server socket and its port */
 
+    static void TxRxCpltCallback(SPI_HandleTypeDef* hspi);
+
 };
 
 extern std::array<int, 6> peripheral_ports; // Array of SPI peripheral ports, it should be defined on a .hpp file configuration

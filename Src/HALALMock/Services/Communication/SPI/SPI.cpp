@@ -199,7 +199,7 @@ bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
             ErrorHandler("Receive error: %s", strerror(errno));
         }
 
-        HAL_SPI_TxRxCpltCallback(SPI::registered_spi[id]->hspi);
+        TxRxCpltCallback(SPI::registered_spi[id]->hspi);
     });
     transmit_receive_thread.detach();
 
@@ -341,7 +341,7 @@ void SPI::init(SPI::Instance* spi) {
     spi->initialized = true;
 }
 
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
+void SPI::TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
     if (!SPI::registered_spi_by_handler.contains(hspi)) {
         ErrorHandler("Used SPI protocol without the HALAL SPI interface");
         return;
@@ -454,18 +454,6 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
     }
 }
 
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi) {}
-
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi) {}
-
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi) {
-    if ((hspi->ErrorCode & HAL_SPI_ERROR_UDR) != 0) {
-        SPI::spi_recover(SPI::registered_spi_by_handler[hspi], hspi);
-    } else {
-        ErrorHandler("SPI error number %u", hspi->ErrorCode);
-    }
-}
-
 void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
                                      uint8_t* value_to_receive,
                                      uint16_t size_to_send) {
@@ -515,7 +503,6 @@ bool SPI::known_slave_ready(SPI::Instance* spi) {
 
 void SPI::spi_recover(SPI::Instance* spi, SPI_HandleTypeDef* hspi) {
     SPI::mark_slave_waiting(spi);
-    HAL_SPI_Abort(hspi);
     spi->error_count = spi->error_count + 1;
     *(spi->SPIOrderID) = CASTED_ERROR_ORDER_ID;
     *(spi->available_end) = CASTED_ERROR_ORDER_ID;
@@ -523,8 +510,4 @@ void SPI::spi_recover(SPI::Instance* spi, SPI_HandleTypeDef* hspi) {
     SPI::slave_check_packet_ID(spi);
 }
 
-void SPI::spi_check_bus_collision(SPI::Instance* spi) {
-    if (spi->hspi->State == HAL_SPI_STATE_READY) {
-        SPI::spi_recover(spi, spi->hspi);
-    }
-}
+void SPI::spi_check_bus_collision(SPI::Instance* spi) {}
