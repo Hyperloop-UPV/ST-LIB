@@ -28,11 +28,12 @@ uint8_t ExternalInterrupt::inscribe(Pin& pin, function<void()>&& action, TRIGGER
 	}
 	EmulatedPin &pin_data = SharedMemory::get_pin(pin);
 	if(pin_data.type != PinType::EXTIPin) {
-		ErrorHandler("ID %d is not registered as a EXTIPin",id);
+		ErrorHandler("ID %d is not registered as a EXTIPin",id_counter);
 		return 0;
 	}
 
 	(pin_data.PinData.exti.trigger_mode) = trigger;
+
 
 	service_ids[id_counter] = pin;
 	instances[pin.gpio_pin].action = action;
@@ -41,8 +42,9 @@ uint8_t ExternalInterrupt::inscribe(Pin& pin, function<void()>&& action, TRIGGER
 }
 //TODO: assigne priority on the emulated pin
 void ExternalInterrupt::start() {
-	for(auto id_instance : instances) {
+	for(auto& id_instance : instances) {
 		Instance& instance = id_instance.second;
+		instance.is_on = true;
 	}
 }
 
@@ -53,6 +55,7 @@ void ExternalInterrupt::turn_on(uint8_t id) {
 	}
 
 	Instance& instance = instances[service_ids[id].gpio_pin];
+	instance.is_on=true;
 	Pin& pin = service_ids[id];
 	EmulatedPin &pin_data = SharedMemory::get_pin(pin);
 	if(pin_data.type != PinType::EXTIPin) {
