@@ -16,17 +16,6 @@ ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port) : local_ip(local_
 	rx_packet_buffer = {};
 	state = INACTIVE;
 	configure_server_socket_and_listen();
-
-	if(error == ERR_OK){
-		server_control_block = tcp_listen(server_control_block);
-		state = LISTENING;
-		listening_sockets[local_port] = this;
-		tcp_accept(server_control_block, accept_callback);
-	}else{
-		memp_free(MEMP_TCP_PCB, server_control_block);
-		ErrorHandler("Cannot bind server socket, error %d",(int16_t)error);
-	}
-	OrderProtocol::sockets.push_back(this);
 }
 
 
@@ -216,8 +205,64 @@ ServerSocket::configure_server_socket(){
 ServerSocket::configure_server_socket_and_listen(){
 	create_server_socket();
 	configure_server_socket();
+	if (listen(socket_fd, SOMAXCONN) < 0) {
+        std::cout"Error listening\n";
+        close(socket_fd);
+        state = INACTIVE;
+        return;
+    }
+	state = LISTENING;
+	listening_sockets[local_port] = this;
+	//create a thread to listen
+	listening_thread = std::jthread [&](){
+		while(true){
+			struct sockaddr_in client_addr;
+			socklen_t client_len = sizeof(client_addr);
+			int client_fd = accept(server_socket_fd,(struct sockaddr*)&client_addr, &client_len);
+			if(client_fd > 0){
+				clients.push_back(client_addr); 
+				accept_callback(client_fd);
+				OrderProtocol::sockets.push_back(this);
+			}else{
+				cout<< " Error accepting\n";
+				close(socket_fd);
+				state = CLOSED;
+				return;
+			}
+		}
+		
+		
+	}
 }
+ServerSocket::accept_callback(int client_fd){
+	if(listening_sockets.contains(local_port)){
+		ServerSocket* server_socket = listening_sockets[local_port];
 
+		server_socket->state = ACCEPTED;
+		server_socket->client_control_block = incomming_control_block;
+		server_socket->remote_ip = IPV4(incomming_control_block->remote_ip);
+		server_socket->rx_packet_buffer = {};
+
+		tcp_setprio(incomming_control_block, priority);
+		tcp_nagle_disable(incomming_control_block);
+		ip_set_option(incomming_control_block, SOF_REUSEADDR);
+
+		tcp_arg(incomming_control_block, server_socket);
+		tcp_recv(incomming_control_block, receive_callback);
+		tcp_sent(incomming_control_block, send_callback);
+		tcp_err(incomming_control_block, error_callback);
+		tcp_poll(incomming_control_block, poll_callback , 0);
+		config_keepalive(incomming_control_block, server_socket);
+
+
+		tcp_close(server_socket->server_control_block);
+		priority++;
+
+		return ERR_OK;
+	}else
+		return ERROR;
+
+}
 err_t ServerSocket::accept_callback(void* arg, struct tcp_pcb* incomming_control_block, err_t error){
 	if(listening_sockets.contains(incomming_control_block->local_port)){
 		ServerSocket* server_socket = listening_sockets[incomming_control_block->local_port];

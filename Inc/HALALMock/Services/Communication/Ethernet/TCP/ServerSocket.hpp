@@ -152,6 +152,13 @@ private:
 	void create_server_socket();
 	void configure_server_socket();
 	void configure_server_socket_and_listen();
+	void accept_callback();
+	std::jthread listening_thread;
+	std::vector<std::jthread> receiving_thread;
+	std::atomic<bool> is_receiving;
+	std::atomic<bool> is_connecting;
+	std::mutex mtx; 
+	std::vector<sockaddr_in> clients;
 	/**
 	 * @brief the callback for the listener socket receiving a request for connection into the ServerSocket.
 	 *
