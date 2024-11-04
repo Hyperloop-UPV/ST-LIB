@@ -49,6 +49,64 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	return id;
 }
 
+ssize_t dlc_to_number_of_bytes(FDCAN::DLC dlc){
+	ssize_t number_of_bytes;
+	switch (dlc) {
+		case DLC::BYTES_0:
+			number_of_bytes = 0;
+			break;
+		case DLC::BYTES_1:
+			number_of_bytes = 1;
+			break;
+		case DLC::BYTES_2:
+			number_of_bytes = 2;
+			break;
+		case DLC::BYTES_3:
+			number_of_bytes = 3;
+			break;
+		case DLC::BYTES_4:
+			number_of_bytes = 4;
+			break;
+		case DLC::BYTES_5:
+			number_of_bytes = 5;
+			break;
+		case DLC::BYTES_6:
+			number_of_bytes = 6;
+			break;
+		case DLC::BYTES_7:
+			number_of_bytes = 7;
+			break;
+		case DLC::BYTES_8:
+			number_of_bytes = 8;
+			break;
+		case DLC::BYTES_12:
+			number_of_bytes = 12;
+			break;
+		case DLC::BYTES_16:
+			number_of_bytes = 16;
+			break;
+		case DLC::BYTES_20:
+			number_of_bytes = 20;
+			break;
+		case DLC::BYTES_24:
+			number_of_bytes = 24;
+			break;
+		case DLC::BYTES_32:
+			number_of_bytes = 32;
+			break;
+		case DLC::BYTES_48:
+			number_of_bytes = 48;
+			break;
+		case DLC::BYTES_64:
+			number_of_bytes = 64;
+			break;
+		default:
+			number_of_bytes = 4; 
+			break;
+	}
+	return number_of_bytes;
+}
+
 void FDCAN::start(){
 	for( std::pair<uint8_t, FDCAN::Instance*> inst: FDCAN::registered_fdcan){
 		uint8_t id = inst.first;
@@ -57,14 +115,14 @@ void FDCAN::start(){
 		instance->rx_queue = queue<FDCAN::Packet>();
 		instance->tx_data = vector<uint8_t>();
 
-		instance -> socket = socket(AF_NET,SOCK_STREAM,0);
+		instance -> socket = socket(AF_NET,SOCK_DGRAM,0);
 		if(instance -> socket < 0){
 			ErrorHandler("Error creating socket for FDCAN %d", instance->fdcan_number);
 		}
 		struct sockaddr_in BroadcastAddress;
 		BroadcastAdress.sin_family = AF_INET;
 		BroadcastAdress.sin_port = FDCAN_PORT_BASE + Port_counter;
-		BroadcastAdress.sin_addr.s_addr = INADDR_ANY;
+		BroadcastAdress.sin_addr.s_addr = fdcan_ip_adress;
 
 		int enabled = 1;
 		setsockopt(instance->socket, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
@@ -79,6 +137,7 @@ void FDCAN::start(){
 	}
 }
 
+
 bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::DLC dlc){ 
 	if (not FDCAN::registered_fdcan.contains(id)) {
 		ErrorHandler("There is no registered FDCAN with id: %d.", id);
@@ -92,27 +151,30 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
 		return false;
 	}
 
-    size_t buffer_len = sizeof(message_id)+ sizeof(dlc) + dlc;
+    size_t buffer_len = sizeof(message_id)+ sizeof(dlc) + dlc_to_number_of_bytes(dlc);
     char* temp_data = new char[buffer_len];
+	temp_data[0] = static_cast<char>(message_id >> 24);
+	temp_data[1] = static_cast<char>(message_id >> 16);
+	temp_data[2] = static_cast<char>(message_id >> 8);
+	temp_data[3] = static_cast<char>(message_id);
 
-    temp_data[0] = (message_id >> 24);
-    temp_data[1] = (message_id >> 16);
-    temp_data[2] = (message_id >> 8);
-    temp_data[3] = message_id;
+	temp_data[4] = static_cast<char>(static_cast<uint32_t>(dlc) >> 24);
+	temp_data[5] = static_cast<char>(static_cast<uint32_t>(dlc) >> 16);
+	temp_data[6] = static_cast<char>(static_cast<uint32_t>(dlc) >> 8);
+	temp_data[7] = static_cast<char>(static_cast<uint32_t>(dlc));
 
-	temp_data[4] = ((uint32_t)dlc >> 24);
-	temp_data[5] = ((uint32_t)dlc >> 16);
-	temp_data[6] = ((uint32_t)dlc >> 8);
-	temp_data[7] = (uint32_t)dlc;
-
-	memcpy((temp_data + sizeof(message_id)+ sizeof(dlc)), data, dlc);
-		
-	if(send(instance->socket,temp_data, strlen(data))<0){
-		ErrorHandler("Error sending message with id: 0x%x by FDCAN %d", message_id, instance->fdcan_number);
-		delete[] temp_data;
-		return false;
+	memcpy((temp_data + sizeof(message_id)+ sizeof(dlc)), data, dlc_to_number_of_bytes(dlc));
+	ssize_t total_bytes_sent{0};
+	while (total_bytes_sent < strlen(temp_data)) {
+    	ssize_t bytes_sent = send(instance->socket, temp_data + total_bytes_sent, strlen(temp_data) - total_bytes_sent);
+		if (bytes_sent < 0) {
+			ErrorHandler("Error sending message with id: 0x%x by FDCAN %d", message_id, instance->fdcan_number);
+			delete[] temp_data;
+			return false;
+		}
+		total_bytes_sent += bytes_sent;
 	}
-
+	
 	delete[] temp_data;
 	return true;
 }
@@ -133,11 +195,13 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 		ErrorHandler("Error receiving message by FDCAN %d", instance->fdcan_number);
 		return false;
 	}
+	
 
-	data->identifier = (data->rx_data[0] | data->rx_data[1] | data->rx_data[2] | data->rx_data[3]);
-	data->data_length = static_cast<FDCAN::DLC>((data->rx_data[4] | data->rx_data[5]| data->rx_data[6] | data->rx_data[7]));
-	std::copy(data->rx_data.begin() + 8, data->rx_data.end(), data->rx_data.begin());
-	data->rx_data
+	data->identifier = (data->rx_data[0] << 24) | (data->rx_data[1] << 16) | (data->rx_data[2] << 8) | data->rx_data[3];
+	data->data_length = static_cast<FDCAN::DLC>((data->rx_data[4] << 24) | (data->rx_data[5] << 16) | (data->rx_data[6] << 8) | data->rx_data[7]);
+	array<uint8_t, 64> aux_rx_data;
+	std::copy(data->rx_data.begin()+8, data->rx_data.end(), aux_rx_data.begin());
+	data->rx_data = aux_rx_data;
 
 	return true;
 }

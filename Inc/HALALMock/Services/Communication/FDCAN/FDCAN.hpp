@@ -9,8 +9,8 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "stm32h7xx_hal.h"
-#include <sys/socket.h>
+
+
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
 
@@ -19,6 +19,7 @@ using std::vector;
 using std::queue;
 
 #define FDCAN_PORT_BASE 3000
+extern constant in_addr_t fdcan_ip_adress;
 
 class FDCAN{
 public:
@@ -59,7 +60,7 @@ private:
      *        predefined instances should be used.
      *
      */
-    uint8_t Port_counter; //Puede ser inutil, por qie fdcam_number ya esta, pero bueno por si acaso
+    uint8_t Port_counter;
     struct Instance{
         Pin TX;
         Pin RX;
