@@ -1,0 +1,13 @@
+{
+	"name": "C++",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"remoteUser": "vscode",
+	"runArgs": [
+		"--userns=keep-id"
+	],
+	"containerEnv": {
+		"HOME": "/home/vscode"
+	}
+}
