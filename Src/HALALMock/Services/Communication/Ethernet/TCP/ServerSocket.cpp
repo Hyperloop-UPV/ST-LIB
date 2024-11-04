@@ -152,18 +152,18 @@ ServerSocket::create_server_socket(){
 	server_socket_Address.sin_family = AF_INET;
 	server_socket_Address.sin_addr.s_addr = local_ip.address;
 	server_socket_Address.sin_port = htons(local_port);
-	if(bind(socket_fd, (struct sockaddr*)&server_socket_Address, sizeof(server_socket_Address)) < 0){
+	if(bind(server_socket_fd, (struct sockaddr*)&server_socket_Address, sizeof(server_socket_Address)) < 0){
 		std::cout<<"Bind error\n";
-		close(socket_fd);
+		close(server_socket_fd);
 		return;
 	}
 }
 ServerSocket::configure_server_socket(){
 	//to reuse local address:
 	int opt = 1;
-	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+	if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
     	std::cerr << "Error setting SO_REUSEADDR\n";
-   		close(server_fd);
+   		close(server_socket_fd);
     	return;
 	}
 	//disable naggle algorithm
@@ -205,9 +205,9 @@ ServerSocket::configure_server_socket(){
 ServerSocket::configure_server_socket_and_listen(){
 	create_server_socket();
 	configure_server_socket();
-	if (listen(socket_fd, SOMAXCONN) < 0) {
+	if (listen(server_socket_fd, SOMAXCONN) < 0) {
         std::cout"Error listening\n";
-        close(socket_fd);
+        close(server_socket_fd);
         state = INACTIVE;
         return;
     }
@@ -225,7 +225,7 @@ ServerSocket::configure_server_socket_and_listen(){
 				OrderProtocol::sockets.push_back(this);
 			}else{
 				cout<< " Error accepting\n";
-				close(socket_fd);
+				close(server_socket_fd);
 				state = CLOSED;
 				return;
 			}

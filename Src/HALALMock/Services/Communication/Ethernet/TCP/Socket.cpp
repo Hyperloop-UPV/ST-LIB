@@ -7,13 +7,14 @@ unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
 
 Socket::Socket() = default;
 
-Socket::Socket(Socket&& other):remote_port(move(remote_port)),
+Socket::Socket(Socket&& other):socket_fd(move(other.socket_fd)),(move(remote_port)),
 	 state(other.state){
 	EthernetNode remote_node(other.remote_ip, other.remote_port);
 	connecting_sockets[remote_node] = this;
 }
 
 void Socket::operator=(Socket&& other){
+	socket_fd = move(other.socket_fd)
 	remote_port = move(other.remote_port);
 	state = other.state;
 	EthernetNode remote_node(other.remote_ip, other.remote_port);

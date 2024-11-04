@@ -156,7 +156,6 @@ private:
 	std::jthread listening_thread;
 	std::vector<std::jthread> receiving_thread;
 	std::atomic<bool> is_receiving;
-	std::atomic<bool> is_connecting;
 	std::mutex mtx; 
 	std::vector<sockaddr_in> clients;
 	/**

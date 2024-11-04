@@ -3,19 +3,16 @@
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALALMock/Models/Packets/Packet.hpp"
 
-#ifdef HAL_ETH_MODULE_ENABLED
-#define PBUF_POOL_MEMORY_DESC_POSITION 8
 
 class DatagramSocket{
 public:
 
-	struct udp_pcb* udp_control_block;
 	IPV4 local_ip;
 	uint32_t local_port;
 	IPV4 remote_ip;
 	uint32_t remote_port;
 	bool is_disconnected = true;
-
+	int udp_socket;
 	DatagramSocket();
 	DatagramSocket(DatagramSocket&& other);
 	DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port);
@@ -26,22 +23,28 @@ public:
 
 	bool send_packet(Packet& packet){
 		uint8_t* packet_buffer = packet.build();
-
-		struct pbuf* tx_buffer = pbuf_alloc(PBUF_TRANSPORT, packet.size, PBUF_RAM);
-		pbuf_take(tx_buffer, packet_buffer, packet.size);
-		udp_send(udp_control_block, tx_buffer);
-		pbuf_free(tx_buffer);
-
+		size_t size = packet.get_size();
+		//put the remote direction
+		struct sockaddr_in remote_socket_addr;
+		memset(&remote_socket_addr, 0, sizeof(remote_socket_addr));
+		remote_socket_addr.sin_family = AF_INET;
+    	remote_socket_addr.sin_port = htons(remote_port); 
+    	remote_socket_addr.sin_addr.s_addr = remote_ip.address; 
+		
+		if(sendto(udp_socket,packet_buffer,size,0,(struct sockaddr *)&remote_socket_addr, sizeof(remote_socket_addr)) < 0){
+			close(udp_socket);
+			return false;
+		}
 		return true;
 	}
-
 	void reconnect();
 
 	void close();
 
 private:
-	static void receive_callback(void *args, struct udp_pcb *udp_control_block, struct pbuf *packet_buffer, const ip_addr_t *remote_address, u16_t port);
-	
+	std::jthread receiving_udp_thread;
+	std::atomic<bool> is_receiving;
+	void create_udp_socket();
 };
 
 
