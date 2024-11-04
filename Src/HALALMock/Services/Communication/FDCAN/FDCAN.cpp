@@ -50,61 +50,8 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 }
 
 ssize_t dlc_to_number_of_bytes(FDCAN::DLC dlc){
-	ssize_t number_of_bytes;
-	switch (dlc) {
-		case DLC::BYTES_0:
-			number_of_bytes = 0;
-			break;
-		case DLC::BYTES_1:
-			number_of_bytes = 1;
-			break;
-		case DLC::BYTES_2:
-			number_of_bytes = 2;
-			break;
-		case DLC::BYTES_3:
-			number_of_bytes = 3;
-			break;
-		case DLC::BYTES_4:
-			number_of_bytes = 4;
-			break;
-		case DLC::BYTES_5:
-			number_of_bytes = 5;
-			break;
-		case DLC::BYTES_6:
-			number_of_bytes = 6;
-			break;
-		case DLC::BYTES_7:
-			number_of_bytes = 7;
-			break;
-		case DLC::BYTES_8:
-			number_of_bytes = 8;
-			break;
-		case DLC::BYTES_12:
-			number_of_bytes = 12;
-			break;
-		case DLC::BYTES_16:
-			number_of_bytes = 16;
-			break;
-		case DLC::BYTES_20:
-			number_of_bytes = 20;
-			break;
-		case DLC::BYTES_24:
-			number_of_bytes = 24;
-			break;
-		case DLC::BYTES_32:
-			number_of_bytes = 32;
-			break;
-		case DLC::BYTES_48:
-			number_of_bytes = 48;
-			break;
-		case DLC::BYTES_64:
-			number_of_bytes = 64;
-			break;
-		default:
-			number_of_bytes = 4; 
-			break;
-	}
-	return number_of_bytes;
+
+	return static_cast<ssize_t>(FDCAN::dlc_to_len[dlc]);
 }
 
 void FDCAN::start(){
