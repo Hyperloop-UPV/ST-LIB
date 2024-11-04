@@ -9,7 +9,8 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "stm32h7xx_hal.h"
+
+
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
 
@@ -17,7 +18,8 @@ using std::unordered_map;
 using std::vector;
 using std::queue;
 
-
+#define FDCAN_PORT_BASE 3000
+extern constant in_addr_t fdcan_ip_adress;
 
 class FDCAN{
 public:
@@ -58,18 +60,17 @@ private:
      *        predefined instances should be used.
      *
      */
+    uint8_t Port_counter;
     struct Instance{
         Pin TX;
         Pin RX;
-        FDCAN_HandleTypeDef* hfdcan;
-        FDCAN_GlobalTypeDef* instance;
         DLC dlc;
-        FDCAN_TxHeaderTypeDef tx_header;
         uint32_t rx_location;
         queue<FDCAN::Packet> rx_queue;
         uint8_t rx_queue_max_size = 64;
         vector<uint8_t> tx_data;
         uint8_t fdcan_number;
+        uint16_t socket;
         bool start = false;
 
     };

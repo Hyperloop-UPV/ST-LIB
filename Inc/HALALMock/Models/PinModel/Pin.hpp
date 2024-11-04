@@ -78,16 +78,17 @@ enum TRIGGER{
     BOTH_EDGES = 2
 };
 enum class PinType {
-    NOT_USED,
-    DigitalOutput,
-    DigitalInput,
-    PWM,
-    DualPWM,
-    ADC,
-    ENCODER,
-    EXTIPin,  // Usando temporalmente este nombre por que hay colisión entre
-              // nombres
-    // TODO: Add more types
+	NOT_USED,
+	DigitalOutput,
+	DigitalInput,
+	PWM,
+	DualPWM,
+	ADC,
+	FDCAN,
+  ENCODER,
+  EXTIPin,
+	// TODO: Add more types
+
 };
 
 struct EmulatedPin {
@@ -116,6 +117,9 @@ struct EmulatedPin {
       uint16_t value;
 			bool is_on;
 		} ADC;
+		struct{
+
+		}FDCAN;
     struct {
         uint32_t priority = 0;
         bool is_on;
