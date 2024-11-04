@@ -6,6 +6,9 @@
 
 
 	struct RTCData{
+        // in Mock this var is dummy
+        // just maintained for legacy
+        uint16_t counter{0};
 		uint8_t second;
 		uint8_t minute;
 		uint8_t hour;
