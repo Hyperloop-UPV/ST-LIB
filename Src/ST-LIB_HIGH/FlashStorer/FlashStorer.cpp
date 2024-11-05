@@ -1,3 +1,4 @@
+#ifndef SIM_ON
 #include "FlashStorer/FlashStorer.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
@@ -38,4 +39,6 @@ bool FlashStorer::store_all(){
 
 	return true;
 }
+
+#endif //SIM_ON
 
