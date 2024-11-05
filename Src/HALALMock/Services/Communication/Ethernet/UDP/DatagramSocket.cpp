@@ -1,40 +1,21 @@
-/*
- * DatagramSocket.cpp
- *
- *  Created on: 2 nov. 2022
- *      Author: stefa
- */
+
 
 #include "HALALMock/Services/Communication/Ethernet/UDP/DatagramSocket.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
-
-#ifdef HAL_ETH_MODULE_ENABLED
+#define MAX_SIZE_PACKET 1024
 
 DatagramSocket::DatagramSocket() = default;
 
-DatagramSocket::DatagramSocket(DatagramSocket&& other):udp_control_block(move(other.udp_control_block)), local_ip(move(other.local_ip)) , local_port(move(other.local_port)) ,remote_ip(move(other.remote_ip)),
+DatagramSocket::DatagramSocket(DatagramSocket&& other):udp_socket(move(other.udp_socket)), local_ip(move(other.local_ip)) , local_port(move(other.local_port)) ,remote_ip(move(other.remote_ip)),
 		remote_port(move(remote_port))
 		{}
 
-DatagramSocket::DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port): local_ip(local_ip), local_port(local_port), remote_ip(remote_ip), remote_port(remote_port){
+DatagramSocket::DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port): local_ip(local_ip), 
+local_port(local_port), remote_ip(remote_ip), remote_port(remote_port){
 		if(not Ethernet::is_running) {
-			ErrorHandler("Cannot declare UDP socket before Ethernet::start()");
+			std::cout<<"Cannot declare UDP socket before Ethernet::start()\n";
 			return;
 		}
-		udp_control_block = udp_new();
-		err_t error = udp_bind(udp_control_block, &local_ip.address, local_port);
-
-		if(error == ERR_OK){
-		   udp_recv(udp_control_block, receive_callback, nullptr);
-		   udp_connect(udp_control_block, &remote_ip.address, remote_port);
-		   is_disconnected = false;
-		   Ethernet::update();
-		}
-		else{
-		   udp_remove(udp_control_block);
-		   is_disconnected = true;
-		   ErrorHandler("Error binding UDP socket");
-		}
+		create_udp_socket();
 	}
 
 DatagramSocket::DatagramSocket(EthernetNode local_node, EthernetNode remote_node): DatagramSocket(local_node.ip, local_node.port, remote_node.ip, remote_node.port){}
@@ -43,9 +24,44 @@ DatagramSocket::~DatagramSocket(){
 	if(not is_disconnected)
 		close();
 }
-
+DatagramSocket::create_udp_socket(){
+	udp_socket = socket(AF_INET,SOCK_DGRAM,0);
+	if(udp_socket < 0){
+		std::cout<<"Socket creation failed\n";
+	}
+	struct sockaddr_in servaddr; 
+	servaddr.sin_family = AF_INET; 
+	servaddr.sin_port = htons(local_port); 
+	servaddr.sin_addr.s_addr = local_ip.address; 
+	if(bind(udp_socket, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0){
+		std::cout<<"Bind error\n";
+		close(udp_socket);
+		is_disconnected = true;
+		return;
+	}
+	is_disconnected = false;
+	//receiving callback
+	receiving_udp_thread = std::jthread [&](){
+		is_receiving = true;
+		while(true){
+			uint8_t received_data[1024];
+			struct sockaddr_in src_addr;
+			socklen_t addr_len = sizeof(src_addr);
+			ssize_t size = recvfrom(udp_socket,(uint8_t*)received_data,MAX_SIZE_PACKET,0,(struct sockaddr *)&src_addr, &addr_len);
+			if(size < 0){
+				cout<<"Error in function recvfrom\n";
+				is_receiving = false;
+				return;
+			}
+			//receive callback
+			Packet::parse_data(received_data);
+		}
+			
+	}
+	Ethernet::update();
+}
 void DatagramSocket::operator=(DatagramSocket&& other){
-	udp_control_block = move(other.udp_control_block);
+	udp_socket = move(other.udp_socket);
 	local_ip = move(other.local_ip);
 	local_port = move(other.local_port);
 	remote_ip = other.remote_ip;
@@ -54,34 +70,18 @@ void DatagramSocket::operator=(DatagramSocket&& other){
 }
 
 void DatagramSocket::reconnect(){
-	udp_disconnect(udp_control_block);
 	is_disconnected = true;
-	err_t error = udp_bind(udp_control_block, &local_ip.address, local_port);
-
-	if(error == ERR_OK){
-	   udp_recv(udp_control_block, receive_callback, nullptr);
-	   udp_connect(udp_control_block, &remote_ip.address, remote_port);
-	   is_disconnected = false;
-	   Ethernet::update();
-	}
-	else{
-	   udp_remove(udp_control_block);
-	   is_disconnected = true;
-	   ErrorHandler("Error binding UDP socket");
-	}
+	close();
+	create_udp_socket();
 }
 
 void DatagramSocket::close(){
-	udp_disconnect(udp_control_block);
-	udp_remove(udp_control_block);
+	//check if receiving thread is on and delete it
+	if(is_receiving){
+		~receiving_udp_thread();
+	}
+	close(udp_socket);
 	is_disconnected = true;
-}
-
-void DatagramSocket::receive_callback(void *args, struct udp_pcb *udp_control_block, struct pbuf *packet_buffer, const ip_addr_t *remote_address, u16_t port){
-	uint8_t* received_data = (uint8_t*)packet_buffer->payload;
-	Packet::parse_data(received_data);
-
-	pbuf_free(packet_buffer);
 }
 
 #endif

@@ -87,7 +87,8 @@ enum class PinType {
     FDCAN,
     INPUTCAPTURE,
     ENCODER,
-    EXTIPin  // Usando temporalmente este nombre por que hay colisión entre
+    EXTIPin,
+    Ethernet  // Usando temporalmente este nombre por que hay colisión entre
               // nombres
     // TODO: Add more types
 

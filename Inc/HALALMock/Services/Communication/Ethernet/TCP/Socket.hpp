@@ -11,11 +11,25 @@
 #include "HALALMock/Models/Packets/Packet.hpp"
 #include "HALALMock/Models/Packets/Order.hpp"
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
-#ifdef HAL_ETH_MODULE_ENABLED
+#include <jtrhead>
 
-#define PBUF_POOL_MEMORY_DESC_POSITION 8
 
 class Socket : public OrderProtocol{
+private:
+	
+	std::jthread receiving_thread;
+	std::jthread wait_for_connection_thread;
+	std::atomic<bool> is_receiving;
+	std::atomic<bool> is_connecting;
+	std::mutex mtx; 
+	void start_receiving();
+	void receive();
+	void create_socket();
+	void configure_socket();
+	void connect_thread();
+	void configure_socket_and_connect();
+	void connection_callback();
+
 public:
 	enum SocketState{
 		INACTIVE,
@@ -27,11 +41,11 @@ public:
 	uint32_t local_port;
 	IPV4 remote_ip;
 	uint32_t remote_port;
-	tcp_pcb* connection_control_block;
-	tcp_pcb* socket_control_block;
 	SocketState state;
-	queue<struct pbuf*> tx_packet_buffer;
-	queue<struct pbuf*> rx_packet_buffer;
+	queue<Packet*> tx_packet_buffer;
+	queue<Packet*> rx_packet_buffer;
+	//socket_descriptor
+	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;
 	bool pending_connection_reset = false;
 	bool use_keep_alives{true};
@@ -69,24 +83,7 @@ public:
 			reconnect();
 			return false;
 		}
-		struct memp* next_memory_pointer_in_packet_buffer_pool = (*(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION]->tab))->next;
-		if(next_memory_pointer_in_packet_buffer_pool == nullptr){
-			if(socket_control_block->unsent != nullptr){
-				tcp_output(socket_control_block);
-			}else{
-				memp_free_pool(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION], next_memory_pointer_in_packet_buffer_pool);
-			}
-			return false;
-		}
-
-		uint8_t* order_buffer = order.build();
-		if(order.get_size() > tcp_sndbuf(socket_control_block)){
-			return false;
-		}
-
-		struct pbuf* packet = pbuf_alloc(PBUF_TRANSPORT, order.get_size(), PBUF_POOL);
-		pbuf_take(packet, order_buffer, order.get_size());
-		tx_packet_buffer.push(packet);
+		tx_packet_buffer.push(order);
 		send();
 		return true;
 	}
@@ -96,17 +93,6 @@ public:
 	void process_data();
 
 	bool is_connected();
-
-	static err_t connect_callback(void* arg, struct tcp_pcb* client_control_block, err_t error);
-	static err_t receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error);
-	static err_t poll_callback(void* arg, struct tcp_pcb* client_control_block);
-	static err_t send_callback(void* arg, struct tcp_pcb* client_control_block, uint16_t length);
-	static void error_callback(void *arg, err_t error);
-
-	static err_t connection_poll_callback(void* arg, struct tcp_pcb* connection_control_block);
-	static void connection_error_callback(void *arg, err_t error);
-
-	static void config_keepalive(tcp_pcb* control_block, Socket* socket);
 
 };
 #endif
