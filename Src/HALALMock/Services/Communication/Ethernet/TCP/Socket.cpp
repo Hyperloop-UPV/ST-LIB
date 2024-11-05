@@ -54,7 +54,7 @@ void Socket::create_socket(){
 	socket_Address.sin_port = htons(local_port);
 	if(bind(socket_fd, (struct sockaddr*)&socket_Address, sizeof(socket_Address)) < 0){
 		std::cout<<"Bind error\n";
-		close(socket_fd);
+		::close(socket_fd);
 		return;
 	}
 }
@@ -63,35 +63,35 @@ void Socket::configure_socket(){
 	int flag = 1;
 	if (setsockopt(socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
 		std::cout<<"It has been an error disabling Nagle's algorithm\n";
-		close(socket_fd);
+		::close(socket_fd);
 		return;
 	}
 	//habilitate keepalives
     int optval = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
         std::cout << "ERROR configuring KEEPALIVES\n";
-        close(socket_fd);
+        ::close(socket_fd);
         return;
     }
 	// Configurar TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
     float tcp_keepidle_time = static_cast<float>(keepalive_config.inactivity_time_until_keepalive_ms)/1000.0;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPIDLE\n";
-		close(socket_fd);
+		::close(socket_fd);
         return;
     }
 	  //interval between keepalives
     float keep_interval_time = static_cast<float>(keepalive_config.space_between_tries_ms)/1000.0;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPINTVL\n";
-        close(socket_fd);
+        ::close(socket_fd);
         return;
     }
 	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
 	 float keep_cnt = static_cast<float>(keepalive_config.tries_until_disconnection)/1000.0;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
         std::cout << "Error to configure TCP_KEEPCNT\n";
-        close(socket_fd);
+        ::close(socket_fd);
         return ;
     }
 }
@@ -127,7 +127,7 @@ void Socket::configure_socket_and_connect(){
 		if(result > 0){ //Connection succesfully
 			connection_callback();
 		}else{
-			close(socket_fd);
+			::close(socket_fd);
 			state = INACTIVE;
 		}
 		
@@ -157,7 +157,7 @@ void Socket::close(){
 		rx_packet_buffer.pop();
 	}
 	state = CLOSING;
-	close(socket_fd);
+	::close(socket_fd);
     
 }
 
@@ -181,7 +181,7 @@ void Socket::reconnect(){
 		if(result > 0){ //Connection succesfully
 			connection_callback();
 		}else{
-			close(socket_fd);
+			::close(socket_fd);
 			state = INACTIVE;
 		}
 	}
@@ -221,7 +221,7 @@ void Socket::receive() {
         ssize_t received_bytes = ::recv(socket_fd, buffer, sizeof(buffer), 0);
         if (received_bytes > 0) {
             HeapPacket *packet;
-			packet->parse(received_bytes);
+			packet->parse(*buffer);
             {
                 std::lock_guard<std::mutex> lock(mtx); 
                 rx_packet_buffer.push(std::move(packet));
@@ -236,7 +236,7 @@ void Socket::receive() {
 			while(!rx_packet_buffer.empty()){
 				rx_packet_buffer.pop();
 			}
-			close(socket_fd);
+			::close(socket_fd);
 			return;
         }
     }
@@ -244,9 +244,10 @@ void Socket::receive() {
 void Socket::process_data(){
 	
 	while(!rx_packet_buffer.empty()){
+		HeapPacket *packet;
 		{
 			std::lock_guard<std::mutex> lock(mtx); 
-			HeapPacket *packet = rx_packet_buffer.front();
+			packet = rx_packet_buffer.front();
 			rx_packet_buffer.pop();
 		}
 		uint8_t* new_data = (uint8_t*)(packet->build());
@@ -275,5 +276,4 @@ bool Socket::add_order_to_queue(Order& order){
 bool Socket::is_connected(){
 	return state == Socket::SocketState::CONNECTED;
 }
-#endif
 

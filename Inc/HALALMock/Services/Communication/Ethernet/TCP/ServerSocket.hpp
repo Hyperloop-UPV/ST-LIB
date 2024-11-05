@@ -5,7 +5,7 @@
  *      Author: stefa
  */
 #pragma once
-
+#ifdef STLIB_ETH
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALALMock/Models/Packets/Packet.hpp"
@@ -191,4 +191,4 @@ private:
 
 };
 
-#endif
+#endif //STLIB_ETH

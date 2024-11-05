@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#ifdef STLIB_ETH
+
 #include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALAL/Models/Packets/Packet.hpp"
@@ -190,4 +192,5 @@ private:
 
 };
 
-#endif
+#endif //HAL_ETH_MODULE_ENABLED
+#endif //STLIB_ETH

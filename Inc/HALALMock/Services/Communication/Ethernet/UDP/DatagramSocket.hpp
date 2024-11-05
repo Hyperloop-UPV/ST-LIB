@@ -2,6 +2,7 @@
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALALMock/Models/Packets/Packet.hpp"
+#include <iostream>
 
 
 class DatagramSocket{
@@ -32,7 +33,7 @@ public:
     	remote_socket_addr.sin_addr.s_addr = remote_ip.address; 
 		
 		if(sendto(udp_socket,packet_buffer,size,0,(struct sockaddr *)&remote_socket_addr, sizeof(remote_socket_addr)) < 0){
-			close(udp_socket);
+			::close(udp_socket);
 			return false;
 		}
 		return true;
@@ -47,5 +48,3 @@ private:
 	void create_udp_socket();
 };
 
-
-#endif

@@ -33,4 +33,3 @@ private:
 	static void mpu_start();
 };
 
-#endif

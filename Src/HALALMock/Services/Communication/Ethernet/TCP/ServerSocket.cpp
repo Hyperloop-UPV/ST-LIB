@@ -1,4 +1,4 @@
-
+#ifdef STLIB_ETH
 #include "HALALMock/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 
 
@@ -376,4 +376,4 @@ void ServerSocket::config_keepalive(tcp_pcb* control_block, ServerSocket* server
 }
 
 
-#endif
+#endif //STLIB_ETH

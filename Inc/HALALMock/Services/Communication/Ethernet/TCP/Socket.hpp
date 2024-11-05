@@ -11,7 +11,8 @@
 #include "HALALMock/Models/Packets/Packet.hpp"
 #include "HALALMock/Models/Packets/Order.hpp"
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
-#include <jtrhead>
+#include <iostream>
+#include <thread>
 
 
 class Socket : public OrderProtocol{
@@ -42,8 +43,8 @@ public:
 	IPV4 remote_ip;
 	uint32_t remote_port;
 	SocketState state;
-	queue<Packet*> tx_packet_buffer;
-	queue<Packet*> rx_packet_buffer;
+	queue<HeapPacket*> tx_packet_buffer;
+	queue<HeapPacket*> rx_packet_buffer;
 	//socket_descriptor
 	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;
@@ -83,7 +84,7 @@ public:
 			reconnect();
 			return false;
 		}
-		tx_packet_buffer.push(order);
+		tx_packet_buffer.push(&order);
 		send();
 		return true;
 	}
@@ -95,4 +96,3 @@ public:
 	bool is_connected();
 
 };
-#endif
