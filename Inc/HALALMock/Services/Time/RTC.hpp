@@ -1,15 +1,14 @@
 #pragma once
-/*
-//#include "stm32h7xx_hal.h"
+
 #include "ErrorHandler/ErrorHandler.hpp"
+#include <chrono>
+#include <ctime>  
 
-
-#define RTC_MAX_COUNTER 32767
-
-#ifdef HAL_RTC_MODULE_ENABLED
 
 	struct RTCData{
-		uint16_t counter;
+        // in Mock this var is dummy
+        // just maintained for legacy
+        uint16_t counter{0};
 		uint8_t second;
 		uint8_t minute;
 		uint8_t hour;
@@ -27,8 +26,3 @@
         static RTCData get_rtc_timestamp();
         static void set_rtc_data(uint16_t counter, uint8_t second, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint16_t year);
         };
-
-
-
-#endif
-*/
