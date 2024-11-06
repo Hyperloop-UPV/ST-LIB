@@ -87,7 +87,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
         spi_master_sockets[id].second = peripheral_ports.at(spi);
 
         // Init sender thread
-        spi_instance->sender_thread = std::thread([spi_instance, id] {
+        spi_instance->sender_thread = std::jthread([spi_instance, id] {
             sockaddr_in broadcast_address;
             broadcast_address.sin_family = AF_INET; // Set IPv4
             broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
@@ -114,7 +114,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
         });
 
         // Init receiver thread
-        spi_instance->receiver_thread = std::thread([spi_instance, id] {
+        spi_instance->receiver_thread = std::jthread([spi_instance, id] {
             while(true) {
                 std::unique_lock lock(spi_instance->reception_mx);
                 spi_instance->cv_reception.wait(lock, [spi_instance]{ return !spi_instance->reception_queue.empty(); });
@@ -129,7 +129,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
         });
 
         // Init sender and receiver thread
-        spi_instance->sender_receiver_thread = std::thread([spi_instance, id] {
+        spi_instance->sender_receiver_thread = std::jthread([spi_instance, id] {
             sockaddr_in broadcast_address;
             broadcast_address.sin_family = AF_INET; // Set IPv4
             broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
