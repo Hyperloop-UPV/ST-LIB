@@ -72,6 +72,7 @@ enum OperationMode {
 };
 
 enum PinState { OFF, ON };
+
 enum TRIGGER{
     RISING_EDGE = 1,
     FAILING_EDGE = 0,
@@ -85,8 +86,9 @@ enum class PinType {
 	DualPWM,
 	ADC,
 	FDCAN,
-  ENCODER,
-  EXTIPin,
+    SPI,
+    ENCODER,
+    EXTIPin
 	// TODO: Add more types
 
 };
@@ -107,31 +109,34 @@ struct EmulatedPin {
 			bool is_on;
 			std::chrono::nanoseconds dead_time_ns;
 		} PWM;
-    struct {
+		struct {
 			float duty_cycle;
 			uint32_t frequency;
 			bool is_on = false;
 			std::chrono::nanoseconds dead_time_ns;
 		} DualPWM;
 		struct {
-      uint16_t value;
-			bool is_on;
+			uint16_t value;
+            bool is_on;
 		} ADC;
-		struct{
+        struct {
 
-		}FDCAN;
-    struct {
-        uint32_t priority = 0;
-        bool is_on;
-        bool trigger_signal;
-        TRIGGER trigger_mode;
-    } EXTIPin;
-    struct {
-        uint32_t count_value;
-        bool direction;
-        bool is_on;
-    } ENCODER;
-		// TODO Add more types
+        } FDCAN;
+        struct {
+            bool is_on;
+        } SPI;
+        struct {
+            uint32_t priority = 0;
+            bool is_on;
+            bool trigger_signal;
+            TRIGGER trigger_mode;
+        } EXTIPin;
+        struct {
+            uint32_t count_value;
+            bool direction;
+            bool is_on;
+        } ENCODER;
+        // TODO Add more types
 	} PinData;
 };
 
