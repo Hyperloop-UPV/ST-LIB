@@ -31,6 +31,32 @@ private:
 	static err_t connection_poll_callback(void* arg, struct tcp_pcb* connection_control_block);
 	static void connection_error_callback(void *arg, err_t error);
 	static void config_keepalive(tcp_pcb* control_block, Socket* socket);
+		bool send_order(Order& order) override{
+		if(state != CONNECTED){
+			reconnect();
+			return false;
+		}
+		struct memp* next_memory_pointer_in_packet_buffer_pool = (*(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION]->tab))->next;
+		if(next_memory_pointer_in_packet_buffer_pool == nullptr){
+			if(socket_control_block->unsent != nullptr){
+				tcp_output(socket_control_block);
+			}else{
+				memp_free_pool(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION], next_memory_pointer_in_packet_buffer_pool);
+			}
+			return false;
+		}
+
+		uint8_t* order_buffer = order.build();
+		if(order.get_size() > tcp_sndbuf(socket_control_block)){
+			return false;
+		}
+
+		struct pbuf* packet = pbuf_alloc(PBUF_TRANSPORT, order.get_size(), PBUF_POOL);
+		pbuf_take(packet, order_buffer, order.get_size());
+		tx_packet_buffer.push(packet);
+		send();
+		return true;
+	}
 public:
 	enum SocketState{
 		INACTIVE,
@@ -77,32 +103,7 @@ public:
 	 * @brief puts the order data into the tx_packet_buffer and sends it
 	 * @return true if the data was sent successfully, false otherwise
 	 */
-	bool send_order(Order& order) override{
-		if(state != CONNECTED){
-			reconnect();
-			return false;
-		}
-		struct memp* next_memory_pointer_in_packet_buffer_pool = (*(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION]->tab))->next;
-		if(next_memory_pointer_in_packet_buffer_pool == nullptr){
-			if(socket_control_block->unsent != nullptr){
-				tcp_output(socket_control_block);
-			}else{
-				memp_free_pool(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION], next_memory_pointer_in_packet_buffer_pool);
-			}
-			return false;
-		}
 
-		uint8_t* order_buffer = order.build();
-		if(order.get_size() > tcp_sndbuf(socket_control_block)){
-			return false;
-		}
-
-		struct pbuf* packet = pbuf_alloc(PBUF_TRANSPORT, order.get_size(), PBUF_POOL);
-		pbuf_take(packet, order_buffer, order.get_size());
-		tx_packet_buffer.push(packet);
-		send();
-		return true;
-	}
 
 	void send();
 	bool is_connected();
