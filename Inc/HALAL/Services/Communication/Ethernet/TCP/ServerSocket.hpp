@@ -94,32 +94,6 @@ public:
 	 * @return true if the data could be allocated in the buffer, false otherwise
 	 */
 	bool add_order_to_queue(Order& order);
-
-	
-
-	/**
-	* @brief sends all the binary data saved in the tx_packet_buffer to the connected client. 
-	*
-	* This function is the one that actually handles outgoing communication, sending one by one the packets in the tx_packet_buffer
-	* The messages in the buffer are all immediately sent after calling this function, unless an error of any kind happened, in which case ErrorHandler is raised
-	*/
-	void send();
-
-	/**
-	* @brief function that returns wether or not a client is connected to the ServerSocket
-	*
-	* This functions returns a comparison to the state of the ServerSocket, checking wether or not it is on the ACCEPTED state
-	* This function is equivalent to doing instance->state == ServerSocket#ACCEPT
-	*
-	* @return true if a connection with the client was established, false otherwise
-	*/
-	bool is_connected();
-
-private:
-	struct tcp_pcb* server_control_block = nullptr;
-	queue<struct pbuf*> tx_packet_buffer;
-	queue<struct pbuf*> rx_packet_buffer;
-	struct tcp_pcb* client_control_block;
 	/**
 	 * @brief puts the order data into the tx_packet_buffer and sends all the data in the buffer to the client
 	 *
@@ -151,6 +125,32 @@ private:
 		send();
 		return true;
 	}
+	
+
+	/**
+	* @brief sends all the binary data saved in the tx_packet_buffer to the connected client. 
+	*
+	* This function is the one that actually handles outgoing communication, sending one by one the packets in the tx_packet_buffer
+	* The messages in the buffer are all immediately sent after calling this function, unless an error of any kind happened, in which case ErrorHandler is raised
+	*/
+	void send();
+
+	/**
+	* @brief function that returns wether or not a client is connected to the ServerSocket
+	*
+	* This functions returns a comparison to the state of the ServerSocket, checking wether or not it is on the ACCEPTED state
+	* This function is equivalent to doing instance->state == ServerSocket#ACCEPT
+	*
+	* @return true if a connection with the client was established, false otherwise
+	*/
+	bool is_connected();
+
+private:
+	struct tcp_pcb* server_control_block = nullptr;
+	queue<struct pbuf*> tx_packet_buffer;
+	queue<struct pbuf*> rx_packet_buffer;
+	struct tcp_pcb* client_control_block;
+
 		/**
 	* @brief process the data received by the client orders. It is meant to be called only by Lwip on the receive_callback
 	*
