@@ -4,13 +4,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-
-#include "HALALMock/Models/MPUManager/MPUManager.hpp"
-#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 #include <thread>
 
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
+
 map<uint8_t, SPI::Instance*> SPI::registered_spi{};
-map<SPI_HandleTypeDef*, SPI::Instance*> SPI::registered_spi_by_handler{};
 
 uint16_t SPI::id_counter = 0;
 
@@ -49,7 +47,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
     // Create socket for this SPI peripheral
     int spi_socket = socket(AF_INET, SOCK_DGRAM, 0);
 
-    if (spi_instance->mode == SPI_MODE_MASTER) {
+    if (spi_instance->mode == SPIMode::MASTER) {
         EmulatedPin& SS_pin = SharedMemory::get_pin(*spi_instance->SS);
 
         if (SS_pin.type != PinType::NOT_USED) {
@@ -159,17 +157,12 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
                 spi_instance->transmission_reception_queue.pop();  
                 lock.unlock();
 
-                SPI::TxRxCpltCallback(spi_instance->hspi);
+                SPI::TxRxCpltCallback(id);
             }
         });
     }
 
-    if (spi_instance->use_DMA) {
-        DMA::inscribe_stream(spi_instance->hdma_rx);
-        DMA::inscribe_stream(spi_instance->hdma_tx);
-    }
     SPI::registered_spi[id] = spi_instance;
-    SPI::registered_spi_by_handler[spi_instance->hspi] = spi_instance;
 
     return id;
 }
@@ -182,7 +175,7 @@ void SPI::assign_RS(uint8_t id, Pin& RSPin) {
 
     SPI::Instance* spi = SPI::registered_spi[id];
     spi->RS = &RSPin;
-    if (spi->mode == SPI_MODE_MASTER) {
+    if (spi->mode == SPIMode::MASTER) {
         spi->RShandler = DigitalInput::inscribe(RSPin);
     } else {
         spi->RShandler = DigitalOutputService::inscribe(RSPin);
@@ -324,7 +317,7 @@ void SPI::slave_listen_Orders(uint8_t id) {
 void SPI::Order_update() {
     for (auto iter : SPI::registered_spi) {
         SPI::Instance* spi = iter.second;
-        if (spi->mode == SPI_MODE_MASTER) {
+        if (spi->mode == SPIMode::MASTER) {
             if (spi->state == SPI::IDLE) {
                 if (!spi->SPIOrderQueue.is_empty()) {
                     spi->state = SPI::STARTING_ORDER;
@@ -395,13 +388,13 @@ void SPI::init(SPI::Instance* spi) {
     spi->initialized = true;
 }
 
-void SPI::TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
-    if (!SPI::registered_spi_by_handler.contains(hspi)) {
+void SPI::TxRxCpltCallback(uint8_t id) {
+    if (!SPI::registered_spi.contains(id)) {
         ErrorHandler("Used SPI protocol without the HALAL SPI interface");
         return;
     }
 
-    SPI::Instance* spi = SPI::registered_spi_by_handler[hspi];
+    SPI::Instance* spi = SPI::registered_spi[id];
     switch (spi->state) {
         case SPI::IDLE:
             // Does nothing as there is no Order handling on a direct send
@@ -409,8 +402,7 @@ void SPI::TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
         case SPI::STARTING_ORDER: {
             SPIBaseOrder* Order =
                 SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
-            if (spi->mode ==
-                SPI_MODE_MASTER) {  // checks if the Order is ready on slave
+            if (spi->mode == SPIMode::MASTER) {  // checks if the Order is ready on slave
                 if (*(spi->available_end) == *(spi->SPIOrderID)) {
                     spi->state = SPI::PROCESSING_ORDER;
                     Order->master_prepare_buffer(spi->tx_buffer);
@@ -443,10 +435,9 @@ void SPI::TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
             SPIBaseOrder* Order =
                 SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
             if (Order == 0x0) {
-                SPI::spi_recover(spi, hspi);
+                SPI::spi_recover(spi);
                 return;
-            } else if (spi->mode ==
-                       SPI_MODE_SLAVE) {  // prepares the Order on the slave
+            } else if (spi->mode == SPIMode::SLAVE) {  // prepares the Order on the slave
                 Order->slave_prepare_buffer(spi->tx_buffer);
                 SPI::spi_communicate_order_data(
                     spi, spi->tx_buffer, spi->rx_buffer, Order->payload_size);
@@ -461,7 +452,7 @@ void SPI::TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
             SPIBaseOrder* Order =
                 SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
 
-            if (spi->mode == SPI_MODE_MASTER) {  // ends communication
+            if (spi->mode == SPIMode::MASTER) {  // ends communication
                 if (*(uint16_t*)&spi
                          ->rx_buffer[Order->CRC_index - PAYLOAD_OVERHEAD] !=
                     *spi->SPIOrderID) {
@@ -476,7 +467,7 @@ void SPI::TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
             } else {  // prepares the next received Order
                 if (*(uint16_t*)&spi->rx_buffer[Order->CRC_index] !=
                     *spi->SPIOrderID) {
-                    SPI::spi_recover(spi, hspi);
+                    SPI::spi_recover(spi);
                     return;
                 }
                 spi->Order_count++;
@@ -490,7 +481,7 @@ void SPI::TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
             break;
         }
         case SPI::ERROR_RECOVERY: {
-            if (spi->mode == SPI_MODE_MASTER) {
+            if (spi->mode == SPIMode::MASTER) {
                 // TODO
             } else {
                 SPI::mark_slave_waiting(spi);
@@ -525,12 +516,12 @@ void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
 }
 
 void SPI::turn_on_chip_select(SPI::Instance* spi) {
-    EmulatedPin& SS_pin = SharedMemory::get_pin(spi->SS);
+    EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
     SS_pin.PinData.SPI.is_on = true;
 }
 
 void SPI::turn_off_chip_select(SPI::Instance* spi) {
-    EmulatedPin& SS_pin = SharedMemory::get_pin(spi->SS);
+    EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
     SS_pin.PinData.SPI.is_on = false;
 }
 
@@ -555,7 +546,7 @@ bool SPI::known_slave_ready(SPI::Instance* spi) {
     return false;
 }
 
-void SPI::spi_recover(SPI::Instance* spi, SPI_HandleTypeDef* hspi) {
+void SPI::spi_recover(SPI::Instance* spi) {
     SPI::mark_slave_waiting(spi);
     spi->error_count = spi->error_count + 1;
     *(spi->SPIOrderID) = CASTED_ERROR_ORDER_ID;

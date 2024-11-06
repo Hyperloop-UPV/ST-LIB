@@ -4,14 +4,11 @@
 #include "HALALMock/Models/Packets/SPIOrder.hpp"
 #include "HALALMock/Services/DigitalOutputService/DigitalOutputService.hpp"
 #include "HALALMock/Services/DigitalInputService/DigitalInputService.hpp"
-#include "HALALMock/Models/DMA/DMA.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #define MASTER_SPI_CHECK_DELAY 100000 //how often the master should check if the slave is ready, in nanoseconds
 
 #define MASTER_MAXIMUM_QUEUE_LEN 10
-
-//TODO: Hay que hacer el Chip select funcione a traves de un GPIO en vez de a traves del periferico.
 
 /**
  * @brief SPI service class. Abstracts the use of the SPI service of the HAL library.
@@ -30,6 +27,11 @@ public:
 		ERROR_RECOVERY,
     };
 
+    enum class SPIMode {
+        MASTER,
+        SLAVE
+    };
+
     /**
      * @brief Struct which defines all data referring to SPI peripherals. DO NOT MODIFY ON RUN TIME.
      * declared public so HAL callbacks can directly access the instance
@@ -44,20 +46,9 @@ public:
         Pin* RS; /**< Ready Slave pin (optional)*/
         uint8_t RShandler;
 
-        SPI_HandleTypeDef* hspi;  /**< HAL spi struct pin. */  
-        SPI_TypeDef* instance; /**< HAL spi instance. */
-        DMA::Stream hdma_tx; /**< HAL DMA handler for writting */
-        DMA::Stream hdma_rx; /**< HAL DMA handler for reading */
-
         uint32_t baud_rate_prescaler; /**< SPI baud prescaler.*/
-        uint32_t mode = SPI_MODE_MASTER; /**< SPI mode. */
-        uint32_t data_size = SPI_DATASIZE_8BIT;  /**< SPI data size. Default 8 bit */
-        uint32_t first_bit = SPI_FIRSTBIT_MSB; /**< SPI first bit,. */
-        uint32_t clock_polarity = SPI_POLARITY_LOW; /**< SPI clock polarity. */
-        uint32_t clock_phase = SPI_PHASE_1EDGE; /**< SPI clock phase. */
-        uint32_t nss_polarity = SPI_NSS_POLARITY_LOW; /**< SPI chip select polarity. */
+        SPIMode mode = SPIMode::MASTER; /**< SPI mode. */
 
-       
         bool initialized = false; /**< Peripheral has already been initialized */
 
         bool use_DMA = false;
@@ -109,11 +100,6 @@ public:
     static map<uint8_t, SPI::Instance* > registered_spi;
 
     static unordered_map<SPI::Peripheral, SPI::Instance*> available_spi;
-
-    /**
-     * @brief map used in HAL callbacks to obtain the instance of the respective handler
-     */
-    static map<SPI_HandleTypeDef*, SPI::Instance*> registered_spi_by_handler;
 
     /**
      * @brief SPI 3 wrapper enum of the STM32H723.
@@ -338,7 +324,7 @@ public:
      * @brief Recovers SPI from any error so it starts working again, and counts the error
      */
     static void spi_recover(uint8_t id);
-    static void spi_recover(SPI::Instance* spi, SPI_HandleTypeDef* hspi);
+    static void spi_recover(SPI::Instance* spi);
 
     /**
      * @brief Check if an SPI bus collision occurred during recover
@@ -356,7 +342,7 @@ private:
 
     static unordered_map<uint8_t, std::pair<int, int>> spi_master_sockets; /** Map that associates registered SPI master with its server socket and its port */
 
-    static void TxRxCpltCallback(SPI_HandleTypeDef* hspi);
+    static void TxRxCpltCallback(uint8_t id);
 
 };
 
