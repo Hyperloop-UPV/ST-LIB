@@ -34,9 +34,12 @@ protected:
 	double* speed;
 	double* acceleration;
 	double time;
-	double positions[N_FRAMES];
-	double times[N_FRAMES];
-	double speeds[N_FRAMES];
+	// double positions[N_FRAMES];
+	// double times[N_FRAMES];
+	// double speeds[N_FRAMES];
+	RingBuffer<double, N_FRAMES> positions;
+	RingBuffer<double, N_FRAMES> times;
+	RingBuffer<double, N_FRAMES> speeds;
 	uint64_t last_clock_time;
 
 private:
