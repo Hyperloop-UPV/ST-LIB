@@ -29,8 +29,18 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 
 	FDCAN::Instance* fdcan_instance = FDCAN::available_fdcans[fdcan];
 
-	Pin::inscribe(fdcan_instance->TX, ALTERNATIVE);
-	Pin::inscribe(fdcan_instance->RX, ALTERNATIVE);
+	EmulatedPin &TX_data = SharedMemory::get_pin(fdcan_instance->TX);
+	EmulatedPin &RX_data = SharedMemory::get_pin(fdcan_instance->RX);
+	if(TX_data.type == PinType::NOT_USED){
+		pin_data.type = PinType::FDCAN;
+	}else{
+		ErrorHandler("Pin %d is already in use",fdcan_instance->TX);
+		}
+	if(RX_data.type == PinType::NOT_USED){
+		pin_data.type = PinType::FDCAN;
+	}else{
+		ErrorHandler("Pin %d is already in use",fdcan_instance->RX);
+	}
 
 	uint8_t id = FDCAN::id_counter++;
 
@@ -39,44 +49,43 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	return id;
 }
 
+ssize_t dlc_to_number_of_bytes(FDCAN::DLC dlc){
+
+	return static_cast<ssize_t>(FDCAN::dlc_to_len[dlc]);
+}
+
 void FDCAN::start(){
 	for( std::pair<uint8_t, FDCAN::Instance*> inst: FDCAN::registered_fdcan){
 		uint8_t id = inst.first;
 		FDCAN::Instance* instance = inst.second;
-		FDCAN::init(instance);
-
-		FDCAN_TxHeaderTypeDef header;
-		header.FDFormat = FDCAN_FD_CAN;
-		header.DataLength = instance->dlc;
-		header.TxFrameType = FDCAN_DATA_FRAME;
-		header.BitRateSwitch = FDCAN_BRS_ON;
-		header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-		header.IdType = FDCAN_STANDARD_ID;
-		header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
-		header.MessageMarker = 0;
-		header.Identifier = 0x0;
-
-		instance->tx_header = header;
 
 		instance->rx_queue = queue<FDCAN::Packet>();
 		instance->tx_data = vector<uint8_t>();
 
-		if(HAL_FDCAN_Start(instance->hfdcan) != HAL_OK){
-			ErrorHandler("Error during FDCAN %d initialization.", instance->fdcan_number);
+		instance -> socket = socket(AF_NET,SOCK_DGRAM,0);
+		if(instance -> socket < 0){
+			ErrorHandler("Error creating socket for FDCAN %d", instance->fdcan_number);
 		}
+		struct sockaddr_in BroadcastAddress;
+		BroadcastAdress.sin_family = AF_INET;
+		BroadcastAdress.sin_port = FDCAN_PORT_BASE + Port_counter;
+		BroadcastAdress.sin_addr.s_addr = fdcan_ip_adress;
 
-	    if(HAL_FDCAN_ActivateNotification(instance->hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK){
-	    	ErrorHandler("Error activating FDCAN %d notifications.", instance->fdcan_number);
-	    }
+		int enabled = 1;
+		setsockopt(instance->socket, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
 
+		if(bind(instance->socket, (struct sockaddr*)&BroadcastAdress, sizeof(BroadcastAdress)) < 0){
+			ErrorHandler("Error binding socket for FDCAN %d", instance->fdcan_number);
+		}
 	    instance->start = true;
-
+	    Port_counter++;
 	    FDCAN::registered_fdcan[id] = instance;
 		FDCAN::instance_to_id[instance] = id;
 	}
 }
 
-bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::DLC dlc){
+
+bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::DLC dlc){ 
 	if (not FDCAN::registered_fdcan.contains(id)) {
 		ErrorHandler("There is no registered FDCAN with id: %d.", id);
 		return false;
@@ -89,43 +98,57 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
 		return false;
 	}
 
-	instance->tx_header.Identifier = message_id;
+    size_t buffer_len = sizeof(message_id)+ sizeof(dlc) + dlc_to_number_of_bytes(dlc);
+    char* temp_data = new char[buffer_len];
+	temp_data[0] = static_cast<char>(message_id >> 24);
+	temp_data[1] = static_cast<char>(message_id >> 16);
+	temp_data[2] = static_cast<char>(message_id >> 8);
+	temp_data[3] = static_cast<char>(message_id);
 
-	if (dlc != FDCAN::DLC::DEFAULT) {
-		instance->tx_header.DataLength = dlc;
+	temp_data[4] = static_cast<char>(static_cast<uint32_t>(dlc) >> 24);
+	temp_data[5] = static_cast<char>(static_cast<uint32_t>(dlc) >> 16);
+	temp_data[6] = static_cast<char>(static_cast<uint32_t>(dlc) >> 8);
+	temp_data[7] = static_cast<char>(static_cast<uint32_t>(dlc));
+
+	memcpy((temp_data + sizeof(message_id)+ sizeof(dlc)), data, dlc_to_number_of_bytes(dlc));
+	ssize_t total_bytes_sent{0};
+	while (total_bytes_sent < strlen(temp_data)) {
+    	ssize_t bytes_sent = send(instance->socket, temp_data + total_bytes_sent, strlen(temp_data) - total_bytes_sent);
+		if (bytes_sent < 0) {
+			ErrorHandler("Error sending message with id: 0x%x by FDCAN %d", message_id, instance->fdcan_number);
+			delete[] temp_data;
+			return false;
+		}
+		total_bytes_sent += bytes_sent;
 	}
-
-	HAL_StatusTypeDef error = HAL_FDCAN_AddMessageToTxFifoQ(instance->hfdcan, &instance->tx_header, (uint8_t*)data);
-
-	if (error != HAL_OK) {
-		ErrorHandler("Error sending message with id: 0x%x by FDCAN %d", message_id, instance->fdcan_number);
-		return false;
-	}
-
+	
+	delete[] temp_data;
 	return true;
 }
 
-void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs){
-	FDCAN::read(FDCAN::handle_to_id[hfdcan],&packet);
-	if(packet.identifier == FDCAN::ID::FAULT_ID){
-		ErrorHandler("FAULT PROPAGATED via CAN");
-	}
-}
 
 bool FDCAN::read(uint8_t id, FDCAN::Packet* data){
-	if (not FDCAN::registered_fdcan.contains(id)) {
+if (not FDCAN::registered_fdcan.contains(id)) {
 		ErrorHandler("There is no FDCAN registered with id: %d.", id);
 		return false;
 	}
+	FDCAN::Instance* instance = registered_fdcan[id];
 
 	if(!FDCAN::received_test(id)) {
 		return false;
 	}
-	FDCAN_RxHeaderTypeDef header_buffer = FDCAN_RxHeaderTypeDef();
-	HAL_FDCAN_GetRxMessage(FDCAN::registered_fdcan.at(id)->hfdcan, FDCAN::registered_fdcan.at(id)->rx_location, &header_buffer, data->rx_data.data());
+	
+	if(recv(instance->socket, data->rx_data, 64,0)<0){
+		ErrorHandler("Error receiving message by FDCAN %d", instance->fdcan_number);
+		return false;
+	}
+	
 
-	data->identifier = header_buffer.Identifier;
-	data->data_length = static_cast<FDCAN::DLC>(header_buffer.DataLength);
+	data->identifier = (data->rx_data[0] << 24) | (data->rx_data[1] << 16) | (data->rx_data[2] << 8) | data->rx_data[3];
+	data->data_length = static_cast<FDCAN::DLC>((data->rx_data[4] << 24) | (data->rx_data[5] << 16) | (data->rx_data[6] << 8) | data->rx_data[7]);
+	array<uint8_t, 64> aux_rx_data;
+	std::copy(data->rx_data.begin()+8, data->rx_data.end(), aux_rx_data.begin());
+	data->rx_data = aux_rx_data;
 
 	return true;
 }
@@ -136,45 +159,7 @@ bool FDCAN::received_test(uint8_t id){
 		return false;
 	}
 
-	return !((FDCAN::registered_fdcan.at(id)->hfdcan->Instance->RXF0S & FDCAN_RXF0S_F0FL) == 0U);
+	return true;
 }
 
-void FDCAN::init(FDCAN::Instance* fdcan){
-	FDCAN_HandleTypeDef* handle = fdcan->hfdcan;
-	handle_to_id[handle] = instance_to_id[fdcan];
-	handle->Instance = fdcan->instance;
-	handle->Init.FrameFormat = FDCAN_FRAME_FD_BRS;
-	handle->Init.Mode = FDCAN_MODE_INTERNAL_LOOPBACK;
-	handle->Init.AutoRetransmission = ENABLE;
-	handle->Init.TransmitPause = DISABLE;
-	handle->Init.ProtocolException = DISABLE;
-	handle->Init.NominalPrescaler = 1;
-	handle->Init.NominalSyncJumpWidth = 16;
-	handle->Init.NominalTimeSeg1 = 59;
-	handle->Init.NominalTimeSeg2 = 20;
-	handle->Init.DataPrescaler = 1;
-	handle->Init.DataSyncJumpWidth = 4;
-	handle->Init.DataTimeSeg1 = 14;
-	handle->Init.DataTimeSeg2 = 5;
-	handle->Init.MessageRAMOffset = 0;
-	handle->Init.StdFiltersNbr = 1;
-	handle->Init.ExtFiltersNbr = 0;
-	handle->Init.RxFifo0ElmtsNbr = 16;
-	handle->Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_64;
-	handle->Init.RxFifo1ElmtsNbr = 0;
-	handle->Init.RxFifo1ElmtSize = FDCAN_DATA_BYTES_64;
-	handle->Init.RxBuffersNbr = 0;
-	handle->Init.RxBufferSize = FDCAN_DATA_BYTES_64;
-	handle->Init.TxEventsNbr = 0;
-	handle->Init.TxBuffersNbr = 0;
-	handle->Init.TxFifoQueueElmtsNbr = 16;
-	handle->Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
-	handle->Init.TxElmtSize = FDCAN_DATA_BYTES_64;
-
-	if (HAL_FDCAN_Init(handle) != HAL_OK)
-	{
-		ErrorHandler("Error during FDCAN %d init.", fdcan->fdcan_number);
-	}
-
-}
 #endif

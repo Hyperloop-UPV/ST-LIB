@@ -79,53 +79,57 @@ enum TRIGGER{
     BOTH_EDGES = 2
 };
 enum class PinType {
-    NOT_USED,
-    DigitalOutput,
-    DigitalInput,
-    PWM,
-    DualPWM,
-    ADC,
+	NOT_USED,
+	DigitalOutput,
+	DigitalInput,
+	PWM,
+	DualPWM,
+	ADC,
+	FDCAN,
     SPI,
     ENCODER,
-    EXTIPin  // Usando temporalmente este nombre por que hay colisión entre
-              // nombres
-    // TODO: Add more types
+    EXTIPin
+	// TODO: Add more types
+
 };
 
 struct EmulatedPin {
     PinType type =
         PinType::NOT_USED;  // Always check type before using the union
+	union  {
+		struct {
+			bool state;
+		} DigitalOutput;
+		struct  {
+			PinState curr_state;
+		} DigitalInput;
+		struct  {
+			float duty_cycle;
+			uint32_t frequency;
+			bool is_on;
+			std::chrono::nanoseconds dead_time_ns;
+		} PWM;
+		struct {
+			float duty_cycle;
+			uint32_t frequency;
+			bool is_on = false;
+			std::chrono::nanoseconds dead_time_ns;
+		} DualPWM;
+		struct {
+			uint16_t value;
+            bool is_on;
+		} ADC;
+        struct {
 
-    union {
-        struct {
-          bool state;
-        } DigitalOutput;
-        struct  {
-          PinState curr_state;
-        } DigitalInput;
-        struct  {
-          float duty_cycle;
-          uint32_t frequency;
-          bool is_on;
-          std::chrono::nanoseconds dead_time_ns;
-        } PWM;
-        struct {
-          float duty_cycle;
-          uint32_t frequency;
-          bool is_on = false;
-          std::chrono::nanoseconds dead_time_ns;
-        }DualPWM;
-        struct {
-          // TODO FW-54
-        } ADC;
+        } FDCAN;
         struct {
             bool is_on;
         } SPI;
         struct {
-          uint32_t priority = 0;
-          bool is_on;
-          bool trigger_signal;
-          TRIGGER trigger_mode;
+            uint32_t priority = 0;
+            bool is_on;
+            bool trigger_signal;
+            TRIGGER trigger_mode;
         } EXTIPin;
         struct {
             uint32_t count_value;
@@ -133,7 +137,7 @@ struct EmulatedPin {
             bool is_on;
         } ENCODER;
         // TODO Add more types
-    } PinData;
+	} PinData;
 };
 
 class Pin {
@@ -171,7 +175,7 @@ struct hash<Pin> {
         using std::string;
 
         return ((hash<uint16_t>()(k.gpio_pin) ^
-                 (hash<uint32_t>()((uint32_t)(k.port)) << 1)) >>
+                 (hash<uint32_t>()((uint32_t)((uintptr_t)k.port)) << 1)) >>
                 1);
     }
 };

@@ -8,7 +8,9 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "StateMachine/StateOrder.hpp"
 
-
+#ifdef SIM_ON
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
+#endif
 
 #ifdef HAL_TIM_MODULE_ENABLED
 
@@ -174,6 +176,9 @@ private:
 	void exit_state(state_id old_state);
 	void register_all_timed_actions(state_id state);
 	void unregister_all_timed_actions(state_id state);
+	#ifdef SIM_ON
+		uint8_t state_machine_id_in_shm;
+	#endif
 };
 
 template<class TimeUnit>
