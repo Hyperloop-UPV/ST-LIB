@@ -7,6 +7,19 @@
 #define PBUF_POOL_MEMORY_DESC_POSITION 8
 
 class DatagramSocket{
+private:
+	struct udp_pcb* udp_control_block;
+	static void receive_callback(void *args, struct udp_pcb *udp_control_block, struct pbuf *packet_buffer, const ip_addr_t *remote_address, u16_t port);
+	bool send_packet(Packet& packet){
+		uint8_t* packet_buffer = packet.build();
+
+		struct pbuf* tx_buffer = pbuf_alloc(PBUF_TRANSPORT, packet.size, PBUF_RAM);
+		pbuf_take(tx_buffer, packet_buffer, packet.size);
+		udp_send(udp_control_block, tx_buffer);
+		pbuf_free(tx_buffer);
+
+		return true;
+	}
 public:
 	IPV4 local_ip;
 	uint32_t local_port;
@@ -22,24 +35,13 @@ public:
 
 	void operator=(DatagramSocket&&);
 
-	bool send_packet(Packet& packet){
-		uint8_t* packet_buffer = packet.build();
-
-		struct pbuf* tx_buffer = pbuf_alloc(PBUF_TRANSPORT, packet.size, PBUF_RAM);
-		pbuf_take(tx_buffer, packet_buffer, packet.size);
-		udp_send(udp_control_block, tx_buffer);
-		pbuf_free(tx_buffer);
-
-		return true;
-	}
+	
 
 	void reconnect();
 
 	void close();
 
-private:
-	static void receive_callback(void *args, struct udp_pcb *udp_control_block, struct pbuf *packet_buffer, const ip_addr_t *remote_address, u16_t port);
-	struct udp_pcb* udp_control_block;
+
 };
 
 
