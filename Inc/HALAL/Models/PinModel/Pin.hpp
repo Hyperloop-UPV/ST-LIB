@@ -77,6 +77,12 @@ enum PinState{
 	ON
 };
 
+enum TRIGGER{
+    RISING_EDGE = 1,
+    FAILING_EDGE = 0,
+    BOTH_EDGES = 2
+};
+
 class Pin {
 public:
 	GPIO_TypeDef * port;

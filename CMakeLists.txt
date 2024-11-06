@@ -130,7 +130,6 @@ target_compile_options(${LIBRARY} PUBLIC
   $<$<COMPILE_LANGUAGE:CXX>:-Werror>
   -Wno-psabi
   $<$<STREQUAL:${SIMULATE},FALSE>:-specs=nosys.specs>
-  -std=c++20
 )
 
 target_include_directories(${LIBRARY} PUBLIC
