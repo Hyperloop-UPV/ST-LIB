@@ -9,7 +9,6 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
-#ifdef HAL_UART_MODULE_ENABLED
 
 #define TXBUSYMASK 0b1
 #define RXBUSYMASK 0b10
@@ -20,26 +19,6 @@
  * 
  */
 class UART{
-private:
-    /**
-     * @brief Struct which defines all data referring to UART peripherals. It is
-     *        declared private in order to prevent unwanted use. Only 
-     *        predefined instances should be used.
-     *           
-     */
-    struct Instance{
-        Pin TX; /**< Clock pin. */
-        Pin RX; /**< MOSI pin. */
-        UART_HandleTypeDef* huart;  /**< HAL UART struct. */
-        USART_TypeDef* instance;
-        uint32_t baud_rate;
-        uint32_t word_length;
-        bool receive_ready = false; /**< Receive value is ready to use pin. */
-        bool initialized = false;
-
-    };
-
-    static UART_HandleTypeDef* get_handle(uint8_t id);
 
 public:
 
@@ -62,8 +41,6 @@ public:
 
     static uint16_t id_counter;
     
-    static unordered_map<uint8_t, UART::Instance*> registered_uart;
-    static unordered_map<UART::Peripheral, UART::Instance*> available_uarts;
 
     static uint8_t printf_uart;
     static bool printf_ready;
@@ -83,21 +60,6 @@ public:
     static UART::Peripheral uart9;
     static UART::Peripheral uart10;
 
-
-    /**
-     * @brief UART instances of the STM32H723.
-     *
-     */
-    static UART::Instance instance1;
-    static UART::Instance instance2;
-    static UART::Instance instance3;
-    static UART::Instance instance4;
-    static UART::Instance instance5;
-    static UART::Instance instance6;
-    static UART::Instance instance7;
-    static UART::Instance instance8;
-    static UART::Instance instance9;
-    static UART::Instance instance10;
 
     /**
      * @brief Registers a new UART.
@@ -195,7 +157,7 @@ public:
      * @param id Id of the UART
      * @return bool Return true if the packet is ready to use and false if not.
      */
-    static bool has_next_packet(uint8_t id){return;};
+    static bool has_next_packet(uint8_t id){return true;};
 
     /**
      * @brief This method is used to check if the UART transmit operations busy.
@@ -223,14 +185,5 @@ public:
   	 */
     static void print_by_uart(char* ptr, int len){return;};
 
-    private:
-    /**
-     * @brief This method initializes the UART peripheral that is passed to it as a parameter.
-     * 
-     * @param uart Peripheral instance to be initialized.
-     */
-    static void init(UART::Instance* uart){return;};
-
 };
 
-#endif
