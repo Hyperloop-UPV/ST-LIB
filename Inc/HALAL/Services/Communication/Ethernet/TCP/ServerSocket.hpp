@@ -42,15 +42,12 @@ public:
 	};
 
 	static unordered_map<uint32_t,ServerSocket*> listening_sockets;
-	struct tcp_pcb* server_control_block = nullptr;
-	queue<struct pbuf*> tx_packet_buffer;
-	queue<struct pbuf*> rx_packet_buffer;
 	IPV4 local_ip;
 	uint32_t local_port;
 	IPV4 remote_ip;
 	ServerState state;
 	static uint8_t priority;
-	struct tcp_pcb* client_control_block;
+	
 
 	struct KeepaliveConfig{
 		uint32_t inactivity_time_until_keepalive_ms = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS;
@@ -88,14 +85,7 @@ public:
 	*/
 	void close();
 
-	/**
-	* @brief process the data received by the client orders. It is meant to be called only by Lwip on the receive_callback
-	*
-	* reads all the data received by the server in the ethernet buffer, packet by packet.
-	* Then, for each packet, it processes it depending on the order id (default behavior is not process) and removes it from the buffer. 
-	* This makes so the receive_callback (and thus the Socket) can only process declared orders, and ignores all other packets. 
-	*/
-	void process_data();
+
 
 	/**
 	 * @brief saves the order data into the tx_packet_buffer so it can be sent when a connection is accepted
@@ -104,7 +94,6 @@ public:
 	 * @return true if the data could be allocated in the buffer, false otherwise
 	 */
 	bool add_order_to_queue(Order& order);
-
 	/**
 	 * @brief puts the order data into the tx_packet_buffer and sends all the data in the buffer to the client
 	 *
@@ -136,6 +125,7 @@ public:
 		send();
 		return true;
 	}
+	
 
 	/**
 	* @brief sends all the binary data saved in the tx_packet_buffer to the connected client. 
@@ -156,7 +146,19 @@ public:
 	bool is_connected();
 
 private:
+	struct tcp_pcb* server_control_block = nullptr;
+	queue<struct pbuf*> tx_packet_buffer;
+	queue<struct pbuf*> rx_packet_buffer;
+	struct tcp_pcb* client_control_block;
 
+		/**
+	* @brief process the data received by the client orders. It is meant to be called only by Lwip on the receive_callback
+	*
+	* reads all the data received by the server in the ethernet buffer, packet by packet.
+	* Then, for each packet, it processes it depending on the order id (default behavior is not process) and removes it from the buffer. 
+	* This makes so the receive_callback (and thus the Socket) can only process declared orders, and ignores all other packets. 
+	*/
+	void process_data();
 	/**
 	 * @brief the callback for the listener socket receiving a request for connection into the ServerSocket.
 	 *
