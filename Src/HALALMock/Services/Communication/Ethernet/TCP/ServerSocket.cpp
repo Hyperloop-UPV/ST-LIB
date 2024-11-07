@@ -26,8 +26,7 @@ ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivi
 }
 
 
-ServerSocket::ServerSocket(ServerSocket&& other) : server_control_block(move(other.server_control_block)), local_ip(move(other.local_ip)), local_port(move(other.local_port))
-, state(other.state){
+ServerSocket::ServerSocket(ServerSocket&& other) :  local_ip(move(other.local_ip)), local_port(move(other.local_port)),state(other.state){
 	listening_sockets[local_port] = this;
 	tx_packet_buffer = {};
 	rx_packet_buffer = {};
@@ -36,7 +35,6 @@ ServerSocket::ServerSocket(ServerSocket&& other) : server_control_block(move(oth
 void ServerSocket::operator=(ServerSocket&& other){
 	local_ip = move(other.local_ip);
 	local_port = move(other.local_port);
-	server_control_block = move(other.server_control_block);
 	state = other.state;
 	listening_sockets[local_port] = this;
 	tx_packet_buffer = {};
@@ -141,7 +139,7 @@ void ServerSocket::send(){
 bool ServerSocket::is_connected(){
 	return state == ServerSocket::ServerState::ACCEPTED;
 }
-ServerSocket::create_server_socket(){
+void ServerSocket::create_server_socket(){
 	server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(server_socket_fd == -1){
 		std::cout<<"Socket creation failure\n";
@@ -158,53 +156,57 @@ ServerSocket::create_server_socket(){
 		return;
 	}
 }
-ServerSocket::configure_server_socket(){
+bool ServerSocket::configure_server_socket(){
 	//to reuse local address:
 	int opt = 1;
 	if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
     	std::cerr << "Error setting SO_REUSEADDR\n";
    		close(server_socket_fd);
-    	return;
+    	return false;
 	}
 	//disable naggle algorithm
 	int flag = 1;
 	if (setsockopt(server_socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
 		std::cout<<"It has been an error disabling Nagle's algorithm\n";
 		close(server_socket_fd);
-		return;
+		return false;
 	}
 	//habilitate keepalives
     int optval = 1;
     if (setsockopt(server_socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
         std::cout << "ERROR configuring KEEPALIVES\n";
         close(server_socket_fd);
-        return;
+        return false;
     }
 	// Configurar TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
     float tcp_keepidle_time = static_cast<float>(keepalive_config.inactivity_time_until_keepalive_ms)/1000.0;
     if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPIDLE\n";
 		close(server_socket_fd);
-        return;
+        return false;
     }
 	  //interval between keepalives
     float keep_interval_time = static_cast<float>(keepalive_config.space_between_tries_ms)/1000.0;
     if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPINTVL\n";
         close(server_socket_fd);
-        return;
+        return false;
     }
 	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
 	 float keep_cnt = static_cast<float>(keepalive_config.tries_until_disconnection)/1000.0;
     if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
         std::cout << "Error to configure TCP_KEEPCNT\n";
         close(server_socket_fd);
-        return ;
+        return false;
     }
+	return true;
 }
 ServerSocket::configure_server_socket_and_listen(){
 	create_server_socket();
-	configure_server_socket();
+	if(!configure_server_socket()){
+		cout<<"Error configuring ServerSocket\n";
+		return;
+	}
 	if (listen(server_socket_fd, SOMAXCONN) < 0) {
         std::cout"Error listening\n";
         close(server_socket_fd);
@@ -215,7 +217,7 @@ ServerSocket::configure_server_socket_and_listen(){
 	listening_sockets[local_port] = this;
 	//create a thread to listen
 	listening_thread = std::jthread [&](){
-		while(true){
+		while(state == LISTENING){
 			struct sockaddr_in client_addr;
 			socklen_t client_len = sizeof(client_addr);
 			int client_fd = accept(server_socket_fd,(struct sockaddr*)&client_addr, &client_len);

@@ -41,6 +41,8 @@ public:
 	IPV4 local_ip;
 	uint32_t local_port;
 	IPV4 remote_ip;
+	queue<Packet*> tx_packet_buffer;
+	queue<Packet*> rx_packet_buffer;
 	ServerState state;
 	static uint8_t priority;
 	//socket_descriptor
@@ -150,7 +152,7 @@ public:
 
 private:
 	void create_server_socket();
-	void configure_server_socket();
+	bool configure_server_socket();
 	void configure_server_socket_and_listen();
 	void accept_callback();
 	std::jthread listening_thread;
