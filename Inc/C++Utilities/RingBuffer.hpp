@@ -58,6 +58,15 @@ public:
 		return buffer[return_index];
 	}
 
+	/**
+	 * @brief pop later and push new. Don't care size of buffer, needs to be initialize before
+	 */
+	void push_pop(item_type item){
+		mhead_index = (mhead_index+1)%mcapacity;
+		mlast_index = (mlast_index+1)%mcapacity;
+		buffer[mhead_index] = item;
+	}
+
 	item_type latest()const{
 		return buffer[mlast_index];
 	}

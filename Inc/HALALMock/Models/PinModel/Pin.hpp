@@ -72,6 +72,7 @@ enum OperationMode {
 };
 
 enum PinState { OFF, ON };
+
 enum TRIGGER{
     RISING_EDGE = 1,
     FAILING_EDGE = 0,
@@ -85,6 +86,7 @@ enum class PinType {
     DualPWM,
     ADC,
     FDCAN,
+    SPI,
     INPUTCAPTURE,
     ENCODER,
     EXTIPin,
@@ -133,6 +135,9 @@ struct InputCapure_MockPin{
 struct FDCAN_MockPin{
 
 };
+struct SPI_MockPin{
+    bool is_on;
+};
 struct EmulatedPin {
     PinType type =  PinType::NOT_USED;  // Always check type before using the union
     union PinDataU {
@@ -145,6 +150,7 @@ struct EmulatedPin {
         Encoder_MockPin         encoder;
         InputCapure_MockPin     input_capture;
         FDCAN_MockPin           fdcan;
+        SPI_MockPin             spi;
 
 		// TODO Add more types
 	}PinData;
