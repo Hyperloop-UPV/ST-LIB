@@ -58,42 +58,43 @@ void Socket::create_socket(){
 		return;
 	}
 }
-void Socket::configure_socket(){
+bool Socket::configure_socket(){
 	//disable naggle algorithm
 	int flag = 1;
 	if (setsockopt(socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
 		std::cout<<"It has been an error disabling Nagle's algorithm\n";
 		close(socket_fd);
-		return;
+		return false;
 	}
 	//habilitate keepalives
     int optval = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
         std::cout << "ERROR configuring KEEPALIVES\n";
         close(socket_fd);
-        return;
+        return false;
     }
 	// Configurar TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
     float tcp_keepidle_time = static_cast<float>(keepalive_config.inactivity_time_until_keepalive_ms)/1000.0;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPIDLE\n";
 		close(socket_fd);
-        return;
+        return false;
     }
 	  //interval between keepalives
     float keep_interval_time = static_cast<float>(keepalive_config.space_between_tries_ms)/1000.0;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPINTVL\n";
         close(socket_fd);
-        return;
+        return false;
     }
 	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
 	 float keep_cnt = static_cast<float>(keepalive_config.tries_until_disconnection)/1000.0;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
         std::cout << "Error to configure TCP_KEEPCNT\n";
         close(socket_fd);
-        return ;
+        return false;
     }
+	return true;
 }
 void Socket::connection_callback(){
 	if(connecting_sockets.contains(remote_node)){
@@ -113,7 +114,10 @@ void Socket::connect_attempt(){
 }
 void Socket::configure_socket_and_connect(){
 	create_socket();
-	configure_socket();
+
+	if(!configure_socket()){
+		cout<<"error configurando el socket\n";
+	}
 	connecting_sockets[remote_node] = this;
 	//create thread that will be block while waiting the connection
 	connect_attempt()

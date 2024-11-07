@@ -25,7 +25,7 @@ private:
 	void start_receiving();
 	void receive();
 	void create_socket();
-	void configure_socket();
+	bool configure_socket();
 	void connect_thread();
 	void configure_socket_and_connect();
 	void connection_callback();
