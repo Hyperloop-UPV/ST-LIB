@@ -116,7 +116,7 @@ void Socket::configure_socket_and_connect(){
 	create_socket();
 
 	if(!configure_socket()){
-		cout<<"error configurando el socket\n";
+		cout<<"error configuring socket\n";
 	}
 	connecting_sockets[remote_node] = this;
 	//create thread that will be block while waiting the connection
