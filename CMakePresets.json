@@ -26,7 +26,9 @@
         {
             "name": "nucleo-debug",
             "displayName": "Nucleo [DBG]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "TARGET_NUCLEO": "ON"
@@ -35,7 +37,9 @@
         {
             "name": "nucleo-release",
             "displayName": "Nucleo [REL]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "TARGET_NUCLEO": "ON"
@@ -44,7 +48,9 @@
         {
             "name": "nucleo-relwithdebinfo",
             "displayName": "Nucleo [RWD]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "TARGET_NUCLEO": "ON"
@@ -53,7 +59,9 @@
         {
             "name": "nucleo-debug-eth",
             "displayName": "Nucleo [DBG] [ETH]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "TARGET_NUCLEO": "ON",
@@ -63,7 +71,9 @@
         {
             "name": "nucleo-release-eth",
             "displayName": "Nucleo [REL] [ETH]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "TARGET_NUCLEO": "ON",
@@ -73,7 +83,9 @@
         {
             "name": "nucleo-relwithdebinfo-eth",
             "displayName": "Nucleo [RWD] [ETH]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "TARGET_NUCLEO": "ON",
@@ -83,7 +95,9 @@
         {
             "name": "board-debug",
             "displayName": "Board [DBG]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
@@ -91,7 +105,9 @@
         {
             "name": "board-release",
             "displayName": "Board [REL]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
@@ -99,7 +115,9 @@
         {
             "name": "board-relwithdebinfo",
             "displayName": "Board [RWD]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo"
             }
@@ -107,7 +125,9 @@
         {
             "name": "board-debug-eth",
             "displayName": "Board [DBG] [ETH]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "USE_ETHERNET": "ON"
@@ -116,7 +136,9 @@
         {
             "name": "board-release-eth",
             "displayName": "Board [REL] [ETH]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "USE_ETHERNET": "ON"
@@ -125,7 +147,9 @@
         {
             "name": "board-relwithdebinfo-eth",
             "displayName": "Board [RWD] [ETH]",
-            "inherits": ["mcu"],
+            "inherits": [
+                "mcu"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "USE_ETHERNET": "ON"
@@ -134,7 +158,9 @@
         {
             "name": "simulator",
             "displayName": "Simulator",
-            "inherits": ["sim"],
+            "inherits": [
+                "sim"
+            ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }

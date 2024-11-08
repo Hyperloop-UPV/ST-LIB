@@ -2,6 +2,8 @@
     "configurations": [
         {
             "name": "CMake",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
             "configurationProvider": "ms-vscode.cmake-tools",
             "compileCommands": "compile_commands.json"
           }
