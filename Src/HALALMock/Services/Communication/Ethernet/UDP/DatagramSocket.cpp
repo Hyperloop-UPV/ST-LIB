@@ -1,4 +1,4 @@
-
+#ifdef STLIB_ETH
 
 #include "HALALMock/Services/Communication/Ethernet/UDP/DatagramSocket.hpp"
 #define MAX_SIZE_PACKET 1024
@@ -83,4 +83,5 @@ void DatagramSocket::close(){
 	::close(udp_socket);
 	is_disconnected = true;
 }
+#endif //STLIB_ETH
 

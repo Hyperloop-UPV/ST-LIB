@@ -1,4 +1,6 @@
 #pragma once
+#ifdef STLIB_ETH
+
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALALMock/Models/Packets/Packet.hpp"
@@ -47,4 +49,5 @@ private:
 	std::atomic<bool> is_receiving;
 	void create_udp_socket();
 };
+#endif //STLIB_ETH
 

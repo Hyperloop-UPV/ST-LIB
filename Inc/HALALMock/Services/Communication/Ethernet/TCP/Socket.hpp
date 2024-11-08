@@ -5,6 +5,7 @@
  *      Author: stefa
  */
 #pragma once
+#ifdef STLIB_ETH
 
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
@@ -96,3 +97,4 @@ public:
 	bool is_connected();
 
 };
+#endif //STLIB_ETH

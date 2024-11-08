@@ -1,3 +1,4 @@
+#ifdef STLIB_ETH
 
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
 #define BUFFER_SIZE 1024
@@ -276,4 +277,6 @@ bool Socket::add_order_to_queue(Order& order){
 bool Socket::is_connected(){
 	return state == Socket::SocketState::CONNECTED;
 }
+
+#endif //STLIB_ETH
 
