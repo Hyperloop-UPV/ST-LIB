@@ -1,6 +1,6 @@
 #include "ST-LIB_LOW/Math/Math.hpp"
 
-
+#ifndef SIM_ON
 array<int32_t, 4> Math::pointers = {0};
 
 int32_t Math::sin(int32_t angle){
@@ -86,4 +86,68 @@ int32_t Math::tg_to_unitary(int32_t tg_in){
 int32_t Math::unitary_to_tg(int32_t in){
 	return in >> (32 - TG_DECIMAL_BITS);
 }
+
+#else
+#include <cmath>
+
+int32_t Math::sin(int32_t angle){
+	double rad_angle= angle*M_PI/180.0;
+	return static_cast<int32_t>(std::sin(rad_angle)*(1<<TG_DECIMAL_BITS));
+}
+
+int32_t Math::cos(int32_t angle){
+	double rad_angle= angle*M_PI/180.0;
+	return static_cast<int32_t>(std::cos(rad_angle)*(1<<TG_DECIMAL_BITS));
+}
+
+int32_t Math::tg(int32_t angle){
+	double rad_angle= angle*M_PI/180.0;
+	return static_cast<int32_t>(std::tan(rad_angle)*(1<<TG_DECIMAL_BITS));
+}
+
+int32_t Math::phase(int32_t x, int32_t y){
+	double rad_angle= std::atan2(y,x);
+	return static_cast<int32_t>(rad_angle*(1<<TG_DECIMAL_BITS));
+}
+
+uint32_t Math::modulus(int32_t x, int32_t y){
+	if(x-4+y > MAX_MOD_MARGIN){
+		x=x>>1;
+		y=y>>1;
+	}
+	double x_double = static_cast<double>(x);
+    double y_double = static_cast<double>(y);
+	double x_squared=x_double*x_double;
+	double y_squared=y_double*y_double;
+	double mod= std::sqrt(x_squared+y_squared);
+	return static_cast<uint32_t>(mod*(1<<SQ_DECIMAL_BITS));
+}
+
+int32_t Math::atg(int32_t tg_in){
+	double rad_angle= std::atan(tg_in);
+	return static_cast<int32_t>(rad_angle*(1<<TG_DECIMAL_BITS));
+}
+
+int32_t Math::sqrt(int32_t sq_in){
+	double decimal_sq_in= static_cast<double>(sq_in);
+	return static_cast<int32_t>(std::sqrt(decimal_sq_in)*(1<<SQ_DECIMAL_BITS));
+}
+
+int32_t Math::sq_to_unitary(int32_t sq_in){
+	return sq_in << (32 - SQ_DECIMAL_BITS);
+}
+
+int32_t Math::unitary_to_sq(int32_t in){
+	return in >> (32 - SQ_DECIMAL_BITS);
+}
+
+int32_t Math::tg_to_unitary(int32_t tg_in){
+	return tg_in << (32 - TG_DECIMAL_BITS);
+}
+
+int32_t Math::unitary_to_tg(int32_t in){
+	return in >> (32 - TG_DECIMAL_BITS);
+}
+
+#endif //SIM_ON
 
