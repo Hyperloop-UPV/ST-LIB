@@ -21,7 +21,7 @@ private:
 	std::jthread wait_for_connection_thread;
 	std::atomic<bool> is_receiving;
 	std::atomic<bool> is_connecting;
-	std::mutex mtx; 
+	std::mutex mutex; 
 	void start_receiving();
 	void receive();
 	void create_socket();
@@ -83,7 +83,7 @@ public:
 			reconnect();
 			return false;
 		}
-		tx_packet_buffer.push(order);
+		tx_packet_buffer.push(move(order));
 		send();
 		return true;
 	}

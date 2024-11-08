@@ -7,8 +7,7 @@ unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
 
 Socket::Socket() = default;
 
-Socket::Socket(Socket&& other):socket_fd((move(remote_port)),
-	 state(other.state){
+Socket::Socket(Socket&& other):remote_port(move(remote_port)),state(other.state){
 	EthernetNode remote_node(other.remote_ip, other.remote_port);
 	connecting_sockets[remote_node] = this;
 }
@@ -224,7 +223,7 @@ void Socket::receive() {
         ssize_t received_bytes = ::recv(socket_fd, buffer, sizeof(buffer), 0);
         if (received_bytes > 0) {
             HeapPacket *packet;
-			packet->parse(received_bytes);
+			packet->parse(buffer);
             {
                 std::lock_guard<std::mutex> lock(mtx); 
                 rx_packet_buffer.push(std::move(packet));
@@ -245,7 +244,6 @@ void Socket::receive() {
     }
 }
 void Socket::process_data(){
-	
 	while(!rx_packet_buffer.empty()){
 		{
 			std::lock_guard<std::mutex> lock(mtx); 
@@ -261,16 +259,13 @@ bool Socket::add_order_to_queue(Order& order){
 	if(state == Socket::SocketState::CONNECTED){
 		return false;
 	}
-    std::vector<uint8_t> order_buffer = order.build();
-    if (order_buffer.empty()) {
-        std::cout << "Error: building de order buffer\n";
+    if (order.get_size() == 0) {
+        std::cout << "Error: order empty\n";
         return false; 
     }
-    HeapPacket *packet;
-	packet->parse(order_buffer); 
     {
         std::lock_guard<std::mutex> lock(mutex); 
-        tx_packet_buffer.push(packet); 
+        tx_packet_buffer.push(move(order)); 
     }
 	return true;
 }
@@ -278,5 +273,3 @@ bool Socket::add_order_to_queue(Order& order){
 bool Socket::is_connected(){
 	return state == Socket::SocketState::CONNECTED;
 }
-#endif
-

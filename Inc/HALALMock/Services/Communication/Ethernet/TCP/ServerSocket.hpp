@@ -47,6 +47,7 @@ public:
 	static uint8_t priority;
 	//socket_descriptor
 	int server_socket_fd;
+	int client_fd;
 	struct KeepaliveConfig{
 		uint32_t inactivity_time_until_keepalive_ms = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS;
 		uint32_t space_between_tries_ms = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES_MS;
@@ -110,24 +111,7 @@ public:
 		if(state != ACCEPTED){
 			return false;
 		}
-		struct memp* next_memory_pointer_in_packet_buffer_pool = (*(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION]->tab))->next;
-		if(next_memory_pointer_in_packet_buffer_pool == nullptr){
-			if(client_control_block->unsent != nullptr){
-				tcp_output(client_control_block);
-			}else{
-				memp_free_pool(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION], next_memory_pointer_in_packet_buffer_pool);
-			}
-			return false;
-		}
-
-		uint8_t* order_buffer = order.build();
-		if(order.get_size() > tcp_sndbuf(client_control_block)){
-			return false;
-		}
-
-		struct pbuf* packet = pbuf_alloc(PBUF_TRANSPORT, order.get_size(), PBUF_POOL);
-		pbuf_take(packet, order_buffer, order.get_size());
-		tx_packet_buffer.push(packet);
+		tx_packet_buffer.push(move(order));
 		send();
 		return true;
 	}
@@ -155,10 +139,10 @@ private:
 	bool configure_server_socket();
 	void configure_server_socket_and_listen();
 	void accept_callback();
+	void handle_receive_from_client(); 
 	std::jthread listening_thread;
-	std::vector<std::jthread> receiving_thread;
-	std::atomic<bool> is_receiving;
-	std::mutex mtx; 
+	std::jthread receive_thread;
+	std::mutex mutex; 
 	std::vector<sockaddr_in> clients;
 	/**
 	 * @brief the callback for the listener socket receiving a request for connection into the ServerSocket.
@@ -172,21 +156,6 @@ private:
 	 */
 	static err_t accept_callback(void* arg, struct tcp_pcb* incomming_control_block, err_t error);
 
-	/**
-	 * @brief callback that handles receiving a packet.
-	 *
-	 * On a received packet on an ACCEPTED state receive_callback calls the ServerSocket process_data,
-	 * which calls the Packet process_data() if it is inscribed as an Order.
-	 */
-	static err_t receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error);
-	static void error_callback(void *arg, err_t error);
-
-	/**
-	 * @brief callback called each 500ms to do housekeeping tasks
-	 *
-	 * The housekeeping tasks made now are basically checks to ensure no data remains unsent and that the ServerSocket is not left in a middle state (such as CLOSING)
-	 */
-	static err_t poll_callback(void *arg, struct tcp_pcb *client_control_block);
 	static err_t send_callback(void *arg, struct tcp_pcb *client_control_block, u16_t len);
 
 	static void config_keepalive(tcp_pcb* control_block, ServerSocket* server_socket);

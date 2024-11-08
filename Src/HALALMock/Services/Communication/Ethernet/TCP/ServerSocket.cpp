@@ -1,10 +1,9 @@
-
 #include "HALALMock/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 
+#define MAX_SIZE_BUFFER 1024
 
 uint8_t ServerSocket::priority = 1;
 unordered_map<uint32_t,ServerSocket*> ServerSocket::listening_sockets = {};
-
 ServerSocket::ServerSocket() = default;
 
 ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port) : local_ip(local_ip),local_port(local_port){
@@ -93,30 +92,28 @@ void ServerSocket::close(){
 
 void ServerSocket::process_data(){
 	while(!rx_packet_buffer.empty()){
-		struct pbuf* packet = rx_packet_buffer.front();
-		rx_packet_buffer.pop();
-		uint8_t* new_data = (uint8_t*)(packet->payload);
-		tcp_recved(client_control_block, packet->tot_len);
+		{
+			std::lock_guard<std::mutex> lock(mtx); 
+			Packet *packet = rx_packet_buffer.front();
+			rx_packet_buffer.pop();
+		}
+		uint8_t* new_data = (uint8_t*)(packet->build());
 		Order::process_data(this, new_data);
-		pbuf_free(packet);
 	}
 }
 
 bool ServerSocket::add_order_to_queue(Order& order){
 	if(state == ACCEPTED){
-		return false; //yet to decide if add_order_to_queue should send the order when used after the connection is accepted or just return false
+		return false; 
 	}
-	struct memp* next_memory_pointer_in_packet_buffer_pool = (*(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION]->tab))->next;
-	if(next_memory_pointer_in_packet_buffer_pool == nullptr){
-		memp_free_pool(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION], next_memory_pointer_in_packet_buffer_pool);
-		return false;
-	}
-
-	uint8_t* order_buffer = order.build();
-
-	struct pbuf* packet = pbuf_alloc(PBUF_TRANSPORT, order.get_size(), PBUF_POOL);
-	pbuf_take(packet, order_buffer, order.get_size());
-	tx_packet_buffer.push(packet);
+    if (order.get_size() == 0) {
+        std::cout << "Error: order is empty\n";
+        return false; 
+    }
+    {
+        std::lock_guard<std::mutex> lock(mutex); 
+        tx_packet_buffer.push(order); 
+    }
 	return true;
 }
 
@@ -201,7 +198,7 @@ bool ServerSocket::configure_server_socket(){
     }
 	return true;
 }
-ServerSocket::configure_server_socket_and_listen(){
+void ServerSocket::configure_server_socket_and_listen(){
 	create_server_socket();
 	if(!configure_server_socket()){
 		cout<<"Error configuring ServerSocket\n";
@@ -223,140 +220,58 @@ ServerSocket::configure_server_socket_and_listen(){
 			int client_fd = accept(server_socket_fd,(struct sockaddr*)&client_addr, &client_len);
 			if(client_fd > 0){
 				clients.push_back(client_addr); 
-				accept_callback(client_fd);
+				if(!accept_callback(client_fd,client_addr)){
+					cout<<"Something went wrong in accept_callback\n";
+				}
 				OrderProtocol::sockets.push_back(this);
 			}else{
-				cout<< " Error accepting\n";
+				cout<< "Error accepting\n";
 				close(server_socket_fd);
 				state = CLOSED;
 				return;
 			}
 		}
-		
-		
 	}
 }
-ServerSocket::accept_callback(int client_fd){
+bool ServerSocket::accept_callback(int client_fd, sockaddr_in client_address){
 	if(listening_sockets.contains(local_port)){
 		ServerSocket* server_socket = listening_sockets[local_port];
-
 		server_socket->state = ACCEPTED;
-		server_socket->client_control_block = incomming_control_block;
-		server_socket->remote_ip = IPV4(incomming_control_block->remote_ip);
+		server_socket->client_fd = client_fd;
+		server_socket->remote_ip = IPV4(client_address.sin_addr.s_addr);
 		server_socket->rx_packet_buffer = {};
-
-		tcp_setprio(incomming_control_block, priority);
-		tcp_nagle_disable(incomming_control_block);
-		ip_set_option(incomming_control_block, SOF_REUSEADDR);
-
-		tcp_arg(incomming_control_block, server_socket);
-		tcp_recv(incomming_control_block, receive_callback);
-		tcp_sent(incomming_control_block, send_callback);
-		tcp_err(incomming_control_block, error_callback);
-		tcp_poll(incomming_control_block, poll_callback , 0);
-		config_keepalive(incomming_control_block, server_socket);
-
-
-		tcp_close(server_socket->server_control_block);
-		priority++;
-
-		return ERR_OK;
-	}else
-		return ERROR;
-
-}
-err_t ServerSocket::accept_callback(void* arg, struct tcp_pcb* incomming_control_block, err_t error){
-	if(listening_sockets.contains(incomming_control_block->local_port)){
-		ServerSocket* server_socket = listening_sockets[incomming_control_block->local_port];
-
-		server_socket->state = ACCEPTED;
-		server_socket->client_control_block = incomming_control_block;
-		server_socket->remote_ip = IPV4(incomming_control_block->remote_ip);
-		server_socket->rx_packet_buffer = {};
-
-		tcp_setprio(incomming_control_block, priority);
-		tcp_nagle_disable(incomming_control_block);
-		ip_set_option(incomming_control_block, SOF_REUSEADDR);
-
-		tcp_arg(incomming_control_block, server_socket);
-		tcp_recv(incomming_control_block, receive_callback);
-		tcp_sent(incomming_control_block, send_callback);
-		tcp_err(incomming_control_block, error_callback);
-		tcp_poll(incomming_control_block, poll_callback , 0);
-		config_keepalive(incomming_control_block, server_socket);
-
-
-		tcp_close(server_socket->server_control_block);
-		priority++;
-
-		return ERR_OK;
-	}else
-		return ERROR;
-}
-
-err_t ServerSocket::receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error){
-	ServerSocket* server_socket = (ServerSocket*) arg;
-	server_socket->client_control_block = client_control_block;
-
-	if(packet_buffer == nullptr){      //FIN has been received
-		server_socket->state = CLOSING;
-		return ERR_OK;
+		server_socket->handle_receive_from_client(client_fd);
+		return true;
+	}else{
+		return false;
 	}
-
-	if(error != ERR_OK){										//Check if packet is valid
-		if(packet_buffer != nullptr){
-			pbuf_free(packet_buffer);
+	
+}
+void ServerSocket::handle_receive_from_client(int client_fd){
+	receive_thread = std::jthread([client_fd]() {
+        
+		uint8_t buffer[BUFFER_SIZE]; // Buffer for the data
+        ssize_t bytes_received;
+        while ((bytes_received = recv(client_fd, buffer, sizeof(buffer), 0)) > 0 && state == ACCEPTED){
+			Packet* packet;
+			packet->parse(buffer);
+			 {
+                std::lock_guard<std::mutex> lock(mtx); 
+                rx_packet_buffer.push(std::move(packet));
+				process_data(); 
+            }
+        }
+		//if receive a 0 means that the client has finished the connection so we will close this server_socket
+        if (bytes_received == 0) {
+            std::cout << "Client disconnected\n";
+			
+        } else if (bytes_received < 0) {
+            cout << "Error receiving data\n";
 		}
-		return error;
-	}
-	else if(server_socket->state == ACCEPTED){
-		server_socket->rx_packet_buffer.push(packet_buffer);
-		server_socket->process_data();
-		return ERR_OK;
-	}
-
-	else if(server_socket->state == CLOSING){ 		//Socket is already closed
-		while(not server_socket->rx_packet_buffer.empty()){
-			pbuf_free(server_socket->rx_packet_buffer.front());
-			server_socket->rx_packet_buffer.pop();
-		}
-		server_socket->rx_packet_buffer = {};
-		pbuf_free(packet_buffer);
-		return ERR_OK;
-	}
-	return ERR_OK;
+		close();
+    });
 }
 
-void ServerSocket::error_callback(void *arg, err_t error){
-	ServerSocket* server_socket = (ServerSocket*) arg;
-	server_socket->close();
-	ErrorHandler("Socket error: %d. Socket closed", error);
-}
-
-err_t ServerSocket::poll_callback(void *arg, struct tcp_pcb *client_control_block){
-	ServerSocket* server_socket = (ServerSocket*)arg;
-	server_socket->client_control_block = client_control_block;
-
-
-	if(server_socket == nullptr){    //Polling non existing pcb, fatal error
-		tcp_abort(client_control_block);
-		return ERR_ABRT;
-	}
-
-	while(not server_socket->tx_packet_buffer.empty()){		//TX FIFO is not empty
-		server_socket->send();
-	}
-
-	while(not server_socket->rx_packet_buffer.empty()){		//RX FIFO is not empty
-		server_socket->process_data();
-	}
-
-	if(server_socket->state == CLOSING){ //pcb has been polled to close
-		server_socket->close();
-	}
-
-	return ERR_OK;
-}
 
 err_t ServerSocket::send_callback(void *arg, struct tcp_pcb *client_control_block, u16_t len){
 	ServerSocket* server_socket = (ServerSocket*)arg;
@@ -377,5 +292,3 @@ void ServerSocket::config_keepalive(tcp_pcb* control_block, ServerSocket* server
 	control_block->keep_cnt = server_socket->keepalive_config.tries_until_disconnection;
 }
 
-
-#endif
