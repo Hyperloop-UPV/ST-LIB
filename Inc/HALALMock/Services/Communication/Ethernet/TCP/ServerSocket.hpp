@@ -1,9 +1,4 @@
-/*
- * ServerSocket.hpp
- *
- *  Created on: 14 nov. 2022
- *      Author: stefa
- */
+
 #pragma once
 
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
@@ -143,22 +138,6 @@ private:
 	std::jthread listening_thread;
 	std::jthread receive_thread;
 	std::mutex mutex; 
-	std::vector<sockaddr_in> clients;
-	/**
-	 * @brief the callback for the listener socket receiving a request for connection into the ServerSocket.
-	 *
-	 * This function is called on an interrupt when a packet containing a connection request to the same port of the listener socket is received.
-	 * accept_callback builds the pcb that acts as the connection socket and saves it in the client_control_block pointer
-	 * It then closes the listener socket and makes the server_control_block point to nullptr.
-	 *
-	 * server_control_block shouldn't be accessed in any way while the ServerSocket is in the ServerSocket#ACCEPT state, as it will lead into a nullptr exception.
-	 * This in an intended behavior as there shouldn't be more than one listener socket on the same port, and a ServerSocket shouldn't be able to handle more than one connection by design.
-	 */
-	static err_t accept_callback(void* arg, struct tcp_pcb* incomming_control_block, err_t error);
-
-	static err_t send_callback(void *arg, struct tcp_pcb *client_control_block, u16_t len);
-
-	static void config_keepalive(tcp_pcb* control_block, ServerSocket* server_socket);
 
 };
 

@@ -201,8 +201,9 @@ void Socket::reset(){
 
 
 void Socket::send(){
+	std::lock_guard<std::mutex> lock(mutex);
 	while (!tx_packet_buffer.empty()) {
-        HeapPacket *packet = tx_packet_buffer.front();
+        Packet *packet = tx_packet_buffer.front();
         ssize_t sent_bytes = ::send(socket_fd, packet->build(), packet->get_size(), 0);
         if (sent_bytes < 0) {
             std::cerr << "Error sending packet\n";
