@@ -84,4 +84,3 @@ void DatagramSocket::close(){
 	is_disconnected = true;
 }
 
-#endif
