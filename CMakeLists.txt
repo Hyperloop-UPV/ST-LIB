@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required (VERSION 3.14)
 
 project (ST-LIB C CXX)
 set(LIBRARY st-lib)
@@ -6,6 +6,14 @@ set(STLIB_DIR "$ENV{STLIB_PATH}")
 
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  DOWNLOAD_EXTRACT_TIMESTAMP URL https://github.com/google/googletest/archive/b514bdc898e2951020cbdca1304b75f5950d1f59.zip
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
 # This should be an explicit list of files, but there are just too many files :(
 file(GLOB_RECURSE HEADER_DRIVER ${STLIB_DIR}/Drivers/*.h )
@@ -75,6 +83,10 @@ add_library(${LIBRARY} STATIC
   ${STLIB_HIGH_C}
   ${STLIB_HIGH_CPP}
   ${STLIB_DIR}/Src/ST-LIB.cpp
+)
+
+target_link_libraries(${LIBRARY} PUBLIC 
+  GTest::gtest_main
 )
 
 set_target_properties(${LIBRARY} PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED C_STANDARD 11 C_STANDARD_REQUIRED)
@@ -149,3 +161,6 @@ if (PROJECT_IS_TOP_LEVEL)
             ${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json
     )
 endif()
+
+include(GoogleTest)
+gtest_discover_tests(${LIBRARY})
