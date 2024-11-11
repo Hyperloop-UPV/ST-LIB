@@ -2,43 +2,50 @@ cmake_minimum_required (VERSION 3.5)
 
 project (ST-LIB C CXX)
 set(LIBRARY st-lib)
+set(STLIB_DIR "$ENV{STLIB_PATH}")
 
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
 
 # This should be an explicit list of files, but there are just too many files :(
-file(GLOB_RECURSE HEADER_DRIVER ${CMAKE_SOURCE_DIR}/Drivers/*.h )
-file(GLOB_RECURSE SOURCE_DRIVER ${CMAKE_SOURCE_DIR}/Drivers/*.c )
-file(GLOB_RECURSE HEADER_MIDDLEWARE ${CMAKE_SOURCE_DIR}/Middlewares/*.h)
-file(GLOB_RECURSE SOURCE_MIDDLEWARE ${CMAKE_SOURCE_DIR}/Middlewares/*.c)
-file(GLOB_RECURSE HEADER_LWIP ${CMAKE_SOURCE_DIR}/LWIP/*.h)
-file(GLOB_RECURSE SOURCE_LWIP ${CMAKE_SOURCE_DIR}/LWIP/*.c)
+file(GLOB_RECURSE HEADER_DRIVER ${STLIB_DIR}/Drivers/*.h )
+file(GLOB_RECURSE SOURCE_DRIVER ${STLIB_DIR}/Drivers/*.c )
+file(GLOB_RECURSE HEADER_MIDDLEWARE ${STLIB_DIR}/Middlewares/*.h)
+file(GLOB_RECURSE SOURCE_MIDDLEWARE ${STLIB_DIR}/Middlewares/*.c)
+file(GLOB_RECURSE HEADER_LWIP ${STLIB_DIR}/LWIP/*.h)
+file(GLOB_RECURSE SOURCE_LWIP ${STLIB_DIR}/LWIP/*.c)
+
+# CPP UTILITIES
+file(GLOB_RECURSE CPP_UTILITIES_H ${STLIB_DIR}/Inc/C++Utilities/*.h)
+file(GLOB_RECURSE CPP_UTILITIES_HPP ${STLIB_DIR}/Inc/C++Utilities/*.hpp)
+file(GLOB_RECURSE CPP_UTILITIES_C ${STLIB_DIR}/Src/C++Utilities/*.c)
+file(GLOB_RECURSE CPP_UTILITIES_CPP ${STLIB_DIR}/Src/C++Utilities/*.cpp)
 
 # HALAL (and Mock)
-file(GLOB_RECURSE HALAL_H ${CMAKE_SOURCE_DIR}/Inc/HALAL/*.h)
-file(GLOB_RECURSE HALAL_MOCK_H ${CMAKE_SOURCE_DIR}/Inc/HALALMock/*.h)
+file(GLOB_RECURSE HALAL_H ${STLIB_DIR}/Inc/HALAL/*.h)
+file(GLOB_RECURSE HALAL_MOCK_H ${STLIB_DIR}/Inc/HALALMock/*.h)
 list(REMOVE_ITEM HALAL_H HALAL_MOCK_H)
-file(GLOB_RECURSE HALAL_HPP ${CMAKE_SOURCE_DIR}/Inc/HALAL/*.hpp)
-file(GLOB_RECURSE HALAL_MOCK_HPP ${CMAKE_SOURCE_DIR}/Inc/HALALMock/*.hpp)
+file(GLOB_RECURSE HALAL_HPP ${STLIB_DIR}/Inc/HALAL/*.hpp)
+file(GLOB_RECURSE HALAL_MOCK_HPP ${STLIB_DIR}/Inc/HALALMock/*.hpp)
 list(REMOVE_ITEM HALAL_HPP HALAL_MOCK_HPP)
-file(GLOB_RECURSE HALAL_C ${CMAKE_SOURCE_DIR}/Src/HALAL/*.c)
-file(GLOB_RECURSE HALAL_MOCK_C ${CMAKE_SOURCE_DIR}/Src/HALALMock/*.c)
+file(GLOB_RECURSE HALAL_C ${STLIB_DIR}/Src/HALAL/*.c)
+file(GLOB_RECURSE HALAL_MOCK_C ${STLIB_DIR}/Src/HALALMock/*.c)
 list(REMOVE_ITEM HALAL_C HALAL_MOCK_C)
-file(GLOB_RECURSE HALAL_CPP ${CMAKE_SOURCE_DIR}/Src/HALAL/*.cpp)
-file(GLOB_RECURSE HALAL_MOCK_CPP ${CMAKE_SOURCE_DIR}/Src/HALALMock/*.cpp)
+file(GLOB_RECURSE HALAL_CPP ${STLIB_DIR}/Src/HALAL/*.cpp)
+file(GLOB_RECURSE HALAL_MOCK_CPP ${STLIB_DIR}/Src/HALALMock/*.cpp)
 list(REMOVE_ITEM HALAL_CPP HALAL_MOCK_CPP)
 
 # STLIB_LOW
-file(GLOB_RECURSE STLIB_LOW_H ${CMAKE_SOURCE_DIR}/Inc/ST-LIB_LOW/*.h)
-file(GLOB_RECURSE STLIB_LOW_HPP ${CMAKE_SOURCE_DIR}/Inc/ST-LIB_LOW/*.hpp)
-file(GLOB_RECURSE STLIB_LOW_C ${CMAKE_SOURCE_DIR}/Src/ST-LIB_LOW/*.c)
-file(GLOB_RECURSE STLIB_LOW_CPP ${CMAKE_SOURCE_DIR}/Src/ST-LIB_LOW/*.cpp)
+file(GLOB_RECURSE STLIB_LOW_H ${STLIB_DIR}/Inc/ST-LIB_LOW/*.h)
+file(GLOB_RECURSE STLIB_LOW_HPP ${STLIB_DIR}/Inc/ST-LIB_LOW/*.hpp)
+file(GLOB_RECURSE STLIB_LOW_C ${STLIB_DIR}/Src/ST-LIB_LOW/*.c)
+file(GLOB_RECURSE STLIB_LOW_CPP ${STLIB_DIR}/Src/ST-LIB_LOW/*.cpp)
 
 # STLIB_HIGH
-file(GLOB_RECURSE STLIB_HIGH_H ${CMAKE_SOURCE_DIR}/Inc/ST-LIB_HIGH/*.h)
-file(GLOB_RECURSE STLIB_HIGH_HPP ${CMAKE_SOURCE_DIR}/Inc/ST-LIB_HIGH/*.hpp)
-file(GLOB_RECURSE STLIB_HIGH_C ${CMAKE_SOURCE_DIR}/Src/ST-LIB_HIGH/*.c)
-file(GLOB_RECURSE STLIB_HIGH_CPP ${CMAKE_SOURCE_DIR}/Src/ST-LIB_HIGH/*.cpp)
+file(GLOB_RECURSE STLIB_HIGH_H ${STLIB_DIR}/Inc/ST-LIB_HIGH/*.h)
+file(GLOB_RECURSE STLIB_HIGH_HPP ${STLIB_DIR}/Inc/ST-LIB_HIGH/*.hpp)
+file(GLOB_RECURSE STLIB_HIGH_C ${STLIB_DIR}/Src/ST-LIB_HIGH/*.c)
+file(GLOB_RECURSE STLIB_HIGH_CPP ${STLIB_DIR}/Src/ST-LIB_HIGH/*.cpp)
 
 add_library(${LIBRARY} STATIC
   ${HEADER_DRIVER}
@@ -55,8 +62,14 @@ add_library(${LIBRARY} STATIC
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${HALAL_MOCK_HPP}>
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${HALAL_MOCK_C}>
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${HALAL_MOCK_CPP}>
+  ${CPP_UTILITIES_H}
+  ${CPP_UTILITIES_HPP}
+  ${CPP_UTILITIES_C}
+  ${CPP_UTILITIES_CPP}
   ${STLIB_LOW_H}
   ${STLIB_LOW_HPP}
+  ${STLIB_LOW_C}
+  ${STLIB_LOW_CPP}
   ${STLIB_HIGH_H}
   ${STLIB_HIGH_HPP}
   ${STLIB_HIGH_C}
@@ -99,32 +112,32 @@ target_compile_options(${LIBRARY} PRIVATE
 )
 
 target_include_directories(${LIBRARY} PRIVATE
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/system>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/netif/ppp>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/apps>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/priv>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/prot>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/netif>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/arpa>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/net>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/sys>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/stdc>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/LwIP/system/arch>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Components>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Components/lan8742>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/LWIP/App>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_SOURCE_DIR}/LWIP/Target>
-  ${CMAKE_CURRENT_SOURCE_DIR}/Inc
-  ${CMAKE_CURRENT_SOURCE_DIR}/Inc/ST-LIB_LOW
-  ${CMAKE_CURRENT_SOURCE_DIR}/Inc/ST-LIB_HIGH
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Drivers/CMSIS/Include>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/system>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/netif/ppp>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/apps>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/priv>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/prot>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/netif>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/compat>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/arpa>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/net>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/sys>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/stdc>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Middlewares/Third_Party/LwIP/system/arch>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Drivers/BSP/Components>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/Drivers/BSP/Components/lan8742>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/LWIP/App>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_DIR}/LWIP/Target>
+  ${STLIB_DIR}/Inc
+  ${STLIB_DIR}/Inc/ST-LIB_LOW
+  ${STLIB_DIR}/Inc/ST-LIB_HIGH
 )
 
 if (PROJECT_IS_TOP_LEVEL)
