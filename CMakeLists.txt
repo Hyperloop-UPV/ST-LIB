@@ -7,13 +7,19 @@ set(STLIB_DIR "$ENV{STLIB_PATH}")
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
 
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  DOWNLOAD_EXTRACT_TIMESTAMP URL https://github.com/google/googletest/archive/b514bdc898e2951020cbdca1304b75f5950d1f59.zip
-)
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+if (PROJECT_IS_TOP_LEVEL)
+  include(FetchContent)
+  option(BUILD_GMOCK OFF)
+  option(INSTALL_GTEST OFF)
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        v1.15.2
+  )
+  FetchContent_MakeAvailable(googletest)
+  add_library(GTest::GTest INTERFACE IMPORTED)
+  target_link_libraries(GTest::GTest INTERFACE gtest_main)
+endif()
 
 # This should be an explicit list of files, but there are just too many files :(
 file(GLOB_RECURSE HEADER_DRIVER ${STLIB_DIR}/Drivers/*.h )
@@ -56,12 +62,12 @@ file(GLOB_RECURSE STLIB_HIGH_C ${STLIB_DIR}/Src/ST-LIB_HIGH/*.c)
 file(GLOB_RECURSE STLIB_HIGH_CPP ${STLIB_DIR}/Src/ST-LIB_HIGH/*.cpp)
 
 add_library(${LIBRARY} STATIC
-  ${HEADER_DRIVER}
-  ${SOURCE_DRIVER}
-  ${HEADER_MIDDLEWARE}
-  ${SOURCE_MIDDLEWARE}
-  ${HEADER_LWIP}
-  ${SOURCE_LWIP}
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HEADER_DRIVER}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${SOURCE_DRIVER}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HEADER_MIDDLEWARE}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${SOURCE_MIDDLEWARE}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HEADER_LWIP}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${SOURCE_LWIP}>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HALAL_H}>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HALAL_HPP}>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HALAL_C}>

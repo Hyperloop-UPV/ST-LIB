@@ -6,9 +6,10 @@
 __pycache__/
 
 # Build
-Debug
-Release
-build
+Debug/
+Release/
+build/
+out/
 
 # IDE
 *.launch
