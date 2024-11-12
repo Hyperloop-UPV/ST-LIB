@@ -79,65 +79,81 @@ enum TRIGGER{
     BOTH_EDGES = 2
 };
 enum class PinType {
-	NOT_USED,
-	DigitalOutput,
-	DigitalInput,
-	PWM,
-	DualPWM,
-	ADC,
-	FDCAN,
+    NOT_USED,
+    DigitalOutput,
+    DigitalInput,
+    PWM,
+    DualPWM,
+    ADC,
+    FDCAN,
     SPI,
+    INPUTCAPTURE,
     ENCODER,
-    EXTIPin
-	// TODO: Add more types
+    EXTIPin,
+    Ethernet  // Usando temporalmente este nombre por que hay colisión entre
+              // nombres
+    // TODO: Add more types
 
 };
+struct DigitalOutput_MockPin{
+    bool state;
+} ;
+struct DigitalInput_MockPin {
+    PinState curr_state;
+} ;
+struct PWM_MockPin {
+    float duty_cycle;
+    uint32_t frequency;
+    bool is_on;
+    std::chrono::nanoseconds dead_time_ns;
+} ;
+struct DualPWM_MockPin{
+    float duty_cycle;
+    uint32_t frequency;
+    bool is_on;
+    std::chrono::nanoseconds dead_time_ns;
+} ;
+struct ADC_MockPin{
+    uint16_t value;
+    bool is_on;
+} ;
+struct EXTIPin_MockPin{
+    uint32_t priority;
+    bool is_on;
+    bool trigger_signal;
+    TRIGGER trigger_mode;
+} ;
+struct Encoder_MockPin{
+    uint32_t count_value;
+    bool direction;
+    bool is_on;
+} ;
+struct InputCapure_MockPin{
+    uint8_t duty_cycle;
+    uint32_t frequency;
+};
+struct FDCAN_MockPin{
 
+};
+struct SPI_MockPin{
+    bool is_on;
+};
 struct EmulatedPin {
-    PinType type =
-        PinType::NOT_USED;  // Always check type before using the union
-	union  {
-		struct {
-			bool state;
-		} DigitalOutput;
-		struct  {
-			PinState curr_state;
-		} DigitalInput;
-		struct  {
-			float duty_cycle;
-			uint32_t frequency;
-			bool is_on;
-			std::chrono::nanoseconds dead_time_ns;
-		} PWM;
-		struct {
-			float duty_cycle;
-			uint32_t frequency;
-			bool is_on = false;
-			std::chrono::nanoseconds dead_time_ns;
-		} DualPWM;
-		struct {
-			uint16_t value;
-            bool is_on;
-		} ADC;
-        struct {
+    PinType type =  PinType::NOT_USED;  // Always check type before using the union
+    union PinDataU {
+        DigitalOutput_MockPin   digital_output;
+        DigitalInput_MockPin    digital_input;
+        PWM_MockPin             pwm;
+        DualPWM_MockPin         dual_pwm;
+        ADC_MockPin             adc;
+        EXTIPin_MockPin         exti;
+        Encoder_MockPin         encoder;
+        InputCapure_MockPin     input_capture;
+        FDCAN_MockPin           fdcan;
+        SPI_MockPin             spi;
 
-        } FDCAN;
-        struct {
-            bool is_on;
-        } SPI;
-        struct {
-            uint32_t priority = 0;
-            bool is_on;
-            bool trigger_signal;
-            TRIGGER trigger_mode;
-        } EXTIPin;
-        struct {
-            uint32_t count_value;
-            bool direction;
-            bool is_on;
-        } ENCODER;
-        // TODO Add more types
-	} PinData;
+		// TODO Add more types
+	}PinData;
 };
 
 class Pin {

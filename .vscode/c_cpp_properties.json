@@ -37,7 +37,8 @@
         "STM32H723xx",
         "STLIB_ETH",
         "NUCLEO",
-        "HSE_VALUE=8000000"
+        "HSE_VALUE=8000000",
+        "SIM_ON"
       ],
       "compilerArgs": [
         "-mcpu=cortex-m7",
@@ -75,7 +76,8 @@
         "STM32H723xx",
         "STLIB_ETH",
         "NUCLEO",
-        "HSE_VALUE=8000000"
+        "HSE_VALUE=8000000",
+        "SIM_ON"
       ],
       "compilerArgs": [
         "-O0",

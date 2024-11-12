@@ -1,14 +1,6 @@
-/*
- * ServerSocket.cpp
- *
- *  Created on: Nov 23, 2022
- *      Author: stefa
- */
-
+#ifdef STLIB_ETH
 #include "HALALMock/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
-#include "lwip/priv/tcp_priv.h"
-#include "ErrorHandler/ErrorHandler.hpp"
-#ifdef HAL_ETH_MODULE_ENABLED
+
 
 uint8_t ServerSocket::priority = 1;
 unordered_map<uint32_t,ServerSocket*> ServerSocket::listening_sockets = {};
@@ -17,27 +9,13 @@ ServerSocket::ServerSocket() = default;
 
 ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port) : local_ip(local_ip),local_port(local_port){
 	if(not Ethernet::is_running) {
-		ErrorHandler("Cannot declare UDP socket before Ethernet::start()");
+		cout<<"Cannot declare UDP socket before Ethernet::start()\n";
 		return;
 	}
 	tx_packet_buffer = {};
 	rx_packet_buffer = {};
 	state = INACTIVE;
-	server_control_block = tcp_new();
-	tcp_nagle_disable(server_control_block);
-	ip_set_option(server_control_block, SOF_REUSEADDR);
-	err_t error = tcp_bind(server_control_block, &local_ip.address, local_port);
-
-	if(error == ERR_OK){
-		server_control_block = tcp_listen(server_control_block);
-		state = LISTENING;
-		listening_sockets[local_port] = this;
-		tcp_accept(server_control_block, accept_callback);
-	}else{
-		memp_free(MEMP_TCP_PCB, server_control_block);
-		ErrorHandler("Cannot bind server socket, error %d",(int16_t)error);
-	}
-	OrderProtocol::sockets.push_back(this);
+	configure_server_socket_and_listen();
 }
 
 
@@ -163,7 +141,128 @@ void ServerSocket::send(){
 bool ServerSocket::is_connected(){
 	return state == ServerSocket::ServerState::ACCEPTED;
 }
+ServerSocket::create_server_socket(){
+	server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(server_socket_fd == -1){
+		std::cout<<"Socket creation failure\n";
+		return;
+	}
+	//inset the local address and port
+	struct sockaddr_in server_socket_Address;
+	server_socket_Address.sin_family = AF_INET;
+	server_socket_Address.sin_addr.s_addr = local_ip.address;
+	server_socket_Address.sin_port = htons(local_port);
+	if(bind(server_socket_fd, (struct sockaddr*)&server_socket_Address, sizeof(server_socket_Address)) < 0){
+		std::cout<<"Bind error\n";
+		close(server_socket_fd);
+		return;
+	}
+}
+ServerSocket::configure_server_socket(){
+	//to reuse local address:
+	int opt = 1;
+	if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    	std::cerr << "Error setting SO_REUSEADDR\n";
+   		close(server_socket_fd);
+    	return;
+	}
+	//disable naggle algorithm
+	int flag = 1;
+	if (setsockopt(server_socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
+		std::cout<<"It has been an error disabling Nagle's algorithm\n";
+		close(server_socket_fd);
+		return;
+	}
+	//habilitate keepalives
+    int optval = 1;
+    if (setsockopt(server_socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
+        std::cout << "ERROR configuring KEEPALIVES\n";
+        close(server_socket_fd);
+        return;
+    }
+	// Configurar TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
+    float tcp_keepidle_time = static_cast<float>(keepalive_config.inactivity_time_until_keepalive_ms)/1000.0;
+    if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
+        std::cout << "Error configuring TCP_KEEPIDLE\n";
+		close(server_socket_fd);
+        return;
+    }
+	  //interval between keepalives
+    float keep_interval_time = static_cast<float>(keepalive_config.space_between_tries_ms)/1000.0;
+    if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
+        std::cout << "Error configuring TCP_KEEPINTVL\n";
+        close(server_socket_fd);
+        return;
+    }
+	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
+	 float keep_cnt = static_cast<float>(keepalive_config.tries_until_disconnection)/1000.0;
+    if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
+        std::cout << "Error to configure TCP_KEEPCNT\n";
+        close(server_socket_fd);
+        return ;
+    }
+}
+ServerSocket::configure_server_socket_and_listen(){
+	create_server_socket();
+	configure_server_socket();
+	if (listen(server_socket_fd, SOMAXCONN) < 0) {
+        std::cout"Error listening\n";
+        close(server_socket_fd);
+        state = INACTIVE;
+        return;
+    }
+	state = LISTENING;
+	listening_sockets[local_port] = this;
+	//create a thread to listen
+	listening_thread = std::jthread [&](){
+		while(true){
+			struct sockaddr_in client_addr;
+			socklen_t client_len = sizeof(client_addr);
+			int client_fd = accept(server_socket_fd,(struct sockaddr*)&client_addr, &client_len);
+			if(client_fd > 0){
+				clients.push_back(client_addr); 
+				accept_callback(client_fd);
+				OrderProtocol::sockets.push_back(this);
+			}else{
+				cout<< " Error accepting\n";
+				close(server_socket_fd);
+				state = CLOSED;
+				return;
+			}
+		}
+		
+		
+	}
+}
+ServerSocket::accept_callback(int client_fd){
+	if(listening_sockets.contains(local_port)){
+		ServerSocket* server_socket = listening_sockets[local_port];
 
+		server_socket->state = ACCEPTED;
+		server_socket->client_control_block = incomming_control_block;
+		server_socket->remote_ip = IPV4(incomming_control_block->remote_ip);
+		server_socket->rx_packet_buffer = {};
+
+		tcp_setprio(incomming_control_block, priority);
+		tcp_nagle_disable(incomming_control_block);
+		ip_set_option(incomming_control_block, SOF_REUSEADDR);
+
+		tcp_arg(incomming_control_block, server_socket);
+		tcp_recv(incomming_control_block, receive_callback);
+		tcp_sent(incomming_control_block, send_callback);
+		tcp_err(incomming_control_block, error_callback);
+		tcp_poll(incomming_control_block, poll_callback , 0);
+		config_keepalive(incomming_control_block, server_socket);
+
+
+		tcp_close(server_socket->server_control_block);
+		priority++;
+
+		return ERR_OK;
+	}else
+		return ERROR;
+
+}
 err_t ServerSocket::accept_callback(void* arg, struct tcp_pcb* incomming_control_block, err_t error){
 	if(listening_sockets.contains(incomming_control_block->local_port)){
 		ServerSocket* server_socket = listening_sockets[incomming_control_block->local_port];
@@ -277,4 +376,4 @@ void ServerSocket::config_keepalive(tcp_pcb* control_block, ServerSocket* server
 }
 
 
-#endif
+#endif //STLIB_ETH

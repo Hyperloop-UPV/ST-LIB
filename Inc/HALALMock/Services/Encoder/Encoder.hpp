@@ -9,19 +9,15 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "HALALMock/Models/HALALMock/Models/PinModel/Pin.hpp"
-#include "HALALMock/Models/HALALMock/Services/SharedMemory/SharedMemory.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
-#ifdef HAL_TIM_MODULE_ENABLED
-/**
- * @brief Encoder service class. Abstracts the use of the encoder with the HAL
- * library.
- *
- */
+
 class Encoder {
    public:
     static uint8_t id_counter;
-    static map<pair<Pin, Pin>, TimerPeripheral*> pin_timer_map;
+    //TimePeriferal* is useless and not declared, now is void*
+    static map<pair<Pin, Pin>, void*> pin_timer_map;
     static map<uint8_t, pair<Pin, Pin>> registered_encoder;
 
     /**
@@ -73,8 +69,7 @@ class Encoder {
      */
     static bool get_direction(uint8_t id);
 
-    static void init(TimerPeripheral* encoder);
+    static void init(void* encoder);
 
     static uint32_t get_initial_counter_value(uint8_t id);
 };
-#endif

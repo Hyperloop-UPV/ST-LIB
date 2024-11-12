@@ -7,6 +7,7 @@
 
 
 #include <iostream>
+#include "HALALMock/Services/Time/Time.hpp"
 
 std::mutex Time::mutex;
 std::condition_variable Time::cv;
@@ -83,6 +84,15 @@ uint8_t Time::register_low_precision_alarm(uint32_t period_in_ms, std::function<
 }
 
 bool Time::unregister_low_precision_alarm(uint8_t id) {
+    return unregister_high_precision_alarm(id);
+}
+
+
+uint8_t Time::register_mid_precision_alarm(uint32_t period_in_us, std::function<void()> func) {
+    return register_high_precision_alarm(period_in_us, func); //There is no hw limitation that does not allow this
+}
+
+bool Time::unregister_mid_precision_alarm(uint8_t id) {
     return unregister_high_precision_alarm(id);
 }
 

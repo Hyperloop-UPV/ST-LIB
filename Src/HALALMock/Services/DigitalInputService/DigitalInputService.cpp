@@ -24,5 +24,5 @@ PinState DigitalInput::read_pin_state(uint8_t id){
 
 	Pin pin = DigitalInput::service_ids[id];
 	EmulatedPin& pin_data = SharedMemory::get_pin(pin);
-	return (PinState)pin_data.curr_state;
+	return (PinState)pin_data.PinData.digital_input.curr_state;
 }

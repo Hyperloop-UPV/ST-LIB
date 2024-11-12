@@ -6,6 +6,7 @@
  */
 
 #pragma once
+#ifdef STLIB_ETH
 #include "HALAL/HALAL.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
@@ -40,3 +41,5 @@ public:
 
 	static void update_servers();
 };
+
+#endif //STLIB_ETH

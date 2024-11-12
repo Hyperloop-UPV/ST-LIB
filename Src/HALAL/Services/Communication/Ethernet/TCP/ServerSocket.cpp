@@ -4,7 +4,7 @@
  *  Created on: Nov 23, 2022
  *      Author: stefa
  */
-
+#ifdef STLIB_ETH
 #include "HALAL/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 #include "lwip/priv/tcp_priv.h"
 #include "ErrorHandler/ErrorHandler.hpp"
@@ -277,4 +277,5 @@ void ServerSocket::config_keepalive(tcp_pcb* control_block, ServerSocket* server
 }
 
 
-#endif
+#endif //HAL_ETH_MODULE_ENABLED
+#endif //STLIB_ETH

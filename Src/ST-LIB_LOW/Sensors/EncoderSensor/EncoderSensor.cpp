@@ -1,5 +1,7 @@
 #include "Sensors/EncoderSensor/EncoderSensor.hpp"
-
+#ifdef SIM_ON
+uint32_t HAL_RCC_GetPCLK1Freq(void){return 0;}
+#endif
 EncoderSensor::EncoderSensor(Pin pin1, Pin pin2, double *position, double* direction, double *speed, double *acceleration)
 : position(position), direction(direction), speed(speed), acceleration(acceleration){
 	id = Encoder::inscribe(pin1,pin2);

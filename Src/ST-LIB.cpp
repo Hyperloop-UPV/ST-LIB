@@ -25,7 +25,8 @@ void STLIB::update() {
 #if !defined STLIB_ETH
 #else
 	Ethernet::update();
+  Server::update_servers();
 #endif
 	ErrorHandlerModel::ErrorHandlerUpdate();
-	Server::update_servers();
+	
 }

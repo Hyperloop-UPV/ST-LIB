@@ -57,7 +57,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
         }
 
         SS_pin.type = PinType::SPI;
-        SS_pin.PinData.SPI.is_on = false; // When this pin turns on, the simulator has to connect.
+        SS_pin.PinData.spi.is_on = false; // When this pin turns on, the simulator has to connect.
 
         // This peripheral acts as a SPI master, so it acts as a UDP server
 
@@ -187,7 +187,7 @@ void SPI::start() {
     for (auto [_, spi] : SPI::registered_spi) {
         SPI::init(spi);
         EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
-        SS_pin.PinData.SPI.is_on = true; // This pin tells the simulator to connect
+        SS_pin.PinData.spi.is_on = true; // This pin tells the simulator to connect
     }
 }
 
@@ -517,12 +517,12 @@ void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
 
 void SPI::turn_on_chip_select(SPI::Instance* spi) {
     EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
-    SS_pin.PinData.SPI.is_on = true;
+    SS_pin.PinData.spi.is_on = true;
 }
 
 void SPI::turn_off_chip_select(SPI::Instance* spi) {
     EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
-    SS_pin.PinData.SPI.is_on = false;
+    SS_pin.PinData.spi.is_on = false;
 }
 
 void SPI::mark_slave_ready(SPI::Instance* spi) {

@@ -7,7 +7,6 @@
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
 
-#include "stm32h7xx_hal.h"
 
 #define PERIPHERAL_BASE 0x40000000UL
 #define DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 PERIPHERAL_BASE+0x18020000UL
@@ -76,6 +75,12 @@ enum OperationMode{
 enum PinState{
 	OFF,
 	ON
+};
+
+enum TRIGGER{
+    RISING_EDGE = 1,
+    FAILING_EDGE = 0,
+    BOTH_EDGES = 2
 };
 
 class Pin {

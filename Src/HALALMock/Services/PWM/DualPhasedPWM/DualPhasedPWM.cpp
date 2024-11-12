@@ -4,7 +4,7 @@
  *  Created on: 9 mar. 2023
  *      Author: aleja
  */
-
+/*
 #include "HALALMock/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 
 DualPhasedPWM::DualPhasedPWM(Pin& pin, Pin& pin_negated) {
@@ -98,3 +98,4 @@ void DualPhasedPWM::set_raw_phase(float raw_phase) {
 float DualPhasedPWM::get_phase()const{
 	return raw_phase*360/200;
 }
+*/
