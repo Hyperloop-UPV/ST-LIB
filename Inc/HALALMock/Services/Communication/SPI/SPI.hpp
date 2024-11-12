@@ -80,6 +80,7 @@ public:
         std::mutex transmission_reception_mx;
         std::condition_variable cv_transmission_reception;
 
+        uint16_t port;
     };
 
     /**
@@ -119,7 +120,7 @@ public:
 	static SPI::Instance instance5;
 	static SPI::Instance instance6;
 
-
+    static std::string ip; // IP address of this VMCU, it should be defined on a .hpp file configuration
 
     /*=========================================
      * User functions for configuration of the SPI
@@ -345,6 +346,3 @@ private:
     static void TxRxCpltCallback(uint8_t id);
 
 };
-
-extern std::array<int, 6> peripheral_ports; // Array of SPI peripheral ports, it should be defined on a .hpp file configuration
-extern std::string ip; // IP address of this VMCU, it should be defined on a .hpp file configuration
