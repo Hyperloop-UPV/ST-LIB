@@ -120,6 +120,8 @@ public:
 	static SPI::Instance instance5;
 	static SPI::Instance instance6;
 
+    static std::string ip;
+
     /*=========================================
      * User functions for configuration of the SPI
      ==========================================*/
@@ -344,5 +346,3 @@ private:
     static void TxRxCpltCallback(uint8_t id);
 
 };
-
-external std::string vmcu_ip; // IP address of this VMCU, it should be defined on a .hpp file configuration
