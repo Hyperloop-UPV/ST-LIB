@@ -104,6 +104,33 @@ void SharedMemory::start_state_machine_memory(){
 	*state_machine_count=0;
 }
 
+void SharedMemory::close(){
+	close_gpio_shared_memory();
+	close_state_machine_memory();
+}
+
+void SharedMemory::close_state_machine_memory(){
+	if (state_machine_memory!=nullptr){
+		// unmap the shared memory object
+		if(munmap(state_machine_memory,state_machine_memory_size)==-1){
+			std::cout<<"Error unmapping the shared memory object\n";
+			std::terminate();
+		}
+
+		// point the shared memory object to NULL
+		state_machine_memory=nullptr;
+	}
+	
+	if(shm_unlink(state_machine_memory_name)==-1){
+		std::cout<<"Error unlinking the shared memory object\n";
+		std::terminate();
+	}
+
+	if(shm_state_machine_fd !=-1 && close(shm_state_machine_fd)==-1){
+		std::cout<<"Error closing the shared memory file descriptor\n";
+		std::terminate();
+	}
+}
 void SharedMemory::update_current_state(uint8_t index, uint8_t state){
 	state_machine_memory[index]=state;
 }
