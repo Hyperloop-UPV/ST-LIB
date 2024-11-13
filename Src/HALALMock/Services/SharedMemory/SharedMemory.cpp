@@ -46,14 +46,12 @@ void SharedMemory::start() {
 	start_state_machine_memory(); // initialize the state machine shared memory
 	start_gpio_shared_memory(); // initialize the gpio_shared_memory
 }
-void SharedMemory::start(const char* name){
-	gpio_memory_name = name;
+void SharedMemory::start(const char* gpio_memory_name){
+	this->gpio_memory_name = gpio_memory_name;
 	start_state_machine_memory(); // initialize the state machine shared memory
 	start_gpio_shared_memory(); //initialize the gpio_shared_memory
 }
 void SharedMemory::start_gpio_shared_memory(){
-	//Create GPIO_Memory
-	int shm_gpio_fd;
 	//create shared memory object
 	shm_gpio_fd = shm_open(gpio_memory_name, O_CREAT | O_RDWR,0660);
 	if(shm_gpio_fd == -1){
@@ -101,7 +99,29 @@ void SharedMemory::start_state_machine_memory(){
 	state_machine_count=&state_machine_memory[0];
 	*state_machine_count=0;
 }
-
+void SharedMemory::close(){
+	close_gpio_shared_memory();
+}
+void SharedMemory::close_gpio_shared_memory(){
+	if (gpio_memory != nullptr){
+		//unmap shared memory
+		if(munmap(gpio_memory,state_machine_memory_size) == -1){
+			std::cout<<"Error unmapping the gpio shared_memory\n";
+		}
+		//put the pointer to null
+		gpio_memory = nullptr;
+	}
+	int delete_shared_gpio_memory = shm_unlink(gpio_memory_name);
+	//check the error
+	if(delete_shared_gpio_memory == EACCES){
+		std::cout<<"Permission is denied to unlink the named shared memory object\n";
+	}else if (delete_shared_gpio_memory == ENOENT){
+		std::cout<<"The named shared memory object does not exist\n";
+	}
+	if(close(shm_gpio_fd) == -1){
+		std::cout<<"Error closing the file descriptor\n"
+	}
+}
 void SharedMemory::update_current_state(uint8_t index, uint8_t state){
 	state_machine_memory[index]=state;
 }
