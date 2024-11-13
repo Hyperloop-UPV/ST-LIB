@@ -27,4 +27,3 @@ public:
 	void operator=(const char* address);
 };
 
-#endif

@@ -11,7 +11,6 @@
 #include "HALALMock/Models/Packets/Packet.hpp"
 #include "HALALMock/Models/Packets/Order.hpp"
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
-#include <jtrhead>
 
 
 class Socket : public OrderProtocol{
@@ -95,4 +94,4 @@ public:
 	bool is_connected();
 
 };
-#endif
+

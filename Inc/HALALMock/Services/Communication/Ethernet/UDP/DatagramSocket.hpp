@@ -47,5 +47,3 @@ private:
 	void create_udp_socket();
 };
 
-
-#endif

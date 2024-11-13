@@ -1,6 +1,5 @@
 #include "HALALMock/Models/IPV4/IPV4.hpp"
 
-#ifdef HAL_ETH_MODULE_ENABLED
 
 IPV4::IPV4(string address) : string_address(address){
 	stringstream sstream(address);
@@ -57,4 +56,3 @@ void IPV4::set_address_from_bytes(uint8_t byte1, uint8_t byte2, uint8_t byte3, u
                     (static_cast<in_addr_t>(byte4));
 }
 
-#endif

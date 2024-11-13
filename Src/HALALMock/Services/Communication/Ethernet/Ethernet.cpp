@@ -6,7 +6,6 @@
  */
 
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
-#ifdef HAL_ETH_MODULE_ENABLED
 //We won't need EthernetLinkerTimer and gnetif however the other extenrn should be in a file to work
 //extern uint32_t EthernetLinkTimer;
 //extern struct netif gnetif;
@@ -76,4 +75,3 @@ void Ethernet::update(){
 	}
 }
 
-#endif
