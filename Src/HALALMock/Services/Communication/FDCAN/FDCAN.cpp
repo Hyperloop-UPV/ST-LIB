@@ -68,8 +68,8 @@ void FDCAN::start(){
 		}
 		struct sockaddr_in BroadcastAddress;
 		BroadcastAdress.sin_family = AF_INET;
-		BroadcastAdress.sin_port = FDCAN_PORT_BASE + Port_counter;
-		BroadcastAdress.sin_addr.s_addr = fdcan_ip_adress;
+		BroadcastAdress.sin_port = inst.port;
+		BroadcastAdress.sin_addr.s_addr = FDCAN::ip;
 
 		int enabled = 1;
 		setsockopt(instance->socket, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
@@ -78,7 +78,6 @@ void FDCAN::start(){
 			ErrorHandler("Error binding socket for FDCAN %d", instance->fdcan_number);
 		}
 	    instance->start = true;
-	    Port_counter++;
 	    FDCAN::registered_fdcan[id] = instance;
 		FDCAN::instance_to_id[instance] = id;
 	}

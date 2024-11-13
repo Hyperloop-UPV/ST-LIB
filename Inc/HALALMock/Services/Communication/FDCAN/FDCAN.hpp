@@ -18,9 +18,6 @@ using std::unordered_map;
 using std::vector;
 using std::queue;
 
-#define FDCAN_PORT_BASE 3000
-extern constant in_addr_t fdcan_ip_adress;
-
 class FDCAN{
 public:
 	enum DLC : uint32_t{
@@ -53,6 +50,8 @@ public:
 
 	};
 
+    static std::string ip;
+
 private:
     /**
      * @brief Struct which defines all data referring to FDCAN peripherals. It is
@@ -72,6 +71,7 @@ private:
         uint8_t fdcan_number;
         uint16_t socket;
         bool start = false;
+        uint16_t port;
 
     };
 public:
