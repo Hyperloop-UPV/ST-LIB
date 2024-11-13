@@ -1,7 +1,5 @@
 #include "HALALMock/Models/IPV4/IPV4.hpp"
 
-#ifdef HAL_ETH_MODULE_ENABLED
-
 IPV4::IPV4(string address) : string_address(address){
 	stringstream sstream(address);
 	int ip_bytes[4];
@@ -29,7 +27,7 @@ IPV4::IPV4(const char* address) {
 }
 
 IPV4::IPV4(in_addr_t address) : address(address){
-	string_address = std::to_string((u8_t) address) + "." + std::to_string((u8_t) (address >> 8))+ "."
+	string_address = std::to_string((uint8_t) address) + "." + std::to_string((uint8_t) (address >> 8))+ "."
 			+ std::to_string((uint8_t) (address >> 16)) + "." + std::to_string((uint8_t) (address >> 24));
 }
 
@@ -56,5 +54,3 @@ void IPV4::set_address_from_bytes(uint8_t byte1, uint8_t byte2, uint8_t byte3, u
                     (static_cast<in_addr_t>(byte3) << 8) |
                     (static_cast<in_addr_t>(byte4));
 }
-
-#endif

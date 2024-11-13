@@ -51,7 +51,6 @@
 #include "HALALMock/Services/Encoder/Encoder.hpp"
 #include "HALALMock/Services/EXTI/EXTI.hpp"
 #include "HALALMock/Services/Communication/SPI/SPI.hpp"
-#include "HALALMock/Services/Communication/UART/UART.hpp"
 #include "HALALMock/Models/Packets/ForwardOrder.hpp"
 #include "HALALMock/Services/Communication/Ethernet/UDP/DatagramSocket.hpp"
 #include "HALALMock/Services/Communication/Ethernet/TCP/ServerSocket.hpp"

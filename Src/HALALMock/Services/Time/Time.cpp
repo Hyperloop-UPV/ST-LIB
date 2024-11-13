@@ -159,7 +159,7 @@ void Time::worker() {
 
         for (auto it = alarms.begin(); it != alarms.end();) {
             if (it->second.active && it->second.next_trigger <= simulation_time) {
-                auto alarm = it->second;
+                auto &alarm = it->second;
                 lock.unlock();
                 alarm.callback();
                 lock.lock();

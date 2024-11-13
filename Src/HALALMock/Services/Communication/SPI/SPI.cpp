@@ -8,6 +8,8 @@
 
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
+unordered_map<uint8_t, std::pair<int, int>> SPI::spi_master_sockets{};
+
 map<uint8_t, SPI::Instance*> SPI::registered_spi{};
 
 uint16_t SPI::id_counter = 0;
@@ -63,7 +65,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
 
         sockaddr_in local_address;
         local_address.sin_family = AF_INET; // Set IPv4
-        local_address.sin_port = htons(peripheral_ports.at(spi)); // Set port
+        local_address.sin_port = htons(spi_instance->port); // Set port
         int result = inet_pton(AF_INET, ip.c_str(), &local_address.sin_addr); // Set IP
         if (result <= 0) {
             if (result == 0) {
@@ -84,7 +86,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
         }
 
         spi_master_sockets[id].first = spi_socket;
-        spi_master_sockets[id].second = peripheral_ports.at(spi);
+        spi_master_sockets[id].second = spi_instance->port;
 
         // Init sender thread
         spi_instance->sender_thread = std::jthread([spi_instance, id] {

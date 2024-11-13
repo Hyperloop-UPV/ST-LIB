@@ -4,13 +4,13 @@
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 namespace SHM{
-	extern char* state_machine_memory_name;
-	extern char* gpio_memory_name;
+	extern const char* state_machine_memory_name;
+	extern const char* gpio_memory_name;
+	extern unordered_map<Pin, size_t> pin_offsets;
 
 }
 class SharedMemory {
    public:
-	
   	static EmulatedPin *gpio_memory;
 	static uint8_t* state_machine_memory;
   
@@ -27,6 +27,5 @@ class SharedMemory {
 
 	static void update_current_state(uint8_t index, uint8_t state);
   
-	static unordered_map<Pin, size_t> pin_offsets;
 	
 };

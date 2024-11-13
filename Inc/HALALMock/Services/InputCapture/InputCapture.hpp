@@ -16,8 +16,8 @@ class InputCapture {
        public:
         uint8_t id;
         Pin pin;
-        uint32_t* frequency;
-        uint8_t* duty_cycle;
+        uint32_t* frequency{nullptr};
+        uint8_t* duty_cycle{nullptr};
         bool is_active;
 
         Instance() = default;
