@@ -12,6 +12,7 @@
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
+#define NANO_SECOND 1000000000.0
 
 class Encoder {
    public:

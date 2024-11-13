@@ -13,6 +13,8 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
+#define NANO_SECOND 1000000000.0
+#define CLOCK_MAX_VALUE 4294967295 //here goes the tim23 counter period
 
 #ifdef HAL_TIM_MODULE_ENABLED
 /**
