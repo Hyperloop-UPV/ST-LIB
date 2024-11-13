@@ -1,18 +1,14 @@
-/*
- * SPI.hpp
- *
- *  Created on: 5 nov. 2022
- *      Author: Pablo
- */
-
 #include "HALALMock/Services/Communication/SPI/SPI.hpp"
 
-#include "HALALMock/Models/MPUManager/MPUManager.hpp"
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <thread>
 
-#ifdef HAL_SPI_MODULE_ENABLED
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
 map<uint8_t, SPI::Instance*> SPI::registered_spi{};
-map<SPI_HandleTypeDef*, SPI::Instance*> SPI::registered_spi_by_handler{};
 
 uint16_t SPI::id_counter = 0;
 
@@ -31,36 +27,142 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
 
     SPI::Instance* spi_instance = SPI::available_spi[spi];
 
-    // this three lines don t do nothing yet, as the alternative_function on a
-    // pin is hardcoded on the hal_msp.c
-    spi_instance->SCK->alternative_function = AF5;
-    spi_instance->MOSI->alternative_function = AF5;
-    spi_instance->MISO->alternative_function = AF5;
+    EmulatedPin& SCK_pin = SharedMemory::get_pin(*spi_instance->SCK);
+    EmulatedPin& MOSI_pin = SharedMemory::get_pin(*spi_instance->MOSI);
+    EmulatedPin& MISO_pin = SharedMemory::get_pin(*spi_instance->MISO);
 
-    spi_instance->SPIOrderID =
-        (uint16_t*)MPUManager::allocate_non_cached_memory(32);
-    spi_instance->available_end =
-        (uint16_t*)MPUManager::allocate_non_cached_memory(32);
-    spi_instance->rx_buffer = (uint8_t*)MPUManager::allocate_non_cached_memory(
-        SPI_MAXIMUM_PACKET_SIZE_BYTES);
-    spi_instance->tx_buffer = (uint8_t*)MPUManager::allocate_non_cached_memory(
-        SPI_MAXIMUM_PACKET_SIZE_BYTES);
-
-    Pin::inscribe(*spi_instance->SCK, ALTERNATIVE);
-    Pin::inscribe(*spi_instance->MOSI, ALTERNATIVE);
-    Pin::inscribe(*spi_instance->MISO, ALTERNATIVE);
-
-    if (spi_instance->mode == SPI_MODE_MASTER) {
-        Pin::inscribe(*spi_instance->SS, OUTPUT);
+    if (SCK_pin.type != PinType::NOT_USED ||
+        MOSI_pin.type != PinType::NOT_USED ||
+        MISO_pin.type != PinType::NOT_USED) {
+        ErrorHandler("The SPI pins are already used");
+        return 0;
     }
+
+    SCK_pin.type = PinType::SPI;
+    MOSI_pin.type = PinType::SPI;
+    MISO_pin.type = PinType::SPI;
 
     uint8_t id = SPI::id_counter++;
-    if (spi_instance->use_DMA) {
-        DMA::inscribe_stream(spi_instance->hdma_rx);
-        DMA::inscribe_stream(spi_instance->hdma_tx);
+
+    // Create socket for this SPI peripheral
+    int spi_socket = socket(AF_INET, SOCK_DGRAM, 0);
+
+    if (spi_instance->mode == SPIMode::MASTER) {
+        EmulatedPin& SS_pin = SharedMemory::get_pin(*spi_instance->SS);
+
+        if (SS_pin.type != PinType::NOT_USED) {
+            ErrorHandler("The SPI SS pin is already used");
+            close(spi_socket);
+            return 0;
+        }
+
+        SS_pin.type = PinType::SPI;
+        SS_pin.PinData.spi.is_on = false; // When this pin turns on, the simulator has to connect.
+
+        // This peripheral acts as a SPI master, so it acts as a UDP server
+
+        sockaddr_in local_address;
+        local_address.sin_family = AF_INET; // Set IPv4
+        local_address.sin_port = htons(peripheral_ports.at(spi)); // Set port
+        int result = inet_pton(AF_INET, ip.c_str(), &local_address.sin_addr); // Set IP
+        if (result <= 0) {
+            if (result == 0) {
+                ErrorHandler("Invalid address");
+            } else {
+                ErrorHandler("Error setting IP: %s", strerror(errno));
+            }
+            close(spi_socket);
+            return 0;
+        }
+
+        // Bind this socket to the local port of the SPI peripheral
+        if (bind(spi_socket, (struct sockaddr*)&local_address,
+                sizeof(local_address)) < 0) {
+            ErrorHandler("Bind error: %s", strerror(errno));
+            close(spi_socket);
+            return 0;
+        }
+
+        spi_master_sockets[id].first = spi_socket;
+        spi_master_sockets[id].second = peripheral_ports.at(spi);
+
+        // Init sender thread
+        spi_instance->sender_thread = std::jthread([spi_instance, id] {
+            sockaddr_in broadcast_address;
+            broadcast_address.sin_family = AF_INET; // Set IPv4
+            broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
+            int result = inet_pton(AF_INET, "192.168.0.255", &broadcast_address.sin_addr); // Set broadcast IP, supposing that whe have a mask = 255.255.255.0
+            if (result <= 0) {
+                if (result == 0) {
+                    ErrorHandler("Invalid broadcast address");
+                } else {
+                    ErrorHandler("Error setting IP: %s", strerror(errno));
+                }
+            }
+
+            while(true) {
+                std::unique_lock lock(spi_instance->transmission_mx);
+                spi_instance->cv_transmission.wait(lock, [spi_instance]{ return !spi_instance->transmission_queue.empty(); });
+                span<uint8_t> data = spi_instance->transmission_queue.front();
+
+                if (sendto(spi_master_sockets[id].first, data.data(), data.size(), 0, (struct sockaddr*)&broadcast_address, sizeof(broadcast_address)) < 0) {
+                    ErrorHandler("Send error: %s", strerror(errno));
+                }
+                spi_instance->transmission_queue.pop();
+                lock.unlock();
+            }
+        });
+
+        // Init receiver thread
+        spi_instance->receiver_thread = std::jthread([spi_instance, id] {
+            while(true) {
+                std::unique_lock lock(spi_instance->reception_mx);
+                spi_instance->cv_reception.wait(lock, [spi_instance]{ return !spi_instance->reception_queue.empty(); });
+                span<uint8_t> data = spi_instance->transmission_queue.front();
+
+                if (recv(spi_master_sockets[id].second, data.data(), data.size(), MSG_WAITALL) < 0) {
+                    ErrorHandler("Receive error: %s", strerror(errno));
+                }
+                spi_instance->reception_queue.pop();
+                lock.unlock();
+            }
+        });
+
+        // Init sender and receiver thread
+        spi_instance->sender_receiver_thread = std::jthread([spi_instance, id] {
+            sockaddr_in broadcast_address;
+            broadcast_address.sin_family = AF_INET; // Set IPv4
+            broadcast_address.sin_port = htons(spi_master_sockets[id].second); // Set port
+            int result = inet_pton(AF_INET, "192.168.0.255", &broadcast_address.sin_addr); // Set broadcast IP, supposing that whe have a mask = 255.255.255.0
+            if (result <= 0) {
+                if (result == 0) {
+                    ErrorHandler("Invalid broadcast address");
+                } else {
+                    ErrorHandler("Error setting IP: %s", strerror(errno));
+                }
+            }
+
+            while(true) {
+                std::unique_lock lock(spi_instance->transmission_reception_mx);
+                spi_instance->cv_transmission_reception.wait(lock, [spi_instance]{ return !spi_instance->transmission_reception_queue.empty(); });
+                std::pair<span<uint8_t>, span<uint8_t>> data = spi_instance->transmission_reception_queue.front();
+
+                if (sendto(spi_master_sockets[id].first, data.first.data(), data.first.size(), 0, (struct sockaddr*)&broadcast_address, sizeof(broadcast_address)) < 0) {
+                    ErrorHandler("Send error: %s", strerror(errno));
+                }
+                if (recv(spi_master_sockets[id].second, data.second.data(), data.second.size(), MSG_WAITALL) < 0) {
+                    ErrorHandler("Receive error: %s", strerror(errno));
+                } 
+                
+                spi_instance->transmission_reception_queue.pop();  
+                lock.unlock();
+
+                SPI::TxRxCpltCallback(id);
+            }
+        });
     }
+
     SPI::registered_spi[id] = spi_instance;
-    SPI::registered_spi_by_handler[spi_instance->hspi] = spi_instance;
 
     return id;
 }
@@ -73,7 +175,7 @@ void SPI::assign_RS(uint8_t id, Pin& RSPin) {
 
     SPI::Instance* spi = SPI::registered_spi[id];
     spi->RS = &RSPin;
-    if (spi->mode == SPI_MODE_MASTER) {
+    if (spi->mode == SPIMode::MASTER) {
         spi->RShandler = DigitalInput::inscribe(RSPin);
     } else {
         spi->RShandler = DigitalOutputService::inscribe(RSPin);
@@ -82,10 +184,10 @@ void SPI::assign_RS(uint8_t id, Pin& RSPin) {
 }
 
 void SPI::start() {
-    for (auto iter : SPI::registered_spi) {
-        SPI::init(iter.second);
-        HAL_GPIO_WritePin(iter.second->SS->port, iter.second->SS->gpio_pin,
-                          (GPIO_PinState)PinState::ON);
+    for (auto [_, spi] : SPI::registered_spi) {
+        SPI::init(spi);
+        EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
+        SS_pin.PinData.spi.is_on = true; // This pin tells the simulator to connect
     }
 }
 
@@ -104,54 +206,18 @@ bool SPI::transmit(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    SPI::Instance* spi = SPI::registered_spi[id];
-    turn_off_chip_select(spi);
-    HAL_StatusTypeDef errorcode =
-        HAL_SPI_Transmit(spi->hspi, data.data(), data.size(), 10);
-    turn_on_chip_select(spi);
-    switch (errorcode) {
-        case HAL_OK:
-            return true;
-            break;
-        case HAL_BUSY:
-            return false;
-            break;
-        default:
-            ErrorHandler(
-                "Error while transmiting and receiving with spi DMA. Errorcode "
-                "%u",
-                (uint8_t)errorcode);
-            return false;
-            break;
-    }
+    SPI::Instance* spi_instance(registered_spi[id]);
+
+    std::unique_lock lock(spi_instance->transmission_mx);
+    spi_instance->transmission_queue.push(data);
+    lock.unlock();
+    spi_instance->cv_transmission.notify_one();
+
+    return true;
 }
 
 bool SPI::transmit_DMA(uint8_t id, span<uint8_t> data) {
-    if (!SPI::registered_spi.contains(id)) {
-        ErrorHandler("No SPI registered with id %u", id);
-        return false;
-    }
-
-    SPI::Instance* spi = SPI::registered_spi[id];
-
-    HAL_StatusTypeDef errorcode =
-        HAL_SPI_Transmit_DMA(spi->hspi, data.data(), data.size());
-    turn_on_chip_select(spi);
-    switch (errorcode) {
-        case HAL_OK:
-            return true;
-            break;
-        case HAL_BUSY:
-            return false;
-            break;
-        default:
-            ErrorHandler(
-                "Error while transmiting and receiving with spi DMA. Errorcode "
-                "%u",
-                (uint8_t)errorcode);
-            return false;
-            break;
-    }
+    return SPI::transmit(id, data);  // DMA is not used in simulator mode
 }
 
 bool SPI::receive(uint8_t id, span<uint8_t> data) {
@@ -160,26 +226,14 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
         return false;
     }
 
-    SPI::Instance* spi = SPI::registered_spi[id];
+    SPI::Instance* spi_instance(registered_spi[id]);
 
-    HAL_StatusTypeDef errorcode =
-        HAL_SPI_Receive_DMA(spi->hspi, data.data(), data.size());
-    turn_on_chip_select(spi);
-    switch (errorcode) {
-        case HAL_OK:
-            return true;
-            break;
-        case HAL_BUSY:
-            return false;
-            break;
-        default:
-            ErrorHandler(
-                "Error while transmiting and receiving with spi DMA. Errorcode "
-                "%u",
-                (uint8_t)errorcode);
-            return false;
-            break;
-    }
+    std::unique_lock lock(spi_instance->reception_mx);
+    spi_instance->reception_queue.push(data);
+    lock.unlock();
+    spi_instance->cv_reception.notify_one();
+
+    return true;
 }
 
 bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
@@ -189,27 +243,14 @@ bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
         return false;
     }
 
-    SPI::Instance* spi = SPI::registered_spi[id];
+    SPI::Instance* spi_instance(registered_spi[id]);
 
-    HAL_StatusTypeDef errorcode =
-        HAL_SPI_TransmitReceive_DMA(spi->hspi, command_data.data(),
-                                    receive_data.data(), command_data.size());
-    turn_on_chip_select(spi);
-    switch (errorcode) {
-        case HAL_OK:
-            return true;
-            break;
-        case HAL_BUSY:
-            return false;
-            break;
-        default:
-            ErrorHandler(
-                "Error while transmiting and receiving with spi DMA. Errorcode "
-                "%u",
-                (uint8_t)errorcode);
-            return false;
-            break;
-    }
+    std::unique_lock lock(spi_instance->transmission_reception_mx);
+    spi_instance->transmission_reception_queue.push(std::pair<span<uint8_t>, span<uint8_t>>(command_data, receive_data));
+    lock.unlock();
+    spi_instance->cv_transmission_reception.notify_one();
+
+    return true;
 }
 
 /*=============================================
@@ -276,7 +317,7 @@ void SPI::slave_listen_Orders(uint8_t id) {
 void SPI::Order_update() {
     for (auto iter : SPI::registered_spi) {
         SPI::Instance* spi = iter.second;
-        if (spi->mode == SPI_MODE_MASTER) {
+        if (spi->mode == SPIMode::MASTER) {
             if (spi->state == SPI::IDLE) {
                 if (!spi->SPIOrderQueue.is_empty()) {
                     spi->state = SPI::STARTING_ORDER;
@@ -344,53 +385,16 @@ void SPI::init(SPI::Instance* spi) {
         return;
     }
 
-    spi->hspi->Instance = spi->instance;
-    spi->hspi->Init.Mode = spi->mode;
-    spi->hspi->Init.Direction = SPI_DIRECTION_2LINES;
-    spi->hspi->Init.DataSize = spi->data_size;
-    spi->hspi->Init.CLKPolarity = spi->clock_polarity;
-    spi->hspi->Init.CLKPhase = spi->clock_phase;
-
-    if (spi->mode == SPI_MODE_MASTER) {
-        spi->hspi->Init.NSS = SPI_NSS_SOFT;
-        spi->hspi->Init.BaudRatePrescaler = spi->baud_rate_prescaler;
-    } else {
-        spi->hspi->Init.NSS = SPI_NSS_SOFT;
-    }
-
-    spi->hspi->Init.FirstBit = spi->first_bit;
-    spi->hspi->Init.TIMode = SPI_TIMODE_DISABLE;
-    spi->hspi->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-    spi->hspi->Init.CRCPolynomial = 0x0;
-    spi->hspi->Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-    spi->hspi->Init.NSSPolarity = spi->nss_polarity;
-    spi->hspi->Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
-    spi->hspi->Init.TxCRCInitializationPattern =
-        SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-    spi->hspi->Init.RxCRCInitializationPattern =
-        SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-    spi->hspi->Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
-    spi->hspi->Init.MasterInterDataIdleness =
-        SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
-    spi->hspi->Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
-    spi->hspi->Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
-    spi->hspi->Init.IOSwap = SPI_IO_SWAP_DISABLE;
-
-    if (HAL_SPI_Init(spi->hspi) != HAL_OK) {
-        ErrorHandler("Unable to init %s", spi->name);
-        return;
-    }
-
     spi->initialized = true;
 }
 
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
-    if (!SPI::registered_spi_by_handler.contains(hspi)) {
+void SPI::TxRxCpltCallback(uint8_t id) {
+    if (!SPI::registered_spi.contains(id)) {
         ErrorHandler("Used SPI protocol without the HALAL SPI interface");
         return;
     }
 
-    SPI::Instance* spi = SPI::registered_spi_by_handler[hspi];
+    SPI::Instance* spi = SPI::registered_spi[id];
     switch (spi->state) {
         case SPI::IDLE:
             // Does nothing as there is no Order handling on a direct send
@@ -398,8 +402,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
         case SPI::STARTING_ORDER: {
             SPIBaseOrder* Order =
                 SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
-            if (spi->mode ==
-                SPI_MODE_MASTER) {  // checks if the Order is ready on slave
+            if (spi->mode == SPIMode::MASTER) {  // checks if the Order is ready on slave
                 if (*(spi->available_end) == *(spi->SPIOrderID)) {
                     spi->state = SPI::PROCESSING_ORDER;
                     Order->master_prepare_buffer(spi->tx_buffer);
@@ -432,10 +435,9 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
             SPIBaseOrder* Order =
                 SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
             if (Order == 0x0) {
-                SPI::spi_recover(spi, hspi);
+                SPI::spi_recover(spi);
                 return;
-            } else if (spi->mode ==
-                       SPI_MODE_SLAVE) {  // prepares the Order on the slave
+            } else if (spi->mode == SPIMode::SLAVE) {  // prepares the Order on the slave
                 Order->slave_prepare_buffer(spi->tx_buffer);
                 SPI::spi_communicate_order_data(
                     spi, spi->tx_buffer, spi->rx_buffer, Order->payload_size);
@@ -450,7 +452,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
             SPIBaseOrder* Order =
                 SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
 
-            if (spi->mode == SPI_MODE_MASTER) {  // ends communication
+            if (spi->mode == SPIMode::MASTER) {  // ends communication
                 if (*(uint16_t*)&spi
                          ->rx_buffer[Order->CRC_index - PAYLOAD_OVERHEAD] !=
                     *spi->SPIOrderID) {
@@ -465,7 +467,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
             } else {  // prepares the next received Order
                 if (*(uint16_t*)&spi->rx_buffer[Order->CRC_index] !=
                     *spi->SPIOrderID) {
-                    SPI::spi_recover(spi, hspi);
+                    SPI::spi_recover(spi);
                     return;
                 }
                 spi->Order_count++;
@@ -479,7 +481,7 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
             break;
         }
         case SPI::ERROR_RECOVERY: {
-            if (spi->mode == SPI_MODE_MASTER) {
+            if (spi->mode == SPIMode::MASTER) {
                 // TODO
             } else {
                 SPI::mark_slave_waiting(spi);
@@ -497,33 +499,30 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
     }
 }
 
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi) {}
-
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi) {}
-
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi) {
-    if ((hspi->ErrorCode & HAL_SPI_ERROR_UDR) != 0) {
-        SPI::spi_recover(SPI::registered_spi_by_handler[hspi], hspi);
-    } else {
-        ErrorHandler("SPI error number %u", hspi->ErrorCode);
-    }
-}
-
 void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
                                      uint8_t* value_to_receive,
                                      uint16_t size_to_send) {
-    HAL_SPI_TransmitReceive_DMA(spi->hspi, value_to_send, value_to_receive,
-                                size_to_send);
+    // Search for the id of the SPI instance
+    uint8_t id;
+    for (auto [registered_id, registered_instance] : registered_spi) {
+        if (registered_instance == spi) {
+            id = registered_id;
+            break;
+        }
+    }
+
+    SPI::transmit_and_receive(id, span<uint8_t>(value_to_send, size_to_send),
+                              span<uint8_t>(value_to_receive, size_to_send));
 }
 
 void SPI::turn_on_chip_select(SPI::Instance* spi) {
-    HAL_GPIO_WritePin(spi->SS->port, spi->SS->gpio_pin,
-                      (GPIO_PinState)PinState::ON);
+    EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
+    SS_pin.PinData.spi.is_on = true;
 }
 
 void SPI::turn_off_chip_select(SPI::Instance* spi) {
-    HAL_GPIO_WritePin(spi->SS->port, spi->SS->gpio_pin,
-                      (GPIO_PinState)PinState::OFF);
+    EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
+    SS_pin.PinData.spi.is_on = false;
 }
 
 void SPI::mark_slave_ready(SPI::Instance* spi) {
@@ -547,9 +546,8 @@ bool SPI::known_slave_ready(SPI::Instance* spi) {
     return false;
 }
 
-void SPI::spi_recover(SPI::Instance* spi, SPI_HandleTypeDef* hspi) {
+void SPI::spi_recover(SPI::Instance* spi) {
     SPI::mark_slave_waiting(spi);
-    HAL_SPI_Abort(hspi);
     spi->error_count = spi->error_count + 1;
     *(spi->SPIOrderID) = CASTED_ERROR_ORDER_ID;
     *(spi->available_end) = CASTED_ERROR_ORDER_ID;
@@ -557,10 +555,4 @@ void SPI::spi_recover(SPI::Instance* spi, SPI_HandleTypeDef* hspi) {
     SPI::slave_check_packet_ID(spi);
 }
 
-void SPI::spi_check_bus_collision(SPI::Instance* spi) {
-    if (spi->hspi->State == HAL_SPI_STATE_READY) {
-        SPI::spi_recover(spi, spi->hspi);
-    }
-}
-
-#endif
+void SPI::spi_check_bus_collision(SPI::Instance* spi) {}

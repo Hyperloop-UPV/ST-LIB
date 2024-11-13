@@ -8,9 +8,10 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "StateMachine/StateOrder.hpp"
 
+#ifdef SIM_ON
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
+#endif
 
-
-#ifdef HAL_TIM_MODULE_ENABLED
 
 using ms = std::chrono::milliseconds;
 using us = std::chrono::microseconds;
@@ -174,6 +175,9 @@ private:
 	void exit_state(state_id old_state);
 	void register_all_timed_actions(state_id state);
 	void unregister_all_timed_actions(state_id state);
+	#ifdef SIM_ON
+		uint8_t state_machine_id_in_shm;
+	#endif
 };
 
 template<class TimeUnit>
@@ -272,4 +276,3 @@ TimedAction* StateMachine::add_high_precision_cyclic_action(function<void()> act
 	return add_high_precision_cyclic_action(action, period, current_state);
 }
 
-#endif

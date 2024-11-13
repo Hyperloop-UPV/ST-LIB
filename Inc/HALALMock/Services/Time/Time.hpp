@@ -59,6 +59,9 @@ public:
     static uint8_t register_low_precision_alarm(uint32_t period_in_ms, std::function<void()> func);
     static bool unregister_low_precision_alarm(uint8_t id);
 
+     static uint8_t register_mid_precision_alarm(uint32_t period_in_us, std::function<void()> func);
+    static bool unregister_mid_precision_alarm(uint8_t id);
+
     static uint8_t set_timeout(uint32_t milliseconds, std::function<void()> callback);
     static void cancel_timeout(uint8_t id);
 

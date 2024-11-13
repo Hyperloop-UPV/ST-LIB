@@ -10,16 +10,16 @@ PWM::PWM(Pin& pin) {
 	if(pin_data.type == PinType::NOT_USED){
 		pin_data.type = PinType::PWM;
 		//let's point our class variables to the variables from PinModel
-		duty_cycle = &(pin_data.PinData.PWM.duty_cycle);
-		frequency = &(pin_data.PinData.PWM.frequency);
-		is_on = &(pin_data.PinData.PWM.is_on);
-		dead_time_ns = &(pin_data.PinData.PWM.dead_time_ns);
+		duty_cycle = &(pin_data.PinData.pwm.duty_cycle);
+		frequency = &(pin_data.PinData.pwm.frequency);
+		is_on = &(pin_data.PinData.pwm.is_on);
+		dead_time_ns = &(pin_data.PinData.pwm.dead_time_ns);
 		
 		//default values
 		*duty_cycle = 0.0f;
 		*is_on = false;
 		*frequency = 0;
-		*dead_time_ns = 0;
+		*dead_time_ns = std::chrono::nanoseconds(0);
 	}else{
 		ErrorHandler("Pin %s is being used already",pin.to_string());
 	}

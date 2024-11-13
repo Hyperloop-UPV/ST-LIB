@@ -1,10 +1,10 @@
 #pragma once
-#include "HALALMock/Models/PinModel/Pin.hpp"
+/*#include "HALALMock/Models/PinModel/Pin.hpp"
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 
-extern IWDG_HandleTypeDef watchdog_handle;
+extern IWDG_HandleTypeDef watchdog_handle;*/
 
 
 /**
@@ -13,7 +13,7 @@ extern IWDG_HandleTypeDef watchdog_handle;
  * To ensure that the code its not stuck, the refresh function must be called at least once each period
  * Otherwise, the Watchdog will reset the board. The Watchdog its not active until it is started.
  */
-class Watchdog{
+/*class Watchdog{
 public:
 
     template<typename TimeUnit>
@@ -45,3 +45,4 @@ public:
     }
 
 };
+*/

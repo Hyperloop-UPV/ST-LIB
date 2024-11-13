@@ -55,7 +55,7 @@ void InfoWarning::InfoWarningUpdate(){
 	if (!InfoWarning::warning_triggered) {
 		return;
 	}
-	printf("Warning: %s%s", InfoWarning::description.c_str(), endl);
+	printf("Warning: %s\n", InfoWarning::description.c_str());
 
 }
 

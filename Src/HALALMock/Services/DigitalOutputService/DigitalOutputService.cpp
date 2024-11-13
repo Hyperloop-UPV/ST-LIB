@@ -23,7 +23,8 @@ void DigitalOutputService::turn_off(uint8_t id) {
     }
 
     Pin pin = DigitalOutputService::service_ids[id];
-    (*gpio_memory + pin_offset[pin.gpio_pin]) = PinState::OFF;
+    EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
+    emulated_pin.PinData.digital_output.state = PinState::OFF;
 }
 
 void DigitalOutputService::turn_on(uint8_t id) {
@@ -33,7 +34,8 @@ void DigitalOutputService::turn_on(uint8_t id) {
     }
 
     Pin pin = DigitalOutputService::service_ids[id];
-    (*gpio_memory + pin_offset[pin.gpio_pin]) = PinState::ON;
+    EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
+    emulated_pin.PinData.digital_output.state = PinState::ON;
 }
 
 void DigitalOutputService::set_pin_state(uint8_t id, PinState state) {
@@ -42,7 +44,8 @@ void DigitalOutputService::set_pin_state(uint8_t id, PinState state) {
         return;
     }
     Pin pin = DigitalOutputService::service_ids[id];
-    (*gpio_memory + pin_offset[pin.gpio_pin]) = state;
+    EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
+    emulated_pin.PinData.digital_output.state = state;
 }
 
 void DigitalOutputService::toggle(uint8_t id) {
@@ -52,8 +55,8 @@ void DigitalOutputService::toggle(uint8_t id) {
     }
 
     Pin pin = DigitalOutputService::service_ids[id];
-    (*gpio_memory + pin_offset[pin.gpio_pin]) =
-        (*gpio_memory + pin_offset[pin.gpio_pin]) == PinState::ON
-            ? PinState::OFF
-            : PinState::ON;
+    EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
+    emulated_pin.PinData.digital_output.state == PinState::ON ?
+           emulated_pin.PinData.digital_output.state = PinState::OFF : 
+           emulated_pin.PinData.digital_output.state = PinState::ON;
 }
