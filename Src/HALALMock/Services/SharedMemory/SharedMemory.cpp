@@ -42,11 +42,20 @@ unordered_map<Pin, size_t> SharedMemory::pin_offsets= {
 		{PG14, 110}, {PG15, 111}, {PH0, 112}, {PH1, 113}
 	};
 void SharedMemory::start() {
-  start_state_machine_memory(); // initialize the state machine shared memory
-    //Create GPIO_Memory
+	gpio_memory_name = SHM::gpio_memory_name;
+	start_state_machine_memory(); // initialize the state machine shared memory
+	start_gpio_shared_memory(); // initialize the gpio_shared_memory
+}
+void SharedMemory::start(const char* name){
+	gpio_memory_name = name;
+	start_state_machine_memory(); // initialize the state machine shared memory
+	start_gpio_shared_memory(); //initialize the gpio_shared_memory
+}
+void SharedMemory::start_gpio_shared_memory(){
+	//Create GPIO_Memory
 	int shm_gpio_fd;
 	//create shared memory object
-	shm_gpio_fd = shm_open(SHM::gpio_memory_name, O_CREAT | O_RDWR,0660);
+	shm_gpio_fd = shm_open(gpio_memory_name, O_CREAT | O_RDWR,0660);
 	if(shm_gpio_fd == -1){
 		std::cout<<"Error to Open de Shared Memory";
 		return;
@@ -64,9 +73,7 @@ void SharedMemory::start() {
         close(shm_gpio_fd);  // Close the descriptor if there is a problem with the mapping
         return;
 	}
-
 }
-
 void SharedMemory::start_state_machine_memory(){
 	// shared memory file descriptor
 	int shm_state_machine_fd;

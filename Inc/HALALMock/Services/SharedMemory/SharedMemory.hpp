@@ -13,7 +13,7 @@ class SharedMemory {
 	
   	static EmulatedPin *gpio_memory;
 	static uint8_t* state_machine_memory;
-  
+	char* gpio_memory_name;
   	constexpr static uint8_t total_pins= 114;
 	static constexpr int gpio_memory_size = total_pins * sizeof(EmulatedPin);
   
@@ -21,6 +21,8 @@ class SharedMemory {
 	static uint8_t* state_machine_count;
 
 	static void start();
+	static void start(char* name);
+	static void start_gpio_shared_memory();
 	static void start_state_machine_memory();
 
 	static EmulatedPin &get_pin(Pin pin);
