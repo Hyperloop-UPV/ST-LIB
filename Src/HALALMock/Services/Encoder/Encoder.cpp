@@ -99,3 +99,8 @@ uint32_t Encoder::get_initial_counter_value(uint8_t id) {
 }
 
 void Encoder::init(void *encoder) {}
+
+int64_t Encoder::get_delta_clock(uint64_t clock_time, uint64_t last_clock_time){
+		int64_t delta_clock = clock_time - last_clock_time;
+		return delta_clock;
+	}

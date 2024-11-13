@@ -1,7 +1,5 @@
 #include "Sensors/EncoderSensor/EncoderSensor.hpp"
-#ifdef SIM_ON
-uint32_t HAL_RCC_GetPCLK1Freq(void){return 0;}
-#endif
+
 EncoderSensor::EncoderSensor(Pin pin1, Pin pin2, double *position, double* direction, double *speed, double *acceleration)
 : position(position), direction(direction), speed(speed), acceleration(acceleration){
 	id = Encoder::inscribe(pin1,pin2);
@@ -27,10 +25,8 @@ void EncoderSensor::read(){
 	uint64_t clock_time = Time::get_global_tick();
 	*direction = (double)Encoder::get_direction(id);
 
-	int64_t delta_clock = clock_time - last_clock_time;
-	if(clock_time < last_clock_time){ //overflow handle
-		delta_clock = clock_time + CLOCK_MAX_VALUE * NANO_SECOND / HAL_RCC_GetPCLK1Freq()*2 - last_clock_time;
-	}
+	int64_t delta_clock = Encoder::get_delta_clock(clock_time, last_clock_time);
+	
 	time = time + delta_clock / NANO_SECOND;
 	last_clock_time = clock_time;
 
