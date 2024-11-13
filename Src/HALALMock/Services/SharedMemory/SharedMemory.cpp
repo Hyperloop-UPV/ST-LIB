@@ -43,13 +43,15 @@ unordered_map<Pin, size_t> SharedMemory::pin_offsets= {
 	};
 void SharedMemory::start() {
 	gpio_memory_name = SHM::gpio_memory_name;
+	state_machine_memory_name = SHM::state_machine_memory_name;
 	start_state_machine_memory(); // initialize the state machine shared memory
 	start_gpio_shared_memory(); // initialize the gpio_shared_memory
 }
-void SharedMemory::start(const char* name){
-	gpio_memory_name = name;
+void SharedMemory::start(const char* gpio_memory_name, const char* state_machine_memory_name) {
+	this->gpio_memory_name = gpio_memory_name;
+	this->state_machine_memory_name = state_machine_memory_name;
 	start_state_machine_memory(); // initialize the state machine shared memory
-	start_gpio_shared_memory(); //initialize the gpio_shared_memory
+	start_gpio_shared_memory(); // initialize the gpio_shared_memory
 }
 void SharedMemory::start_gpio_shared_memory(){
 	//Create GPIO_Memory
@@ -79,7 +81,7 @@ void SharedMemory::start_state_machine_memory(){
 	int shm_state_machine_fd;
 
 	// create the shared memory object
-	shm_state_machine_fd=shm_open(SHM::state_machine_memory_name,O_CREAT | O_RDWR, 0660);
+	shm_state_machine_fd=shm_open(state_machine_memory_name,O_CREAT | O_RDWR, 0660);
 	if(shm_state_machine_fd==-1){
 		std::cout<<"Error creating the shared memory object\n";
 		std::terminate();
