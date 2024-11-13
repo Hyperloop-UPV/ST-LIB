@@ -9,12 +9,11 @@
 #pragma once
 #include "HALAL/HALAL.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
+
 #define COUNTER_DISTANCE_IN_METERS 0.0001
-#define NANO_SECOND 1000000000.0
 #define N_FRAMES 100
 #define FRAME_SIZE_IN_SECONDS 0.005
 #define START_COUNTER UINT32_MAX / 2
-#define CLOCK_MAX_VALUE 4294967295 //here goes the tim23 counter period
 
 
 

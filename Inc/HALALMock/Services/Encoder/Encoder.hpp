@@ -12,6 +12,7 @@
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
+#define NANO_SECOND 1000000000.0
 
 class Encoder {
    public:
@@ -72,4 +73,6 @@ class Encoder {
     static void init(void* encoder);
 
     static uint32_t get_initial_counter_value(uint8_t id);
+
+    static int64_t get_delta_clock(uint64_t clock_time, uint64_t last_clock_time);
 };
