@@ -68,7 +68,7 @@ void FDCAN::start(){
 		}
 		struct sockaddr_in BroadcastAddress;
 		BroadcastAdress.sin_family = AF_INET;
-		BroadcastAdress.sin_port = inst.port;
+		BroadcastAdress.sin_port = instance->port;
 		BroadcastAdress.sin_addr.s_addr = FDCAN::ip;
 
 		int enabled = 1;
