@@ -9,9 +9,9 @@
  */
 #pragma once
 #include "Inc/HALALMock/Services/Time/Time.hpp"
+#include "gtest/gtest.h"
 #include <iostream>
 
-#ifdef TESTING
 
 uint8_t test_time(){
     // Start the simulation at 10x real speed
