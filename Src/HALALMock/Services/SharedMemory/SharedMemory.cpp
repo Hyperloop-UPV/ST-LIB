@@ -14,11 +14,20 @@ uint8_t *SharedMemory::state_machine_memory{nullptr};
 uint8_t *SharedMemory::state_machine_count{nullptr};
 
 void SharedMemory::start() {
-  start_state_machine_memory(); // initialize the state machine shared memory
-    //Create GPIO_Memory
-	int shm_gpio_fd;
+	gpio_memory_name = SHM::gpio_memory_name;
+	state_machine_memory_name = SHM::state_machine_memory_name;
+	start_state_machine_memory(); // initialize the state machine shared memory
+	start_gpio_shared_memory(); // initialize the gpio_shared_memory
+}
+void SharedMemory::start(const char* gpio_memory_name, const char* state_machine_memory_name) {
+	this->gpio_memory_name = gpio_memory_name;
+	this->state_machine_memory_name = state_machine_memory_name;
+	start_state_machine_memory(); // initialize the state machine shared memory
+	start_gpio_shared_memory(); // initialize the gpio_shared_memory
+}
+void SharedMemory::start_gpio_shared_memory(){
 	//create shared memory object
-	shm_gpio_fd = shm_open(SHM::gpio_memory_name, O_CREAT | O_RDWR,0660);
+	shm_gpio_fd = shm_open(gpio_memory_name, O_CREAT | O_RDWR,0660);
 	if(shm_gpio_fd == -1){
 		std::cout<<"Error to Open de Shared Memory";
 		return;
@@ -36,15 +45,13 @@ void SharedMemory::start() {
         close(shm_gpio_fd);  // Close the descriptor if there is a problem with the mapping
         return;
 	}
-
 }
-
 void SharedMemory::start_state_machine_memory(){
 	// shared memory file descriptor
 	int shm_state_machine_fd;
 
 	// create the shared memory object
-	shm_state_machine_fd=shm_open(SHM::state_machine_memory_name,O_CREAT | O_RDWR, 0660);
+	shm_state_machine_fd=shm_open(state_machine_memory_name,O_CREAT | O_RDWR, 0660);
 	if(shm_state_machine_fd==-1){
 		std::cout<<"Error creating the shared memory object\n";
 		std::terminate();
@@ -67,6 +74,34 @@ void SharedMemory::start_state_machine_memory(){
 	*state_machine_count=0;
 }
 
+void SharedMemory::close(){
+	close_gpio_shared_memory();
+	close_state_machine_memory();
+}
+
+void SharedMemory::close_state_machine_memory(){
+	if (state_machine_memory!=nullptr){
+		// unmap the shared memory object
+		if(munmap(state_machine_memory,state_machine_memory_size)==-1){
+			std::cout<<"Error unmapping the shared memory object\n";
+			std::terminate();
+		}
+
+		// point the shared memory object to NULL
+		state_machine_memory=nullptr;
+	}
+	
+	if(shm_unlink(state_machine_memory_name)==-1){
+		std::cout<<"Error unlinking the shared memory object\n";
+		std::terminate();
+	}
+
+	if(shm_state_machine_fd !=-1 && close(shm_state_machine_fd)==-1){
+		std::cout<<"Error closing the shared memory file descriptor\n";
+
+		std::terminate();
+	}
+}
 void SharedMemory::update_current_state(uint8_t index, uint8_t state){
 	state_machine_memory[index]=state;
 }
