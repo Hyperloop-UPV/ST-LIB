@@ -84,7 +84,6 @@ void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 // Simulator start
 void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway, UART::Peripheral& printf_peripheral) {
     SharedMemory::start();
-    SharedMemory::start_state_machine_memory();
     Ethernet::inscribe();
     Pin::start();
     ADC::start();

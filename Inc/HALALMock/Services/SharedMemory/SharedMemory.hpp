@@ -21,6 +21,7 @@ class SharedMemory {
 	static uint8_t* state_machine_count;
 	//descriptors
 	static int shm_gpio_fd;
+	static int shm_state_machine_fd;
 	
 	static void start();
 	static void start(const char* gpio_memory_name,const char* state_machine_memory_name);
