@@ -13,11 +13,6 @@ map<uint8_t, InputCapture::Instance> InputCapture::active_instances = {};
 InputCapture::Instance::Instance(Pin& pin, void* peripheral, uint32_t channel_rising, uint32_t channel_falling) :
 	pin(pin)
 	{
-		EmulatedPin& sim_pin = SharedMemory::get_pin(pin);
-		duty_cycle = &(sim_pin.PinData.input_capture.duty_cycle);
-		frequency = &(sim_pin.PinData.input_capture.frequency);
-		*duty_cycle = 0;
-		*frequency = 0;
 	}
 
 uint8_t InputCapture::inscribe(Pin& pin){
@@ -32,7 +27,16 @@ uint8_t InputCapture::inscribe(Pin& pin){
 	active_instances[id_counter] = data;
 	active_instances[id_counter].id = id_counter;
 
+	EmulatedPin& sim_pin = SharedMemory::get_pin(pin);
+	active_instances[id_counter].duty_cycle = &(sim_pin.PinData.input_capture.duty_cycle);
+	active_instances[id_counter].frequency = &(sim_pin.PinData.input_capture.frequency);
+
+	*active_instances[id_counter].duty_cycle = 0;
+	*active_instances[id_counter].frequency = 0;
+
 	return id_counter++;
+
+	
 }
 
 void InputCapture::turn_on(uint8_t id){

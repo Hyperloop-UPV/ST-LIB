@@ -10,8 +10,9 @@
 
 
 
-uint8_t ADC::id_counter = 0;
-unordered_map<uint8_t, ADC::Instance> ADC::active_instances = {};
+uint8_t ADC::id_counter{0};
+unordered_map<uint8_t, ADC::Instance> ADC::active_instances{};
+unordered_map<uint8_t, EmulatedPin> ADC::active_emulated_instances{};
 
 uint8_t ADC::inscribe(Pin pin) {
 	if (not available_instances.contains(pin)) {
