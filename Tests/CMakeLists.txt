@@ -1,7 +1,8 @@
 set(STLIB_TEST_EXECUTABLE stlib-test)
 
 message(STATUS "Generating test executable for ST-LIB")
-
+include(CTest)
+enable_testing()
 add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/Runes/Pins.cpp
     ${CMAKE_CURRENT_LIST_DIR}/HelloTests.cpp
