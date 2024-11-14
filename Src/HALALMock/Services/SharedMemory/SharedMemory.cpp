@@ -43,13 +43,15 @@ unordered_map<Pin, size_t> SharedMemory::pin_offsets= {
 	};
 void SharedMemory::start() {
 	gpio_memory_name = SHM::gpio_memory_name;
+	state_machine_memory_name = SHM::state_machine_memory_name;
 	start_state_machine_memory(); // initialize the state machine shared memory
 	start_gpio_shared_memory(); // initialize the gpio_shared_memory
 }
-void SharedMemory::start(const char* gpio_memory_name){
+void SharedMemory::start(const char* gpio_memory_name, const char* state_machine_memory_name) {
 	this->gpio_memory_name = gpio_memory_name;
+	this->state_machine_memory_name = state_machine_memory_name;
 	start_state_machine_memory(); // initialize the state machine shared memory
-	start_gpio_shared_memory(); //initialize the gpio_shared_memory
+	start_gpio_shared_memory(); // initialize the gpio_shared_memory
 }
 void SharedMemory::start_gpio_shared_memory(){
 	//create shared memory object
@@ -77,7 +79,7 @@ void SharedMemory::start_state_machine_memory(){
 	int shm_state_machine_fd;
 
 	// create the shared memory object
-	shm_state_machine_fd=shm_open(SHM::state_machine_memory_name,O_CREAT | O_RDWR, 0660);
+	shm_state_machine_fd=shm_open(state_machine_memory_name,O_CREAT | O_RDWR, 0660);
 	if(shm_state_machine_fd==-1){
 		std::cout<<"Error creating the shared memory object\n";
 		std::terminate();
@@ -99,26 +101,32 @@ void SharedMemory::start_state_machine_memory(){
 	state_machine_count=&state_machine_memory[0];
 	*state_machine_count=0;
 }
+
 void SharedMemory::close(){
 	close_gpio_shared_memory();
+	close_state_machine_memory();
 }
-void SharedMemory::close_gpio_shared_memory(){
-	if (gpio_memory != nullptr){
-		//unmap shared memory
-		if(munmap(gpio_memory,state_machine_memory_size) == -1){
-			std::cout<<"Error unmapping the gpio shared_memory\n";
+
+void SharedMemory::close_state_machine_memory(){
+	if (state_machine_memory!=nullptr){
+		// unmap the shared memory object
+		if(munmap(state_machine_memory,state_machine_memory_size)==-1){
+			std::cout<<"Error unmapping the shared memory object\n";
 			std::terminate();
 		}
-		//put the pointer to null
-		gpio_memory = nullptr;
+
+		// point the shared memory object to NULL
+		state_machine_memory=nullptr;
 	}
-	int delete_shared_gpio_memory = shm_unlink(gpio_memory_name);
-	if(delete_shared_gpio_memory == -1){
+	
+	if(shm_unlink(state_machine_memory_name)==-1){
 		std::cout<<"Error unlinking the shared memory object\n";
 		std::terminate();
 	}
-	if(shm_gpio_fd!=-1 && close(shm_gpio_fd) == -1){
-		std::cout<<"Error closing the file descriptor\n";
+
+	if(shm_state_machine_fd !=-1 && close(shm_state_machine_fd)==-1){
+		std::cout<<"Error closing the shared memory file descriptor\n";
+
 		std::terminate();
 	}
 }
