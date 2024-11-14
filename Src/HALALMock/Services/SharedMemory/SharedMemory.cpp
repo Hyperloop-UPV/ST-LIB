@@ -107,19 +107,19 @@ void SharedMemory::close_gpio_shared_memory(){
 		//unmap shared memory
 		if(munmap(gpio_memory,state_machine_memory_size) == -1){
 			std::cout<<"Error unmapping the gpio shared_memory\n";
+			std::terminate();
 		}
 		//put the pointer to null
 		gpio_memory = nullptr;
 	}
 	int delete_shared_gpio_memory = shm_unlink(gpio_memory_name);
-	//check the error
-	if(delete_shared_gpio_memory == EACCES){
-		std::cout<<"Permission is denied to unlink the named shared memory object\n";
-	}else if (delete_shared_gpio_memory == ENOENT){
-		std::cout<<"The named shared memory object does not exist\n";
+	if(delete_shared_gpio_memory == -1){
+		std::cout<<"Error unlinking the shared memory object\n";
+		std::terminate();
 	}
-	if(close(shm_gpio_fd) == -1){
-		std::cout<<"Error closing the file descriptor\n"
+	if(shm_gpio_fd!=-1 && close(shm_gpio_fd) == -1){
+		std::cout<<"Error closing the file descriptor\n";
+		std::terminate();
 	}
 }
 void SharedMemory::update_current_state(uint8_t index, uint8_t state){

@@ -24,7 +24,7 @@ class SharedMemory {
 	static void start();
 	static void start(char* gpio_memory_name);
 	static void close();
-	static void close_gpio_shared_memory();
+
 	
 	static EmulatedPin &get_pin(Pin pin);
 
@@ -35,4 +35,5 @@ class SharedMemory {
 		//Private to avoid bad use of this functions from the user
 		static void start_gpio_shared_memory();
 		static void start_state_machine_memory();
+		static void close_gpio_shared_memory();
 };
