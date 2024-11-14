@@ -54,8 +54,6 @@ void SharedMemory::start(const char* gpio_memory_name, const char* state_machine
 	start_gpio_shared_memory(); // initialize the gpio_shared_memory
 }
 void SharedMemory::start_gpio_shared_memory(){
-	//Create GPIO_Memory
-	int shm_gpio_fd;
 	//create shared memory object
 	shm_gpio_fd = shm_open(gpio_memory_name, O_CREAT | O_RDWR,0660);
 	if(shm_gpio_fd == -1){
@@ -128,6 +126,7 @@ void SharedMemory::close_state_machine_memory(){
 
 	if(shm_state_machine_fd !=-1 && close(shm_state_machine_fd)==-1){
 		std::cout<<"Error closing the shared memory file descriptor\n";
+
 		std::terminate();
 	}
 }
