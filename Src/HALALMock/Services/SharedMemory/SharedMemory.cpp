@@ -12,7 +12,11 @@ EmulatedPin *SharedMemory::gpio_memory{nullptr};
 
 uint8_t *SharedMemory::state_machine_memory{nullptr};
 uint8_t *SharedMemory::state_machine_count{nullptr};
+int SharedMemory::shm_state_machine_fd = -1;
+char* SharedMemory::state_machine_memory_name{nullptr};
 
+int SharedMemory::shm_gpio_fd{-1};
+char* SharedMemory::gpio_memory_name{nullptr};
 void SharedMemory::start() {
 	gpio_memory_name = const_cast<char*>(SHM::gpio_memory_name);
 	state_machine_memory_name = const_cast<char*>(SHM::state_machine_memory_name);
