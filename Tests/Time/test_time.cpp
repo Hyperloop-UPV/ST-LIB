@@ -13,7 +13,7 @@
 #include <iostream>
 
 
-uint8_t test_time(){
+TEST(){
     // Start the simulation at 10x real speed
     Time::start(10);
 
@@ -36,6 +36,5 @@ uint8_t test_time(){
     Time::unregister_high_precision_alarm(alarm2_id);
     Time::stop();
 
-    return 0;
 }
 

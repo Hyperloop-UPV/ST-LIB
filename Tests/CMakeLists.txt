@@ -6,7 +6,7 @@ enable_testing()
 add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/Runes/Pins.cpp
     ${CMAKE_CURRENT_LIST_DIR}/HelloTests.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../Src/HALALMock/Tests/Time/test_time.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Time/test_time.cpp
 )
 
 set_target_properties(${STLIB_TEST_EXECUTABLE} PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED C_STANDARD 11 C_STANDARD_REQUIRED)
