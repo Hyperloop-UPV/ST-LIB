@@ -17,10 +17,6 @@ uint8_t* SharedMemory::state_machine_count{};
 int SharedMemory::shm_gpio_fd{};
 int SharedMemory::shm_state_machine_fd{};
 
-//initialize SHM namespace static variables
-const char* SHM::gpio_memory_name = nullptr;  
-const char* SHM::state_machine_memory_name = nullptr;
-std::unordered_map<Pin, size_t> SHM::pin_offsets;
 
 void SharedMemory::start() {
 	SharedMemory::gpio_memory_name = const_cast<char*>(SHM::gpio_memory_name);

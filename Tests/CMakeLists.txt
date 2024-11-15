@@ -5,6 +5,7 @@ include(CTest)
 enable_testing()
 add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/Runes/Pins.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Runes/SimRunes.cpp
     ${CMAKE_CURRENT_LIST_DIR}/HelloTests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/DigitalOutTest.cpp
 )
