@@ -22,9 +22,6 @@ const char* SHM::gpio_memory_name = nullptr;
 const char* SHM::state_machine_memory_name = nullptr;
 std::unordered_map<Pin, size_t> SHM::pin_offsets;
 
-
-int SharedMemory::shm_gpio_fd{-1};
-char* SharedMemory::gpio_memory_name{nullptr};
 void SharedMemory::start() {
 	SharedMemory::gpio_memory_name = const_cast<char*>(SHM::gpio_memory_name);
 	SharedMemory::state_machine_memory_name = const_cast<char*>(SHM::state_machine_memory_name);
