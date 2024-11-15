@@ -7,9 +7,9 @@
  *  This example shows how the interface for Time HALALMock is used
  * 
  */
-#pragma once
-#include "Inc/HALALMock/Services/Time/Time.hpp"
-#include "gtest/gtest.h"
+
+#include "HALALMock/Services/Time/Time.hpp"
+#include <gtest/gtest.h>
 #include <iostream>
 
 
@@ -39,4 +39,3 @@ uint8_t test_time(){
     return 0;
 }
 
-#endif 
