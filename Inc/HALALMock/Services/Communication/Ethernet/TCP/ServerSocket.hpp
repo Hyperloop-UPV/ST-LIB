@@ -44,8 +44,8 @@ public:
 	int server_socket_fd;
 	int client_fd;
 	struct KeepaliveConfig{
-		uint32_t inactivity_time_until_keepalive_ms = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS;
-		uint32_t space_between_tries_ms = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES_MS;
+		uint32_t inactivity_time_until_keepalive = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE;
+		uint32_t space_between_tries = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES;
 		uint32_t tries_until_disconnection = TCP_KEEPALIVE_TRIES_UNTIL_DISCONNECTION;
 	}keepalive_config;
 
@@ -61,7 +61,7 @@ public:
 	 * @param local_port the port number that the server listens for connections.
 	 */
 	ServerSocket(IPV4 local_ip, uint32_t local_port);
-	ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection);
+	ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivity_time_until_keepalive, uint32_t space_between_tries, uint32_t tries_until_disconnection);
 	/**
 	 * @brief ServerSocket constructor that uses the EthernetNode class as a parameter
 	 *

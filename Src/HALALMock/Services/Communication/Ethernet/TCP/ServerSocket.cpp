@@ -183,20 +183,21 @@ bool ServerSocket::configure_server_socket(){
         std::cout << "ERROR configuring KEEPALIVES\n";
         return false;
     }
-	// Configurar TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
-    float tcp_keepidle_time = static_cast<float>(keepalive_config.inactivity_time_until_keepalive_ms)/1000.0;
+	// Configure TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
+    //different from lwip to linux
+	uint32_t tcp_keepidle_time = stkeepalive_config.inactivity_time_until_keepalive;
     if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPIDLE\n";
         return false;
     }
 	  //interval between keepalives
-    float keep_interval_time = static_cast<float>(keepalive_config.space_between_tries_ms)/1000.0;
+    uint32_t keep_interval_time = keepalive_config.space_between_tries;
     if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPINTVL\n";
         return false;
     }
 	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
-	 float keep_cnt = static_cast<float>(keepalive_config.tries_until_disconnection)/1000.0;
+	 uint32_t  keep_cnt = keepalive_config.tries_until_disconnection;
     if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
         std::cout << "Error to configure TCP_KEEPCNT\n";
         return false;

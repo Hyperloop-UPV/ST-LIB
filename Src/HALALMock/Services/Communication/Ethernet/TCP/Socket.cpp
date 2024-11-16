@@ -72,21 +72,21 @@ bool Socket::configure_socket(){
     }
 	// Configure TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
     // Using the minimum linux keepalives time 
-	int tcp_keepidle_time = keepalive_config.inactivity_time_until_keepalive; 
+	uint32_t tcp_keepidle_time = keepalive_config.inactivity_time_until_keepalive; 
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPIDLE\n";
 		close(socket_fd);
         return false;
     }
 	  //interval between keepalives
-    int keep_interval_time = keepalive_config.space_between_tries;
+    uint32_t keep_interval_time = keepalive_config.space_between_tries;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPINTVL\n";
         close(socket_fd);
         return false;
     }
 	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
-	 int keep_cnt = keepalive_config.tries_until_disconnection;
+	uint32_t keep_cnt = keepalive_config.tries_until_disconnection;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
         std::cout << "Error to configure TCP_KEEPCNT\n";
         close(socket_fd);
