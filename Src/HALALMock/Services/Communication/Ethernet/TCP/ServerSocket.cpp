@@ -18,9 +18,9 @@ ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port) : local_ip(local_
 }
 
 
-ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection): ServerSocket(local_ip, local_port){
-	keepalive_config.inactivity_time_until_keepalive_ms = inactivity_time_until_keepalive_ms;
-	keepalive_config.space_between_tries_ms = space_between_tries_ms;
+ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivity_time_until_keepalive, uint32_t space_between_tries, uint32_t tries_until_disconnection): ServerSocket(local_ip, local_port){
+	keepalive_config.inactivity_time_until_keepalive = inactivity_time_until_keepalive;
+	keepalive_config.space_between_tries = space_between_tries;
 	keepalive_config.tries_until_disconnection = tries_until_disconnection;
 }
 
