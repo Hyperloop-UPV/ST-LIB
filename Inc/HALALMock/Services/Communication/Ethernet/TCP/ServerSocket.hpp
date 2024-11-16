@@ -1,9 +1,4 @@
-/*
- * ServerSocket.hpp
- *
- *  Created on: 14 nov. 2022
- *      Author: stefa
- */
+
 #pragma once
 #ifdef STLIB_ETH
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
@@ -41,13 +36,16 @@ public:
 	IPV4 local_ip;
 	uint32_t local_port;
 	IPV4 remote_ip;
+	queue<Packet*> tx_packet_buffer;
+	queue<Packet*> rx_packet_buffer;
 	ServerState state;
 	static uint8_t priority;
 	//socket_descriptor
 	int server_socket_fd;
+	int client_fd;
 	struct KeepaliveConfig{
-		uint32_t inactivity_time_until_keepalive_ms = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS;
-		uint32_t space_between_tries_ms = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES_MS;
+		uint32_t inactivity_time_until_keepalive = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE;
+		uint32_t space_between_tries = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES;
 		uint32_t tries_until_disconnection = TCP_KEEPALIVE_TRIES_UNTIL_DISCONNECTION;
 	}keepalive_config;
 
@@ -63,7 +61,7 @@ public:
 	 * @param local_port the port number that the server listens for connections.
 	 */
 	ServerSocket(IPV4 local_ip, uint32_t local_port);
-	ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection);
+	ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivity_time_until_keepalive, uint32_t space_between_tries, uint32_t tries_until_disconnection);
 	/**
 	 * @brief ServerSocket constructor that uses the EthernetNode class as a parameter
 	 *
@@ -108,24 +106,7 @@ public:
 		if(state != ACCEPTED){
 			return false;
 		}
-		struct memp* next_memory_pointer_in_packet_buffer_pool = (*(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION]->tab))->next;
-		if(next_memory_pointer_in_packet_buffer_pool == nullptr){
-			if(client_control_block->unsent != nullptr){
-				tcp_output(client_control_block);
-			}else{
-				memp_free_pool(memp_pools[PBUF_POOL_MEMORY_DESC_POSITION], next_memory_pointer_in_packet_buffer_pool);
-			}
-			return false;
-		}
-
-		uint8_t* order_buffer = order.build();
-		if(order.get_size() > tcp_sndbuf(client_control_block)){
-			return false;
-		}
-
-		struct pbuf* packet = pbuf_alloc(PBUF_TRANSPORT, order.get_size(), PBUF_POOL);
-		pbuf_take(packet, order_buffer, order.get_size());
-		tx_packet_buffer.push(packet);
+		tx_packet_buffer.push(move(order));
 		send();
 		return true;
 	}
@@ -150,44 +131,13 @@ public:
 
 private:
 	void create_server_socket();
-	void configure_server_socket();
+	bool configure_server_socket();
 	void configure_server_socket_and_listen();
 	void accept_callback();
+	void handle_receive_from_client(); 
 	std::jthread listening_thread;
-	std::vector<std::jthread> receiving_thread;
-	std::atomic<bool> is_receiving;
-	std::mutex mtx; 
-	std::vector<sockaddr_in> clients;
-	/**
-	 * @brief the callback for the listener socket receiving a request for connection into the ServerSocket.
-	 *
-	 * This function is called on an interrupt when a packet containing a connection request to the same port of the listener socket is received.
-	 * accept_callback builds the pcb that acts as the connection socket and saves it in the client_control_block pointer
-	 * It then closes the listener socket and makes the server_control_block point to nullptr.
-	 *
-	 * server_control_block shouldn't be accessed in any way while the ServerSocket is in the ServerSocket#ACCEPT state, as it will lead into a nullptr exception.
-	 * This in an intended behavior as there shouldn't be more than one listener socket on the same port, and a ServerSocket shouldn't be able to handle more than one connection by design.
-	 */
-	static err_t accept_callback(void* arg, struct tcp_pcb* incomming_control_block, err_t error);
-
-	/**
-	 * @brief callback that handles receiving a packet.
-	 *
-	 * On a received packet on an ACCEPTED state receive_callback calls the ServerSocket process_data,
-	 * which calls the Packet process_data() if it is inscribed as an Order.
-	 */
-	static err_t receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error);
-	static void error_callback(void *arg, err_t error);
-
-	/**
-	 * @brief callback called each 500ms to do housekeeping tasks
-	 *
-	 * The housekeeping tasks made now are basically checks to ensure no data remains unsent and that the ServerSocket is not left in a middle state (such as CLOSING)
-	 */
-	static err_t poll_callback(void *arg, struct tcp_pcb *client_control_block);
-	static err_t send_callback(void *arg, struct tcp_pcb *client_control_block, u16_t len);
-
-	static void config_keepalive(tcp_pcb* control_block, ServerSocket* server_socket);
+	std::jthread receive_thread;
+	std::mutex mutex; 
 
 };
 
