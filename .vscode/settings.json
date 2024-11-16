@@ -1,0 +1,9 @@
+{
+    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.default.cStandard": "c17",
+    "C_Cpp.clang_format_fallbackStyle": "{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 80}",
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.clang_format_style": "{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 80}",
+    "C_Cpp.clang_format_sortIncludes": true
+  }
+  

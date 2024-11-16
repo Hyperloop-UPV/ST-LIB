@@ -1,7 +1,10 @@
 #pragma once
+#ifdef STLIB_ETH
+
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALALMock/Models/Packets/Packet.hpp"
+#include <iostream>
 
 
 class DatagramSocket{
@@ -31,20 +34,19 @@ public:
 		size_t addr_len =  sizeof(remote_socket_addr);
 		memset(&remote_socket_addr, 0, addr_len);
 		remote_socket_addr.sin_family = AF_INET;
-    	remote_socket_addr.sin_port = htons(remote_port); 
-    	remote_socket_addr.sin_addr.s_addr = remote_ip.address; 
-
-		while(total_sent < size){
+    remote_socket_addr.sin_port = htons(remote_port); 
+    remote_socket_addr.sin_addr.s_addr = remote_ip.address; 
+    while(total_sent < size){
 			sent = sendto(udp_socket,packet_buffer + total_sent,size - total_sent,0,(struct sockaddr *)&remote_socket_addr, addr_len);
 			if(sent < 0){//something failed
 				std::cout<<"Error sending the UDP packet\n";
-				close(udp_socket);
+				close();
 				return false;
 			}
-			total_sent += sent;
-		}
+		  total_sent += sent;		
+	  }
 		return true;
-	}
+	 }
 	void reconnect();
 
 	void close();
@@ -54,4 +56,5 @@ private:
 	std::atomic<bool> is_receiving;
 	void create_udp_socket();
 };
+#endif //STLIB_ETH
 

@@ -10,11 +10,11 @@ void EncoderSensor::start(){
 	Encoder::turn_on(id);
 	uint64_t clock_time = Time::get_global_tick();
 	for(int i = 0; i < N_FRAMES; i++){
-		positions[i] = 0.0;
+		positions.push(0.0);
 
-		times[i] = i * FRAME_SIZE_IN_SECONDS - N_FRAMES*FRAME_SIZE_IN_SECONDS + (clock_time / NANO_SECOND);
+		times.push(i * FRAME_SIZE_IN_SECONDS - N_FRAMES*FRAME_SIZE_IN_SECONDS + (clock_time / NANO_SECOND));
 
-		speeds[i] = 0.0;
+		speeds.push(0.0);
 	}
 	time = clock_time / NANO_SECOND;
 	last_clock_time = clock_time;
@@ -25,24 +25,22 @@ void EncoderSensor::read(){
 	uint64_t clock_time = Time::get_global_tick();
 	*direction = (double)Encoder::get_direction(id);
 
-	int64_t delta_clock = clock_time - last_clock_time;
-	if(clock_time < last_clock_time){ //overflow handle
-		delta_clock = clock_time + CLOCK_MAX_VALUE * NANO_SECOND / HAL_RCC_GetPCLK1Freq()*2 - last_clock_time;
-	}
+	int64_t delta_clock = Encoder::get_delta_clock(clock_time, last_clock_time);
+	
 	time = time + delta_clock / NANO_SECOND;
 	last_clock_time = clock_time;
 
 	*position= ((int32_t)(counter - START_COUNTER)) * COUNTER_DISTANCE_IN_METERS;
-	double delta_time = time - times[0];
-	double delta_position = *position - positions[0];
+	double delta_time = time - times.peek();
+	double delta_position = *position - positions.peek();
 
 	*speed = abs(delta_position) / (delta_time);
 
-	double delta_speed = *speed - speeds[0];
+	double delta_speed = *speed - speeds.peek();
 
 	*acceleration = (delta_speed) / (delta_time);
 
-	if(time - times[N_FRAMES-1] >= FRAME_SIZE_IN_SECONDS){
+	if(time - times.latest() >= FRAME_SIZE_IN_SECONDS){
 		EncoderSensor::update_arrays();
 	}
 }
@@ -56,12 +54,7 @@ uint8_t EncoderSensor::get_id(){
 }
 
 void EncoderSensor::update_arrays(){
-	for(int i = 1; i < N_FRAMES; i++){
-		positions[i-1] = positions[i];
-		times[i-1] = times[i];
-		speeds[i-1] = speeds[i];
-	}
-	positions[N_FRAMES-1] = *position;
-	times[N_FRAMES-1] = time;
-	speeds[N_FRAMES-1] = *speed;
+	positions.push_pop(*position);
+	times.push_pop(time);
+	speeds.push_pop(*speed);
 }

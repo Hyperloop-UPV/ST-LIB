@@ -1,3 +1,5 @@
+
+#ifdef STLIB_ETH
 #include "HALALMock/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 
 #define MAX_SIZE_BUFFER 1024
@@ -252,26 +254,25 @@ bool ServerSocket::accept_callback(int client_fd, sockaddr_in client_address){
 }
 void ServerSocket::handle_receive_from_client(int client_fd){
 	receive_thread = std::jthread([client_fd]() {
-        
-		uint8_t buffer[BUFFER_SIZE]; // Buffer for the data
-        ssize_t bytes_received;
-        while ((bytes_received = recv(client_fd, buffer, sizeof(buffer), 0)) > 0 && state == ACCEPTED){
-			Packet* packet;
-			packet->parse(buffer);
-			 {
-                std::lock_guard<std::mutex> lock(mtx); 
-                rx_packet_buffer.push(std::move(packet));
-				process_data(); 
-            }
-        }
-		//if receive a 0 means that the client has finished the connection so we will close this server_socket
-        if (bytes_received == 0) {
-            std::cout << "Client disconnected\n";
-			
-        } else if (bytes_received < 0) {
-            cout << "Error receiving data\n";
-		}
-		close();
-    });
+    uint8_t buffer[BUFFER_SIZE]; // Buffer for the data
+    ssize_t bytes_received;
+    while ((bytes_received = recv(client_fd, buffer, sizeof(buffer), 0)) > 0 && state == ACCEPTED){
+        Packet* packet;
+        packet->parse(*buffer);
+        {
+            std::lock_guard<std::mutex> lock(mtx); 
+            rx_packet_buffer.push(&packet);
+            process_data(); 
+         }
+    }
+    //if receive a 0 means that the client has finished the connection so we will close this server_socket
+    if (bytes_received == 0) {
+        std::cout << "Client disconnected\n";
+    }else if (bytes_received < 0) {
+          std::cout << "Error receiving data\n";
+    }
+      close();
+  });
 }
 
+#endif //STLIB_ETH
