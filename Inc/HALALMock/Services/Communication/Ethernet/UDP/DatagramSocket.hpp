@@ -24,16 +24,24 @@ public:
 	bool send_packet(Packet& packet){
 		uint8_t* packet_buffer = packet.build();
 		size_t size = packet.get_size();
+		size_t total_sent = 0;
+		size_t sent = 0;
 		//put the remote direction
 		struct sockaddr_in remote_socket_addr;
-		memset(&remote_socket_addr, 0, sizeof(remote_socket_addr));
+		size_t addr_len =  sizeof(remote_socket_addr);
+		memset(&remote_socket_addr, 0, addr_len);
 		remote_socket_addr.sin_family = AF_INET;
     	remote_socket_addr.sin_port = htons(remote_port); 
     	remote_socket_addr.sin_addr.s_addr = remote_ip.address; 
-		
-		if(sendto(udp_socket,packet_buffer,size,0,(struct sockaddr *)&remote_socket_addr, sizeof(remote_socket_addr)) < 0){
-			close(udp_socket);
-			return false;
+
+		while(total_sent < size){
+			sent = sendto(udp_socket,packet_buffer + total_sent,size - total_sent,0,(struct sockaddr *)&remote_socket_addr, addr_len);
+			if(sent < 0){//something failed
+				std::cout<<"Error sending the UDP packet\n";
+				close(udp_socket);
+				return false;
+			}
+			total_sent += sent;
 		}
 		return true;
 	}
