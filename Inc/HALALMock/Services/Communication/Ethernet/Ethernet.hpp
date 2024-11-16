@@ -29,7 +29,4 @@ public:
 	 * @brief handles the received messages by ethernet
 	 */
 	static void update();
-
-private:
-	static void mpu_start();
 };

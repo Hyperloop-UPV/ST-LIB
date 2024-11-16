@@ -14,9 +14,6 @@ extern uint8_t IP_ADDRESS[4], NETMASK_ADDRESS[4], GATEWAY_ADDRESS[4];
 
 bool Ethernet::is_ready = false;
 bool Ethernet::is_running = false;
-
-void Ethernet::mpu_start(){}
-
 void Ethernet::start(string local_ip, string subnet_mask, string gateway){
 	start(IPV4(local_ip), IPV4(subnet_mask), IPV4(gateway));
 }
