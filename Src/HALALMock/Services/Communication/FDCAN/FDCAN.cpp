@@ -4,6 +4,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+
 
 uint16_t FDCAN::id_counter = 0;
 uint8_t FDCAN::Port_counter{0};
@@ -64,8 +66,8 @@ void FDCAN::start(){
 		}
 		struct sockaddr_in BroadcastAddress;
 		BroadcastAddress.sin_family = AF_INET;
-		BroadcastAddress.sin_port = FDCAN_PORT_BASE + Port_counter;
-		BroadcastAddress.sin_addr.s_addr = fdcan_ip_adress;
+		BroadcastAddress.sin_port = instance->port;
+		BroadcastAddress.sin_addr.s_addr = inet_addr(FDCAN::ip.c_str());
 
 		int enabled = 1;
 		setsockopt(instance->socket, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
@@ -74,7 +76,6 @@ void FDCAN::start(){
 			ErrorHandler("Error binding socket for FDCAN %d", instance->fdcan_number);
 		}
 	    instance->start = true;
-	    Port_counter++;
 	    FDCAN::registered_fdcan[id] = instance;
 		FDCAN::instance_to_id[instance] = id;
 	}
