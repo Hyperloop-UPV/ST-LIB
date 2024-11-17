@@ -42,7 +42,7 @@ jobs:
       - name: Download test binary compressed
         uses: actions/download-artifact@v4
         with:
-          name: test_files.tar
+          name: stlib_test.tar
       - run: tar -xvf test_files.tar
       - name: Run test
         run: ./tools/run_sim_tests.sh
