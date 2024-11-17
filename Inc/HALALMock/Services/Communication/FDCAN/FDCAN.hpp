@@ -9,10 +9,6 @@ using std::queue;
 using std::unordered_map;
 using std::vector;
 
-<<<<<<< HEAD
-=======
-
->>>>>>> a5054bdd92aa52689090819a4c481e3325dd5595
 class FDCAN{
 public:
 	enum DLC : uint32_t{
