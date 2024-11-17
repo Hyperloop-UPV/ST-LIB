@@ -8,7 +8,6 @@
 
 
 uint16_t FDCAN::id_counter = 0;
-uint8_t FDCAN::Port_counter{0};
 
 unordered_map<uint8_t, FDCAN::Instance*> FDCAN::registered_fdcan = {};
 

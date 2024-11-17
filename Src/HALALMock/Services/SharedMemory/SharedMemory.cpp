@@ -136,7 +136,7 @@ EmulatedPin &SharedMemory::get_pin(Pin pin){
 	if(it != SHM::pin_offsets.end()){
 		offset = it -> second;
 	}else{
-		std::cout<<"Pin %s doesn't exist",pin.to_string();
+		std::cout<<"Pin " <<pin.to_string()<< " doesn't exist\n";
 	}
 	EmulatedPin *pin_memory = SharedMemory::gpio_memory + offset;
     return *pin_memory;
