@@ -22,7 +22,7 @@ jobs:
         ## the following is because of this known limitation
         ## https://github.com/actions/download-artifact?tab=readme-ov-file#limitations
       - name: 'Tar files'
-        run:  ./tools/tar_tests.sh
+        run:  ./tools/tar_tests.sh ${{matrix.build_type}}
         continue-on-error: true
       - name: Upload test-binary
         uses: actions/upload-artifact@v4
