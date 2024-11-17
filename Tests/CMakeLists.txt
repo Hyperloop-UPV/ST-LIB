@@ -8,6 +8,7 @@ add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/Runes/SimRunes.cpp
     ${CMAKE_CURRENT_LIST_DIR}/DigitalOutTest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/DigitalInTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Time/test_time.cpp
     ${CMAKE_CURRENT_LIST_DIR}/EncoderTest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/InputCaptureTest.cpp
 )
