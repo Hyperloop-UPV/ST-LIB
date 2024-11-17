@@ -38,5 +38,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: stlib_test
+      - run: ls
       - name: Run test
         run: ./stlib_test
