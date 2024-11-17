@@ -8,7 +8,6 @@
 
 
 uint16_t FDCAN::id_counter = 0;
-uint8_t FDCAN::Port_counter{0};
 
 unordered_map<uint8_t, FDCAN::Instance*> FDCAN::registered_fdcan = {};
 
@@ -76,7 +75,6 @@ void FDCAN::start(){
 			ErrorHandler("Error binding socket for FDCAN %d", instance->fdcan_number);
 		}
 	    instance->start = true;
-	    Port_counter++;
 	    FDCAN::registered_fdcan[id] = instance;
 		FDCAN::instance_to_id[instance] = id;
 	}
