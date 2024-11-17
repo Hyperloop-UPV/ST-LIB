@@ -8,20 +8,25 @@
 #include <unistd.h>
 #include <iostream>
 
-EmulatedPin *SharedMemory::gpio_memory{nullptr};
+// initialize the static variables
+EmulatedPin *SharedMemory::gpio_memory{};
+uint8_t* SharedMemory::state_machine_memory = {};
+char* SharedMemory::gpio_memory_name = {};
+char* SharedMemory::state_machine_memory_name = {};
+uint8_t* SharedMemory::state_machine_count{};
+int SharedMemory::shm_gpio_fd{};
+int SharedMemory::shm_state_machine_fd{};
 
-uint8_t *SharedMemory::state_machine_memory{nullptr};
-uint8_t *SharedMemory::state_machine_count{nullptr};
 
 void SharedMemory::start() {
-	gpio_memory_name = const_cast<char*>(SHM::gpio_memory_name);
-	state_machine_memory_name = const_cast<char*>(SHM::state_machine_memory_name);
+	SharedMemory::gpio_memory_name = const_cast<char*>(SHM::gpio_memory_name);
+	SharedMemory::state_machine_memory_name = const_cast<char*>(SHM::state_machine_memory_name);
 	start_state_machine_memory(); // initialize the state machine shared memory
 	start_gpio_shared_memory(); // initialize the gpio_shared_memory
 }
 void SharedMemory::start(const char* gpio_memory_name, const char* state_machine_memory_name) {
-	gpio_memory_name=const_cast<char*>(gpio_memory_name);
-	state_machine_memory_name=const_cast<char*>(state_machine_memory_name);
+	SharedMemory::gpio_memory_name=const_cast<char*>(gpio_memory_name);
+	SharedMemory::state_machine_memory_name=const_cast<char*>(state_machine_memory_name);
 	start_state_machine_memory(); // initialize the state machine shared memory
 	start_gpio_shared_memory(); // initialize the gpio_shared_memory
 }
