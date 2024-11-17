@@ -39,4 +39,4 @@ jobs:
         with:
           name: stlib_test
       - name: Run test
-        run: ./tools/run_sim_tests.sh
+        run: ./stlib_test
