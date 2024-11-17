@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: Build and Tests  CI
 
 on:
   push:
@@ -8,25 +8,17 @@ on:
 
 jobs:
   build:
+    name: Build ST-LIB
     strategy:
       matrix:
-        build_type: [Debug, Release]
+        build_type: [hardware,simulator]
     runs-on: ubuntu-latest
-
-    env:
-      STLIB_PATH: "/opt/ST-LIB"
-
     steps:
       - uses: actions/checkout@v3
       - uses: carlosperate/arm-none-eabi-gcc-action@v1
       - run: arm-none-eabi-gcc --version
-      - name: Install dependencies
-        run: pip install GitPython colorama
-      - name: Set up ST-LIB
-        run: cp -r ../* /opt/
-      - name: Display ST-LIB
-        working-directory: /opt/ST-LIB/
-        run: ls
-      - name: Invoking python
-        working-directory: /opt/ST-LIB/tools
-        run: python3 build.py -eth ON -t NUCLEO -bb ${{matrix.build_type}} -sim OFF
+      - name: Build 
+        run: ./build ${{matrix.build_type}}
+  Run Tests:
+    name: Run Simulator tests
+    needs: build
