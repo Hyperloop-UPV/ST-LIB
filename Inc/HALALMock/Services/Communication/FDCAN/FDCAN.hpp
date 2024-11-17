@@ -39,15 +39,13 @@ public:
         DLC data_length;
     };
     static std::string ip;
-
-private:
+   private:
     /**
      * @brief Struct which defines all data referring to FDCAN peripherals. It
      * is declared private in order to prevent unwanted use. Only predefined
      * instances should be used.
      *
      */
-    static uint8_t Port_counter;
     struct Instance {
         Pin TX;
         Pin RX;
@@ -60,8 +58,8 @@ private:
         uint16_t socket;
         bool start = false;
         uint16_t port;
-    };
 
+    };
    public:
     /**
      * @brief Enum which abstracts the use of the Instance struct to facilitate

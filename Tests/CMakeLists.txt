@@ -7,8 +7,8 @@ add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/Runes/Pins.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Runes/SimRunes.cpp
     ${CMAKE_CURRENT_LIST_DIR}/DigitalOutTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/DigitalInTest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/test_time.cpp
-
 )
 
 set_target_properties(${STLIB_TEST_EXECUTABLE} PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED C_STANDARD 11 C_STANDARD_REQUIRED)
