@@ -1,101 +1,12 @@
 {
-  "configurations": [
-    {
-      "name": "MCU",
-      "includePath": [
-        "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32H7xx/Include",
-        "${workspaceFolder}/Drivers/CMSIS/Include",
-        "${workspaceFolder}/Drivers/STM32H7xx_HAL_Driver/Inc",
-        "${workspaceFolder}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/system",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/netif/ppp",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/lwip",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/lwip/apps",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/lwip/priv",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/lwip/prot",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/netif",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/compat",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/compat/posix",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/compat/posix/arpa",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/compat/posix/net",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/compat/posix/sys",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/src/include/compat/stdc",
-        "${workspaceFolder}/Middlewares/Third_Party/LwIP/system/arch",
-        "${workspaceFolder}/Drivers/BSP/Components",
-        "${workspaceFolder}/Drivers/BSP/Components/lan8742",
-        "${workspaceFolder}/LWIP/App",
-        "${workspaceFolder}/LWIP/Target",
-        "${workspaceFolder}/Inc",
-        "${workspaceFolder}/Inc/ST-LIB_LOW",
-        "${workspaceFolder}/Inc/ST-LIB_HIGH"
-      ],
-      "defines": [
-        "USE_HAL_DRIVER",
-        "USING_CMAKE",
-        "DEBUG",
-        "STM32H723xx",
-        "STLIB_ETH",
-        "NUCLEO",
-        "HSE_VALUE=8000000",
-        "SIM_ON"
-      ],
-      "compilerArgs": [
-        "-mcpu=cortex-m7",
-        "-mfpu=fpv5-d16",
-        "-mfloat-abi=hard",
-        "-mthumb",
-        "-O0",
-        "-g3",
-        "-ffunction-sections",
-        "-fdata-sections",
-        "-fno-exceptions",
-        "-fno-use-cxa-atexit",
-        "-fno-rtti",
-        "-Wall",
-        "-Wpedantic",
-        "-Werror",
-        "-Wno-psabi",
-        "-specs=nosys.specs"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "gcc-arm"
-    },
-    {
-      "name": "Simulator",
-      "includePath": [
-        "${workspaceFolder}/Inc",
-        "${workspaceFolder}/Inc/ST-LIB_LOW",
-        "${workspaceFolder}/Inc/ST-LIB_HIGH"
-      ],
-      "defines": [
-        "USE_HAL_DRIVER",
-        "USING_CMAKE",
-        "DEBUG",
-        "STM32H723xx",
-        "STLIB_ETH",
-        "NUCLEO",
-        "HSE_VALUE=8000000",
-        "SIM_ON"
-      ],
-      "compilerArgs": [
-        "-O0",
-        "-g3",
-        "-ffunction-sections",
-        "-fdata-sections",
-        "-fno-exceptions",
-        "-fno-use-cxa-atexit",
-        "-fno-rtti",
-        "-Wall",
-        "-Wpedantic",
-        "-Werror",
-        "-Wno-psabi"
-      ],
-      "cStandard": "c17",
-      "cppStandard": "c++20",
-      "intelliSenseMode": "linux-gcc-x64"
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "name": "CMake",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "compileCommands": "compile_commands.json"
+          }
+    ],
+    "version": 4
 }

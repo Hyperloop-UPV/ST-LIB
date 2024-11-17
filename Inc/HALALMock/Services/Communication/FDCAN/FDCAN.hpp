@@ -1,22 +1,13 @@
-/*
- *  FDCAN.hpp
- *
- *  Created on: 5 nov. 2022
- *      Author: Pablo
- */
-
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
+#include "HALALMock/Models/PinModel/Pin.hpp"
+#include <netinet/in.h>
 
-
-
-#ifdef HAL_FDCAN_MODULE_ENABLED
-
+using std::queue;
 using std::unordered_map;
 using std::vector;
-using std::queue;
 
 class FDCAN{
 public:
@@ -39,28 +30,25 @@ public:
 		BYTES_64 = FDCAN_DLC_BYTES_64,
 		DEFAULT = UINT32_MAX,
 	};
-    enum ID{
-        FAULT_ID = 1
+
+    enum ID { FAULT_ID = 1 };
+
+    struct Packet {
+        array<uint8_t, 64> rx_data;
+        uint32_t identifier;
+        DLC data_length;
     };
-
-	struct Packet{
-		array<uint8_t,64> rx_data;
-		uint32_t identifier;
-		DLC data_length;
-
-	};
-
     static std::string ip;
 
 private:
     /**
-     * @brief Struct which defines all data referring to FDCAN peripherals. It is
-     *        declared private in order to prevent unwanted use. Only
-     *        predefined instances should be used.
+     * @brief Struct which defines all data referring to FDCAN peripherals. It
+     * is declared private in order to prevent unwanted use. Only predefined
+     * instances should be used.
      *
      */
-    uint8_t Port_counter;
-    struct Instance{
+    static uint8_t Port_counter;
+    struct Instance {
         Pin TX;
         Pin RX;
         DLC dlc;
@@ -72,32 +60,30 @@ private:
         uint16_t socket;
         bool start = false;
         uint16_t port;
-
     };
-public:
-    /**
-	 * @brief Enum which abstracts the use of the Instance struct to facilitate the mocking of the HALAL.Struct
-	 *
-	 */
-	enum Peripheral{
-		peripheral1 = 0,
-		peripheral2 = 1,
-		peripheral3 = 2,
-	};
 
+   public:
+    /**
+     * @brief Enum which abstracts the use of the Instance struct to facilitate
+     * the mocking of the HALAL.Struct
+     *
+     */
+    enum Peripheral {
+        peripheral1 = 0,
+        peripheral2 = 1,
+        peripheral3 = 2,
+    };
 
     static uint16_t id_counter;
 
     static unordered_map<uint8_t, FDCAN::Instance*> registered_fdcan;
     static unordered_map<FDCAN::Peripheral, FDCAN::Instance*> available_fdcans;
-    static unordered_map<FDCAN_HandleTypeDef*, FDCAN::Instance*> handle_to_fdcan;
-    static unordered_map<FDCAN::Instance*,uint8_t> instance_to_id;
-    static unordered_map<FDCAN_HandleTypeDef*,uint8_t> handle_to_id;
+    static unordered_map<FDCAN::Instance*, uint8_t> instance_to_id;
     static unordered_map<FDCAN::DLC, uint8_t> dlc_to_len;
     /**
-	* @brief FDCAN  wrapper enum of the STM32H723.
-	*
-	*/
+     * @brief FDCAN  wrapper enum of the STM32H723.
+     *
+     */
     static FDCAN::Peripheral fdcan1;
     static FDCAN::Peripheral fdcan2;
     static FDCAN::Peripheral fdcan3;
@@ -114,24 +100,21 @@ public:
 
     static void start();
 
-    static bool transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::DLC dlc = FDCAN::DLC::DEFAULT);
+    static bool transmit(uint8_t id, uint32_t message_id, const char* data,
+                         FDCAN::DLC dlc = FDCAN::DLC::DEFAULT);
 
     static bool read(uint8_t id, FDCAN::Packet* data);
 
     /**
-	 * @brief This method is used to check if the FDCAN have received any new packet.
-	 *
-	 * @param id Id of the FDCAN
-	 * @return bool Return true if the data queue has any packet.
-	 */
-	static bool received_test(uint8_t id);
+     * @brief This method is used to check if the FDCAN have received any new
+     * packet.
+     *
+     * @param id Id of the FDCAN
+     * @return bool Return true if the data queue has any packet.
+     */
+    static bool received_test(uint8_t id);
     static Packet packet;
-private:
 
+   private:
     static void init(FDCAN::Instance* fdcan);
-
-
-
 };
-
-#endif
