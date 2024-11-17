@@ -9,8 +9,29 @@ using std::queue;
 using std::unordered_map;
 using std::vector;
 
-#define FDCAN_PORT_BASE 3000
-extern const in_addr_t fdcan_ip_adress;
+
+class FDCAN{
+public:
+	enum DLC : uint32_t{
+        BYTES_0 = 0x00000000U,
+        BYTES_1 = 0x00010000U,
+        BYTES_2 = 0x00020000U,
+        BYTES_3 = 0x00030000U,
+        BYTES_4 = 0x00040000U,
+        BYTES_5 = 0x00050000U,
+        BYTES_6 = 0x00060000U,
+        BYTES_7 = 0x00070000U,
+        BYTES_8 = 0x00080000U,
+        BYTES_12 = 0x00090000U,
+        BYTES_16 = 0x000A0000U,
+        BYTES_20 = 0x000B0000U,
+        BYTES_24 = 0x000C0000U,
+        BYTES_32 = 0x000D0000U,
+        BYTES_48 = 0x000E0000U,
+        BYTES_64 = 0x000F0000U,
+        DEFAULT = UINT32_MAX,
+	};
+
 
 class FDCAN {
    public:
