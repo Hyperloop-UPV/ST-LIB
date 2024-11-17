@@ -38,6 +38,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: stlib_test
-      - run: ls
+          path: out/build/simulator/Tests
       - name: Run test
-        run: ./stlib_test
+        run: ./tools/run_sim_tests.sh
