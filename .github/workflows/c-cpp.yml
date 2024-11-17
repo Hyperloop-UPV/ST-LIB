@@ -19,11 +19,16 @@ jobs:
       - run: arm-none-eabi-gcc --version
       - name: Build 
         run: ./tools/build.sh ${{matrix.build_type}}
+        ## the following is because of this known limitation
+        ## https://github.com/actions/download-artifact?tab=readme-ov-file#limitations
+      - name: 'Tar files'
+        run: tar -cvf test_files.tar out/build/simulator/Tests/stlib-test
+        continue-on-error: true
       - name: Upload test-binary
         uses: actions/upload-artifact@v4
         with:
           name: stlib_test
-          path: out/build/simulator/Tests/stlib-test
+          path: test_files.tar
           retention-days: 1
         #this is because hardware build doesnot create the 
         # test executable
@@ -34,10 +39,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Download test binary
+      - name: Download test binary compressed
         uses: actions/download-artifact@v4
         with:
-          name: stlib_test
-          path: out/build/simulator/Tests
+          name: test_files.tar
+      - run: tar -xvf test_files.tar
       - name: Run test
         run: ./tools/run_sim_tests.sh
