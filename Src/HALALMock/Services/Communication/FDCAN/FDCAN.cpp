@@ -63,9 +63,9 @@ void FDCAN::start(){
 			ErrorHandler("Error creating socket for FDCAN %d", instance->fdcan_number);
 		}
 		struct sockaddr_in BroadcastAddress;
-		BroadcastAdress.sin_family = AF_INET;
-		BroadcastAdress.sin_port = instance->port;
-		BroadcastAdress.sin_addr.s_addr = FDCAN::ip;
+		BroadcastAddress.sin_family = AF_INET;
+		BroadcastAddress.sin_port = instance->port;
+		BroadcastAddress.sin_addr.s_addr = FDCAN::ip;
 
 		int enabled = 1;
 		setsockopt(instance->socket, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
