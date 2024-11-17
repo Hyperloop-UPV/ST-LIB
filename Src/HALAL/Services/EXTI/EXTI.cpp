@@ -27,10 +27,10 @@ uint8_t ExternalInterrupt::inscribe(Pin& pin, function<void()>&& action, TRIGGER
 		return 0;
 	}
 
-	if (trigger == RISING) {
+	if (trigger == TRIGGER::RISING_EDGE) {
 		Pin::inscribe(pin, EXTERNAL_INTERRUPT_RISING);
 	}
-	else if (trigger == FALLING) {
+	else if (trigger == TRIGGER::FAILING_EDGE) {
 		Pin::inscribe(pin, EXTERNAL_INTERRUPT_FALLING);
 	}
 

@@ -7,6 +7,7 @@
 
 
 #include <iostream>
+#include "HALALMock/Services/Time/Time.hpp"
 
 std::mutex Time::mutex;
 std::condition_variable Time::cv;
@@ -86,6 +87,15 @@ bool Time::unregister_low_precision_alarm(uint8_t id) {
     return unregister_high_precision_alarm(id);
 }
 
+
+uint8_t Time::register_mid_precision_alarm(uint32_t period_in_us, std::function<void()> func) {
+    return register_high_precision_alarm(period_in_us, func); //There is no hw limitation that does not allow this
+}
+
+bool Time::unregister_mid_precision_alarm(uint8_t id) {
+    return unregister_high_precision_alarm(id);
+}
+
 uint8_t Time::set_timeout(uint32_t milliseconds, std::function<void()> callback) {
     std::unique_lock<std::mutex> lock(mutex);
     uint8_t id = Time::next_alarm_id;
@@ -149,7 +159,7 @@ void Time::worker() {
 
         for (auto it = alarms.begin(); it != alarms.end();) {
             if (it->second.active && it->second.next_trigger <= simulation_time) {
-                auto alarm = it->second;
+                auto &alarm = it->second;
                 lock.unlock();
                 alarm.callback();
                 lock.lock();

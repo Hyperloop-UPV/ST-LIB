@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef STLIB_ETH
+
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
 
 template<size_t BufferLength,class... Types> requires NotCallablePack<Types*...>
@@ -46,3 +48,5 @@ private:
 template<class... Types> requires NotCallablePack<Types*...>
 ForwardOrder(uint16_t id,Socket& fwd, Types*... values)->ForwardOrder<(!has_container<Types...>::value)*total_sizeof<Types...>::value, Types...>;
 #endif
+
+#endif //stlib_eth

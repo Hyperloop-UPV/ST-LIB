@@ -7,10 +7,8 @@
 
 #pragma once
 #include "HALALMock/Models/PinModel/Pin.hpp"
-#include "HALALMock/Models/TimerPeripheral/TimerPeripheral.hpp"
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
-#ifdef HAL_TIM_MODULE_ENABLED
 
 class InputCapture {
    public:
@@ -18,8 +16,8 @@ class InputCapture {
        public:
         uint8_t id;
         Pin pin;
-        uint32_t* frequency;
-        uint8_t* duty_cycle;
+        uint32_t* frequency{nullptr};
+        uint8_t* duty_cycle{nullptr};
         bool is_active;
 
         Instance() = default;
@@ -37,5 +35,3 @@ class InputCapture {
     static uint32_t read_frequency(uint8_t id);
     static uint8_t read_duty_cycle(uint8_t id);
 };
-
-#endif

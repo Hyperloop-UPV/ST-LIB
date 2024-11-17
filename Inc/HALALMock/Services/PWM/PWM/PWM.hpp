@@ -2,7 +2,6 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
-#ifdef HAL_TIM_MODULE_ENABLED
 
 class PWM {
 protected:
@@ -29,5 +28,3 @@ public:
 	 */
 	void set_dead_time(std::chrono::nanoseconds dead_time_ns);
 };
-
-#endif

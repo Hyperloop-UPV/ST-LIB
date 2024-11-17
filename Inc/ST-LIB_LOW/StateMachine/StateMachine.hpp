@@ -12,7 +12,6 @@
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 #endif
 
-#ifdef HAL_TIM_MODULE_ENABLED
 
 using ms = std::chrono::milliseconds;
 using us = std::chrono::microseconds;
@@ -277,4 +276,3 @@ TimedAction* StateMachine::add_high_precision_cyclic_action(function<void()> act
 	return add_high_precision_cyclic_action(action, period, current_state);
 }
 
-#endif

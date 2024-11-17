@@ -1,15 +1,12 @@
-/*
- *  FDCAN.hpp
- *
- *  Created on: 5 nov. 2022
- *      Author: Pablo
- */
-
 #include "HALALMock/Services/Communication/FDCAN/FDCAN.hpp"
-
-#ifdef HAL_FDCAN_MODULE_ENABLED
+#include <HALALMock/Models/PinModel/Pin.hpp>
+#include <HALALMock/Services/SharedMemory/SharedMemory.hpp>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
 uint16_t FDCAN::id_counter = 0;
+uint8_t FDCAN::Port_counter{0};
 
 unordered_map<uint8_t, FDCAN::Instance*> FDCAN::registered_fdcan = {};
 
@@ -18,7 +15,6 @@ unordered_map<FDCAN::DLC, uint8_t> FDCAN::dlc_to_len = {{DLC::BYTES_0, 0}, {DLC:
 														{DLC::BYTES_16, 16}, {DLC::BYTES_20, 20}, {DLC::BYTES_24, 24}, {DLC::BYTES_32, 32}, {DLC::BYTES_48, 48},
 														{DLC::BYTES_64, 64}
 													    };
-unordered_map<FDCAN_HandleTypeDef*,uint8_t> FDCAN::handle_to_id{};
 unordered_map<FDCAN::Instance*,uint8_t> FDCAN::instance_to_id{};
 FDCAN::Packet packet{.rx_data = array<uint8_t, 64>{},.data_length = FDCAN::BYTES_64};
 uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
@@ -32,12 +28,12 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	EmulatedPin &TX_data = SharedMemory::get_pin(fdcan_instance->TX);
 	EmulatedPin &RX_data = SharedMemory::get_pin(fdcan_instance->RX);
 	if(TX_data.type == PinType::NOT_USED){
-		pin_data.type = PinType::FDCAN;
+		TX_data.type = PinType::FDCAN;
 	}else{
 		ErrorHandler("Pin %d is already in use",fdcan_instance->TX);
 		}
 	if(RX_data.type == PinType::NOT_USED){
-		pin_data.type = PinType::FDCAN;
+		RX_data.type = PinType::FDCAN;
 	}else{
 		ErrorHandler("Pin %d is already in use",fdcan_instance->RX);
 	}
@@ -62,19 +58,19 @@ void FDCAN::start(){
 		instance->rx_queue = queue<FDCAN::Packet>();
 		instance->tx_data = vector<uint8_t>();
 
-		instance -> socket = socket(AF_NET,SOCK_DGRAM,0);
+		instance -> socket = socket(AF_INET,SOCK_DGRAM,0);
 		if(instance -> socket < 0){
 			ErrorHandler("Error creating socket for FDCAN %d", instance->fdcan_number);
 		}
 		struct sockaddr_in BroadcastAddress;
-		BroadcastAdress.sin_family = AF_INET;
-		BroadcastAdress.sin_port = FDCAN_PORT_BASE + Port_counter;
-		BroadcastAdress.sin_addr.s_addr = fdcan_ip_adress;
+		BroadcastAddress.sin_family = AF_INET;
+		BroadcastAddress.sin_port = FDCAN_PORT_BASE + Port_counter;
+		BroadcastAddress.sin_addr.s_addr = fdcan_ip_adress;
 
 		int enabled = 1;
 		setsockopt(instance->socket, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
 
-		if(bind(instance->socket, (struct sockaddr*)&BroadcastAdress, sizeof(BroadcastAdress)) < 0){
+		if(bind(instance->socket, (struct sockaddr*)&BroadcastAddress, sizeof(BroadcastAddress)) < 0){
 			ErrorHandler("Error binding socket for FDCAN %d", instance->fdcan_number);
 		}
 	    instance->start = true;
@@ -112,8 +108,8 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
 
 	memcpy((temp_data + sizeof(message_id)+ sizeof(dlc)), data, dlc_to_number_of_bytes(dlc));
 	ssize_t total_bytes_sent{0};
-	while (total_bytes_sent < strlen(temp_data)) {
-    	ssize_t bytes_sent = send(instance->socket, temp_data + total_bytes_sent, strlen(temp_data) - total_bytes_sent);
+	while (static_cast<size_t>(total_bytes_sent) < strlen(temp_data)) {
+    	ssize_t bytes_sent = send(instance->socket, temp_data + total_bytes_sent, strlen(temp_data) - total_bytes_sent, 0);
 		if (bytes_sent < 0) {
 			ErrorHandler("Error sending message with id: 0x%x by FDCAN %d", message_id, instance->fdcan_number);
 			delete[] temp_data;
@@ -138,17 +134,18 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 		return false;
 	}
 	
-	if(recv(instance->socket, data->rx_data, 64,0)<0){
+	void* recv_buffer = malloc(72);
+	if(recv(instance->socket, recv_buffer, 72,0)<0){
 		ErrorHandler("Error receiving message by FDCAN %d", instance->fdcan_number);
 		return false;
 	}
+	uint8_t *recv_buffer_raw = static_cast<uint8_t*>(recv_buffer);
 	
 
-	data->identifier = (data->rx_data[0] << 24) | (data->rx_data[1] << 16) | (data->rx_data[2] << 8) | data->rx_data[3];
-	data->data_length = static_cast<FDCAN::DLC>((data->rx_data[4] << 24) | (data->rx_data[5] << 16) | (data->rx_data[6] << 8) | data->rx_data[7]);
-	array<uint8_t, 64> aux_rx_data;
-	std::copy(data->rx_data.begin()+8, data->rx_data.end(), aux_rx_data.begin());
-	data->rx_data = aux_rx_data;
+	data->identifier = (recv_buffer_raw[0] << 24) | (recv_buffer_raw[1] << 16) | (recv_buffer_raw[2] << 8) | recv_buffer_raw[3];
+	data->data_length = static_cast<FDCAN::DLC>((recv_buffer_raw[4] << 24) | (recv_buffer_raw[5] << 16) | (recv_buffer_raw[6] << 8) | recv_buffer_raw[7]);
+	for (int i = 8; i < 72; i++)
+		data->rx_data[i] = recv_buffer_raw[i];
 
 	return true;
 }
@@ -161,5 +158,3 @@ bool FDCAN::received_test(uint8_t id){
 
 	return true;
 }
-
-#endif

@@ -4,7 +4,7 @@
  * Created on: Oct 12, 2023
  * 		Author: Ricardo
  */
-
+#ifdef STLIB_ETH
 #include "Communication/Server/Server.hpp"
 
 vector<Server*> Server::running_servers = {};
@@ -72,3 +72,5 @@ void Server::update_servers(){
 		s->update();
 	}
 }
+
+#endif //STLIB_ETH

@@ -77,13 +77,8 @@ class ADC {
     static uint32_t ranks[16];
     static map<Pin, Instance> available_instances;
 
-    /** @brief To associate the emulated pins with the corresponding instances,
-     * as the same way as in available_instances. This map will be initialized
-     * with the same information as in available_instances in start method
-     */
-    static map<Instance, EmulatedPin> available_emulated_instances;
-
-    static unordered_map<uint8_t, Instance> active_instances;
+    static unordered_map<uint8_t,Instance> active_instances;
+    static unordered_map<uint8_t, EmulatedPin> active_emulated_instances;
 
     static uint8_t id_counter;
 };

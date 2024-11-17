@@ -20,7 +20,6 @@
 #include "Sensors/PWMSensor/PWMSensor.hpp"
 #include "Sensors/NTC/NTC.hpp"
 #include "Communication/Server/Server.hpp"
-#include "Supercaps/Supercaps.hpp"
 
 class STLIB_LOW {
 public:
