@@ -1,18 +1,13 @@
 {
-	"name" : "Dev Container for ST-LIB",
-	"build" : {
-		"dockerfile" : "Dockerfile"
+	"name": "C++",
+	"build": {
+		"dockerfile": "Dockerfile"
 	},
-	"runArgs": ["--platform=linux/amd64" ],
-	"containerUser": "vscode",
-	"customizations" : {
-		"vscode" : {
-			"extensions" : [
-				"ms-vscode.cpptools-extension-pack",
-				"ms-python.python",
-				"mcu-debug.debug-tracker-vscode",
-				"marus25.cortex-debug"
-			]
-		}
+	"remoteUser": "vscode",
+	"runArgs": [
+		"--userns=keep-id"
+	],
+	"containerEnv": {
+		"HOME": "/home/vscode"
 	}
 }
