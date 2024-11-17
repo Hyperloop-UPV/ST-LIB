@@ -23,7 +23,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: stlib_test
-          path: out/build/simulator/stlib-test
+          path: out/build/simulator/Tests/stlib-test
           retention-days: 1
         #this is because hardware build doesnot create the 
         # test executable
