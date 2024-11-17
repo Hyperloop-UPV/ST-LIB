@@ -10,7 +10,7 @@
  *
  */
 
-
+/*
 #include "HALALMock/Services/Time/Time.hpp"
 #include <iostream>
 #include <thread>
@@ -79,4 +79,4 @@ double find_max_simulation_speed(double max_lag) {
     return best_speed;
 }
 
-
+*/
