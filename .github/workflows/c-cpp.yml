@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download test binary
-        uses: actions/donwload-artifact@v4
+        uses: actions/download-artifact@v4
         with:
           name: stlib_test
       - name: Run test
