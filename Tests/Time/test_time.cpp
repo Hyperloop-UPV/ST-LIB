@@ -25,14 +25,14 @@ TEST(Time,High_Precision_Alarm){
     });
 
     // Sleep for 2 seconds of real time (20 seconds simulation time)
-     std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    Time::unregister_high_precision_alarm(alarm_id);
+
+    Time::stop();
 
     // Check if the alarm was triggered 20 times
-     EXPECT_EQ(high_precision_alarm_count, 20);
-
-     Time::unregister_high_precision_alarm(alarm_id);
-
-     Time::stop();
+    EXPECT_EQ(high_precision_alarm_count, 20);
 }
 
 TEST(Time,Multiple_Alarms){
@@ -48,15 +48,15 @@ TEST(Time,Multiple_Alarms){
     });
 
     // Sleep for 2 seconds of real time (20 seconds simulation time)
-     std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    Time::unregister_high_precision_alarm(alarm_id_0);
+    Time::unregister_mid_precision_alarm(alarm_id_1);
+
+    Time::stop();
 
     // Check if the alarm was triggered 20 times
-     EXPECT_EQ(high_precision_alarm_count, 0);
-
-     Time::unregister_high_precision_alarm(alarm_id_0);
-     Time::unregister_mid_precision_alarm(alarm_id_1);
-
-     Time::stop();
+    EXPECT_EQ(high_precision_alarm_count, 0);
 }
 
 TEST(Time,Timeout){
@@ -75,12 +75,12 @@ TEST(Time,Timeout){
     });
 
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    
+
+    Time::stop();
+
     EXPECT_TRUE(timeout_triggered);
     EXPECT_NE(end_time, 0); 
     EXPECT_GE(end_time - start_time, 1490000000); // upper bound 
     EXPECT_LE(end_time - start_time, 1510000000); // lower bound 
-
-     Time::stop();
 }
 
