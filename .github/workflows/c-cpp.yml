@@ -28,7 +28,7 @@ jobs:
         #this is because hardware build doesnot create the 
         # test executable
         continue-on-error: true
-  Run Tests:
+  Run-Tests:
     name: Run Simulator tests
     needs: build
     runs-on: ubuntu-latest
