@@ -18,7 +18,24 @@ jobs:
       - uses: carlosperate/arm-none-eabi-gcc-action@v1
       - run: arm-none-eabi-gcc --version
       - name: Build 
-        run: ./build ${{matrix.build_type}}
+        run: ./tools/build.sh ${{matrix.build_type}}
+      - name: Upload test-binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: stlib_test
+          path: out/build/simulator/stlib-test
+          retention-days: 1
+        #this is because hardware build doesnot create the 
+        # test executable
+        continue-on-error: true
   Run Tests:
     name: Run Simulator tests
     needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download test binary
+        uses: actions/donwload-artifact@v4
+        with:
+          name: stlib_test
+      - name: Run test
+        run: ./tools/rum_sim_tests.sh
