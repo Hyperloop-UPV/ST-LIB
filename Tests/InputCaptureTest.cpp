@@ -1,0 +1,135 @@
+#include <gtest/gtest.h>
+#include "HALALMock/Services/InputCapture/InputCapture.hpp"
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
+
+#define TIM_CHANNEL_1 1
+#define TIM_CHANNEL_2 2
+#define htim nullptr
+
+map<Pin, InputCapture::Instance> InputCapture::available_instances = {
+    {PF0, InputCapture::Instance(PF0, htim, TIM_CHANNEL_1, TIM_CHANNEL_2)},
+    {PB0, InputCapture::Instance(PF0, htim, TIM_CHANNEL_1, TIM_CHANNEL_2)}
+    };
+
+TEST(InputCapture, Inscribe){
+
+    SharedMemory::start("GPIO_Name", "State_Machine_Name");
+
+    //inscribe correct PIN
+    uint8_t id = InputCapture::inscribe(PF0);
+
+    EXPECT_EQ(id, 1);
+    EXPECT_EQ(InputCapture::id_counter, 1);
+
+    //inscribe wrong PIN
+    id = InputCapture::inscribe(PA0);
+    EXPECT_EQ(id, 0);
+    EXPECT_EQ(InputCapture::id_counter, 1);
+
+    //inscribe another correct PIN
+    id = InputCapture::inscribe(PB0);
+    EXPECT_EQ(id, 2);
+    EXPECT_EQ(InputCapture::id_counter, 2);
+
+    //inscribe repeated PIN
+    id = InputCapture::inscribe(PF0);
+    EXPECT_EQ(id, 0);
+    EXPECT_EQ(InputCapture::id_counter, 2);
+
+    SharedMemory::close();
+}
+
+TEST(InputCapture, TurnOn){
+
+    SharedMemory::start("GPIO_Name", "State_Machine_Name");
+
+    uint8_t id = InputCapture::inscribe(PF0);
+    EmulatedPin &pin = SharedMemory::get_pin(PF0);
+
+    bool is_on;
+    is_on = InputCapture::active_instances[id].is_active;
+    ASSERT_FALSE(is_on);
+    InputCapture::turn_on(id);
+    is_on = InputCapture::active_instances[id].is_active;
+    ASSERT_TRUE(is_on);
+
+    SharedMemory::close();
+}
+
+TEST(InputCapture, TurnOff){
+
+    SharedMemory::start("GPIO_Name", "State_Machine_Name");
+
+    uint8_t id = InputCapture::inscribe(PF0);
+    EmulatedPin &pin = SharedMemory::get_pin(PF0);
+
+    InputCapture::turn_on(id);
+
+    bool is_on;
+    is_on = InputCapture::active_instances[id].is_active;
+    InputCapture::turn_on(id);
+    ASSERT_TRUE(is_on);
+
+    InputCapture::turn_off(id);
+    is_on = InputCapture::active_instances[id].is_active;
+    ASSERT_FALSE(is_on);
+
+    SharedMemory::close();
+}
+
+TEST(InputCapture, ReadFrequency){
+
+    SharedMemory::start("GPIO_Name", "State_Machine_Name");
+
+    uint8_t id = InputCapture::inscribe(PF0);
+    EmulatedPin &pin = SharedMemory::get_pin(PF0);
+
+    uint32_t value = 1000;
+    pin.PinData.input_capture.frequency = value;
+
+    //case with correct PIN and active Instance
+    InputCapture::turn_on(id);
+    uint32_t frequency = InputCapture::read_frequency(id);
+    EXPECT_EQ(value, frequency);
+
+    //case with correct PIN and deactive Instance
+    InputCapture::turn_off(id);
+    frequency = InputCapture::read_frequency(id);
+    EXPECT_EQ(0, frequency);
+
+    //case with incorrect PIN
+    InputCapture::turn_on(11);
+    frequency = InputCapture::read_frequency(11);
+    EXPECT_EQ(0, frequency);
+
+    SharedMemory::close();
+}
+
+
+TEST(InputCapture, ReadDutyCycle){
+
+    SharedMemory::start("GPIO_Name", "State_Machine_Name");
+
+    uint8_t id = InputCapture::inscribe(PF0);
+    EmulatedPin &pin = SharedMemory::get_pin(PF0);
+
+    uint8_t value = 80;
+    pin.PinData.input_capture.duty_cycle = value;
+
+    //case with correct PIN and active Instance
+    InputCapture::turn_on(id);
+    uint8_t duty_cycle = InputCapture::read_duty_cycle(id);
+    EXPECT_EQ(value, duty_cycle);
+
+    //case with correct PIN and deactive Instance
+    InputCapture::turn_off(id);
+    duty_cycle = InputCapture::read_duty_cycle(id);
+    EXPECT_EQ(0, duty_cycle);
+
+    //case with incorrect PIN
+    InputCapture::turn_on(11);
+    duty_cycle = InputCapture::read_duty_cycle(11);
+    EXPECT_EQ(0, duty_cycle);
+
+    SharedMemory::close();
+}
