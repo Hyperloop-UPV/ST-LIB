@@ -38,4 +38,4 @@ jobs:
         with:
           name: stlib_test
       - name: Run test
-        run: ./tools/rum_sim_tests.sh
+        run: ./tools/run_sim_tests.sh
