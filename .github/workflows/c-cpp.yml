@@ -22,7 +22,7 @@ jobs:
         ## the following is because of this known limitation
         ## https://github.com/actions/download-artifact?tab=readme-ov-file#limitations
       - name: 'Tar files'
-        run: tar -cvf test_files.tar out/build/simulator/Tests/stlib-test
+        run:  ./tools/tar_tests.sh
         continue-on-error: true
       - name: Upload test-binary
         uses: actions/upload-artifact@v4
@@ -42,7 +42,7 @@ jobs:
       - name: Download test binary compressed
         uses: actions/download-artifact@v4
         with:
-          name: stlib_test.tar
+          name: stlib_test
       - run: tar -xvf test_files.tar
       - name: Run test
         run: ./tools/run_sim_tests.sh
