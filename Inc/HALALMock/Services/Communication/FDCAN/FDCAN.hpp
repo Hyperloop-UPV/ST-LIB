@@ -9,12 +9,9 @@ using std::queue;
 using std::unordered_map;
 using std::vector;
 
-#define FDCAN_PORT_BASE 3000
-extern const in_addr_t fdcan_ip_adress;
-
-class FDCAN {
-   public:
-    enum DLC : uint32_t {
+class FDCAN{
+public:
+	enum DLC : uint32_t{
         BYTES_0 = 0x00000000U,
         BYTES_1 = 0x00010000U,
         BYTES_2 = 0x00020000U,
@@ -32,7 +29,8 @@ class FDCAN {
         BYTES_48 = 0x000E0000U,
         BYTES_64 = 0x000F0000U,
         DEFAULT = UINT32_MAX,
-    };
+	};
+
     enum ID { FAULT_ID = 1 };
 
     struct Packet {
@@ -40,7 +38,7 @@ class FDCAN {
         uint32_t identifier;
         DLC data_length;
     };
-
+    static std::string ip;
    private:
     /**
      * @brief Struct which defines all data referring to FDCAN peripherals. It
@@ -48,7 +46,6 @@ class FDCAN {
      * instances should be used.
      *
      */
-    static uint8_t Port_counter;
     struct Instance {
         Pin TX;
         Pin RX;
@@ -60,8 +57,9 @@ class FDCAN {
         uint8_t fdcan_number;
         uint16_t socket;
         bool start = false;
-    };
+        uint16_t port;
 
+    };
    public:
     /**
      * @brief Enum which abstracts the use of the Instance struct to facilitate

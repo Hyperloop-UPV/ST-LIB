@@ -13,7 +13,7 @@ if (NOT CMAKE_CROSSCOMPILING)
   add_subdirectory(Tests)
 endif()
 
-if (PROJECT_IS_TOP_LEVEL)
+if ((PROJECT_IS_TOP_LEVEL AND (NOT CMAKE_CROSSCOMPILING)))
   include(FetchContent)
   option(BUILD_GMOCK OFF)
   option(INSTALL_GTEST OFF)
