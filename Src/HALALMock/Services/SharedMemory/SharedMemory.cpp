@@ -1,4 +1,3 @@
-
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 //includes to create the shared Memory in Posix
 #include <fcntl.h>
@@ -130,14 +129,18 @@ void SharedMemory::update_current_state(uint8_t index, uint8_t state){
 	state_machine_memory[index]=state;
 }
 
-EmulatedPin &SharedMemory::get_pin(Pin pin){
-    uint8_t offset;
-	auto it = SHM::pin_offsets.find(pin);
-	if(it != SHM::pin_offsets.end()){
-		offset = it -> second;
-	}else{
-		std::cout<<"Pin " <<pin.to_string()<< " doesn't exist\n";
-	}
-	EmulatedPin *pin_memory = SharedMemory::gpio_memory + offset;
-    return *pin_memory;
+EmulatedPin& SharedMemory::get_pin(Pin pin){
+    auto it = SHM::pin_offsets.find(pin);
+    if(it == SHM::pin_offsets.end()){
+		std::cout<<"Error: Pin " << pin.to_string() << " doesn't exist.\n";
+        std::terminate();
+    }
+
+    size_t offset = it->second;
+    if (offset >= gpio_memory_size){
+		std::cout<<"Error: Offset " << offset << " is out of scope\n";
+        std::terminate();
+    }
+
+    return gpio_memory[offset];
 }
