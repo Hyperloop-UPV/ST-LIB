@@ -85,7 +85,7 @@ void SharedMemory::close(){
 void SharedMemory::close_gpio_shared_memory(){
 	if (gpio_memory != nullptr){
 		//unmap shared memory
-		if(munmap(gpio_memory,state_machine_memory_size) == -1){
+		if(munmap(gpio_memory,gpio_memory_size) == -1){
 			std::cout<<"Error unmapping the gpio shared_memory\n";
 			std::terminate();
 		}
