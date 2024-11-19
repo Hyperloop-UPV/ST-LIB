@@ -145,7 +145,7 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 	data->identifier = (recv_buffer_raw[0] << 24) | (recv_buffer_raw[1] << 16) | (recv_buffer_raw[2] << 8) | recv_buffer_raw[3];
 	data->data_length = static_cast<FDCAN::DLC>((recv_buffer_raw[4] << 24) | (recv_buffer_raw[5] << 16) | (recv_buffer_raw[6] << 8) | recv_buffer_raw[7]);
 	for (int i = 8; i < 72; i++)
-		data->rx_data[i] = recv_buffer_raw[i];
+		data->rx_data[i-8] = recv_buffer_raw[i];
 
 	return true;
 }
