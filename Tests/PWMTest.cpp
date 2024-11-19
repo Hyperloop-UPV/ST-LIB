@@ -23,6 +23,7 @@ TEST(PWM, Turn_off){
     
     PWM pwm(PA0);
 
+    pwm.turn_on();
     pwm.turn_off();
 
     EmulatedPin& pwm_pin = SharedMemory::get_pin(PA0);
@@ -92,7 +93,9 @@ TEST(PWM, Deadtime_while_off){
     SharedMemory::start("GPIO_Name", "State_Machine_Name");
     
     PWM pwm(PA0);
-
+    
+    pwm.turn_on();
+    pwm.turn_off();
     pwm.set_dead_time(std::chrono::nanoseconds(1000000));
 
     EmulatedPin& pwm_pin = SharedMemory::get_pin(PA0);
