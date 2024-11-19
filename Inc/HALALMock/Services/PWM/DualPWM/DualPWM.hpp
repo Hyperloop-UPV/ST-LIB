@@ -10,6 +10,9 @@ protected:
 	bool* positive_is_on{};
 	bool* negative_is_on{};
 	std::chrono::nanoseconds *dead_time_ns{};
+	EmulatedPin& pin_positive;
+	EmulatedPin& pin_negative;
+
 public:
 	DualPWM(Pin& pin, Pin& pin_negated);
 
