@@ -50,12 +50,8 @@ float PWM::get_duty_cycle(){
 }
 void PWM::set_dead_time(std::chrono::nanoseconds dead_t_ns)
 {
-	*dead_time_ns=dead_t_ns;
-	if(*is_on){
+	if(*is_on)
 		ErrorHandler("%s","This function can not be called if the PWM is on");
-	}
-	/*
-		Code that creates a dead time in the mock where duty_cycle is 0
-	*/
-	return;
+	else
+		*dead_time_ns=dead_t_ns;	
 }
