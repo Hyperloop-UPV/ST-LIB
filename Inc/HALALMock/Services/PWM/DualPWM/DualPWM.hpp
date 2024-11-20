@@ -2,6 +2,19 @@
 
 #include "HALALMock/Services/PWM/PWM/PWM.hpp"
 
+class TimerPeripheral {
+public:
+	enum PWM_MODE : uint8_t {
+		NORMAL = 0,
+		PHASED = 1
+	};
+
+    struct PWMData {
+        uint32_t channel;
+        PWM_MODE mode;
+    };
+};
+
 class DualPWM{
 protected:
 	DualPWM() = default;
@@ -12,6 +25,7 @@ protected:
 	std::chrono::nanoseconds *dead_time_ns{};
 	EmulatedPin& pin_positive;
 	EmulatedPin& pin_negative;
+	static std::unordered_map<std::pair<Pin,Pin>,std::pair<std::reference_wrapper<TimerPeripheral>, TimerPeripheral::PWMData>> available_dual_pwms;
 
 public:
 	DualPWM(Pin& pin, Pin& pin_negated);

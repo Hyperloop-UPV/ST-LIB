@@ -32,3 +32,21 @@ std::unordered_map<Pin, size_t> SHM::pin_offsets = {
 		{PG10, 106}, {PG11, 107}, {PG12, 108}, {PG13, 109},
 		{PG14, 110}, {PG15, 111}, {PH0, 112}, {PH1, 113}
 };
+
+// Define TimerPeripheral objects
+TimerPeripheral timer1;
+TimerPeripheral timer15;
+TimerPeripheral timer16;
+TimerPeripheral timer17;
+#define TIM_CHANNEL_1 1
+#define TIM_CHANNEL_2 2
+#define TIM_CHANNEL_3 3
+
+std::unordered_map<std::pair<Pin,Pin>,std::pair<std::reference_wrapper<TimerPeripheral>, TimerPeripheral::PWMData>> DualPWM::available_dual_pwms {
+    {{PB8, PB6}, {timer16, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {{PB9, PB7}, {timer17, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::PHASED}}},
+    {{PE11, PE10}, {timer1, {TIM_CHANNEL_2, TimerPeripheral::PWM_MODE::PHASED}}},
+    {{PE13, PE12}, {timer1, {TIM_CHANNEL_3, TimerPeripheral::PWM_MODE::PHASED}}},
+    {{PE5, PE4}, {timer15, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {{PE9, PE8}, {timer1, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::NORMAL}}},
+};
