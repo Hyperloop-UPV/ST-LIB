@@ -16,7 +16,7 @@ InputCapture::Instance::Instance(Pin& pin, void* peripheral, uint32_t channel_ri
 	}
 
 uint8_t InputCapture::inscribe(Pin& pin){
- 	if (not available_instances.contains(pin)) {
+ 	if (not available_instances.contains(pin) || pin.mode != OperationMode::NOT_USED) {
 		ErrorHandler(" The pin %s is already used or isn t available for InputCapture usage", pin.to_string().c_str());
  		return 0;
  	}
@@ -24,6 +24,7 @@ uint8_t InputCapture::inscribe(Pin& pin){
 	Pin::inscribe(pin, TIMER_ALTERNATE_FUNCTION);
 
  	Instance& data = available_instances[pin];
+	id_counter++;
 	active_instances[id_counter] = data;
 	active_instances[id_counter].id = id_counter;
 
@@ -34,7 +35,7 @@ uint8_t InputCapture::inscribe(Pin& pin){
 	*active_instances[id_counter].duty_cycle = 0;
 	*active_instances[id_counter].frequency = 0;
 
-	return id_counter++;
+	return id_counter;
 
 	
 }

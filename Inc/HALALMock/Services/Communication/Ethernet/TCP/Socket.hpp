@@ -15,7 +15,6 @@
 #include <iostream>
 #include <thread>
 
-
 class Socket : public OrderProtocol{
 private:
 	
@@ -23,11 +22,11 @@ private:
 	std::jthread wait_for_connection_thread;
 	std::atomic<bool> is_receiving;
 	std::atomic<bool> is_connecting;
-	std::mutex mtx; 
+	std::mutex mutex; 
 	void start_receiving();
 	void receive();
 	void create_socket();
-	void configure_socket();
+	bool configure_socket();
 	void connect_thread();
 	void configure_socket_and_connect();
 	void connection_callback();
@@ -52,15 +51,15 @@ public:
 	bool pending_connection_reset = false;
 	bool use_keep_alives{true};
 	struct KeepaliveConfig{
-		uint32_t inactivity_time_until_keepalive_ms = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS;
-		uint32_t space_between_tries_ms = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES_MS;
+		uint32_t inactivity_time_until_keepalive = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE;
+		uint32_t space_between_tries = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES;
 		uint32_t tries_until_disconnection = TCP_KEEPALIVE_TRIES_UNTIL_DISCONNECTION;
 	}keepalive_config;
 
 	Socket();
 	Socket(Socket&& other);
 	Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port,bool use_keep_alives = true);
-	Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection);
+	Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive, uint32_t space_between_tries, uint32_t tries_until_disconnection);
 	Socket(EthernetNode local_node, EthernetNode remote_node);
 	~Socket();
 

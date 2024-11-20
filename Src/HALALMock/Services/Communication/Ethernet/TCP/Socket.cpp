@@ -2,20 +2,17 @@
 
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
 #define BUFFER_SIZE 1024
-
 unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
 
 
 Socket::Socket() = default;
 
-Socket::Socket(Socket&& other):socket_fd(move(other.socket_fd)),(move(remote_port)),
-	 state(other.state){
+Socket::Socket(Socket&& other):remote_port(move(remote_port)),state(other.state){
 	EthernetNode remote_node(other.remote_ip, other.remote_port);
 	connecting_sockets[remote_node] = this;
 }
 
 void Socket::operator=(Socket&& other){
-	socket_fd = move(other.socket_fd)
 	remote_port = move(other.remote_port);
 	state = other.state;
 	EthernetNode remote_node(other.remote_ip, other.remote_port);
@@ -59,42 +56,44 @@ void Socket::create_socket(){
 		return;
 	}
 }
-void Socket::configure_socket(){
+bool Socket::configure_socket(){
 	//disable naggle algorithm
 	int flag = 1;
 	if (setsockopt(socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
 		std::cout<<"It has been an error disabling Nagle's algorithm\n";
 		::close(socket_fd);
-		return;
+		return false;
 	}
 	//habilitate keepalives
     int optval = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
         std::cout << "ERROR configuring KEEPALIVES\n";
         ::close(socket_fd);
-        return;
+        return false;
     }
-	// Configurar TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
-    float tcp_keepidle_time = static_cast<float>(keepalive_config.inactivity_time_until_keepalive_ms)/1000.0;
+	// Configure TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
+    // Using the minimum linux keepalives time 
+	uint32_t tcp_keepidle_time = keepalive_config.inactivity_time_until_keepalive; 
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPIDLE\n";
-		::close(socket_fd);
-        return;
+		    ::close(socket_fd);
+        return false;
     }
 	  //interval between keepalives
-    float keep_interval_time = static_cast<float>(keepalive_config.space_between_tries_ms)/1000.0;
+    uint32_t keep_interval_time = keepalive_config.space_between_tries;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
         std::cout << "Error configuring TCP_KEEPINTVL\n";
         ::close(socket_fd);
-        return;
+        return false;
     }
 	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
-	 float keep_cnt = static_cast<float>(keepalive_config.tries_until_disconnection)/1000.0;
+	uint32_t keep_cnt = keepalive_config.tries_until_disconnection;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
         std::cout << "Error to configure TCP_KEEPCNT\n";
         ::close(socket_fd);
-        return ;
+        return false;
     }
+	return true;
 }
 void Socket::connection_callback(){
 	if(connecting_sockets.contains(remote_node)){
@@ -114,7 +113,10 @@ void Socket::connect_attempt(){
 }
 void Socket::configure_socket_and_connect(){
 	create_socket();
-	configure_socket();
+
+	if(!configure_socket()){
+		cout<<"error configuring socket\n";
+	}
 	connecting_sockets[remote_node] = this;
 	//create thread that will be block while waiting the connection
 	connect_attempt()
@@ -134,9 +136,9 @@ void Socket::configure_socket_and_connect(){
 		
 	}
 }
-Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection): Socket(local_ip, local_port, remote_ip, remote_port){
-	keepalive_config.inactivity_time_until_keepalive_ms = inactivity_time_until_keepalive_ms;
-	keepalive_config.space_between_tries_ms = space_between_tries_ms;
+Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive, uint32_t space_between_tries, uint32_t tries_until_disconnection): Socket(local_ip, local_port, remote_ip, remote_port){
+	keepalive_config.inactivity_time_until_keepalive = inactivity_time_until_keepalive;
+	keepalive_config.space_between_tries = space_between_tries;
 	keepalive_config.tries_until_disconnection = tries_until_disconnection;
 }
 
@@ -200,8 +202,9 @@ void Socket::reset(){
 
 
 void Socket::send(){
+	std::lock_guard<std::mutex> lock(mutex);
 	while (!tx_packet_buffer.empty()) {
-        HeapPacket *packet = tx_packet_buffer.front();
+        Packet *packet = tx_packet_buffer.front();
         ssize_t sent_bytes = ::send(socket_fd, packet->build(), packet->get_size(), 0);
         if (sent_bytes < 0) {
             std::cerr << "Error sending packet\n";
@@ -222,7 +225,7 @@ void Socket::receive() {
         ssize_t received_bytes = ::recv(socket_fd, buffer, sizeof(buffer), 0);
         if (received_bytes > 0) {
             HeapPacket *packet;
-			packet->parse(*buffer);
+			      packet->parse(*buffer);
             {
                 std::lock_guard<std::mutex> lock(mtx); 
                 rx_packet_buffer.push(std::move(packet));
@@ -243,7 +246,6 @@ void Socket::receive() {
     }
 }
 void Socket::process_data(){
-	
 	while(!rx_packet_buffer.empty()){
 		HeapPacket *packet;
 		{
@@ -260,16 +262,13 @@ bool Socket::add_order_to_queue(Order& order){
 	if(state == Socket::SocketState::CONNECTED){
 		return false;
 	}
-    std::vector<uint8_t> order_buffer = order.build();
-    if (order_buffer.empty()) {
-        std::cout << "Error: building de order buffer\n";
+    if (order.get_size() == 0) {
+        std::cout << "Error: order empty\n";
         return false; 
     }
-    HeapPacket *packet;
-	packet->parse(order_buffer); 
     {
         std::lock_guard<std::mutex> lock(mutex); 
-        tx_packet_buffer.push(packet); 
+        tx_packet_buffer.push(move(order)); 
     }
 	return true;
 }
@@ -277,6 +276,5 @@ bool Socket::add_order_to_queue(Order& order){
 bool Socket::is_connected(){
 	return state == Socket::SocketState::CONNECTED;
 }
-
 #endif //STLIB_ETH
 

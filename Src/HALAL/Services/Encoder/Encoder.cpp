@@ -26,7 +26,7 @@ uint8_t Encoder::inscribe(Pin& pin1, Pin& pin2) {
     Pin::inscribe(pin1, ALTERNATIVE);
     Pin::inscribe(pin2, ALTERNATIVE);
 
-    uint8_t id = Encoder::id_counter++;
+    uint8_t id = ++Encoder::id_counter;
     Encoder::registered_encoder[id] = doublepin;
 
     return id;

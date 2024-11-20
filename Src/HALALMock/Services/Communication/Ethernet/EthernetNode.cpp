@@ -14,3 +14,4 @@ std::size_t hash<EthernetNode>::operator()(const EthernetNode& key) const
 
   return (hash<uint32_t>()(key.ip.address)) ^ (hash<uint32_t>()(key.port) << 1);
 }
+

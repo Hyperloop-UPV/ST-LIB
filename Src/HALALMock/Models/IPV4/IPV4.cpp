@@ -54,3 +54,4 @@ void IPV4::set_address_from_bytes(uint8_t byte1, uint8_t byte2, uint8_t byte3, u
                     (static_cast<in_addr_t>(byte3) << 8) |
                     (static_cast<in_addr_t>(byte4));
 }
+
