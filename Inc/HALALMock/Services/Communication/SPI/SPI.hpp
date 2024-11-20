@@ -43,6 +43,8 @@ public:
         Pin* MOSI; /**< MOSI pin. */
         Pin* MISO; /**< MISO pin. */
         Pin* SS; /**< Slave select pin. */
+        std::pair<char*, uint16_t> destination_address;
+        int socket;
         Pin* RS; /**< Ready Slave pin (optional)*/
         uint8_t RShandler;
 
