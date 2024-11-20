@@ -39,7 +39,7 @@ map<uint16_t, ExternalInterrupt::Instance> ExternalInterrupt::instances = {
     {PE0.gpio_pin, Instance(EXTI1_IRQn)}, {PE1.gpio_pin, Instance(EXTI2_IRQn)}
 };
 
-uint8_t id1, id2 = 0;
+static uint8_t id1, id2 = 0;
 
 TEST(EXTITest, Inscribe){
 

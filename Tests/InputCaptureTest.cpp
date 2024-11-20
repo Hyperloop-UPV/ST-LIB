@@ -13,7 +13,7 @@ map<Pin, InputCapture::Instance> InputCapture::available_instances = {
     {PE2, InputCapture::Instance(PE2, htim, TIM_CHANNEL_1, TIM_CHANNEL_2)}
     };
 
-uint8_t id1, id2;
+static uint8_t id1, id2;
 TEST(InputCapture, Inscribe){
 
     SharedMemory::start("GPIO_Name", "State_Machine_Name");
