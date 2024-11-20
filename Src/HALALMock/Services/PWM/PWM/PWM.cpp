@@ -6,6 +6,11 @@ PWM::PWM(Pin& pin) {
     If the actual code doesn't work it might be related to
 	the timers and the channels
 	*/
+	if (not available_pwm.contains(pin)) {
+		ErrorHandler("Pin %s is not registered as an available PWM", pin.to_string());
+		return;
+	}
+	
 	EmulatedPin &pin_data = SharedMemory::get_pin(pin);
 	if(pin_data.type == PinType::NOT_USED){
 		pin_data.type = PinType::PWM;
