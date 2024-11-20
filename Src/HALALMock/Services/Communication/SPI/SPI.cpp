@@ -135,6 +135,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
             if (spi_instance->mode == SPIMode::SLAVE) {
                 // Process first byte
                 char command = data.front();
+                data = data.subspan(1);
                 if (command == 1) selected = true;
                 else if (command == 2) selected = false;
                 else spi_instance->reception_queue.pop();
