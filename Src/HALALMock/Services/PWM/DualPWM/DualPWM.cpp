@@ -81,11 +81,9 @@ float DualPWM::get_duty_cycle()const{
 }
 void DualPWM::set_dead_time(std::chrono::nanoseconds dead_time_ns)
 {
-	*(this->dead_time_ns)=dead_time_ns;
-	if(*positive_is_on || *negative_is_on){
+	if(*positive_is_on || *negative_is_on)
 		ErrorHandler("%s","This function can not be called if the PWM is on");
-	}
-	return;
-
+	else
+		*(this->dead_time_ns)=dead_time_ns;
 }
 
