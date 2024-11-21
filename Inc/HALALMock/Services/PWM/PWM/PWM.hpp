@@ -3,6 +3,20 @@
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 
+// dummy class to simulate TimerPeripheral
+class TimerPeripheral {
+public:
+	enum PWM_MODE : uint8_t {
+		NORMAL = 0,
+		PHASED = 1
+	};
+
+    struct PWMData {
+        uint32_t channel;
+        PWM_MODE mode;
+    };
+};
+
 class PWM {
 protected:
 	float *duty_cycle;

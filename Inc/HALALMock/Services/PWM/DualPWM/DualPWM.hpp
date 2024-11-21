@@ -2,19 +2,6 @@
 
 #include "HALALMock/Services/PWM/PWM/PWM.hpp"
 
-class TimerPeripheral {
-public:
-	enum PWM_MODE : uint8_t {
-		NORMAL = 0,
-		PHASED = 1
-	};
-
-    struct PWMData {
-        uint32_t channel;
-        PWM_MODE mode;
-    };
-};
-
 class DualPWM{
 protected:
 	DualPWM() = default;
