@@ -31,6 +31,7 @@ void SharedMemory::start(const char* gpio_memory_name, const char* state_machine
 	start_gpio_shared_memory(); // initialize the gpio_shared_memory
 }
 void SharedMemory::start_gpio_shared_memory(){
+	
 	//create shared memory object
 	shm_gpio_fd = shm_open(gpio_memory_name, O_CREAT | O_RDWR,0660);
 	if(shm_gpio_fd == -1){
@@ -50,9 +51,12 @@ void SharedMemory::start_gpio_shared_memory(){
         ::close(shm_gpio_fd);  // Close the descriptor if there is a problem with the mapping
         return;
 	}
+	
+	// clean the shared memory in case it has info from the previous execution
+	memset(static_cast<void*>(gpio_memory),0,gpio_memory_size);
 }
 void SharedMemory::start_state_machine_memory(){
-
+	
 	// create the shared memory object
 	shm_state_machine_fd=shm_open(state_machine_memory_name,O_CREAT | O_RDWR, 0660);
 	if(shm_state_machine_fd==-1){
@@ -75,6 +79,9 @@ void SharedMemory::start_state_machine_memory(){
 
 	state_machine_count=&state_machine_memory[0];
 	*state_machine_count=0;
+
+	// clean the shared memory in case it has info from the previous execution
+	memset(static_cast<void*>(state_machine_memory),0,state_machine_memory_size);
 }
 
 void SharedMemory::close(){
