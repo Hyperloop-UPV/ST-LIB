@@ -12,6 +12,7 @@ add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/EncoderTest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/InputCaptureTest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/PWMTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/DualPWMTest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/EXTITest.cpp
 )
 

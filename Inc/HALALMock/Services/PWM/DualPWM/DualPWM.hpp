@@ -10,6 +10,10 @@ protected:
 	bool* positive_is_on{};
 	bool* negative_is_on{};
 	std::chrono::nanoseconds *dead_time_ns{};
+	EmulatedPin& pin_positive;
+	EmulatedPin& pin_negative;
+	static std::unordered_map<std::pair<Pin,Pin>,std::pair<std::reference_wrapper<TimerPeripheral>, TimerPeripheral::PWMData>> available_dual_pwms;
+
 public:
 	DualPWM(Pin& pin, Pin& pin_negated);
 
