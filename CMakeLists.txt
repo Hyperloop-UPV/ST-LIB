@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.14)
-
+set(CMAKE_C_COMPILER_WORKS TRUE)
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
 project (ST-LIB C CXX)
 set(STLIB_LIBRARY st-lib)
 
@@ -124,7 +125,9 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   
   $<$<COMPILE_LANGUAGE:CXX>:-Wall>
   $<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>
-  $<$<COMPILE_LANGUAGE:CXX>:-Werror>
+  $<$<COMPILE_LANGUAGE:CXX>:-Werror> 
+  $<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-zero-variadic-macro-arguments>
+  $<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
 )

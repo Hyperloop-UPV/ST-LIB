@@ -11,15 +11,14 @@
 uint8_t ExternalInterrupt::id_counter = 0;
 map<uint8_t, Pin> ExternalInterrupt::service_ids = {};
 
+std::mutex ExternalInterrupt::mutex;
+std::thread ExternalInterrupt::interrupt_thread;
+std::vector<ExternalInterrupt::Instance*> ExternalInterrupt::interrupts_arr = {};
+bool ExternalInterrupt::is_running = false;
+
 ExternalInterrupt::Instance::Instance(uint32_t interrupt_request_number) :
 		interrupt_request_number(interrupt_request_number) {}
 
-void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin) {
-	ExternalInterrupt::Instance& exti = ExternalInterrupt::instances[GPIO_Pin];
-	if (exti.is_on) {
-		exti.action();
-	}
-}
 
 uint8_t ExternalInterrupt::inscribe(Pin& pin, function<void()>&& action, TRIGGER trigger) {
 	if (not instances.contains(pin.gpio_pin)) {
@@ -27,25 +26,26 @@ uint8_t ExternalInterrupt::inscribe(Pin& pin, function<void()>&& action, TRIGGER
 		return 0;
 	}
 	EmulatedPin &pin_data = SharedMemory::get_pin(pin);
-	if(pin_data.type != PinType::EXTIPin) {
+	if(pin_data.type != PinType::NOT_USED) {
 		ErrorHandler("ID %d is not registered as a EXTIPin",id_counter);
 		return 0;
 	}
-
+	pin_data.type = PinType::EXTIPin;
 	(pin_data.PinData.exti.trigger_mode) = trigger;
+	(pin_data.PinData.exti.is_on) = false;
 
-
+	id_counter++;
 	service_ids[id_counter] = pin;
 	instances[pin.gpio_pin].action = action;
+	instances[pin.gpio_pin].trigger_signal = &pin_data.PinData.exti.trigger_signal;
+	*instances[pin.gpio_pin].trigger_signal = PinState::OFF;
 
-	return id_counter++;
+	return id_counter;
 }
 //TODO: assigne priority on the emulated pin
 void ExternalInterrupt::start() {
-	for(auto& id_instance : instances) {
-		Instance& instance = id_instance.second;
-		instance.is_on = true;
-	}
+	is_running = true;
+	interrupt_thread = std::thread(handle_interrupts);
 }
 
 void ExternalInterrupt::turn_on(uint8_t id) {
@@ -78,4 +78,50 @@ bool ExternalInterrupt::get_pin_value(uint8_t id) {
 		std::terminate();
 	}
 	return (pin_data.PinData.exti.trigger_signal);
+}
+
+//IMPORTANT EXECUTE STOP ON FINALLY SECUENCE
+void ExternalInterrupt::stop()
+{
+	std::unique_lock<std::mutex> lock(mutex);
+	is_running = false;
+	lock.unlock();
+	if (interrupt_thread.joinable()) {
+        interrupt_thread.join();
+    }
+}
+
+void ExternalInterrupt::handle_interrupts()
+{
+	while(1)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::unique_lock<std::mutex> lock(mutex);
+
+		if(!is_running) break;
+
+		for(auto &it : instances)
+		{
+			if(it.second.is_on)
+			{
+				if(*(it.second.trigger_signal))
+				{
+					interrupts_arr.push_back(&(it.second));
+				}
+			}
+		}
+
+		lock.unlock();
+		
+		if(!interrupts_arr.size()) continue;
+
+		for(auto it : interrupts_arr)
+		{
+			it->action();
+			lock.lock();
+			*(it->trigger_signal) = false;
+			lock.unlock();
+		}
+		interrupts_arr.clear();
+	}
 }

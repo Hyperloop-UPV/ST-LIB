@@ -197,6 +197,16 @@ struct hash<Pin> {
 };
 }  // namespace std
 
+namespace std {
+    template<>
+    struct hash<std::pair<Pin, Pin>> {
+        std::size_t operator()(const std::pair<Pin, Pin>& p) const {
+            std::hash<Pin> pin_hasher;
+            return pin_hasher(p.first) ^ (pin_hasher(p.second) << 1);
+        }
+    };
+}
+
 extern Pin PA0;
 extern Pin PA1;
 extern Pin PA2;
