@@ -44,10 +44,6 @@ uint8_t ExternalInterrupt::inscribe(Pin& pin, function<void()>&& action, TRIGGER
 }
 //TODO: assigne priority on the emulated pin
 void ExternalInterrupt::start() {
-	for(auto& id_instance : instances) {
-		Instance& instance = id_instance.second;
-		instance.is_on = true;
-	}
 	is_running = true;
 	interrupt_thread = std::thread(handle_interrupts);
 }
@@ -106,9 +102,12 @@ void ExternalInterrupt::handle_interrupts()
 
 		for(auto &it : instances)
 		{
-			if(*(it.second.trigger_signal))
+			if(it.second.is_on)
 			{
-				interrupts_arr.push_back(&(it.second));
+				if(*(it.second.trigger_signal))
+				{
+					interrupts_arr.push_back(&(it.second));
+				}
 			}
 		}
 

@@ -36,7 +36,7 @@ void test_interrupts_1(EmulatedPin &pin1, EmulatedPin &pin2)
 #define EXTI2_IRQn 16
 
 map<uint16_t, ExternalInterrupt::Instance> ExternalInterrupt::instances = {
-    {PE0.gpio_pin, Instance(EXTI1_IRQn)}, {PE1.gpio_pin, Instance(EXTI2_IRQn)}
+    {PE0.gpio_pin, Instance(EXTI1_IRQn)}, {PE1.gpio_pin, Instance(EXTI2_IRQn)}, {PA0.gpio_pin, Instance(EXTI2_IRQn)}, 
 };
 
 static uint8_t id1, id2 = 0;
@@ -66,15 +66,11 @@ TEST(EXTITest, Start_Stop){
 
     SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
-    ASSERT_FALSE(ExternalInterrupt::instances[id1].is_on);
-    ASSERT_FALSE(ExternalInterrupt::instances[id2].is_on);
     ASSERT_FALSE(ExternalInterrupt::is_running);
 
 
     ExternalInterrupt::start();
 
-    ASSERT_TRUE(ExternalInterrupt::instances[id1].is_on);
-    ASSERT_TRUE(ExternalInterrupt::instances[id2].is_on);
     ASSERT_TRUE(ExternalInterrupt::is_running);
 
     ExternalInterrupt::stop();
@@ -124,6 +120,8 @@ TEST(EXTITest, get_pin_value){
 TEST(EXTITest, handle_interrupt_1){
 
     SharedMemory::start("GPIO_Name", "State_Machine_Name");
+    ExternalInterrupt::turn_on(id1);
+    ExternalInterrupt::turn_on(id2);
     EmulatedPin &pin1 = SharedMemory::get_pin(PE0);
     pin1.PinData.exti.trigger_signal = PinState::ON;
 
