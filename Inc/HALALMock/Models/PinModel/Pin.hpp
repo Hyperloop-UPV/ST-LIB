@@ -71,14 +71,14 @@ enum OperationMode {
     ALTERNATIVE,
 };
 
-enum PinState { OFF, ON };
+enum PinState: uint8_t { OFF, ON };
 
-enum TRIGGER{
+enum TRIGGER: uint8_t {
     RISING_EDGE = 1,
     FAILING_EDGE = 0,
     BOTH_EDGES = 2
 };
-enum class PinType {
+enum class PinType: uint8_t {
     NOT_USED,
     DigitalOutput,
     DigitalInput,
