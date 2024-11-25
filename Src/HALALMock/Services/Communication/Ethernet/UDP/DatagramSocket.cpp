@@ -1,4 +1,4 @@
-#ifdef STLIB_ETH
+//#ifdef STLIB_ETH
 
 #include "HALALMock/Services/Communication/Ethernet/UDP/DatagramSocket.hpp"
 #define MAX_SIZE_PACKET 1024
@@ -6,7 +6,7 @@
 DatagramSocket::DatagramSocket() = default;
 
 DatagramSocket::DatagramSocket(DatagramSocket&& other):udp_socket(move(other.udp_socket)), local_ip(move(other.local_ip)) , local_port(move(other.local_port)) ,remote_ip(move(other.remote_ip)),
-		remote_port(move(remote_port))
+		remote_port(move(other.remote_port))
 		{}
 
 DatagramSocket::DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port): local_ip(local_ip), 
@@ -35,7 +35,7 @@ void DatagramSocket::create_udp_socket(){
 	servaddr.sin_addr.s_addr = local_ip.address; 
 	if(bind(udp_socket, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0){
 		std::cout<<"Bind error\n";
-		close(udp_socket);
+		::close(udp_socket);
 		is_disconnected = true;
 		return;
 	}
@@ -43,7 +43,7 @@ void DatagramSocket::create_udp_socket(){
 	//receiving callback
 	receiving_udp_thread = std::jthread([&](){
 		is_receiving = true;
-		while(true){
+		while(is_receiving){
 			uint8_t received_data[1024];
 			struct sockaddr_in src_addr;
 			socklen_t addr_len = sizeof(src_addr);
@@ -83,5 +83,5 @@ void DatagramSocket::close(){
 	::close(udp_socket);
 	is_disconnected = true;
 }
-#endif //STLIB_ETH
+//#endif //STLIB_ETH
 

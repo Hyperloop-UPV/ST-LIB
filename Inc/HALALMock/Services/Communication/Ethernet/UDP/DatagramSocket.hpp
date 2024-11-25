@@ -1,5 +1,5 @@
 #pragma once
-#ifdef STLIB_ETH
+//#ifdef STLIB_ETH
 
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
@@ -9,13 +9,13 @@
 
 class DatagramSocket{
 public:
-
+	int udp_socket;
 	IPV4 local_ip;
 	uint32_t local_port;
 	IPV4 remote_ip;
 	uint32_t remote_port;
 	bool is_disconnected = true;
-	int udp_socket;
+	
 	DatagramSocket();
 	DatagramSocket(DatagramSocket&& other);
 	DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port);
@@ -56,5 +56,5 @@ private:
 	std::atomic<bool> is_receiving;
 	void create_udp_socket();
 };
-#endif //STLIB_ETH
+//#endif //STLIB_ETH
 
