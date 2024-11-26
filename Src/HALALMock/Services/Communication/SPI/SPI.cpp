@@ -111,6 +111,7 @@ void sender_master_thread(SPI::Instance& spi_instance) {
 
 void receiver_slave_thread(SPI::Instance& spi_instance) {
     std::unique_lock lock(spi_instance.reception_mx);
+    span<uint8_t> data;
 
     while (true) {
         // Waiting to receive a command
@@ -127,7 +128,7 @@ void receiver_slave_thread(SPI::Instance& spi_instance) {
                 spi_instance.cv_reception.wait(lock, [&spi_instance] {
                     return !spi_instance.reception_queue.empty();
                 });
-                span<uint8_t> data = spi_instance.reception_queue.front();
+                data = spi_instance.reception_queue.front();
 
                 // Receive the packet
                 if (recv(spi_instance.socket, data.data(), data.size(),
@@ -195,15 +196,15 @@ void sender_receiver_slave_thread(SPI::Instance& spi_instance,
     // Init sending-receiving loop
     while (true) {
         // Wait the user to ask for a transmission-reception
-        std::unique_lock lock(spi_instance.transmission_reception_mx);
-        spi_instance.cv_transmission_reception.wait(lock, [&spi_instance] {
+        std::unique_lock tx_rx_lock(spi_instance.transmission_reception_mx);
+        spi_instance.cv_transmission_reception.wait(tx_rx_lock, [&spi_instance] {
             return !spi_instance.transmission_reception_queue.empty();
         });
 
         // Wait this instance to be selected by the master
-        std::unique_lock lock(spi_instance.selected_mx);
+        std::unique_lock select_lock(spi_instance.selected_mx);
         spi_instance.cv_transmission_reception.wait(
-            lock, [&spi_instance] { return &spi_instance.selected; });
+            select_lock, [&spi_instance] { return &spi_instance.selected; });
 
         // Send data
         std::pair<span<uint8_t>, span<uint8_t>> data =
@@ -223,22 +224,11 @@ void sender_receiver_slave_thread(SPI::Instance& spi_instance,
         switch (command) {
             case 0:  // Normal packet
                 if (!spi_instance.selected) break;
-                // Wait to the user to request a reception
-                spi_instance.cv_reception.wait(lock, [&spi_instance] {
-                    return !spi_instance.reception_queue.empty();
-                });
-                span<uint8_t> data = spi_instance.reception_queue.front();
-
                 // Receive the packet
-                if (recv(spi_instance.socket, data.data(), data.size(),
+                if (recv(spi_instance.socket, data.second.data(), data.second.size(),
                          MSG_WAITALL) < 0) {
                     ErrorHandler("Receive error: %s", strerror(errno));
                 }
-
-                // Pop the request reception from the queue
-                spi_instance.reception_queue.pop();
-
-                lock.unlock();
                 break;
             case 1:  // SLAVE_SELECT
                 spi_instance.selected = true;
@@ -249,7 +239,8 @@ void sender_receiver_slave_thread(SPI::Instance& spi_instance,
         }
 
         spi_instance.transmission_reception_queue.pop();
-        lock.unlock();
+        select_lock.unlock();
+        tx_rx_lock.unlock();
 
         callback(id);
     }
@@ -285,7 +276,6 @@ void sender_receiver_master_thread(SPI::Instance& spi_instance,
         // Reach data from queue
         std::pair<span<uint8_t>, span<uint8_t>> data =
             spi_instance.transmission_reception_queue.front();
-        std::vector<uint8_t> buffer;
 
         // Add a '0' before data to indicate that is a normal packet
         std::vector<uint8_t> buffer;
