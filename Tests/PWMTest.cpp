@@ -111,7 +111,7 @@ TEST(PWM, Deadtime_while_on){
     EmulatedPin& pwm_pin = SharedMemory::get_pin(PB14);
 
     EXPECT_EQ(pwm_pin.PinData.pwm.is_on, true);
-    EXPECT_EQ(pwm_pin.PinData.pwm.dead_time_ns, std::chrono::nanoseconds(0));
+    EXPECT_EQ(pwm_pin.PinData.pwm.dead_time_ns, std::chrono::nanoseconds(0).count());
     EXPECT_EQ(ErrorHandlerModel::error_triggered, 1);
     
     SharedMemory::close();
@@ -132,7 +132,7 @@ TEST(PWM, Deadtime_while_off){
     EmulatedPin& pwm_pin = SharedMemory::get_pin(PB14);
 
     EXPECT_EQ(pwm_pin.PinData.pwm.is_on, false);
-    EXPECT_EQ(pwm_pin.PinData.pwm.dead_time_ns, std::chrono::nanoseconds(1000000));
+    EXPECT_EQ(pwm_pin.PinData.pwm.dead_time_ns, std::chrono::nanoseconds(1000000).count());
     EXPECT_EQ(ErrorHandlerModel::error_triggered, 0);
     
     SharedMemory::close();

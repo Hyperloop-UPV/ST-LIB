@@ -130,6 +130,7 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+  $<$<COMPILE_LANGUAGE:CXX>:-Wno-address-of-packed-member>  # Add this line
 )
 
 target_include_directories(${STLIB_LIBRARY} PRIVATE

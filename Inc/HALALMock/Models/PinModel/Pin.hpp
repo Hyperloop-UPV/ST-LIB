@@ -95,52 +95,52 @@ enum class PinType: uint8_t {
     // TODO: Add more types
 
 };
-struct DigitalOutput_MockPin{
+struct __attribute__((packed)) DigitalOutput_MockPin{
     bool state;
 } ;
-struct DigitalInput_MockPin {
+struct __attribute__((packed)) DigitalInput_MockPin {
     PinState curr_state;
 } ;
-struct PWM_MockPin {
+struct __attribute__((packed)) PWM_MockPin {
     float duty_cycle;
     uint32_t frequency;
     bool is_on;
-    std::chrono::nanoseconds dead_time_ns;
+    int64_t dead_time_ns;
 } ;
-struct DualPWM_MockPin{
+struct __attribute__((packed)) DualPWM_MockPin{
     float duty_cycle;
     uint32_t frequency;
     bool is_on;
-    std::chrono::nanoseconds dead_time_ns;
+    int64_t dead_time_ns;
 } ;
-struct ADC_MockPin{
+struct __attribute__((packed)) ADC_MockPin{
     uint16_t value;
     bool is_on;
 } ;
-struct EXTIPin_MockPin{
+struct __attribute__((packed)) EXTIPin_MockPin{
     uint32_t priority;
     bool is_on;
     bool trigger_signal;
     TRIGGER trigger_mode;
 } ;
-struct Encoder_MockPin{
+struct __attribute__((packed)) Encoder_MockPin{
     uint32_t count_value;
     bool direction;
     bool is_on;
 } ;
-struct InputCapure_MockPin{
+struct __attribute__((packed)) InputCapure_MockPin{
     uint8_t duty_cycle;
     uint32_t frequency;
 };
-struct FDCAN_MockPin{
+struct __attribute__((packed)) FDCAN_MockPin{
 
 };
-struct SPI_MockPin{
+struct __attribute__((packed)) SPI_MockPin{
     bool is_on;
 };
-struct EmulatedPin {
+struct __attribute__((packed)) EmulatedPin {
     PinType type =  PinType::NOT_USED;  // Always check type before using the union
-    union PinDataU {
+    union __attribute__((packed)) PinDataU {
         DigitalOutput_MockPin   digital_output;
         DigitalInput_MockPin    digital_input;
         PWM_MockPin             pwm;

@@ -192,8 +192,8 @@ TEST(DualPWM, Deadtime_while_on){
 
     EXPECT_EQ(dualpwm_pin.PinData.dual_pwm.is_on, true);
     EXPECT_EQ(dualpwm_pin_negated.PinData.dual_pwm.is_on, true);
-    EXPECT_EQ(dualpwm_pin.PinData.dual_pwm.dead_time_ns, std::chrono::nanoseconds(0));
-    EXPECT_EQ(dualpwm_pin_negated.PinData.dual_pwm.dead_time_ns, std::chrono::nanoseconds(0));
+    EXPECT_EQ(dualpwm_pin.PinData.dual_pwm.dead_time_ns, std::chrono::nanoseconds(0).count());
+    EXPECT_EQ(dualpwm_pin_negated.PinData.dual_pwm.dead_time_ns, std::chrono::nanoseconds(0).count());
     EXPECT_EQ(ErrorHandlerModel::error_triggered, 1);
     
     SharedMemory::close();
@@ -215,8 +215,8 @@ TEST(DualPWM, Deadtime_while_off){
 
     EXPECT_EQ(dualpwm_pin.PinData.dual_pwm.is_on, false);
     EXPECT_EQ(dualpwm_pin_negated.PinData.dual_pwm.is_on, false);
-    EXPECT_EQ(dualpwm_pin.PinData.dual_pwm.dead_time_ns, std::chrono::nanoseconds(1000000));
-    EXPECT_EQ(dualpwm_pin_negated.PinData.dual_pwm.dead_time_ns, std::chrono::nanoseconds(1000000));
+    EXPECT_EQ(dualpwm_pin.PinData.dual_pwm.dead_time_ns, std::chrono::nanoseconds(1000000).count());
+    EXPECT_EQ(dualpwm_pin_negated.PinData.dual_pwm.dead_time_ns, std::chrono::nanoseconds(1000000).count());
     EXPECT_EQ(ErrorHandlerModel::error_triggered, 0);
     
     SharedMemory::close();
