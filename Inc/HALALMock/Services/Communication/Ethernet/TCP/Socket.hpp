@@ -5,7 +5,7 @@
  *      Author: stefa
  */
 #pragma once
-#ifdef STLIB_ETH
+//#ifdef STLIB_ETH
 
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
@@ -14,22 +14,21 @@
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
 #include <iostream>
 #include <thread>
-
+#include <poll.h>
 class Socket : public OrderProtocol{
 private:
 	
 	std::jthread receiving_thread;
 	std::jthread wait_for_connection_thread;
-	std::atomic<bool> is_receiving;
-	std::atomic<bool> is_connecting;
+	std::atomic<bool> is_receiving = false;
 	std::mutex mutex; 
 	void start_receiving();
 	void receive();
-	void create_socket();
+	bool create_socket();
 	bool configure_socket();
 	void connect_thread();
-	void configure_socket_and_connect();
 	void connection_callback();
+	void connect_attempt();
 
 public:
 	enum SocketState{
@@ -43,8 +42,8 @@ public:
 	IPV4 remote_ip;
 	uint32_t remote_port;
 	SocketState state;
-	queue<HeapPacket*> tx_packet_buffer;
-	queue<HeapPacket*> rx_packet_buffer;
+	std::queue<Packet*> tx_packet_buffer;
+	std::queue<Packet*> rx_packet_buffer;
 	//socket_descriptor
 	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;
@@ -96,4 +95,4 @@ public:
 	bool is_connected();
 
 };
-#endif //STLIB_ETH
+//#endif //STLIB_ETH
