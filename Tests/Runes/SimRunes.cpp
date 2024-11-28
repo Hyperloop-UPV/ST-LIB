@@ -34,7 +34,35 @@ std::unordered_map<Pin, size_t> SHM::pin_offsets = {
 };
 
 /************************************************
- *                     PWM
+         					   ADC
+ ***********************************************/
+
+std::map<Pin, ADC::Instance> ADC::available_instances = {
+    {PF11, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF12, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF13, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF14, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF5, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF6, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF7, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF8, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF9, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF10, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PC2, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PC3, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF10, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PC0, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA0, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA3, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA4, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA5, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA6, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PB0, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PB1, Instance(ADC::ADCResolution::ADC_RES_16BITS)}
+};
+  
+/************************************************
+                  	  PWM
  ***********************************************/
 
 // Define TimerPeripheral objects
@@ -71,7 +99,7 @@ std::unordered_map<Pin,std::pair<std::reference_wrapper<TimerPeripheral>, TimerP
 };
 
 /************************************************
- *                	Dual PWM
+                  	Dual PWM
  ***********************************************/
 
 std::unordered_map<std::pair<Pin,Pin>,std::pair<std::reference_wrapper<TimerPeripheral>, TimerPeripheral::PWMData>> DualPWM::available_dual_pwms {
