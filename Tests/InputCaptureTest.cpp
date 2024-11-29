@@ -21,16 +21,23 @@ TEST(InputCapture, Inscribe){
     //inscribe correct PIN
     uint8_t id1 = InputCapture::inscribe(PF0);
 
+    uint8_t* PF0_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PF0]);
+    uint8_t* PA0_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PA0]);
+    uint8_t* PB0_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PB0]);
+
+    EXPECT_EQ(PF0_memory[0], static_cast<uint8_t>(PinType::INPUTCAPTURE));
     EXPECT_EQ(id1, 1);
     EXPECT_EQ(InputCapture::id_counter, 1);
 
     //inscribe wrong PIN
     uint8_t id = InputCapture::inscribe(PA0);
+    EXPECT_EQ(PA0_memory[0], static_cast<uint8_t>(PinType::NOT_USED));
     EXPECT_EQ(id, 0);
     EXPECT_EQ(InputCapture::id_counter, 1);
 
     //inscribe another correct PIN
     id2 = InputCapture::inscribe(PB0);
+    EXPECT_EQ(PB0_memory[0], static_cast<uint8_t>(PinType::INPUTCAPTURE));
     EXPECT_EQ(id2, 2);
     EXPECT_EQ(InputCapture::id_counter, 2);
 
@@ -82,11 +89,11 @@ TEST(InputCapture, ReadFrequency){
 
     SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
-    EmulatedPin &pin = SharedMemory::get_pin(PE1);
+    uint8_t* PE1_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PE1]);
     uint8_t id = InputCapture::inscribe(PE1);
 
     uint32_t value = 1000;
-    pin.PinData.input_capture.frequency = value;
+    *reinterpret_cast<uint32_t*>(PE1_memory+2) = value;
 
     //case with correct PIN and active Instance
     InputCapture::turn_on(id);
@@ -111,11 +118,12 @@ TEST(InputCapture, ReadDutyCycle){
 
     SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
-    EmulatedPin &pin = SharedMemory::get_pin(PE2);
+    uint8_t* PE2_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PE2]);
     uint8_t id = InputCapture::inscribe(PE2);
 
     uint8_t value = 80;
-    pin.PinData.input_capture.duty_cycle = value;
+    *reinterpret_cast<uint8_t*>(PE2_memory+1) = value;
+
 
     //case with correct PIN and active Instance
     InputCapture::turn_on(id);
