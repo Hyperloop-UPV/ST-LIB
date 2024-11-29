@@ -1,4 +1,8 @@
-set(STLIB_TEST_EXECUTABLE stlib-test)
+if(DEFINED STLIB_NAME_SUFFIX)
+    set(STLIB_TEST_EXECUTABLE st-lib-${STLIB_NAME_SUFFIX}-test)
+else()
+    set(STLIB_TEST_EXECUTABLE st-lib-test)
+endif()
 
 message(STATUS "Generating test executable for ST-LIB")
 include(CTest)
