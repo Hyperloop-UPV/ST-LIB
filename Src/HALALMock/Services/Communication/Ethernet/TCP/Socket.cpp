@@ -37,7 +37,6 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 	}
 	state = INACTIVE;
 	tx_packet_buffer = {};
-	rx_packet_buffer = {};
 	if(!create_socket()){
 		return;
 	}
@@ -159,9 +158,6 @@ void Socket::close(){
 	while(!tx_packet_buffer.empty()){
 		tx_packet_buffer.pop();
 	}
-	while(!rx_packet_buffer.empty()){
-		rx_packet_buffer.pop();
-	}
 	state = CLOSING;
 }
 
@@ -224,9 +220,6 @@ void Socket::receive(){
 			::close(socket_fd);
 			while(!tx_packet_buffer.empty()){
 				tx_packet_buffer.pop();
-			}
-			while(!rx_packet_buffer.empty()){
-				rx_packet_buffer.pop();
 			}
 			return;
         }
