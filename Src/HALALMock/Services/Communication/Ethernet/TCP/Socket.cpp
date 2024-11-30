@@ -53,7 +53,7 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remo
 
 bool Socket::create_socket(){
 	//create socket not blocking
-	socket_fd = ::socket(AF_INET,SOCK_STREAM | SOCK_NONBLOCK,0);
+	socket_fd = ::socket(AF_INET,SOCK_STREAM,0);
 	//inset the local address and port
 	struct sockaddr_in socket_Address;
 	socket_Address.sin_family = AF_INET;
@@ -74,6 +74,13 @@ bool Socket::configure_socket(){
 		::close(socket_fd);
 		return false;
 	}
+	//make the socket to be reuse
+	int optval_reuse = 1;
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &optval_reuse, sizeof(optval_reuse)) < 0) {
+        std::cerr << "Error setting SO_REUSEADDR\n";
+        ::close(socket_fd);
+        return false;
+    }
 	//habilitate keepalives
     int optval = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
@@ -107,33 +114,19 @@ bool Socket::configure_socket(){
 }
 
 
+
 void Socket::connect_attempt(){
 	//insert the remote address and port and connect
 	struct sockaddr_in remote_addr;
 	remote_addr.sin_family = AF_INET;
 	remote_addr.sin_addr.s_addr = remote_ip.address; 
 	remote_addr.sin_port = htons(remote_port);
-	connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
-	wait_for_connection_thread = std::jthread(&Socket::connect_thread, this); //thread that will throw the connection_callback when connected
-	
-}
-
-void Socket::connect_thread(){
-	pollfd socket_event;
-	socket_event.fd = socket_fd; 
-	socket_event.events = POLLIN; 
-	int result = poll(&socket_event, 1, -1); // -1 means to never timeout
-	if(result > 0){ //Connection successfully
-		if(socket_event.revents && POLLIN){ //check that the event is related with the connection
-			std::cout<<"Connection established with the remote socket\n";
-			connection_callback();
-		}		
-	}else{
-		std::cout<<"Couldn't established connection with the remote socket\n";
-		::close(socket_fd);
+	if(connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr)) < 0){
 		state = INACTIVE;
 		return;
 	}
+	std::cout<<"Connection established with the remote socket\n";
+	connection_callback();
 }
 
 void Socket::connection_callback(){
@@ -157,11 +150,6 @@ Socket::Socket(EthernetNode local_node, EthernetNode remote_node):Socket(local_n
 
 void Socket::close(){
 	::close(socket_fd);
-	if (state == INACTIVE){
-		if (wait_for_connection_thread.joinable()) {
-            wait_for_connection_thread.join();  
-        }
-    }
     if (is_receiving) {
         is_receiving = false;
         if (receiving_thread.joinable()) {
@@ -178,7 +166,7 @@ void Socket::close(){
 }
 
 void Socket::reconnect(){ //I'm going to do in reconnect a total reset due to at the end in linux sockets you will have to close the socket and configure to reconnect
-	reset();
+	connect_attempt();
 }
 
 void Socket::reset(){
@@ -204,7 +192,7 @@ void Socket::send(){
 	std::lock_guard<std::mutex> lock(mutex);
 	while (!tx_packet_buffer.empty()) {
         Packet *packet = tx_packet_buffer.front();
-        ssize_t total_sent = 0;
+        size_t total_sent = 0;
 		size_t packet_size = packet->get_size();
 		uint8_t *packet_data = packet->build();
 		while(total_sent < packet_size){
@@ -221,16 +209,16 @@ void Socket::send(){
 void Socket::receive(){
     while (is_receiving) {
         uint8_t buffer[BUFFER_SIZE]; // Buffer for the data
+		
         ssize_t received_bytes = ::recv(socket_fd, buffer, sizeof(buffer), 0);
         if(received_bytes > 0) {
-            HeapPacket *packet = new HeapPacket();
-			packet->parse(buffer);
-            {
-                std::lock_guard<std::mutex> lock(mutex); 
-                rx_packet_buffer.push(packet);
-			}	
-			process_data(); 
-        } else if (received_bytes < 0) {
+			uint8_t* received_data = new uint8_t[received_bytes];
+			std::memcpy(received_data,buffer,received_bytes);
+			Order::process_data(this, received_data);
+			delete[] received_data;
+
+        }else if (received_bytes < 0) {
+
             std::cout << "Error receiving data\n";
 			state = CLOSING;
 			::close(socket_fd);
@@ -243,18 +231,6 @@ void Socket::receive(){
 			return;
         }
     }
-}
-void Socket::process_data(){
-	while(!rx_packet_buffer.empty()){
-		Packet *packet;
-		{
-			std::lock_guard<std::mutex> lock(mutex); 
-			packet = rx_packet_buffer.front();
-			rx_packet_buffer.pop();
-		}
-		uint8_t* new_data = packet->build();
-		Order::process_data(this, new_data);
-	}
 }
 
 bool Socket::add_order_to_queue(Order& order){

@@ -19,14 +19,13 @@ class Socket : public OrderProtocol{
 private:
 	
 	std::jthread receiving_thread;
-	std::jthread wait_for_connection_thread;
 	std::atomic<bool> is_receiving = false;
 	std::mutex mutex; 
+	std::queue<Packet*> tx_packet_buffer;
 	void start_receiving();
 	void receive();
 	bool create_socket();
 	bool configure_socket();
-	void connect_thread();
 	void connection_callback();
 	void connect_attempt();
 
@@ -42,8 +41,6 @@ public:
 	IPV4 remote_ip;
 	uint32_t remote_port;
 	SocketState state;
-	std::queue<Packet*> tx_packet_buffer;
-	std::queue<Packet*> rx_packet_buffer;
 	//socket_descriptor
 	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;
@@ -89,10 +86,8 @@ public:
 	}
 
 	void send();
-
-	void process_data();
-
+	
 	bool is_connected();
-
+	
 };
 //#endif //STLIB_ETH
