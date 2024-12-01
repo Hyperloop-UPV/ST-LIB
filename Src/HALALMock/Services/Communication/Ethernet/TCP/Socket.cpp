@@ -1,7 +1,7 @@
 //#ifdef STLIB_ETH
 
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
-#define BUFFER_SIZE 1024
+#define MAX_SIZE_BUFFER 1024
 std::unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
 
 
@@ -204,7 +204,7 @@ void Socket::send(){
 }
 void Socket::receive(){
     while (is_receiving) {
-        uint8_t buffer[BUFFER_SIZE]; // Buffer for the data
+        uint8_t buffer[MAX_SIZE_BUFFER]; // Buffer for the data
 		
         ssize_t received_bytes = ::recv(socket_fd, buffer, sizeof(buffer), 0);
         if(received_bytes > 0) {
