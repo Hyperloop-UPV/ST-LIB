@@ -65,6 +65,7 @@
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
 #include "HALALMock/Models/BoardID/BoardID.hpp"
 #include "HALALMock/Models/Concepts/Concepts.hpp"
+#include "HALALMock/Services/Logger/Logger.hpp"
 #endif
 
 namespace HALAL {
