@@ -12,7 +12,7 @@ mode=$1
 
 
 if [[ "$mode" == "simulator" ]]; then
-    tar -cvf test_files.tar out/build/simulator/Tests/stlib-test
+    tar -cvf test_files.tar out/build/simulator/Tests/st-lib-test
 else
     exit 1
 fi # mode=simulator
