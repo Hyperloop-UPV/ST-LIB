@@ -214,7 +214,6 @@ void Socket::receive(){
 			delete[] received_data;
 
         }else if (received_bytes < 0) {
-
             std::cout << "Error receiving data\n";
 			state = CLOSING;
 			::close(socket_fd);

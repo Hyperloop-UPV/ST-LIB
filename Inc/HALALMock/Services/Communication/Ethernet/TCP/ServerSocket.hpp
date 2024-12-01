@@ -9,6 +9,7 @@
 #include <iostream>
 #include <thread>
 #include <poll.h>
+#include <atomic>
 /**
 * @brief class that handles a single point to point server client connection, emulating the server side.
 *
@@ -32,17 +33,18 @@ private:
 	void close_inside_thread();
 	bool accept_callback(int& client_fd, sockaddr_in& client_address);
 	void receive();
+	//void send_packets();
 	queue<Packet*> tx_packet_buffer;
-	queue<Packet*> rx_packet_buffer; 
 	std::jthread listening_thread;
 	std::jthread receive_thread;
+	//std::jthread send_thread;
 	std::mutex mutex; 
+	//std::atomic<bool> is_sending{false}
 	//socket_descriptor initialized to -1 as method to know they are not in use at the begining
 	int server_socket_fd{-1};
 	int client_fd{-1};
 
 public:
-
 	enum ServerState{
 		INACTIVE,
 		LISTENING,

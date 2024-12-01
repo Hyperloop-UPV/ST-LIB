@@ -14,7 +14,6 @@ ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port) : local_ip(local_
 		return;
 	}
 	tx_packet_buffer = {};
-	rx_packet_buffer = {};
 	state = INACTIVE;
 	
 	create_server_socket();//create _server_socket
@@ -61,10 +60,9 @@ ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivi
 }
 
 
-ServerSocket::ServerSocket(ServerSocket&& other) :  local_ip(move(other.local_ip)), local_port(move(other.local_port)),state(other.state){
+ServerSocket::ServerSocket(ServerSocket&& other) : local_ip(move(other.local_ip)), local_port(move(other.local_port)),state(other.state){
 	listening_sockets[local_port] = this;
 	tx_packet_buffer = {};
-	rx_packet_buffer = {};
 }
 
 void ServerSocket::operator=(ServerSocket&& other){
@@ -73,7 +71,6 @@ void ServerSocket::operator=(ServerSocket&& other){
 	state = other.state;
 	listening_sockets[local_port] = this;
 	tx_packet_buffer = {};
-	rx_packet_buffer = {};
 	if(not (std::find(OrderProtocol::sockets.begin(), OrderProtocol::sockets.end(), this) != OrderProtocol::sockets.end()))
 		OrderProtocol::sockets.push_back(this);
 }
@@ -98,12 +95,9 @@ void ServerSocket::close(){
         ::close(server_socket_fd);
         server_socket_fd = -1;
     }
-	//clean the transmisions buffers
+	//clean the transmision buffer
 	while (!tx_packet_buffer.empty()) {
         tx_packet_buffer.pop();
-    }
-    while (!rx_packet_buffer.empty()) {
-        rx_packet_buffer.pop();
     }
 	//eliminate the threads
 	 if (state == LISTENING && listening_thread.joinable()) {
@@ -135,17 +129,62 @@ void ServerSocket::send(){
 	std::lock_guard<std::mutex> lock(mutex);
 	while (!tx_packet_buffer.empty()) {
         Packet *packet = tx_packet_buffer.front();
-        ssize_t sent_bytes = ::send(client_fd, packet->build(), packet->get_size(), 0);
-        if (sent_bytes < 0) {
-            std::cerr << "ServerSocket: Error sending packet\n";
-			state = CLOSING;
-			close();
-            return;
-        }
-        tx_packet_buffer.pop();
+        size_t total_sent = 0;
+		size_t packet_size = packet->get_size();
+		uint8_t *packet_data = packet->build();
+		while(total_sent < packet_size){
+			ssize_t sent_bytes = ::send(client_fd, packet_data, packet_size, 0);
+			if (sent_bytes < 0) {
+				std::cerr << "Error sending the order\n";
+				return;
+			}
+			total_sent += sent_bytes;
+		}
+		tx_packet_buffer.pop();
     }
+	/*Esto seria el intento que estoy haciendo:std::cout<<"ENTER IN THE THREAD_ SEND\n";
+	if(is_sending){
+		return;
+	}
+    send_thread = std::jthread(&ServerSocket::send_packets,this);
+	*/
 }
+	
 
+/*void ServerSocket::send_packets(){
+	bool is_empty;
+	is_sending = true;
+	ssize_t sent_bytes;
+	Packet *packet;
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		is_empty = tx_packet_buffer.empty();
+	}
+		while (!is_empty){
+			{	
+				std::lock_guard<std::mutex> lock(mutex);
+				*packet = tx_packet_buffer.front();
+			    sent_bytes = ::send(client_fd, packet->build(), packet->get_size(), 0);
+			}
+			if (sent_bytes < 0) {
+				std::cerr << "ServerSocket: Error sending packet\n";
+				state = CLOSING;
+				close_inside_thread();
+				return;
+			}
+			std::cout<<"send bytes: "<<sent_bytes<<"\n";
+			{	
+				std::lock_guard<std::mutex> lock(mutex);
+				tx_packet_buffer.pop();
+				is_empty = tx_packet_buffer.empty();
+			}
+				
+			std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		}
+	is_sending = false;
+	std::cout<<"Saliendo del hilo send\n";
+}
+*/
 bool ServerSocket::is_connected(){
 	return state == ServerSocket::ServerState::ACCEPTED;
 }
@@ -213,7 +252,6 @@ bool ServerSocket::accept_callback(int& client_fd, sockaddr_in& client_address){
 		state = ACCEPTED;
 		remote_ip = IPV4(client_address.sin_addr.s_addr);
 		this->client_fd = client_fd;
-		rx_packet_buffer = {};
 		//create the receive thread
 		receive_thread = std::jthread(&ServerSocket::receive,this);
 		return true;
@@ -242,7 +280,7 @@ void ServerSocket::close_inside_thread(){
 	if(server_socket_fd >= 0){
 		::close(server_socket_fd);
 	}
-	if(client_fd>= 0){
+	if(client_fd >= 0){
 		::close(client_fd);
 	}
 	//clean the transmissions buffers
@@ -251,10 +289,6 @@ void ServerSocket::close_inside_thread(){
 		while (!tx_packet_buffer.empty()) {
         tx_packet_buffer.pop();
     	}
-    	while (!rx_packet_buffer.empty()) {
-    	    rx_packet_buffer.pop();
-    	}
-
 	}
 	listening_sockets[local_port] = this;
 	state = CLOSED;
