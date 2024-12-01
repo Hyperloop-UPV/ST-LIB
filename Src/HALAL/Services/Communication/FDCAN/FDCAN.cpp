@@ -46,10 +46,10 @@ void FDCAN::start(){
 		FDCAN::init(instance);
 
 		FDCAN_TxHeaderTypeDef header;
-		header.FDFormat = FDCAN_FD_CAN;
+		header.FDFormat = FDCAN_CLASSIC_CAN;
 		header.DataLength = instance->dlc;
 		header.TxFrameType = FDCAN_DATA_FRAME;
-		header.BitRateSwitch = FDCAN_BRS_ON;
+		header.BitRateSwitch = FDCAN_BRS_OFF;
 		header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
 		header.IdType = FDCAN_STANDARD_ID;
 		header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
@@ -143,21 +143,23 @@ void FDCAN::init(FDCAN::Instance* fdcan){
 	FDCAN_HandleTypeDef* handle = fdcan->hfdcan;
 	handle_to_id[handle] = instance_to_id[fdcan];
 	handle->Instance = fdcan->instance;
-	handle->Init.FrameFormat = FDCAN_FRAME_FD_BRS;
-	handle->Init.Mode = FDCAN_MODE_INTERNAL_LOOPBACK;
-	handle->Init.AutoRetransmission = ENABLE;
+	handle->Init.FrameFormat = FDCAN_FRAME_CLASSIC;
+	handle->Init.Mode = FDCAN_MODE_NORMAL;
+	handle->Init.AutoRetransmission = DISABLE;
 	handle->Init.TransmitPause = DISABLE;
 	handle->Init.ProtocolException = DISABLE;
-	handle->Init.NominalPrescaler = 1;
-	handle->Init.NominalSyncJumpWidth = 16;
-	handle->Init.NominalTimeSeg1 = 59;
-	handle->Init.NominalTimeSeg2 = 20;
-	handle->Init.DataPrescaler = 1;
+	//////////////////////////////////
+	handle->Init.NominalPrescaler = 11;
+	handle->Init.NominalSyncJumpWidth = 2;
+	handle->Init.NominalTimeSeg1 = 19;
+	handle->Init.NominalTimeSeg2 = 5;
+	/////////////////////////////////
+	handle->Init.DataPrescaler = 11;
 	handle->Init.DataSyncJumpWidth = 4;
-	handle->Init.DataTimeSeg1 = 14;
-	handle->Init.DataTimeSeg2 = 5;
+	handle->Init.DataTimeSeg1 = 17;
+	handle->Init.DataTimeSeg2 = 8;
 	handle->Init.MessageRAMOffset = 0;
-	handle->Init.StdFiltersNbr = 1;
+	handle->Init.StdFiltersNbr = 0;
 	handle->Init.ExtFiltersNbr = 0;
 	handle->Init.RxFifo0ElmtsNbr = 16;
 	handle->Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_64;
@@ -169,7 +171,7 @@ void FDCAN::init(FDCAN::Instance* fdcan){
 	handle->Init.TxBuffersNbr = 0;
 	handle->Init.TxFifoQueueElmtsNbr = 16;
 	handle->Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
-	handle->Init.TxElmtSize = FDCAN_DATA_BYTES_64;
+	handle->Init.TxElmtSize = FDCAN_DATA_BYTES_8;
 
 	if (HAL_FDCAN_Init(handle) != HAL_OK)
 	{
