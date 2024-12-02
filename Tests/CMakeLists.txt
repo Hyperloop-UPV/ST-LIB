@@ -1,4 +1,8 @@
-set(STLIB_TEST_EXECUTABLE stlib-test)
+if(DEFINED STLIB_NAME_SUFFIX)
+    set(STLIB_TEST_EXECUTABLE st-lib-${STLIB_NAME_SUFFIX}-test)
+else()
+    set(STLIB_TEST_EXECUTABLE st-lib-test)
+endif()
 
 message(STATUS "Generating test executable for ST-LIB")
 include(CTest)
@@ -11,6 +15,9 @@ add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/Time/test_time.cpp
     ${CMAKE_CURRENT_LIST_DIR}/EncoderTest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/InputCaptureTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/ADCTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/PWMTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/DualPWMTest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/EXTITest.cpp
 )
 

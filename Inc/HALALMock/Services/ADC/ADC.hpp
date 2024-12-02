@@ -78,7 +78,9 @@ class ADC {
     static map<Pin, Instance> available_instances;
 
     static unordered_map<uint8_t,Instance> active_instances;
-    static unordered_map<uint8_t, EmulatedPin> active_emulated_instances;
+    static unordered_map<uint8_t, EmulatedPin*> active_emulated_instances;
+
+    static unordered_map<uint8_t,Pin> id_to_pin;
 
     static uint8_t id_counter;
 };

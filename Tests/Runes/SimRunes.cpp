@@ -32,3 +32,81 @@ std::unordered_map<Pin, size_t> SHM::pin_offsets = {
 		{PG10, 106}, {PG11, 107}, {PG12, 108}, {PG13, 109},
 		{PG14, 110}, {PG15, 111}, {PH0, 112}, {PH1, 113}
 };
+
+/************************************************
+         					   ADC
+ ***********************************************/
+
+std::map<Pin, ADC::Instance> ADC::available_instances = {
+    {PF11, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF12, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF13, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF14, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF5, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF6, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF7, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF8, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF9, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PF10, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
+    {PC2, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PC3, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PF10, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PC0, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA0, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA3, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA4, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA5, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PA6, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PB0, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
+    {PB1, Instance(ADC::ADCResolution::ADC_RES_16BITS)}
+};
+  
+/************************************************
+                  	  PWM
+ ***********************************************/
+
+// Define TimerPeripheral objects
+
+TimerPeripheral timer1;
+TimerPeripheral timer3;
+TimerPeripheral timer4;
+TimerPeripheral timer12;
+TimerPeripheral timer15;
+TimerPeripheral timer16;
+TimerPeripheral timer17;
+TimerPeripheral timer23;
+#define TIM_CHANNEL_1 1
+#define TIM_CHANNEL_2 2
+#define TIM_CHANNEL_3 3
+#define TIM_CHANNEL_4 4
+
+std::unordered_map<Pin,std::pair<std::reference_wrapper<TimerPeripheral>, TimerPeripheral::PWMData>> PWM::available_pwm {
+    {PB14, {timer12, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PB15, {timer12, {TIM_CHANNEL_2, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PB4, {timer3, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::PHASED}}},
+    {PB5, {timer3, {TIM_CHANNEL_2, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PC8, {timer3, {TIM_CHANNEL_3, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PD12, {timer4, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PD13, {timer4, {TIM_CHANNEL_2, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PD15, {timer4, {TIM_CHANNEL_4, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PE14, {timer1, {TIM_CHANNEL_4, TimerPeripheral::PWM_MODE::PHASED}}},
+    {PE6, {timer15, {TIM_CHANNEL_2, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PF1, {timer23, {TIM_CHANNEL_2, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PF2, {timer23, {TIM_CHANNEL_3, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PF3, {timer23, {TIM_CHANNEL_4, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PE5, {timer15, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {PE11, {timer1, {TIM_CHANNEL_2, TimerPeripheral::PWM_MODE::NORMAL}}},
+};
+
+/************************************************
+                  	Dual PWM
+ ***********************************************/
+
+std::unordered_map<std::pair<Pin,Pin>,std::pair<std::reference_wrapper<TimerPeripheral>, TimerPeripheral::PWMData>> DualPWM::available_dual_pwms {
+    {{PB8, PB6}, {timer16, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {{PB9, PB7}, {timer17, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::PHASED}}},
+    {{PE11, PE10}, {timer1, {TIM_CHANNEL_2, TimerPeripheral::PWM_MODE::PHASED}}},
+    {{PE13, PE12}, {timer1, {TIM_CHANNEL_3, TimerPeripheral::PWM_MODE::PHASED}}},
+    {{PE5, PE4}, {timer15, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::NORMAL}}},
+    {{PE9, PE8}, {timer1, {TIM_CHANNEL_1, TimerPeripheral::PWM_MODE::NORMAL}}},
+};
