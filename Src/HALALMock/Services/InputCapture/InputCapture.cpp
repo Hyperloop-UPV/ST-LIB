@@ -29,6 +29,7 @@ uint8_t InputCapture::inscribe(Pin& pin){
 	active_instances[id_counter].id = id_counter;
 
 	EmulatedPin& sim_pin = SharedMemory::get_pin(pin);
+	sim_pin.type = PinType::INPUTCAPTURE;
 	active_instances[id_counter].duty_cycle = &(sim_pin.PinData.input_capture.duty_cycle);
 	active_instances[id_counter].frequency = &(sim_pin.PinData.input_capture.frequency);
 

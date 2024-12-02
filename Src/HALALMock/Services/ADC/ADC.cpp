@@ -58,6 +58,7 @@ void ADC::turn_on(uint8_t id){
 	}
 
 	active_instances[id].is_on = true;
+	active_emulated_instances[id]->PinData.adc.is_on = true;
 }
 
 float ADC::get_value(uint8_t id) {

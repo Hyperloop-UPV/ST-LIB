@@ -22,7 +22,7 @@ protected:
 	float *duty_cycle;
 	uint32_t *frequency;
 	bool *is_on;
-	std::chrono::nanoseconds *dead_time_ns;
+	int64_t *dead_time_ns;
 	static std::unordered_map<Pin,std::pair<std::reference_wrapper<TimerPeripheral>, TimerPeripheral::PWMData>> available_pwm;
 public:
 	PWM() = default;
