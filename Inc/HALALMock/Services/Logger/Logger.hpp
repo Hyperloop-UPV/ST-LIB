@@ -1,3 +1,6 @@
+#ifndef LOGGER_HPP
+#define LOGGER_HPP
+
 #include <string>
 #include <memory>
 #include <fstream>
@@ -82,3 +85,5 @@ constexpr bool hasFlag(Logger::LogConf mask, Logger::LogConf flag) {
 constexpr bool hasFlag(Logger::LogConf mask, Logger::LogLevel flag) {
     return (mask & flag) == static_cast<Logger::LogConf>(flag);
 };
+
+#endif
