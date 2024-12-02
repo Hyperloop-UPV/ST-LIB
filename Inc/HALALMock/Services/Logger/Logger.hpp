@@ -1,25 +1,16 @@
 #include <string>
+#include <memory>
+#include <fstream>
 
-// Overload bit operators for LogConf enum
-constexpr Logger::LogConf operator|(const Logger::LogConf& conf1, const Logger::LogConf& conf2) {
-    return static_cast<Logger::LogConf>(static_cast<int>(conf1) | static_cast<int>(conf2));
-};
-constexpr Logger::LogConf operator&(const Logger::LogConf& conf, const Logger::LogLevel& level) {
-    return static_cast<Logger::LogConf>(static_cast<int>(conf) & static_cast<int>(level));
-};
-constexpr Logger::LogConf operator&(const Logger::LogConf& conf1, const Logger::LogConf& conf2) {
-    return static_cast<Logger::LogConf>(static_cast<int>(conf1) & static_cast<int>(conf2));
-};
+class FileManager {
+  public:
+    FileManager(const std::ios_base::openmode file_mode);
+    void add(const std::string& msg);
+    ~FileManager();
 
-/// @brief Check if a flag is activated in a mask
-/// @param mask Mask where you want to check the flag
-/// @param flag Flag which you want to check in the mask
-/// @return If the flag is activated in the mask
-constexpr bool hasFlag(Logger::LogConf mask, Logger::LogConf flag) {
-    return (mask & flag) == flag;
-};
-constexpr bool hasFlag(Logger::LogConf mask, Logger::LogLevel flag) {
-    return (mask & flag) == static_cast<Logger::LogConf>(flag);
+  private:
+    std::ofstream file_stream;
+
 };
 
 class Logger {
@@ -70,13 +61,24 @@ class Logger {
     static std::string log_filename;
 };
 
-class FileManager {
-  public:
-    FileManager(const std::ios_base::openmode file_mode);
-    void add(const std::string& msg);
-    ~FileManager();
+// Overload bit operators for LogConf enum
+constexpr Logger::LogConf operator|(const Logger::LogConf& conf1, const Logger::LogConf& conf2) {
+    return static_cast<Logger::LogConf>(static_cast<int>(conf1) | static_cast<int>(conf2));
+};
+constexpr Logger::LogConf operator&(const Logger::LogConf& conf, const Logger::LogLevel& level) {
+    return static_cast<Logger::LogConf>(static_cast<int>(conf) & static_cast<int>(level));
+};
+constexpr Logger::LogConf operator&(const Logger::LogConf& conf1, const Logger::LogConf& conf2) {
+    return static_cast<Logger::LogConf>(static_cast<int>(conf1) & static_cast<int>(conf2));
+};
 
-  private:
-    std::ofstream file_stream;
-
+/// @brief Check if a flag is activated in a mask
+/// @param mask Mask where you want to check the flag
+/// @param flag Flag which you want to check in the mask
+/// @return If the flag is activated in the mask
+constexpr bool hasFlag(Logger::LogConf mask, Logger::LogConf flag) {
+    return (mask & flag) == flag;
+};
+constexpr bool hasFlag(Logger::LogConf mask, Logger::LogLevel flag) {
+    return (mask & flag) == static_cast<Logger::LogConf>(flag);
 };
