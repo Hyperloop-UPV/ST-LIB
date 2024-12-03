@@ -5,6 +5,16 @@
 #include <memory>
 #include <fstream>
 
+#include <stdio.h>
+
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_GREY    "\x1b[37m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+
 class FileManager {
   public:
     FileManager(const std::ios_base::openmode file_mode);
@@ -16,8 +26,21 @@ class FileManager {
 
 };
 
+/** @brief Class used to Log info in simulator mode.
+ * You can log in five levels: DEBUG, INFO, WARNING, ERROR and FATAL.
+ * 
+ * To configure it, you must set in the extern variable config
+ * a mask 'oring' the bits that represents what you want. 
+ * You can configure which level of logs you want (DEBUG, INFO...),
+ * if you want to write logs on the console and/or on a file,
+ * and if you want to erase or not the log file.
+ * 
+ * To use it, you must use one of the five MACROS defined in this file,
+ * each one representing the level of the log you want to print.
+*/
 class Logger {
   public:
+
     enum class LogLevel : unsigned int {
         DEBUG   = 0b00001,
         INFO    = 0b00010,
@@ -46,23 +69,23 @@ class Logger {
         DestructiveLog  = 0b10000000
     };
 
-    static void log(const std::string& msg, const LogLevel level);
+    static void log(const std::string& msg, const LogLevel level, const char *colour);
     static void set_metadata(int line, const char *function, const char *file);
 
-    #define debug(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
-					           	   Logger::log(x, Logger::LogLevel::DEBUG);}while(0)
+    #define LOG_DEBUG(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::DEBUG, ANSI_COLOR_GREY);}while(0)
 
-    #define info(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
-					           	   Logger::log(x, Logger::LogLevel::INFO);}while(0)
+    #define LOG_INFO(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::INFO, ANSI_COLOR_GREEN);}while(0)
 
-    #define warning(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
-					           	   Logger::log(x, Logger::LogLevel::WARNING);}while(0)
+    #define LOG_WARNING(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::WARNING, ANSI_COLOR_YELLOW);}while(0)
 
-    #define error(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
-					           	   Logger::log(x, Logger::LogLevel::ERROR);}while(0)
+    #define LOG_ERROR(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::ERROR, ANSI_COLOR_RED);}while(0)
 
-    #define fatal(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
-					           	   Logger::log(x, Logger::LogLevel::FATAL);}while(0)
+    #define LOG_FATAL(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::FATAL, ANSI_COLOR_MAGENTA);}while(0)
 
     friend class FileManager;
 

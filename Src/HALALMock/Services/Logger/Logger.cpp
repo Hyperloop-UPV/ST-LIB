@@ -10,7 +10,7 @@ int Logger::line = 0;
 const char *Logger::function = nullptr;
 const char *Logger::file = nullptr;
 
-void Logger::log(const std::string& msg, const LogLevel level) {
+void Logger::log(const std::string& msg, const LogLevel level, const char *colour) {
 
     // Check if this level is activated in config bitmask
     if(!hasFlag(Log::config, level)) return;
@@ -43,9 +43,9 @@ void Logger::log(const std::string& msg, const LogLevel level) {
 
     // Reach message to be printed
     std::string formatted_message = "[" + std::string(timestamp) + "] " +
-                                    "[" + log_level + "] " + "[" + file + 
-                                    "->" + function + "->" +
-                                    std::to_string(line) + "] " + msg;
+                                    "[" + colour + log_level + ANSI_COLOR_RESET +
+                                    "] " + "[" + file + ":" + std::to_string(line) +
+                                    " in " + function + "] " + msg;
 
     // Print message where has been configured to print
     if (hasFlag(Log::config, LogConf::Console)) {  // Print msg into console
