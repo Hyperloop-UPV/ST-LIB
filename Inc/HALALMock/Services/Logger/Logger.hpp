@@ -47,21 +47,30 @@ class Logger {
     };
 
     static void log(const std::string& msg, const LogLevel level);
-    static void debug(const std::string& msg);
-    static void info(const std::string& msg);
-    static void warning(const std::string& msg);
-    static void error(const std::string& msg);
-    static void fatal(const std::string& msg);
+    static void set_metadata(int line, const char *function, const char *file);
 
-    static void setConf(const LogConf conf);
-    static void setFilename(const std::string& filename);
+    #define debug(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::DEBUG);}while(0)
+
+    #define info(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::INFO);}while(0)
+
+    #define warning(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::WARNING);}while(0)
+
+    #define error(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::ERROR);}while(0)
+
+    #define fatal(x) do { Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+					           	   Logger::log(x, Logger::LogLevel::FATAL);}while(0)
 
     friend class FileManager;
 
   private:
-    static LogConf config;
     static std::unique_ptr<FileManager> file_manager;
-    static std::string log_filename;
+    static int line;
+    static const char *function;
+    static const char *file;
 };
 
 // Overload bit operators for LogConf enum
@@ -79,11 +88,16 @@ constexpr Logger::LogConf operator&(const Logger::LogConf& conf1, const Logger::
 /// @param mask Mask where you want to check the flag
 /// @param flag Flag which you want to check in the mask
 /// @return If the flag is activated in the mask
-constexpr bool hasFlag(Logger::LogConf mask, Logger::LogConf flag) {
+constexpr bool hasFlag(const Logger::LogConf mask, const Logger::LogConf flag) {
     return (mask & flag) == flag;
 };
-constexpr bool hasFlag(Logger::LogConf mask, Logger::LogLevel flag) {
+constexpr bool hasFlag(const Logger::LogConf mask, const Logger::LogLevel flag) {
     return (mask & flag) == static_cast<Logger::LogConf>(flag);
 };
+
+namespace Log {
+  extern const Logger::LogConf config;
+  extern const char* filename;
+}
 
 #endif
