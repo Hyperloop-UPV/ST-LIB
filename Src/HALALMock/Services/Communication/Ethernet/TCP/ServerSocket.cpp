@@ -18,7 +18,7 @@ ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port) : local_ip(local_
 	
 	create_server_socket();//create _server_socket
 	//configure server socket
-	if(!configure_server_socket()){
+	if(!configure_server_socket(this->server_socket_fd)){
 		std::cout<<"ServerSocket: Error configuring ServerSocket\n";
 		close();
 		return;
@@ -27,6 +27,47 @@ ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port) : local_ip(local_
 	listening_thread = std::jthread(&ServerSocket::listen_for_connection,this);
 }	
 
+ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivity_time_until_keepalive, uint32_t space_between_tries, uint32_t tries_until_disconnection): ServerSocket(local_ip, local_port){
+	keepalive_config.inactivity_time_until_keepalive = inactivity_time_until_keepalive;
+	keepalive_config.space_between_tries = space_between_tries;
+	keepalive_config.tries_until_disconnection = tries_until_disconnection;
+}
+
+//I don't recommend this constructor
+ServerSocket::ServerSocket(ServerSocket&& other) : 
+tx_packet_buffer(std::move(other.tx_packet_buffer)),
+listening_thread(std::move(other.listening_thread)),
+receive_thread(std::move(other.receive_thread)),
+server_socket_fd(other.server_socket_fd),
+client_fd(other.client_fd),
+local_ip(move(other.local_ip)), 
+local_port(move(other.local_port)),
+state(other.state)
+{
+	other.client_fd = -1;
+	other.server_socket_fd = -1;
+	listening_sockets[local_port] = this;
+	tx_packet_buffer = {};
+}
+//not recommended in simulator
+void ServerSocket::operator=(ServerSocket&& other){
+	local_ip = move(other.local_ip);
+	local_port = move(other.local_port);
+	state = other.state;
+	listening_sockets[local_port] = this;
+	tx_packet_buffer = {};
+	if(not (std::find(OrderProtocol::sockets.begin(), OrderProtocol::sockets.end(), this) != OrderProtocol::sockets.end()))
+		OrderProtocol::sockets.push_back(this);
+}
+
+ServerSocket::~ServerSocket(){
+	auto it = std::find(OrderProtocol::sockets.begin(), OrderProtocol::sockets.end(), this);
+	if(it == OrderProtocol::sockets.end()) return;
+	else OrderProtocol::sockets.erase(it);
+	close();
+}
+
+ServerSocket::ServerSocket(EthernetNode local_node) : ServerSocket(local_node.ip,local_node.port){};
 
 	
 //The ServerSocket will only accept one connection
@@ -53,37 +94,6 @@ void ServerSocket::listen_for_connection(){
 	}			
 }
 
-ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivity_time_until_keepalive, uint32_t space_between_tries, uint32_t tries_until_disconnection): ServerSocket(local_ip, local_port){
-	keepalive_config.inactivity_time_until_keepalive = inactivity_time_until_keepalive;
-	keepalive_config.space_between_tries = space_between_tries;
-	keepalive_config.tries_until_disconnection = tries_until_disconnection;
-}
-
-
-ServerSocket::ServerSocket(ServerSocket&& other) : local_ip(move(other.local_ip)), local_port(move(other.local_port)),state(other.state){
-	listening_sockets[local_port] = this;
-	tx_packet_buffer = {};
-}
-
-void ServerSocket::operator=(ServerSocket&& other){
-	local_ip = move(other.local_ip);
-	local_port = move(other.local_port);
-	state = other.state;
-	listening_sockets[local_port] = this;
-	tx_packet_buffer = {};
-	if(not (std::find(OrderProtocol::sockets.begin(), OrderProtocol::sockets.end(), this) != OrderProtocol::sockets.end()))
-		OrderProtocol::sockets.push_back(this);
-}
-
-ServerSocket::~ServerSocket(){
-	auto it = std::find(OrderProtocol::sockets.begin(), OrderProtocol::sockets.end(), this);
-	if(it == OrderProtocol::sockets.end()) return;
-	else OrderProtocol::sockets.erase(it);
-	close();
-
-}
-
-ServerSocket::ServerSocket(EthernetNode local_node) : ServerSocket(local_node.ip,local_node.port){};
 
 void ServerSocket::close(){
 	// Clean all descriptors
@@ -126,12 +136,17 @@ bool ServerSocket::add_order_to_queue(Order& order){
 }
 
 void ServerSocket::send(){
-	std::lock_guard<std::mutex> lock(mutex);
+	
 	while (!tx_packet_buffer.empty()) {
-        Packet *packet = tx_packet_buffer.front();
-        size_t total_sent = 0;
-		size_t packet_size = packet->get_size();
-		uint8_t *packet_data = packet->build();
+		size_t packet_size;
+		uint8_t *packet_data;
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			Packet *packet = tx_packet_buffer.front();
+		    packet_size = packet->get_size();
+			packet_data = packet->build();
+		}
+		size_t total_sent = 0;
 		while(total_sent < packet_size){
 			ssize_t sent_bytes = ::send(client_fd, packet_data, packet_size, 0);
 			if (sent_bytes < 0) {
@@ -142,49 +157,8 @@ void ServerSocket::send(){
 		}
 		tx_packet_buffer.pop();
     }
-	/*Esto seria el intento que estoy haciendo:std::cout<<"ENTER IN THE THREAD_ SEND\n";
-	if(is_sending){
-		return;
-	}
-    send_thread = std::jthread(&ServerSocket::send_packets,this);
-	*/
 }
 	
-
-/*void ServerSocket::send_packets(){
-	bool is_empty;
-	is_sending = true;
-	ssize_t sent_bytes;
-	Packet *packet;
-	{
-		std::lock_guard<std::mutex> lock(mutex);
-		is_empty = tx_packet_buffer.empty();
-	}
-		while (!is_empty){
-			{	
-				std::lock_guard<std::mutex> lock(mutex);
-				*packet = tx_packet_buffer.front();
-			    sent_bytes = ::send(client_fd, packet->build(), packet->get_size(), 0);
-			}
-			if (sent_bytes < 0) {
-				std::cerr << "ServerSocket: Error sending packet\n";
-				state = CLOSING;
-				close_inside_thread();
-				return;
-			}
-			std::cout<<"send bytes: "<<sent_bytes<<"\n";
-			{	
-				std::lock_guard<std::mutex> lock(mutex);
-				tx_packet_buffer.pop();
-				is_empty = tx_packet_buffer.empty();
-			}
-				
-			std::this_thread::sleep_for(std::chrono::milliseconds(200));
-		}
-	is_sending = false;
-	std::cout<<"Saliendo del hilo send\n";
-}
-*/
 bool ServerSocket::is_connected(){
 	return state == ServerSocket::ServerState::ACCEPTED;
 }
@@ -205,42 +179,42 @@ void ServerSocket::create_server_socket(){
 		return;
 	}
 }
-bool ServerSocket::configure_server_socket(){
+bool ServerSocket::configure_server_socket(int& socket_fd){
 	//to reuse local address:
 	int opt = 1;
-	if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         std::cerr << "ServerSocket: Error setting SO_REUSEADDR\n";
    		close();
     	return false;
 	}
 	//disable naggle algorithm
 	int flag = 1;
-	if (setsockopt(server_socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
+	if (setsockopt(socket_fd,IPPROTO_TCP,TCP_NODELAY,(char *) &flag, sizeof(int)) < 0){
 		std::cout<<"ServerSocket: It has been an error disabling Nagle's algorithm\n";
 		return false;
 	}
 	//habilitate keepalives
     int optval = 1;
-    if (setsockopt(server_socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
         std::cout << "ServerSocket: ERROR configuring KEEPALIVES\n";
         return false;
     }
 	// Configure TCP_KEEPIDLE it sets what time to wait to start sending keepalives 
     //different from lwip to linux
 	uint32_t tcp_keepidle_time = keepalive_config.inactivity_time_until_keepalive;
-    if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
+    if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time, sizeof(tcp_keepidle_time)) < 0) {
         std::cout << "ServerSocket: Error configuring TCP_KEEPIDLE\n";
         return false;
     }
 	  //interval between keepalives
     uint32_t keep_interval_time = keepalive_config.space_between_tries;
-    if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
+    if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPINTVL, &keep_interval_time, sizeof(keep_interval_time)) < 0) {
         std::cout << "ServerSocket: Error configuring TCP_KEEPINTVL\n";
         return false;
     }
 	 // Configure TCP_KEEPCNT (number keepalives are send before considering the connection down)
 	uint32_t  keep_cnt = keepalive_config.tries_until_disconnection;
-    if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
+    if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt, sizeof(keep_cnt)) < 0) {
         std::cout << "ServerSocket: Error to configure TCP_KEEPCNT\n";
         return false;
     }
@@ -252,6 +226,8 @@ bool ServerSocket::accept_callback(int& client_fd, sockaddr_in& client_address){
 		state = ACCEPTED;
 		remote_ip = IPV4(client_address.sin_addr.s_addr);
 		this->client_fd = client_fd;
+		//configure_server_socket
+		configure_server_socket(client_fd);
 		//create the receive thread
 		receive_thread = std::jthread(&ServerSocket::receive,this);
 		return true;

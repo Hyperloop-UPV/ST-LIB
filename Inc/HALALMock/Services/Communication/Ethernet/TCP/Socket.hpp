@@ -22,6 +22,8 @@ private:
 	std::atomic<bool> is_receiving = false;
 	std::mutex mutex; 
 	std::queue<Packet*> tx_packet_buffer;
+	//socket_descriptor
+	int socket_fd;
 	void start_receiving();
 	void receive();
 	bool create_socket();
@@ -41,8 +43,6 @@ public:
 	IPV4 remote_ip;
 	uint32_t remote_port;
 	SocketState state;
-	//socket_descriptor
-	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;
 	bool pending_connection_reset = false;
 	bool use_keep_alives{true};

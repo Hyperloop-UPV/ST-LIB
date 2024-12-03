@@ -28,19 +28,15 @@
 class ServerSocket : public OrderProtocol{
 private:
 	void create_server_socket();
-	bool configure_server_socket();
+	bool configure_server_socket(int& socket);
 	void listen_for_connection();
 	void close_inside_thread();
 	bool accept_callback(int& client_fd, sockaddr_in& client_address);
 	void receive();
-	//void send_packets();
 	queue<Packet*> tx_packet_buffer;
 	std::jthread listening_thread;
 	std::jthread receive_thread;
-	//std::jthread send_thread;
 	std::mutex mutex; 
-	//std::atomic<bool> is_sending{false}
-	//socket_descriptor initialized to -1 as method to know they are not in use at the begining
 	int server_socket_fd{-1};
 	int client_fd{-1};
 
