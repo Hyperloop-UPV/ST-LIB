@@ -11,7 +11,7 @@ Logger::LogConf Logger::config = Logger::LogConf::Error
                                 | Logger::LogConf::Console
                                 | Logger::LogConf::File;
 
-std::unique_ptr<FileManager> Logger::file_manager = nullptr;
+std::unique_ptr<FileManager> Logger::file_manager = std::make_unique<FileManager>(std::ios_base::trunc);
 
 /// @brief Default log filename. To change it, use setFilename()
 std::string Logger::log_filename = "STLIB.log";
@@ -26,14 +26,19 @@ void Logger::log(const std::string& msg, const LogLevel level) {
     switch (level) {
         case LogLevel::DEBUG:
             log_level = "DEBUG";
+            break;
         case LogLevel::INFO:
             log_level = "INFO";
+            break;
         case LogLevel::WARNING:
             log_level = "WARNING";
+            break;
         case LogLevel::ERROR:
             log_level = "ERROR";
+            break;
         case LogLevel::FATAL:
             log_level = "FATAL";
+            break;
     }
 
     // Format message to include timestamp and Level
@@ -46,7 +51,7 @@ void Logger::log(const std::string& msg, const LogLevel level) {
 
     // Print message where has been configured to print
     if (hasFlag(config, LogConf::Console)) {  // Print msg into console
-        std::cout << formatted_message;
+        std::cout << formatted_message << std::endl;
     }
 
     if (hasFlag(config, LogConf::File)) {  // Write message into a file
