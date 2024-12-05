@@ -33,7 +33,7 @@ PWMSensor<Type>::PWMSensor(Pin &pin, Type &frequency, Type &duty_cycle) :
 
 template<class Type>
 PWMSensor<Type>::PWMSensor(Pin &pin, Type *frequency, Type *duty_cycle) :
-	duty_cycle(duty_cycle), frequency(frequency) {>
+	duty_cycle(duty_cycle), frequency(frequency) {
 		id = InputCapture::inscribe(pin);
 		InputCapture::turn_on(id);
 }
