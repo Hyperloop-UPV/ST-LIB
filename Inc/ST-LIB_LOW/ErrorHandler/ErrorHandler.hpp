@@ -14,6 +14,7 @@
 #else
 #include "HALALMock/Services/Time/Time.hpp"
 #include "HALALMock/Services/Communication/UART/UART.hpp"
+#include "HALALMock/Services/Logger/Logger.hpp"
 #endif
 
 class ErrorHandlerModel {
