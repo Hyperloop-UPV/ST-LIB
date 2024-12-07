@@ -1,6 +1,5 @@
 
 #pragma once
-
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALALMock/Models/Packets/Packet.hpp"
@@ -132,6 +131,14 @@ public:
 	*/
 	bool is_connected();
 
+private:
+	void create_server_socket();
+	bool configure_server_socket();
+	void configure_server_socket_and_listen();
+	void accept_callback();
+	void handle_receive_from_client(); 
+	std::jthread listening_thread;
+	std::jthread receive_thread;
+	std::mutex mutex; 
+
 };
-
-
