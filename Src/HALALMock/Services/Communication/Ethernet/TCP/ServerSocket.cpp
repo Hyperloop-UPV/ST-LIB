@@ -1,5 +1,5 @@
 
-//#ifdef STLIB_ETH
+
 #include "HALALMock/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 
 #define MAX_SIZE_BUFFER 1024
@@ -269,4 +269,4 @@ void ServerSocket::close_inside_thread(){
 	listening_sockets[local_port] = this;
 	state = CLOSED;
 }
-//#endif //STLIB_ETH
+

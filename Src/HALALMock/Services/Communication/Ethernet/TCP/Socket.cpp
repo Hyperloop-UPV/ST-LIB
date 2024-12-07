@@ -1,5 +1,3 @@
-//#ifdef STLIB_ETH
-
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
 #define MAX_SIZE_BUFFER 1024
 std::unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
@@ -243,5 +241,5 @@ bool Socket::add_order_to_queue(Order& order){
 bool Socket::is_connected(){
 	return state == Socket::SocketState::CONNECTED;
 }
-//#endif //STLIB_ETH
+
 
