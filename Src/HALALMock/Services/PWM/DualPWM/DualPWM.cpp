@@ -35,7 +35,7 @@ DualPWM::DualPWM(Pin& pin, Pin& pin_negated):pin_positive(SharedMemory::get_pin(
 		pin_negative.PinData.dual_pwm.frequency=*(this->frequency);
 		*positive_is_on=false;
 		*negative_is_on=false;
-		*(this->dead_time_ns)=std::chrono::nanoseconds(0);
+		*(this->dead_time_ns)=std::chrono::nanoseconds(0).count();
 		pin_negative.PinData.dual_pwm.dead_time_ns=*(this->dead_time_ns);
 
 	}else{
@@ -111,7 +111,7 @@ void DualPWM::set_dead_time(std::chrono::nanoseconds dead_time_ns)
 	if(*positive_is_on || *negative_is_on)
 		ErrorHandler("%s","This function can not be called if the PWM is on");
 	else{
-		*(this->dead_time_ns)=dead_time_ns;
+		*(this->dead_time_ns)=dead_time_ns.count();
 		pin_negative.PinData.dual_pwm.dead_time_ns=*(this->dead_time_ns);
 	}
 	}

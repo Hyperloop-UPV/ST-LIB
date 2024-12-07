@@ -24,7 +24,7 @@ PWM::PWM(Pin& pin) {
 		*duty_cycle = 0.0f;
 		*is_on = false;
 		*frequency = 0;
-		*dead_time_ns = std::chrono::nanoseconds(0);
+		*dead_time_ns = std::chrono::nanoseconds(0).count();
 	}else{
 		ErrorHandler("Pin %s is being used already",pin.to_string());
 	}
@@ -58,5 +58,5 @@ void PWM::set_dead_time(std::chrono::nanoseconds dead_t_ns)
 	if(*is_on)
 		ErrorHandler("%s","This function can not be called if the PWM is on");
 	else
-		*dead_time_ns=dead_t_ns;	
+		*dead_time_ns=dead_t_ns.count();	
 }
