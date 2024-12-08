@@ -13,42 +13,6 @@
 #define ANSI_COLOR_GREY "\x1b[37m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
-class FileManager {
-   public:
-    FileManager(const std::ios_base::openmode file_mode);
-    void add(const std::string& msg);
-    ~FileManager();
-
-   private:
-    std::ofstream file_stream;
-};
-
-/** @brief Class used to Log info in simulator mode.
- * You can log in five levels: DEBUG, INFO, WARNING, ERROR and FATAL.
- *
- * To configure it, you must set in the extern variable config
- * a mask 'oring' the bits that represents what you want.
- * You can configure which level of logs you want (DEBUG, INFO...),
- * if you want to write logs on the console and/or on a file,
- * and if you want to erase or not the log file.
- *
- * To use it, you must use one of the five MACROS defined in this file,
- * each one representing the level of the log you want to print.
- */
-class Logger {
-   public:
-    enum class LogLevel : unsigned int {
-        DEBUG = 0b00001,
-        INFO = 0b00010,
-        WARNING = 0b00100,
-        ERROR = 0b01000,
-        FATAL = 0b10000,
-    };
-
-    static void log(const std::string& msg, const LogLevel level,
-                    const char* colour);
-    static void set_metadata(int line, const char* function, const char* file);
-
 #define LOG_DEBUG(x)                                              \
     do {                                                          \
         Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__);   \
@@ -78,6 +42,44 @@ class Logger {
         Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__);      \
         Logger::log(x, Logger::LogLevel::FATAL, ANSI_COLOR_MAGENTA); \
     } while (0)
+
+class FileManager {
+   public:
+    FileManager(const std::ios_base::openmode file_mode);
+    void add(const std::string& msg);
+    ~FileManager();
+
+   private:
+    std::ofstream file_stream;
+};
+
+/** @brief Class used to Log info in simulator mode.
+ * You can log in five levels: DEBUG, INFO, WARNING, ERROR and FATAL.
+ *
+ * To configure it, you must set in the extern variable config
+ * a mask 'oring' the bits that represents what you want.
+ * You can configure which level of logs you want (DEBUG, INFO...),
+ * if you want to write logs on the console and/or on a file,
+ * and if you want to erase or not the log file.
+ *
+ * To use it, you must use one of the five MACROS defined in this file,
+ * each one representing the level of the log you want to print.
+ *
+ * As a tip, you can use std::format to log formatted messages
+ */
+class Logger {
+   public:
+    enum class LogLevel : unsigned int {
+        DEBUG = 0b00001,
+        INFO = 0b00010,
+        WARNING = 0b00100,
+        ERROR = 0b01000,
+        FATAL = 0b10000,
+    };
+
+    static void log(const std::string& msg, const LogLevel level,
+                    const char* colour);
+    static void set_metadata(int line, const char* function, const char* file);
 
     friend class FileManager;
 
