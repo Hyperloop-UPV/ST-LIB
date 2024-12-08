@@ -1,9 +1,3 @@
-/*
- * Ethernet.cpp
- *
- *  Created on: Nov 23, 2022
- *      Author: stefa
- */
 
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include <iostream>
@@ -60,6 +54,7 @@ void Ethernet::inscribe(){
 				return;
 			}
 		}
+		is_ready = true;
 	}else{
 		std::cout<<"Unable to inscribe Ethernet because is already ready!\n";
 	}

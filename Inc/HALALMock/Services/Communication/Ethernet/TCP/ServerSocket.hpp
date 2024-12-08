@@ -1,11 +1,15 @@
 
 #pragma once
-#ifdef STLIB_ETH
+
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALALMock/Models/Packets/Packet.hpp"
 #include "HALALMock/Models/Packets/Order.hpp"
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
+#include <iostream>
+#include <thread>
+#include <poll.h>
+#include <atomic>
 /**
 * @brief class that handles a single point to point server client connection, emulating the server side.
 *
@@ -22,8 +26,21 @@
 * @see Ethernet#update
 */
 class ServerSocket : public OrderProtocol{
-public:
+private:
+	void create_server_socket();
+	bool configure_server_socket(int& socket);
+	void listen_for_connection();
+	void close_inside_thread();
+	bool accept_callback(int& client_fd, sockaddr_in& client_address);
+	void receive();
+	queue<Packet*> tx_packet_buffer;
+	std::jthread listening_thread;
+	std::jthread receive_thread;
+	std::mutex mutex; 
+	int server_socket_fd{-1};
+	int client_fd{-1};
 
+public:
 	enum ServerState{
 		INACTIVE,
 		LISTENING,
@@ -36,13 +53,9 @@ public:
 	IPV4 local_ip;
 	uint32_t local_port;
 	IPV4 remote_ip;
-	queue<Packet*> tx_packet_buffer;
-	queue<Packet*> rx_packet_buffer;
 	ServerState state;
 	static uint8_t priority;
-	//socket_descriptor
-	int server_socket_fd;
-	int client_fd;
+	
 	struct KeepaliveConfig{
 		uint32_t inactivity_time_until_keepalive = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE;
 		uint32_t space_between_tries = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES;
@@ -78,16 +91,6 @@ public:
 	* @brief ends the connection between the server and the client. 
 	*/
 	void close();
-
-	/**
-	* @brief process the data received by the client orders. It is meant to be called only by Lwip on the receive_callback
-	*
-	* reads all the data received by the server in the ethernet buffer, packet by packet.
-	* Then, for each packet, it processes it depending on the order id (default behavior is not process) and removes it from the buffer. 
-	* This makes so the receive_callback (and thus the Socket) can only process declared orders, and ignores all other packets. 
-	*/
-	void process_data();
-
 	/**
 	 * @brief saves the order data into the tx_packet_buffer so it can be sent when a connection is accepted
 	 *
@@ -106,7 +109,7 @@ public:
 		if(state != ACCEPTED){
 			return false;
 		}
-		tx_packet_buffer.push(move(order));
+		tx_packet_buffer.push(&order);
 		send();
 		return true;
 	}
@@ -129,16 +132,6 @@ public:
 	*/
 	bool is_connected();
 
-private:
-	void create_server_socket();
-	bool configure_server_socket();
-	void configure_server_socket_and_listen();
-	void accept_callback();
-	void handle_receive_from_client(); 
-	std::jthread listening_thread;
-	std::jthread receive_thread;
-	std::mutex mutex; 
-
 };
 
-#endif //STLIB_ETH
+

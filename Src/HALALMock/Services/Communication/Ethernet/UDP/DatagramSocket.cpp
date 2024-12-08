@@ -1,4 +1,3 @@
-#ifdef STLIB_ETH
 
 #include "HALALMock/Services/Communication/Ethernet/UDP/DatagramSocket.hpp"
 #define MAX_SIZE_PACKET 1024
@@ -6,7 +5,7 @@
 DatagramSocket::DatagramSocket() = default;
 
 DatagramSocket::DatagramSocket(DatagramSocket&& other):udp_socket(move(other.udp_socket)), local_ip(move(other.local_ip)) , local_port(move(other.local_port)) ,remote_ip(move(other.remote_ip)),
-		remote_port(move(remote_port))
+		remote_port(move(other.remote_port))
 		{}
 
 DatagramSocket::DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port): local_ip(local_ip), 
@@ -35,7 +34,7 @@ void DatagramSocket::create_udp_socket(){
 	servaddr.sin_addr.s_addr = local_ip.address; 
 	if(bind(udp_socket, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0){
 		std::cout<<"Bind error\n";
-		close(udp_socket);
+		::close(udp_socket);
 		is_disconnected = true;
 		return;
 	}
@@ -44,18 +43,25 @@ void DatagramSocket::create_udp_socket(){
 	receiving_udp_thread = std::jthread([&](){
 		is_receiving = true;
 		while(true){
+			
 			uint8_t received_data[1024];
 			struct sockaddr_in src_addr;
 			socklen_t addr_len = sizeof(src_addr);
 			ssize_t size = recvfrom(udp_socket,(uint8_t*)received_data,MAX_SIZE_PACKET,0,(struct sockaddr *)&src_addr, &addr_len);
 			if(size < 0){
-				std::cout<<"Error in function recvfrom\n";
-				is_receiving = false;
-				return;
+				if (errno == EBADF){
+					std::cout<< "The  udp_socket has been close\n";
+					break;
+				}
+				else{
+					std::cout<< "Error in function recvfrom\n";
+					continue;
+				}
 			}
 			//receive callback
 			Packet::parse_data(received_data);
 		}
+		is_receiving = false;
 			
 	});
 	Ethernet::update();
@@ -76,12 +82,16 @@ void DatagramSocket::reconnect(){
 }
 
 void DatagramSocket::close(){
-	//check if receiving thread is on and delete it
-	if(is_receiving){
+	if (!is_disconnected){
+		if(::close(udp_socket)){
+			std::cout<<"Error closing the udp_socket\n";
+		}
+		if(is_receiving){
+		receiving_udp_thread.request_stop();
 		receiving_udp_thread.~jthread();
 	}
-	::close(udp_socket);
 	is_disconnected = true;
+	}
 }
-#endif //STLIB_ETH
+
 
