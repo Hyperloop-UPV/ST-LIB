@@ -12,30 +12,8 @@ int Logger::line = 0;
 const char *Logger::function = nullptr;
 const char *Logger::file = nullptr;
 
-void Logger::log(const std::string &msg, const LogLevel level,
+void Logger::log(const std::string &msg, const std::string &level,
                  const char *colour) {
-    // Check if this level is activated in config bitmask
-    if (!hasFlag(Log::config, level)) return;
-
-    // Reach Log Level
-    std::string log_level;
-    switch (level) {
-        case LogLevel::DEBUG:
-            log_level = "DEBUG";
-            break;
-        case LogLevel::INFO:
-            log_level = "INFO";
-            break;
-        case LogLevel::WARNING:
-            log_level = "WARNING";
-            break;
-        case LogLevel::ERROR:
-            log_level = "ERROR";
-            break;
-        case LogLevel::FATAL:
-            log_level = "FATAL";
-            break;
-    }
 
     // Format message to include timestamp and Level
     // Reach timestamp
@@ -44,9 +22,9 @@ void Logger::log(const std::string &msg, const LogLevel level,
     strftime(timestamp, sizeof(timestamp), "%d/%m/%y %T",
              localtime(&current_time));
 
-    // Reach message to be printed
+    // Get message to be printed
     std::string formatted_message =
-        "[" + std::string(timestamp) + "] " + "[" + colour + log_level +
+        "[" + std::string(timestamp) + "] " + "[" + colour + level +
         ANSI_COLOR_RESET + "] " + "[" + file + ":" + std::to_string(line) +
         " in " + function + "] " + msg;
 
