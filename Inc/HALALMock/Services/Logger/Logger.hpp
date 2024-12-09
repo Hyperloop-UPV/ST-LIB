@@ -13,6 +13,41 @@
 #define ANSI_COLOR_GREY "\x1b[37m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
+#define LOG_DEBUG(x)                                            \
+    do {                                                        \
+        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+        if (hasFlag(Log::config, Logger::LogLevel::DEBUG))      \
+            Logger::log(x, "DEBUG", ANSI_COLOR_GREY);           \
+    } while (0)
+
+#define LOG_INFO(x)                                             \
+    do {                                                        \
+        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+        if (hasFlag(Log::config, Logger::LogLevel::INFO))       \
+            Logger::log(x, "INFO", ANSI_COLOR_GREEN);           \
+    } while (0)
+
+#define LOG_WARNING(x)                                          \
+    do {                                                        \
+        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+        if (hasFlag(Log::config, Logger::LogLevel::WARNING))    \
+            Logger::log(x, "WARNING", ANSI_COLOR_YELLOW);       \
+    } while (0)
+
+#define LOG_ERROR(x)                                            \
+    do {                                                        \
+        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+        if (hasFlag(Log::config, Logger::LogLevel::ERROR))      \
+            Logger::log(x, "ERROR", ANSI_COLOR_RED);            \
+    } while (0)
+
+#define LOG_FATAL(x)                                            \
+    do {                                                        \
+        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
+        if (hasFlag(Log::config, Logger::LogLevel::FATAL))      \
+            Logger::log(x, "FATAL", ANSI_COLOR_MAGENTA);        \
+    } while (0)
+
 class FileManager {
    public:
     FileManager(const std::ios_base::openmode file_mode);
@@ -34,6 +69,8 @@ class FileManager {
  *
  * To use it, you must use one of the five MACROS defined in this file,
  * each one representing the level of the log you want to print.
+ *
+ * As a tip, you can use std::format to log formatted messages
  */
 class Logger {
    public:
@@ -45,41 +82,9 @@ class Logger {
         FATAL = 0b10000,
     };
 
-    static void log(const std::string& msg, const LogLevel level,
+    static void log(const std::string& msg, const std::string& level,
                     const char* colour);
     static void set_metadata(int line, const char* function, const char* file);
-
-#define LOG_DEBUG(x)                                              \
-    do {                                                          \
-        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__);   \
-        Logger::log(x, Logger::LogLevel::DEBUG, ANSI_COLOR_GREY); \
-    } while (0)
-
-#define LOG_INFO(x)                                               \
-    do {                                                          \
-        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__);   \
-        Logger::log(x, Logger::LogLevel::INFO, ANSI_COLOR_GREEN); \
-    } while (0)
-
-#define LOG_WARNING(x)                                                \
-    do {                                                              \
-        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__);       \
-        Logger::log(x, Logger::LogLevel::WARNING, ANSI_COLOR_YELLOW); \
-    } while (0)
-
-#define LOG_ERROR(x)                                             \
-    do {                                                         \
-        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__);  \
-        Logger::log(x, Logger::LogLevel::ERROR, ANSI_COLOR_RED); \
-    } while (0)
-
-#define LOG_FATAL(x)                                                 \
-    do {                                                             \
-        Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__);      \
-        Logger::log(x, Logger::LogLevel::FATAL, ANSI_COLOR_MAGENTA); \
-    } while (0)
-
-    friend class FileManager;
 
    private:
     static std::unique_ptr<FileManager> file_manager;
