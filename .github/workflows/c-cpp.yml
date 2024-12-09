@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         build_type: [hardware,simulator]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - uses: carlosperate/arm-none-eabi-gcc-action@v1
