@@ -1,6 +1,7 @@
 #include "HALALMock/Services/Logger/Logger.hpp"
 
 #include <ctime>     // To manage time
+#include <format>    // To build formatted strings
 #include <fstream>   // To write in a file
 #include <iostream>  // To write in console
 #include <memory>    // To manage FileManager ptr
@@ -14,7 +15,6 @@ const char *Logger::file = nullptr;
 
 void Logger::log(const std::string &msg, const std::string &level,
                  const char *colour) {
-
     // Format message to include timestamp and Level
     // Reach timestamp
     time_t current_time = time(nullptr);
@@ -22,19 +22,19 @@ void Logger::log(const std::string &msg, const std::string &level,
     strftime(timestamp, sizeof(timestamp), "%d/%m/%y %T",
              localtime(&current_time));
 
-    // Get message to be printed
-    std::string formatted_message =
-        "[" + std::string(timestamp) + "] " + "[" + colour + level +
-        ANSI_COLOR_RESET + "] " + "[" + file + ":" + std::to_string(line) +
-        " in " + function + "] " + msg;
-
     // Print message where has been configured to print
     if (hasFlag(Log::config, LogConf::Console)) {  // Print msg into console
-        std::cout << formatted_message << std::endl;
+        std::string terminal_message = std::format(
+            "[{}] [{}{}{}] [{}:{} in {}] {}", std::string(timestamp), colour,
+            level, ANSI_COLOR_RESET, file, std::to_string(line), function, msg);
+        std::cout << terminal_message << std::endl;
     }
 
     if (hasFlag(Log::config, LogConf::File)) {  // Write message into a file
-        file_manager->add(formatted_message);
+        std::string file_message =
+            std::format("[{}] [{}] [{}:{} in {}] {}", std::string(timestamp),
+                        level, file, std::to_string(line), function, msg);
+        file_manager->add(file_message);
     }
 }
 
