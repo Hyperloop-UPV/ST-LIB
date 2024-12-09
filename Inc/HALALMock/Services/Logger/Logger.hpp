@@ -81,8 +81,6 @@ class Logger {
                     const char* colour);
     static void set_metadata(int line, const char* function, const char* file);
 
-    friend class FileManager;
-
    private:
     static std::unique_ptr<FileManager> file_manager;
     static int line;
