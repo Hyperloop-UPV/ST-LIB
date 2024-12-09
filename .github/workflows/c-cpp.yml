@@ -36,7 +36,7 @@ jobs:
   Run-Tests:
     name: Run Simulator tests
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - name: Download test binary compressed
