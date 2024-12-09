@@ -1,5 +1,8 @@
 
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
+
+#include "HALALMock/Services/Logger/Logger.hpp"
+
 #define BUFFER_SIZE 1024
 unordered_map<EthernetNode, Socket*> Socket::connecting_sockets = {};
 
