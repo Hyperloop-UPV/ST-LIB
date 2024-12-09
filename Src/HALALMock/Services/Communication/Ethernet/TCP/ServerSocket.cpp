@@ -150,7 +150,7 @@ void ServerSocket::send() {
         ssize_t sent_bytes =
             ::send(client_fd, packet->build(), packet->get_size(), 0);
         if (sent_bytes < 0) {
-            std::cerr << "Error sending packet\n";
+            LOG_ERROR(std::format("Error sending packet {}", packet->get_id()));
             state = CLOSING;
             close();
             return;
@@ -175,7 +175,8 @@ void ServerSocket::create_server_socket() {
     server_socket_Address.sin_port = htons(local_port);
     if (bind(server_socket_fd, (struct sockaddr*)&server_socket_Address,
              sizeof(server_socket_Address)) < 0) {
-        LOG_ERROR("Couldn't bind");
+        LOG_ERROR(std::format("Couldn't bind to address {} in port {}",
+                              local_ip.string_address, local_port));
         close();
         return;
     }
@@ -225,7 +226,7 @@ bool ServerSocket::configure_server_socket() {
     uint32_t keep_cnt = keepalive_config.tries_until_disconnection;
     if (setsockopt(server_socket_fd, IPPROTO_TCP, TCP_KEEPCNT, &keep_cnt,
                    sizeof(keep_cnt)) < 0) {
-		LOG_ERROR("Can't configure TCP_KEEPCNT");
+        LOG_ERROR("Can't configure TCP_KEEPCNT");
         return false;
     }
     return true;
@@ -233,12 +234,12 @@ bool ServerSocket::configure_server_socket() {
 void ServerSocket::configure_server_socket_and_listen() {
     create_server_socket();
     if (!configure_server_socket()) {
-		LOG_ERROR("Can't configure ServerSocket");
+        LOG_ERROR("Can't configure ServerSocket");
         close();
         return;
     }
     if (listen(server_socket_fd, SOMAXCONN) < 0) {
-		LOG_ERROR("Can't listen");
+        LOG_ERROR("Can't listen");
         close();
         return;
     }
@@ -253,13 +254,13 @@ void ServerSocket::configure_server_socket_and_listen() {
                            &client_len);
         if (client_fd > 0) {
             if (!accept_callback(client_fd, client_addr)) {
-				LOG_ERROR("Something went wrong in accept_callback");
+                LOG_ERROR("Something went wrong in accept_callback");
             } else {
                 OrderProtocol::sockets.push_back(this);
             }
 
         } else {
-			LOG_ERROR("Can't accept");
+            LOG_ERROR("Can't accept");
             close();
             return;
         }
@@ -294,9 +295,9 @@ void ServerSocket::handle_receive_from_client(int client_fd) {
         // if receive a 0 means that the client has finished the connection so
         // we will close this server_socket
         if (bytes_received == 0) {
-			LOG_WARNING("Client disconnected");
+            LOG_WARNING("Client disconnected");
         } else if (bytes_received < 0) {
-			LOG_ERROR("Error receiving data");
+            LOG_ERROR("Error receiving data");
         }
         close();
     });
