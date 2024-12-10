@@ -164,6 +164,10 @@ public:
 	void refresh_state_orders();
 
 	unordered_map<state_id, State>& get_states();
+	
+	#ifdef SIM_ON
+	uint8_t get_id_in_shm();
+	#endif
 
 
 private:
