@@ -50,13 +50,21 @@ FileManager::FileManager(const std::ios_base::openmode file_mode) {
     file_stream = std::ofstream(Log::filename, file_mode);
     if (!file_stream.is_open()) {
         std::cerr << "LOGGER ERROR. Couldn't open file " << Log::filename
-                  << ", writing logs in STLIB.log" << std::endl;
+                  << ", trying to write logs in STLIB.log" << std::endl;
         file_stream = std::ofstream("STLIB.log", file_mode);
+        if (!file_stream.is_open()) {
+            std::cerr << "LOGGER FATAL ERROR. Couldn't open file STLIB.log. "
+                         "Your logs will NOT write on any file. Check your "
+                         "permissions on this file"
+                      << std::endl;
+        }
     }
 }
 
 void FileManager::add(const std::string &msg) {
-    file_stream << msg << std::endl;
+    if (file_stream.is_open()) {
+        file_stream << msg << std::endl;
+    }
 }
 
 FileManager::~FileManager() { file_stream.close(); }
