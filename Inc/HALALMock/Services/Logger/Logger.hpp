@@ -98,15 +98,15 @@ extern std::string filename;
 /// @brief Bitmask that represents log configuration
 enum class LogConf : unsigned int {
     /// @brief Includes Debug messages in logs
-    Debug = 0b00000001,
+    Debug = static_cast<int>(Logger::LogLevel::DEBUG),
     /// @brief Includes Info messages in logs
-    Info = 0b00000010,
+    Info = static_cast<int>(Logger::LogLevel::INFO),
     /// @brief Includes Warning messages in logs
-    Warning = 0b00000100,
+    Warning = static_cast<int>(Logger::LogLevel::WARNING),
     /// @brief Includes Error messages in logs
-    Error = 0b00001000,
+    Error = static_cast<int>(Logger::LogLevel::ERROR),
     /// @brief Includes Fatal messages in logs
-    Fatal = 0b00010000,
+    Fatal = static_cast<int>(Logger::LogLevel::FATAL),
     /// @brief Writes logs into the console
     Console = 0b00100000,
     /// @brief Writes logs into a file, defined in filename_log external
