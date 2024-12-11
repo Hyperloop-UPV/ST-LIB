@@ -13,7 +13,7 @@ int Logger::line = 0;
 const char *Logger::function = nullptr;
 const char *Logger::file = nullptr;
 
-void Logger::log(const std::string &msg, const std::string &level,
+void Logger::__log(const std::string &msg, const std::string &level,
                  const char *colour) {
     // Format message to include timestamp and Level
     // Reach timestamp

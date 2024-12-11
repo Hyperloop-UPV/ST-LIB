@@ -82,7 +82,7 @@ class Logger {
         FATAL = 0b10000,
     };
 
-    static void log(const std::string& msg, const std::string& level,
+    static void __log(const std::string& msg, const std::string& level,
                     const char* colour);
     static void set_metadata(int line, const char* function, const char* file);
 
