@@ -17,35 +17,35 @@
     do {                                                        \
         Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
         if (hasFlag(Log::config, Logger::LogLevel::DEBUG))      \
-            Logger::log(x, "DEBUG", ANSI_COLOR_GREY);           \
+            Logger::__log(x, "DEBUG", ANSI_COLOR_GREY);           \
     } while (0)
 
 #define LOG_INFO(x)                                             \
     do {                                                        \
         Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
         if (hasFlag(Log::config, Logger::LogLevel::INFO))       \
-            Logger::log(x, "INFO", ANSI_COLOR_GREEN);           \
+            Logger::__log(x, "INFO", ANSI_COLOR_GREEN);           \
     } while (0)
 
 #define LOG_WARNING(x)                                          \
     do {                                                        \
         Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
         if (hasFlag(Log::config, Logger::LogLevel::WARNING))    \
-            Logger::log(x, "WARNING", ANSI_COLOR_YELLOW);       \
+            Logger::__log(x, "WARNING", ANSI_COLOR_YELLOW);       \
     } while (0)
 
 #define LOG_ERROR(x)                                            \
     do {                                                        \
         Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
         if (hasFlag(Log::config, Logger::LogLevel::ERROR))      \
-            Logger::log(x, "ERROR", ANSI_COLOR_RED);            \
+            Logger::__log(x, "ERROR", ANSI_COLOR_RED);            \
     } while (0)
 
 #define LOG_FATAL(x)                                            \
     do {                                                        \
         Logger::set_metadata(__LINE__, __FUNCTION__, __FILE__); \
         if (hasFlag(Log::config, Logger::LogLevel::FATAL))      \
-            Logger::log(x, "FATAL", ANSI_COLOR_MAGENTA);        \
+            Logger::__log(x, "FATAL", ANSI_COLOR_MAGENTA);        \
     } while (0)
 
 class FileManager {
