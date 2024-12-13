@@ -9,9 +9,12 @@ using std::queue;
 using std::unordered_map;
 using std::vector;
 
-class FDCAN{
-public:
-	enum DLC : uint32_t{
+#define FDCAN_PORT_BASE 7070
+extern const in_addr_t fdcan_ip_adress;
+
+class FDCAN {
+   public:
+    enum DLC : uint32_t {
         BYTES_0 = 0x00000000U,
         BYTES_1 = 0x00010000U,
         BYTES_2 = 0x00020000U,

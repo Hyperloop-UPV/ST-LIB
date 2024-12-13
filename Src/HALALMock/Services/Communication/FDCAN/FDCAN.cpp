@@ -7,6 +7,9 @@
 #include <arpa/inet.h>
 
 
+//temp include for tests:
+#include <iostream>
+
 uint16_t FDCAN::id_counter = 0;
 
 unordered_map<uint8_t, FDCAN::Instance*> FDCAN::registered_fdcan = {};
@@ -18,6 +21,7 @@ unordered_map<FDCAN::DLC, uint8_t> FDCAN::dlc_to_len = {{DLC::BYTES_0, 0}, {DLC:
 													    };
 unordered_map<FDCAN::Instance*,uint8_t> FDCAN::instance_to_id{};
 FDCAN::Packet packet{.rx_data = array<uint8_t, 64>{},.data_length = FDCAN::BYTES_64};
+
 uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	if (!FDCAN::available_fdcans.contains(fdcan)) {
 		ErrorHandler(" The FDCAN peripheral %d is already used or does not exists.", (uint16_t)fdcan);
@@ -55,18 +59,19 @@ void FDCAN::start(){
 	for( std::pair<uint8_t, FDCAN::Instance*> inst: FDCAN::registered_fdcan){
 		uint8_t id = inst.first;
 		FDCAN::Instance* instance = inst.second;
-
 		instance->rx_queue = queue<FDCAN::Packet>();
 		instance->tx_data = vector<uint8_t>();
 
-		instance -> socket = socket(AF_INET,SOCK_DGRAM,0);
+
+		/*instance -> socket = socket(AF_INET,SOCK_DGRAM,0);
 		if(instance -> socket < 0){
 			ErrorHandler("Error creating socket for FDCAN %d", instance->fdcan_number);
 		}
-		struct sockaddr_in BroadcastAddress;
+		sockaddr_in BroadcastAddress;
 		BroadcastAddress.sin_family = AF_INET;
-		BroadcastAddress.sin_port = instance->port;
-		BroadcastAddress.sin_addr.s_addr = inet_addr(FDCAN::ip.c_str());
+		BroadcastAddress.sin_port = htons(FDCAN_PORT_BASE + Port_counter);
+		Port_counter++;
+		BroadcastAddress.sin_addr.s_addr = fdcan_ip_adress;
 
 		int enabled = 1;
 		setsockopt(instance->socket, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
@@ -74,6 +79,7 @@ void FDCAN::start(){
 		if(bind(instance->socket, (struct sockaddr*)&BroadcastAddress, sizeof(BroadcastAddress)) < 0){
 			ErrorHandler("Error binding socket for FDCAN %d", instance->fdcan_number);
 		}
+		*/
 	    instance->start = true;
 	    FDCAN::registered_fdcan[id] = instance;
 		FDCAN::instance_to_id[instance] = id;
