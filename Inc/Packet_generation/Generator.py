@@ -1,10 +1,16 @@
 import json 
 import re
+
+packet_name= "        StackPacket* %name%;\n"
+packet_struct = "   %name% = new StackPacket(%packet_data%);\n   packets[id] = %name%;\n   id++;"
+enum_template = "enum class %name%{ \n %values% \n};"
+
 class BoardDescription:    
     def __init__(self,name:str,board:dict):
         self.name = name
         self.id = board["board_id"]
         self.ip = board["board_ip"]
+        self.size =0
         i = 0
         self.packets = {}
         for packets in board["packets"]:
@@ -18,8 +24,9 @@ class BoardDescription:
             i += 1
             for packet in p["packets"]:
                 self.packets[packets_name].append(PacketDescription(packet,m))
-                
-    def _MeasurementFileSearch(self,packet:str,measurements:dict):
+                self.size = self.size +1
+    @staticmethod            
+    def _MeasurementFileSearch(packet:str,measurements:dict):
         packet_name = packet.split('_')[0]
         for measurement in measurements:
             measurement_name = measurement.split('_')[0]
@@ -34,8 +41,9 @@ class PacketDescription:
         self.type = packet["type"]
         self.variables = []
         self.measurements = []
+        i=0
         for variable in packet["variables"]:
-            self.variables.append([variable["name"]])
+            self.variables.append(variable["name"])
             self.measurements.append(MeasurmentsDescription(measurements,variable["name"]))
 
 
@@ -47,47 +55,132 @@ class MeasurmentsDescription:
             raise Exception("Measurement not found")
         else:
             self.name = measurement["name"]
-            self.type = measurement["type"]
-    
-    def _MeasurementSearch(self,measurements:dict, variable:str):
+            self.type = self._unsigned_int_correction(measurement["type"])
+            if self.type == "enum":
+                self.enum = self._create_enum(measurement)
+                self.type = measurement["id"]
+                
+    @staticmethod
+    def _MeasurementSearch(measurements:dict, variable:str):
         for measurment in measurements["measurements"]:
             if measurment["id"] == variable:
                 return measurment
         return None
+    
+    @staticmethod
+    def _create_enum(measurement: dict):
+        if "enumValues" not in measurement:
+            raise ValueError("Measurement does not contain 'enumValues'")
+
+        enum = enum_template.replace("%name%", measurement["id"])
+        values = ""
+        for value in measurement["enumValues"]:
+            values += value + ",\n"
+        if values.endswith(",\n"):
+            values = values[:-2]
+            values += "\n"
+        enum = enum.replace("%values%", values.strip())
+        return enum
+    
+    @staticmethod
+    def _unsigned_int_correction(type:str):
+        aux_type = type[:4]
+        if aux_type == "uint":
+            type += "_t"
+        return type
         
 
-
-with open("Inc/Packet_generation/JSON_ADE/boards.json") as f:
-    boards = json.load(f)
-
-#with open("Inc/Packet_generation/JSON_ADE/boards/LCU/LCU.json") as f:
-    #LCU1 = json.load(f)
-#LCU = BoardDescription("LCU",LCU1)
-
-#print(LCU.name)
-#print(LCU.packets[0].name)
-#i=0
-#for variable in LCU.packets[0].variables:
-    #print(variable)
-    #print("\n")
-    #print(LCU.packets[0].measurements[i].type)
-    #i+=1
-
-for board in boards["boards"]:
-    with open("Inc/Packet_generation/JSON_ADE/" + (boards["boards"][board])) as f:
-        b = json.load(f)
-    board_instance = BoardDescription(board, b)
-    globals()[board] = board_instance
+def GenerateEnum(board:BoardDescription):
+    Enums = []
+    for packet in board.packets:
+        if packet != "orders":
+            for packet_instance in board.packets[packet]:
+                for measurement in packet_instance.measurements:
+                    if hasattr(measurement, "enum"):
+                        Enums.append(measurement.enum)
+    enums_data = "\n".join(Enums)
+    return enums_data
     
-for packet in OBCCU.packets["control"]:
-    print(packet.name)
-    for variable in packet.variables:
-        print(variable)
-    for measurement in packet.measurements:
-        print(measurement.type)
-    print("\n")
+def GenerateData(board:BoardDescription):
+    Data =[]
+    for packet in board.packets:
+        if packet != "orders":
+            for packet_instance in board.packets[packet]:
+                data = ""
+                i=0
+                data += "uint8_t idpacket" + str(packet_instance.id) + ","
+                for variable in packet_instance.variables:
+                    data += (str(packet_instance.measurements[i].type)+" "+ str(variable) +",")
+                    i += 1  
+                Data.append(data)
+                
+    if Data and Data[-1].endswith(","):
+        Data[-1] = Data[-1][:-1]
+    total_data ="".join(Data)
+    return total_data
+    
+def GenerateDataNames(board:BoardDescription,packet_name:str):
+    Names =[]
+    for packet in board.packets:
+        if packet != "orders":
+            for packet_instance in board.packets[packet]:
+                data = ""
+                data += packet_name.replace("%name%",packet_instance.name)
+                Names.append(data)
+    names_data = "".join(Names)
+    return names_data
+    
+    
+def GenerateDataPackets(board:BoardDescription,packet_struct:str):
+    Packets =[]
+    for packet in board.packets:
+        if packet != "orders":
+            for packet_instance in board.packets[packet]:
+                data = ""
+                data +="&idpacket"+str(packet_instance.id)+"," 
+                
+                for variable in packet_instance.variables:
+                    data += ("&"+str(variable) +",")
+                if data.endswith(","):
+                        data = data[:-1]  
+                aux = packet_struct
+                aux = aux.replace("%name%",packet_instance.name)    
+                Packets.append(aux.replace("%packet_data%", data))
+                
+    packets_data = "\n".join(Packets)
+    return packets_data
 
-     
+def Generate_DataPackets_hpp(board_input:str):
+    with open("Inc/Packet_generation/JSON_ADE/boards.json") as f:
+        boards = json.load(f)
+
+    for board in boards["boards"]:
+        with open("Inc/Packet_generation/JSON_ADE/" + (boards["boards"][board])) as f:
+            b = json.load(f)
+        board_instance = BoardDescription(board, b)
+        globals()[board] = board_instance
+
+    board_instance = globals()[board_input]
+  
+    with open("Inc/Packet_generation/Template.hpp","r") as Input:
+        data= Input.read()
+
+    data = data.replace("%enums%", GenerateEnum(board_instance))
+    data = data.replace("%packetnames%", GenerateDataNames(board_instance,packet_name))
+    data = data.replace("%size%", str(board_instance.size))
+    data = data.replace("%data%", GenerateData(board_instance))
+    data = data.replace("%packets%", GenerateDataPackets(board_instance,packet_struct))
+    
+    with open("Inc/Packet_generation/DataPackets.hpp","w") as Output:
+        Output.write(data)
+
+board = input("Enter board name: ")
+while board not in ["VCU","OBCCU","LCU"]:
+    print("Board not found, only VCU, OBCCU and LCU are available")
+    board = input("Enter board name: ")
+Generate_DataPackets_hpp(board)
+
+
 
 
 
