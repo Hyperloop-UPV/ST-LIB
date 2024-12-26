@@ -37,7 +37,7 @@ class BoardDescription:
 class PacketDescription:
     def __init__(self, packet:dict,measurements:dict):
         self.id =packet["id"]
-        self.name = packet["name"]
+        self.name = (packet["name"].replace(" ", "_"))
         self.type = packet["type"]
         self.variables = []
         self.measurements = []
@@ -108,7 +108,7 @@ def GenerateData(board:BoardDescription):
             for packet_instance in board.packets[packet]:
                 data = ""
                 i=0
-                data += "uint8_t idpacket" + str(packet_instance.id) + ","
+                data += "uint16_t idpacket" + str(packet_instance.id) + ","
                 for variable in packet_instance.variables:
                     data += (str(packet_instance.measurements[i].type)+" "+ str(variable) +",")
                     i += 1  
@@ -165,6 +165,7 @@ def Generate_DataPackets_hpp(board_input:str):
     with open("Inc/Packet_generation/Template.hpp","r") as Input:
         data= Input.read()
 
+    data = data.replace("%board%", board_instance.name)
     data = data.replace("%enums%", GenerateEnum(board_instance))
     data = data.replace("%packetnames%", GenerateDataNames(board_instance,packet_name))
     data = data.replace("%size%", str(board_instance.size))

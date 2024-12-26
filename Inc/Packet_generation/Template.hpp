@@ -1,4 +1,6 @@
 #include "ST-LIB.hpp"
+
+//Data packets for %board%
 class DataPacket{
     
 %enums%
