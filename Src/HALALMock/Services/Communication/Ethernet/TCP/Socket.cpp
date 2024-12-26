@@ -1,5 +1,6 @@
-
 #include "HALALMock/Services/Communication/Ethernet/TCP/Socket.hpp"
+#define MAX_SIZE_BUFFER 1024
+std::unordered_map<EthernetNode, Socket*> Socket::connecting_sockets = {};
 
 #include "HALALMock/Services/Logger/Logger.hpp"
 
@@ -9,11 +10,13 @@ unordered_map<EthernetNode, Socket*> Socket::connecting_sockets = {};
 Socket::Socket() = default;
 
 Socket::Socket(Socket&& other)
-    : remote_port(move(remote_port)), state(other.state) {
+    : socket_fd(other.socket_fd),
+      remote_port(move(remote_port)),
+      state(other.state) {
+    other.socket_fd = -1;
     EthernetNode remote_node(other.remote_ip, other.remote_port);
     connecting_sockets[remote_node] = this;
 }
-
 void Socket::operator=(Socket&& other) {
     remote_port = move(other.remote_port);
     state = other.state;
@@ -42,19 +45,27 @@ Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip,
       remote_port(remote_port),
       use_keep_alives{use_keep_alive} {
     if (not Ethernet::is_running) {
-        LOG_ERROR("Could not declare TCP socket before Ethernet::start()");
+        LOG_ERROR("Unable to declare TCP socket before Ethernet::start()");
         return;
     }
     state = INACTIVE;
     tx_packet_buffer = {};
-    rx_packet_buffer = {};
+    if (!create_socket()) {
+        return;
+    }
     EthernetNode remote_node(remote_ip, remote_port);
-    configure_socket_and_connect();
+    if (!configure_socket()) {
+        LOG_ERROR("Unable to set socket");
+        return;
+    }
+    connecting_sockets[remote_node] = this;
+    connect_attempt();
     OrderProtocol::sockets.push_back(this);
 }
-void Socket::create_socket() {
+
+bool Socket::create_socket() {
     // create socket not blocking
-    socket_fd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    socket_fd = ::socket(AF_INET, SOCK_STREAM, 0);
     // inset the local address and port
     struct sockaddr_in socket_Address;
     socket_Address.sin_family = AF_INET;
@@ -62,17 +73,26 @@ void Socket::create_socket() {
     socket_Address.sin_port = htons(local_port);
     if (bind(socket_fd, (struct sockaddr*)&socket_Address,
              sizeof(socket_Address)) < 0) {
-        LOG_ERROR("Could not bind socket");
+        LOG_ERROR("Unable to bind TCP socket");
         ::close(socket_fd);
-        return;
+        return false;
     }
+    return true;
 }
 bool Socket::configure_socket() {
     // disable naggle algorithm
     int flag = 1;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_NODELAY, (char*)&flag,
                    sizeof(int)) < 0) {
-        LOG_ERROR("Could not be disabled Nagle's algorithm");
+        LOG_ERROR("Unable to disable Nagle's algorithm");
+        ::close(socket_fd);
+        return false;
+    }
+    // make the socket to be reuse
+    int optval_reuse = 1;
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &optval_reuse,
+                   sizeof(optval_reuse)) < 0) {
+        LOG_ERROR("Unable to set SO_REUSEADDR");
         ::close(socket_fd);
         return false;
     }
@@ -80,7 +100,7 @@ bool Socket::configure_socket() {
     int optval = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_KEEPALIVE, &optval,
                    sizeof(optval)) < 0) {
-        LOG_ERROR("Unable to configure KEEPALIVES");
+        LOG_ERROR("Unable to set KEEPALIVES");
         ::close(socket_fd);
         return false;
     }
@@ -91,7 +111,7 @@ bool Socket::configure_socket() {
         keepalive_config.inactivity_time_until_keepalive;
     if (setsockopt(socket_fd, IPPROTO_TCP, TCP_KEEPIDLE, &tcp_keepidle_time,
                    sizeof(tcp_keepidle_time)) < 0) {
-        LOG_ERROR("Unable to configure TCP_KEEPIDLE");
+        LOG_ERROR("Unable to set TCP_KEEPIDLE");
         ::close(socket_fd);
         return false;
     }
@@ -114,46 +134,33 @@ bool Socket::configure_socket() {
     }
     return true;
 }
-void Socket::connection_callback() {
-    if (connecting_sockets.contains(remote_node)) {
-        connecting_sockets.erase(remote_node);
-        state = CONNECTED;
-    }
-    start_receiving();
-    is_connecting = false;
-}
+
 void Socket::connect_attempt() {
     // insert the remote address and port and connect
     struct sockaddr_in remote_addr;
     remote_addr.sin_family = AF_INET;
-    remote_addr.sin_addr.s_addr =
-        inet_addr(remote_ip);  // IP remota en formato adecuado
+    remote_addr.sin_addr.s_addr = remote_ip.address;
     remote_addr.sin_port = htons(remote_port);
-    connect(socket_fd, (struct sockaddr*)&remote_addr, sizeof(remote_addr));
+    if (connect(socket_fd, (struct sockaddr*)&remote_addr,
+                sizeof(remote_addr)) < 0) {
+        state = INACTIVE;
+        return;
+    }
+    LOG_INFO("Connection established with the remote socket");
+    connection_callback();
 }
-void Socket::configure_socket_and_connect() {
-    create_socket();
 
-    if (!configure_socket()) {
-        LOG_ERROR("Unable to configure socket");
+void Socket::connection_callback() {
+    EthernetNode remote_node(remote_ip, remote_port);
+    if (connecting_sockets.contains(remote_node)) {
+        connecting_sockets.erase(remote_node);
+        state = CONNECTED;
     }
-    connecting_sockets[remote_node] = this;
-    // create thread that will be block while waiting the connection
-    connect_attempt() is_connecting = true;
-    // thread to wait for connection
-    wait_for_connection_thread = std::jthread[&]() {
-        pollfd socket_event;
-        socket_event.fd = socket_fd;
-        socket_event.events = POLLIN;
-        int result = poll(socket_event, 1, -1);  // -1 means to never timeout
-        if (result > 0) {                        // Connection succesfully
-            connection_callback();
-        } else {
-            ::close(socket_fd);
-            state = INACTIVE;
-        }
-    }
+    // start receiving
+    is_receiving = true;
+    receiving_thread = std::jthread(&Socket::receive, this);
 }
+
 Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip,
                uint32_t remote_port, uint32_t inactivity_time_until_keepalive,
                uint32_t space_between_tries, uint32_t tries_until_disconnection)
@@ -169,47 +176,41 @@ Socket::Socket(EthernetNode local_node, EthernetNode remote_node)
 }
 
 void Socket::close() {
-    if (is_connecting) {
-        is_connecting = false;
-        ~wait_for_connection_thread();
-    }
+    ::close(socket_fd);
     if (is_receiving) {
         is_receiving = false;
-        ~receiving_thread();
+        if (receiving_thread.joinable()) {
+            receiving_thread.join();
+        }
     }
     while (!tx_packet_buffer.empty()) {
         tx_packet_buffer.pop();
     }
-    while (!rx_packet_buffer.empty()) {
-        rx_packet_buffer.pop();
-    }
     state = CLOSING;
-    ::close(socket_fd);
 }
 
-void Socket::reconnect() {
+void Socket::reconnect() {  // I'm going to do in reconnect a total reset due to
+                            // at the end in linux sockets you will have to
+                            // close the socket and configure to reconnect
+    connect_attempt();
+}
+
+void Socket::reset() {
     EthernetNode remote_node(remote_ip, remote_port);
+
+    state = INACTIVE;
+    close();
+    if (!create_socket()) {
+        return;
+    }
+    if (!configure_socket()) {
+        LOG_ERROR("Unable to configure socket");
+        return;
+    }
     if (!connecting_sockets.contains(remote_node)) {
         connecting_sockets[remote_node] = this;
     }
-    if (is_connecting) {
-        is_connecting = false;
-        ~wait_for_connection_thread();
-    }
-    connect_attempt() is_connecting = true;
-    // thread to wait for connection
-    wait_for_connection_thread = std::jthread[&]() {
-        pollfd socket_event;
-        socket_event.fd = socket_fd;
-        socket_event.events = POLLIN;
-        int result = poll(socket_event, 1, -1);  // -1 means to never timeout
-        if (result > 0) {                        // Connection succesfully
-            connection_callback();
-        } else {
-            ::close(socket_fd);
-            state = INACTIVE;
-        }
-    }
+    connect_attempt();
 }
 
 void Socket::reset() {
@@ -226,58 +227,41 @@ void Socket::send() {
     std::lock_guard<std::mutex> lock(mutex);
     while (!tx_packet_buffer.empty()) {
         Packet* packet = tx_packet_buffer.front();
-        ssize_t sent_bytes =
-            ::send(socket_fd, packet->build(), packet->get_size(), 0);
-        if (sent_bytes < 0) {
-            LOG_ERROR(
-                std::format("Unable to send packet {}", packet->get_id()));
-            return;
+        size_t total_sent = 0;
+        size_t packet_size = packet->get_size();
+        uint8_t* packet_data = packet->build();
+        while (total_sent < packet_size) {
+            ssize_t sent_bytes = ::send(socket_fd, packet_data, packet_size, 0);
+            if (sent_bytes < 0) {
+                LOG_ERROR("Unable to send the order");
+                return;
+            }
+            total_sent += sent_bytes;
         }
         tx_packet_buffer.pop();
     }
 }
-
-void Socket::start_receiving() {
-    is_receiving = true;
-    receiving_thread = std::jthread(&Socket::receive, this);
-}
-
 void Socket::receive() {
     while (is_receiving) {
-        uint8_t buffer[BUFFER_SIZE];  // Buffer for the data
+        uint8_t buffer[MAX_SIZE_BUFFER];  // Buffer for the data
+
         ssize_t received_bytes = ::recv(socket_fd, buffer, sizeof(buffer), 0);
         if (received_bytes > 0) {
-            HeapPacket* packet;
-            packet->parse(*buffer);
-            {
-                std::lock_guard<std::mutex> lock(mtx);
-                rx_packet_buffer.push(std::move(packet));
-                process_data();
-            }
+            uint8_t* received_data = new uint8_t[received_bytes];
+            std::memcpy(received_data, buffer, received_bytes);
+            Order::process_data(this, received_data);
+            delete[] received_data;
+
         } else if (received_bytes < 0) {
+            std::cout << "Socket: Error receiving data\n";
             LOG_ERROR("Unable to receive data");
             state = CLOSING;
+            ::close(socket_fd);
             while (!tx_packet_buffer.empty()) {
                 tx_packet_buffer.pop();
             }
-            while (!rx_packet_buffer.empty()) {
-                rx_packet_buffer.pop();
-            }
-            ::close(socket_fd);
             return;
         }
-    }
-}
-void Socket::process_data() {
-    while (!rx_packet_buffer.empty()) {
-        HeapPacket* packet;
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            packet = rx_packet_buffer.front();
-            rx_packet_buffer.pop();
-        }
-        uint8_t* new_data = (uint8_t*)(packet->build());
-        Order::process_data(this, new_data);
     }
 }
 
@@ -291,7 +275,7 @@ bool Socket::add_order_to_queue(Order& order) {
     }
     {
         std::lock_guard<std::mutex> lock(mutex);
-        tx_packet_buffer.push(move(order));
+        tx_packet_buffer.push(move(&order));
     }
     return true;
 }

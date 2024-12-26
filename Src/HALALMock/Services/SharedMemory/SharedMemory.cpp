@@ -162,3 +162,7 @@ EmulatedPin& SharedMemory::get_pin(Pin pin) {
 
     return gpio_memory[offset];
 }
+
+uint8_t SharedMemory::get_current_state(uint8_t id){
+	return SharedMemory::state_machine_memory[id];
+}

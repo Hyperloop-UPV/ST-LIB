@@ -27,6 +27,7 @@ class SharedMemory {
 	static void start(const char* gp_memory_name,const char* sm_memory_name);
 	static void close();
 	static EmulatedPin &get_pin(Pin pin);
+	static uint8_t get_current_state(uint8_t id);
 
 	static void update_current_state(uint8_t index, uint8_t state);
   

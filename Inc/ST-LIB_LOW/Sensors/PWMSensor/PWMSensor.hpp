@@ -28,12 +28,14 @@ template<class Type>
 PWMSensor<Type>::PWMSensor(Pin &pin, Type &frequency, Type &duty_cycle) :
 	frequency(&frequency), duty_cycle(&duty_cycle) {
 		id = InputCapture::inscribe(pin);
+		Sensor::inputcapture_id_list.push_back(id);
 }
 
 template<class Type>
 PWMSensor<Type>::PWMSensor(Pin &pin, Type *frequency, Type *duty_cycle) :
 	duty_cycle(duty_cycle), frequency(frequency) {
 		id = InputCapture::inscribe(pin);
+		Sensor::inputcapture_id_list.push_back(id);
 }
 
 template<class Type>
