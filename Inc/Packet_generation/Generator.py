@@ -102,7 +102,7 @@ def GenerateEnum(board:BoardDescription):
     return enums_data
     
 def GenerateData(board:BoardDescription):
-    Data =[]
+    Data =set()
     for packet in board.packets:
         if packet != "orders":
             for packet_instance in board.packets[packet]:
@@ -112,8 +112,8 @@ def GenerateData(board:BoardDescription):
                 for variable in packet_instance.variables:
                     data += (str(packet_instance.measurements[i].type)+" "+ str(variable) +",")
                     i += 1  
-                Data.append(data)
-                
+                Data.add(data)
+    Data = list(Data)
     if Data and Data[-1].endswith(","):
         Data[-1] = Data[-1][:-1]
     total_data ="".join(Data)
