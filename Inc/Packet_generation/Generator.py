@@ -91,13 +91,14 @@ class MeasurmentsDescription:
         
 
 def GenerateEnum(board:BoardDescription):
-    Enums = []
+    Enums = set()
     for packet in board.packets:
         if packet != "orders":
             for packet_instance in board.packets[packet]:
                 for measurement in packet_instance.measurements:
                     if hasattr(measurement, "enum"):
-                        Enums.append(measurement.enum)
+                        Enums.add(measurement.enum)
+    Enums = list(Enums)
     enums_data = "\n".join(Enums)
     return enums_data
     
