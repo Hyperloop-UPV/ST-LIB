@@ -10,7 +10,8 @@ using std::unordered_map;
 using std::vector;
 
 #define FDCAN_PORT_BASE 7070
-extern const in_addr_t fdcan_ip_adress;
+#define FDCAN_PORT_SEND 6969
+extern const std::string fdcan_ip_adress;
 
 class FDCAN {
    public:

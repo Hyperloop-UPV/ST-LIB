@@ -1,10 +1,14 @@
 #include "HALALMock/Services/Communication/FDCAN/FDCAN.hpp"
 #include <HALALMock/Models/PinModel/Pin.hpp>
 #include <HALALMock/Services/SharedMemory/SharedMemory.hpp>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-
+#include <bits/stdc++.h> 
+#include <stdlib.h> 
+#include <unistd.h> 
+#include <string.h> 
+#include <sys/types.h> 
+#include <sys/socket.h> 
+#include <arpa/inet.h> 
+#include <netinet/in.h> 
 //temp include for tests:
 #include <iostream>
 
@@ -60,17 +64,18 @@ void FDCAN::start(){
 		FDCAN::Instance* instance = inst.second;
 		instance->rx_queue = queue<FDCAN::Packet>();
 		instance->tx_data = vector<uint8_t>();
+		
 
-
-		/*instance -> socket = socket(AF_INET,SOCK_DGRAM,0);
+		instance -> socket = socket(AF_INET,SOCK_DGRAM,0);
 		if(instance -> socket < 0){
 			ErrorHandler("Error creating socket for FDCAN %d", instance->fdcan_number);
 		}
 		sockaddr_in BroadcastAddress;
 		BroadcastAddress.sin_family = AF_INET;
-		BroadcastAddress.sin_port = htons(FDCAN_PORT_BASE + Port_counter);
+		BroadcastAddress.sin_port = htons(uint16_t(FDCAN_PORT_BASE) + Port_counter);
 		Port_counter++;
-		BroadcastAddress.sin_addr.s_addr = fdcan_ip_adress;
+		std::cout<<fdcan_ip_adress.c_str()<<endl;
+		BroadcastAddress.sin_addr.s_addr = inet_addr(fdcan_ip_adress.c_str());
 
 		int enabled = 1;
 		setsockopt(instance->socket, SOL_SOCKET, SO_BROADCAST, &enabled, sizeof(enabled));
@@ -78,9 +83,8 @@ void FDCAN::start(){
 		if(bind(instance->socket, (struct sockaddr*)&BroadcastAddress, sizeof(BroadcastAddress)) < 0){
 			ErrorHandler("Error binding socket for FDCAN %d", instance->fdcan_number);
 		}
-		*/
+		
 	    instance->start = true;
-	    Port_counter++;
 	    FDCAN::registered_fdcan[id] = instance;
 		FDCAN::instance_to_id[instance] = id;
 	}
@@ -99,23 +103,29 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
 		ErrorHandler("The FDCAN %d is not initialized.", instance->fdcan_number);
 		return false;
 	}
+	sockaddr_in destination;
+    destination.sin_family = AF_INET;
+    destination.sin_port = htons(uint16_t(FDCAN_PORT_SEND));
+    destination.sin_addr.s_addr = inet_addr(fdcan_ip_adress.c_str());
 
     size_t buffer_len = sizeof(message_id)+ sizeof(dlc) + dlc_to_number_of_bytes(dlc);
     char* temp_data = new char[buffer_len];
-	temp_data[0] = static_cast<char>(message_id >> 24);
-	temp_data[1] = static_cast<char>(message_id >> 16);
-	temp_data[2] = static_cast<char>(message_id >> 8);
-	temp_data[3] = static_cast<char>(message_id);
+	temp_data[0] = static_cast<char>((message_id >> 24) && 0xFF);
+	temp_data[1] = static_cast<char>((message_id >> 16) && 0xFF);
+	temp_data[2] = static_cast<char>((message_id >> 8 )&& 0xFF);
+	temp_data[3] = static_cast<char>(message_id && 0xFF);
 
-	temp_data[4] = static_cast<char>(static_cast<uint32_t>(dlc) >> 24);
-	temp_data[5] = static_cast<char>(static_cast<uint32_t>(dlc) >> 16);
-	temp_data[6] = static_cast<char>(static_cast<uint32_t>(dlc) >> 8);
-	temp_data[7] = static_cast<char>(static_cast<uint32_t>(dlc));
+	temp_data[4] = static_cast<char>((static_cast<uint32_t>(dlc) >> 24) && 0xFF);
+	temp_data[5] = static_cast<char>((static_cast<uint32_t>(dlc) >> 16 )&& 0xFF);
+	temp_data[6] = static_cast<char>((static_cast<uint32_t>(dlc) >> 8 )&& 0xFF);
+	temp_data[7] = static_cast<char>(static_cast<uint32_t>(dlc) && 0xFF);
 
-	memcpy((temp_data + sizeof(message_id)+ sizeof(dlc)), data, dlc_to_number_of_bytes(dlc));
-	ssize_t total_bytes_sent{0};
-	while (static_cast<size_t>(total_bytes_sent) < strlen(temp_data)) {
-    	ssize_t bytes_sent = send(instance->socket, temp_data + total_bytes_sent, strlen(temp_data) - total_bytes_sent, 0);
+
+	memcpy((temp_data + sizeof(message_id)+ sizeof(dlc)), data, (dlc_to_number_of_bytes(dlc)+8));
+	size_t total_bytes_sent{0};	
+	while (total_bytes_sent < buffer_len) {
+    	ssize_t bytes_sent = sendto(instance->socket, temp_data, (buffer_len- total_bytes_sent), 0,(const struct sockaddr*)&destination, sizeof(destination));
+		std::cout<<"Enviado "<<bytes_sent<<endl;
 		if (bytes_sent < 0) {
 			ErrorHandler("Error sending message with id: 0x%x by FDCAN %d", message_id, instance->fdcan_number);
 			delete[] temp_data;
@@ -140,8 +150,15 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 		return false;
 	}
 	
+	sockaddr_in redieveadrr;
+    redieveadrr.sin_family = AF_INET;
+    redieveadrr.sin_port = htons(uint16_t(FDCAN_PORT_BASE) + Port_counter);
+    redieveadrr.sin_addr.s_addr = inet_addr(fdcan_ip_adress.c_str());
+
+	socklen_t len = sizeof(redieveadrr);
+
 	void* recv_buffer = malloc(72);
-	if(recv(instance->socket, recv_buffer, 72,0)<0){
+	if(recvfrom(instance->socket, recv_buffer, 72,MSG_WAITALL,(struct sockaddr *) &redieveadrr, &len )<0){
 		ErrorHandler("Error receiving message by FDCAN %d", instance->fdcan_number);
 		return false;
 	}
@@ -151,7 +168,7 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 	data->identifier = (recv_buffer_raw[0] << 24) | (recv_buffer_raw[1] << 16) | (recv_buffer_raw[2] << 8) | recv_buffer_raw[3];
 	data->data_length = static_cast<FDCAN::DLC>((recv_buffer_raw[4] << 24) | (recv_buffer_raw[5] << 16) | (recv_buffer_raw[6] << 8) | recv_buffer_raw[7]);
 	for (int i = 8; i < 72; i++)
-		data->rx_data[i] = recv_buffer_raw[i];
+		data->rx_data[i-8] = recv_buffer_raw[i-8];
 
 	return true;
 }
