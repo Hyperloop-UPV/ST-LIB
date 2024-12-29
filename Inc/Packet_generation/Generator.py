@@ -109,9 +109,9 @@ def GenerateData(board:BoardDescription):
             for packet_instance in board.packets[packet]:
                 data = ""
                 i=0
-                data += "uint16_t idpacket" + str(packet_instance.id) + ","
+                data += "uint16_t &idpacket" + str(packet_instance.id) + ","
                 for variable in packet_instance.variables:
-                    data += (str(packet_instance.measurements[i].type)+" "+ str(variable) +",")
+                    data += (str(packet_instance.measurements[i].type)+" &"+ str(variable) +",")
                     i += 1  
                 Data.add(data)
     Data = list(Data)
@@ -138,10 +138,10 @@ def GenerateDataPackets(board:BoardDescription,packet_struct:str):
         if packet != "orders":
             for packet_instance in board.packets[packet]:
                 data = ""
-                data +="&idpacket"+str(packet_instance.id)+"," 
+                data +="    idpacket"+str(packet_instance.id)+"," 
                 
                 for variable in packet_instance.variables:
-                    data += ("&"+str(variable) +",")
+                    data += (str(variable) +",")
                 if data.endswith(","):
                         data = data[:-1]  
                 aux = packet_struct
