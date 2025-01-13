@@ -116,6 +116,7 @@ struct __attribute__((packed)) DualPWM_MockPin{
 struct __attribute__((packed)) ADC_MockPin{
     uint16_t value;
     bool is_on;
+    ADC::ADCResolution resolution;
 } ;
 struct __attribute__((packed)) EXTIPin_MockPin{
     uint32_t priority;

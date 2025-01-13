@@ -49,6 +49,7 @@ void ADC::start() {
         Pin pin = pin_it->second;
         EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
         active_emulated_instances[id] = &emulated_pin;
+		active_emulated_instances[id]->PinData.adc.resolution=instance.resolution;
     }
 }
 
