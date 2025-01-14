@@ -132,6 +132,7 @@ struct __attribute__((packed)) Encoder_MockPin{
 struct __attribute__((packed)) InputCapure_MockPin{
     uint8_t duty_cycle;
     uint32_t frequency;
+    bool is_on;
 };
 struct __attribute__((packed)) FDCAN_MockPin{
 
