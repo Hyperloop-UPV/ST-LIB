@@ -25,7 +25,7 @@ jobs:
           cd cubeclt
           git lfs pull
           chmod +x cubeclt_1.16.0_installer.sh
-          echo | LICENSE_ALREADY_ACCEPTED=1 ./cubeclt_1.16.0_installer.sh
+          echo | LICENSE_ALREADY_ACCEPTED=1 sudo ./cubeclt_1.16.0_installer.sh
       - name: Build 
         run: ./tools/build.sh ${{matrix.build_type}}
         ## the following is because of this known limitation
