@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         build_type: [hardware,simulator]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
       image: jmaralo/hyperloop-upv-firmware:0.1.0
     steps:
@@ -37,7 +37,7 @@ jobs:
   Run-Tests:
     name: Run Simulator tests
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
       image: jmaralo/hyperloop-upv-firmware:0.1.0
     steps:
