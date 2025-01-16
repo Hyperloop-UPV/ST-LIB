@@ -14,7 +14,7 @@ jobs:
         build_type: [hardware,simulator]
     runs-on: ubuntu-24.04
     container:
-      image: jmaralo/hyperloop-upv-firmware:0.1.0
+      image: jmaralo/hyperloop-upv-firmware:0.2.0
     steps:
       - name: Clone ST-LIB
         uses: actions/checkout@v3
@@ -39,7 +39,7 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     container:
-      image: jmaralo/hyperloop-upv-firmware:0.1.0
+      image: jmaralo/hyperloop-upv-firmware:0.2.0
     steps:
       - uses: actions/checkout@v3
       - name: Download test binary compressed
