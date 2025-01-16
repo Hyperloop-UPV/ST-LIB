@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         build_type: [hardware,simulator]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: carlosperate/arm-none-eabi-gcc-action@v1
@@ -36,7 +36,7 @@ jobs:
   Run-Tests:
     name: Run Simulator tests
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Download test binary compressed
