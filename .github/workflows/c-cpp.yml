@@ -12,7 +12,9 @@ jobs:
     strategy:
       matrix:
         build_type: [hardware,simulator]
-    runs-on: jmaralo/hyperloop-upv-firmware:0.1.0
+    runs-on: ubuntu-22.04
+    container:
+      image: jmaralo/hyperloop-upv-firmware:0.1.0
     steps:
       - name: Clone ST-LIB
         uses: actions/checkout@v3
@@ -35,7 +37,9 @@ jobs:
   Run-Tests:
     name: Run Simulator tests
     needs: build
-    runs-on: jmaralo/hyperloop-upv-firmware:0.1.0
+    runs-on: ubuntu-22.04
+    container:
+      image: jmaralo/hyperloop-upv-firmware:0.1.0
     steps:
       - uses: actions/checkout@v3
       - name: Download test binary compressed
