@@ -14,8 +14,18 @@ jobs:
         build_type: [hardware,simulator]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-      - run: sudo -- sh -c 'mkdir /cube-install && cd /cube-install && git clone https://github.com/HyperloopUPV-H8/cubeclt.git && cd cubeclt && git lfs pull && chmod +x cubeclt_1.16.0_installer.sh && echo | LICENSE_ALREADY_ACCEPTED=1 ./cubeclt_1.16.0_installer.sh'
+      - name: Clone ST-LIB
+        uses: actions/checkout@v3
+      - name: Clone cubeclt
+        uses: actions/checkout@v3
+        with:
+          repository: HyperloopUPV-H8/cubeclt
+      - name: Install cubeclt
+        run: |
+          cd cubeclt
+          git lfs pull
+          chmod +x cubeclt_1.16.0_installer.sh
+          echo | LICENSE_ALREADY_ACCEPTED=1 ./cubeclt_1.16.0_installer.sh
       - name: Build 
         run: ./tools/build.sh ${{matrix.build_type}}
         ## the following is because of this known limitation
