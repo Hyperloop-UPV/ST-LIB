@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - run: sudo mkdir /cube-install && sudo cd /cube-install && sudo git clone https://github.com/HyperloopUPV-H8/cubeclt.git && sudo cd cubeclt && sudo git lfs pull && sudo chmod +x cubeclt_1.16.0_installer.sh && sudo echo | LICENSE_ALREADY_ACCEPTED=1 ./cubeclt_1.16.0_installer.sh
+      - run: sudo -- sh -c 'mkdir /cube-install && cd /cube-install && git clone https://github.com/HyperloopUPV-H8/cubeclt.git && cd cubeclt && git lfs pull && chmod +x cubeclt_1.16.0_installer.sh && echo | LICENSE_ALREADY_ACCEPTED=1 ./cubeclt_1.16.0_installer.sh'
       - name: Build 
         run: ./tools/build.sh ${{matrix.build_type}}
         ## the following is because of this known limitation
