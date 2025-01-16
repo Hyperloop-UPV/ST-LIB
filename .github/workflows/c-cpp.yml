@@ -20,9 +20,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: HyperloopUPV-H8/cubeclt
+          path: /cubeclt
       - name: Install cubeclt
         run: |
-          cd cubeclt
+          cd /cubeclt
           git lfs pull
           chmod +x cubeclt_1.16.0_installer.sh
           echo | LICENSE_ALREADY_ACCEPTED=1 sudo ./cubeclt_1.16.0_installer.sh
