@@ -44,27 +44,27 @@ std::unordered_map<Pin, size_t> SHM::pin_offsets = {
  ***********************************************/
 
 std::map<Pin, ADC::Instance> ADC::available_instances = {
-    {PF11, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PF12, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PF13, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PF14, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PF5, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
-    {PF6, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
-    {PF7, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
-    {PF8, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
-    {PF9, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
-    {PF10, Instance(ADC::ADCResolution::ADC_RES_12BITS)},
-    {PC2, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PC3, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PF10, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PC0, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PA0, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PA3, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PA4, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PA5, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PA6, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PB0, Instance(ADC::ADCResolution::ADC_RES_16BITS)},
-    {PB1, Instance(ADC::ADCResolution::ADC_RES_16BITS)}};
+    {PF11, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PF12, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PF13, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PF14, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PF5, Instance(ADCResolution::ADC_RES_12BITS)},
+    {PF6, Instance(ADCResolution::ADC_RES_12BITS)},
+    {PF7, Instance(ADCResolution::ADC_RES_12BITS)},
+    {PF8, Instance(ADCResolution::ADC_RES_12BITS)},
+    {PF9, Instance(ADCResolution::ADC_RES_12BITS)},
+    {PF10, Instance(ADCResolution::ADC_RES_12BITS)},
+    {PC2, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PC3, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PF10, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PC0, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PA0, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PA3, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PA4, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PA5, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PA6, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PB0, Instance(ADCResolution::ADC_RES_16BITS)},
+    {PB1, Instance(ADCResolution::ADC_RES_16BITS)}};
 
 /************************************************
                           PWM
