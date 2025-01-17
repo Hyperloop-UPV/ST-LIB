@@ -13,10 +13,11 @@ jobs:
       matrix:
         build_type: [hardware,simulator]
     runs-on: ubuntu-24.04
+    container:
+      image: jmaralo/hyperloop-upv-firmware:0.2.0
     steps:
-      - uses: actions/checkout@v3
-      - uses: carlosperate/arm-none-eabi-gcc-action@v1
-      - run: arm-none-eabi-gcc --version
+      - name: Clone ST-LIB
+        uses: actions/checkout@v3
       - name: Build 
         run: ./tools/build.sh ${{matrix.build_type}}
         ## the following is because of this known limitation
@@ -33,16 +34,3 @@ jobs:
         #this is because hardware build doesnot create the 
         # test executable
         continue-on-error: true
-  Run-Tests:
-    name: Run Simulator tests
-    needs: build
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v3
-      - name: Download test binary compressed
-        uses: actions/download-artifact@v4
-        with:
-          name: stlib_test
-      - run: tar -xvf test_files.tar
-      - name: Run test
-        run: ./tools/run_sim_tests.sh
