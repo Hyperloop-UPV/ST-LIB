@@ -70,7 +70,7 @@ uint32_t InputCapture::read_frequency(uint8_t id) {
 		return 0;
 	}
 	Instance& instance = active_instances[id];
-	if(!instance.is_active)
+	if(!instance.is_on)
 	{
 		return 0;
 	}
@@ -84,7 +84,7 @@ uint8_t InputCapture::read_duty_cycle(uint8_t id) {
 		return 0;
 	}
 	Instance& instance = active_instances[id];
-	if(!instance.is_active)
+	if(!instance.is_on)
 	{
 		return 0;
 	}

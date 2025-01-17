@@ -56,10 +56,10 @@ TEST(InputCapture, TurnOn){
     EmulatedPin &pin = SharedMemory::get_pin(PF0);
 
     bool is_on;
-    is_on = InputCapture::active_instances[id1].is_active;
+    is_on = InputCapture::active_instances[id1].is_on;
     ASSERT_FALSE(is_on);
     InputCapture::turn_on(id1);
-    is_on = InputCapture::active_instances[id1].is_active;
+    is_on = InputCapture::active_instances[id1].is_on;
     ASSERT_TRUE(is_on);
 
     SharedMemory::close();
@@ -74,12 +74,12 @@ TEST(InputCapture, TurnOff){
     InputCapture::turn_on(id1);
 
     bool is_on;
-    is_on = InputCapture::active_instances[id1].is_active;
+    is_on = InputCapture::active_instances[id1].is_on;
     InputCapture::turn_on(id1);
     ASSERT_TRUE(is_on);
 
     InputCapture::turn_off(id1);
-    is_on = InputCapture::active_instances[id1].is_active;
+    is_on = InputCapture::active_instances[id1].is_on;
     ASSERT_FALSE(is_on);
 
     SharedMemory::close();
