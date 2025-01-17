@@ -95,6 +95,18 @@ enum class PinType: uint8_t {
     // TODO: Add more types
 
 };
+
+/// In STM32H723ZG, the ADC1 and ADC2 has 16 bits as their maximum
+    /// resolution, while the ADC3 has 12 bits. Both of them can be configured
+    /// to has less resolution than its maximum
+    enum class ADCResolution : uint32_t {
+        ADC_RES_16BITS = 0x00000000,
+        ADC_RES_14BITS = 0x00000004,
+        ADC_RES_12BITS = 0x00000008,
+        ADC_RES_10BITS = 0x0000000C
+    };
+
+
 struct __attribute__((packed)) DigitalOutput_MockPin{
     bool state;
 } ;
@@ -116,7 +128,7 @@ struct __attribute__((packed)) DualPWM_MockPin{
 struct __attribute__((packed)) ADC_MockPin{
     uint16_t value;
     bool is_on;
-    ADC::ADCResolution resolution;
+    ADCResolution resolution;
 } ;
 struct __attribute__((packed)) EXTIPin_MockPin{
     uint32_t priority;
