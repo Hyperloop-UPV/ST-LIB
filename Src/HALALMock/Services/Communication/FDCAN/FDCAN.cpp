@@ -121,7 +121,7 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
 	temp_data[6] = static_cast<char>((static_cast<uint32_t>(dlc_to_number_of_bytes(dlc)) >> 8 )& 0xFF);
 	temp_data[7] = static_cast<char>(static_cast<uint32_t>(dlc_to_number_of_bytes(dlc)) & 0xFF);
 
-	memcpy((temp_data + sizeof(message_id)+ sizeof(dlc)), data, (dlc_to_number_of_bytes(dlc)+8));
+	memcpy((temp_data + sizeof(message_id)+ sizeof(dlc)), data, (dlc_to_number_of_bytes(dlc)));
 	size_t total_bytes_sent{0};	
 	while (total_bytes_sent < buffer_len) {
     	ssize_t bytes_sent = sendto(instance->socket, temp_data, (buffer_len- total_bytes_sent), 0,(const struct sockaddr*)&destination, sizeof(destination));
@@ -157,8 +157,9 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 
 	socklen_t len = sizeof(redieveadrr);
 	void* recv_buffer = malloc(72);
-	
+	std::cout<<"Receiving data"<<endl;
 	int recv_bytes = recvfrom(instance->socket, recv_buffer, 72, 0, (struct sockaddr*)&redieveadrr, &len);
+	std::cout<<"Received data"<<endl;
 	if(recv_bytes<0){
 		ErrorHandler("Error receiving message by FDCAN %d", instance->fdcan_number);
 		free(recv_buffer);
@@ -169,7 +170,7 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 
 	data->identifier = (recv_buffer_raw[0] << 24) | (recv_buffer_raw[1] << 16) | (recv_buffer_raw[2] << 8) | recv_buffer_raw[3];
 	data->data_length = static_cast<FDCAN::DLC>((recv_buffer_raw[4] << 24) | (recv_buffer_raw[5] << 16) | (recv_buffer_raw[6] << 8) | recv_buffer_raw[7]);
-	for (int i = 8; i < 72; i++)
+	for (uint8_t i = 8; i < (dlc_to_number_of_bytes(data->data_length)); i++)
 		data->rx_data[i-8] = recv_buffer_raw[i];
 	free(recv_buffer_raw);
 	free(recv_buffer);
