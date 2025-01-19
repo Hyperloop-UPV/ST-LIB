@@ -2,12 +2,12 @@ name: Compile Checks
 
 on:
   push:
-    paths:
-      - '**.cpp'
-      - '**.hpp'
-      - '**.c'
-      - '**.h'
-      - '**.py'
+    # paths:
+    #   - '**.cpp'
+    #   - '**.hpp'
+    #   - '**.c'
+    #   - '**.h'
+    #   - '**.py'
 
 jobs:
   compile-checks:
