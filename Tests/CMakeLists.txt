@@ -41,3 +41,12 @@ target_include_directories(${STLIB_TEST_EXECUTABLE} PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(${STLIB_TEST_EXECUTABLE})
+
+# Create symlink to test executable for CI/CD to pick it up
+add_custom_command(
+    TARGET ${STLIB_TEST_EXECUTABLE}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_CURRENT_BINARY_DIR}/${STLIB_TEST_EXECUTABLE}
+    ${CMAKE_SOURCE_DIR}/out/build/test.elf
+)
