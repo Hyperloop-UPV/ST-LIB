@@ -58,6 +58,7 @@ void Ethernet::inscribe() {
                 return;
             }
         }
+        is_ready = true;
     } else {
         LOG_ERROR("Unable to inscribe Ethernet because is already ready!");
     }

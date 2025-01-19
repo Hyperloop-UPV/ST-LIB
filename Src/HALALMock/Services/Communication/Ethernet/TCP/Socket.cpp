@@ -186,7 +186,7 @@ void Socket::close() {
         tx_packet_buffer.pop();
     }
     state = CLOSING;
-    LOG_INFO("Socket has been closed correctly")
+    LOG_INFO("Socket has been closed correctly");
 }
 
 void Socket::reconnect() {  // I'm going to do in reconnect a total reset due to
@@ -211,16 +211,6 @@ void Socket::reset() {
         connecting_sockets[remote_node] = this;
     }
     connect_attempt();
-}
-
-void Socket::reset() {
-    EthernetNode remote_node(remote_ip, remote_port);
-    if (!connecting_sockets.contains(remote_node)) {
-        connecting_sockets[remote_node] = this;
-    }
-    state = INACTIVE;
-    close();
-    configure_socket_and_connect();
 }
 
 void Socket::send() {

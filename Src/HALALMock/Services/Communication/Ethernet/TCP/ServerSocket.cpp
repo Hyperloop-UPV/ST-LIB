@@ -292,30 +292,3 @@ void ServerSocket::close_inside_thread() {
     listening_sockets[local_port] = this;
     state = CLOSED;
 }
-void ServerSocket::configure_server_socket_and_listen() {
-    create_server_socket();
-    if (!configure_server_socket()) {
-        LOG_ERROR("Can't configure ServerSocket");
-        close();
-        return;
-    }
-    if (listen(server_socket_fd, SOMAXCONN) < 0) {
-        LOG_ERROR("Can't listen");
-        close();
-        return;
-    }
-    state = LISTENING;
-    listening_sockets[local_port] = this;
-    // create a thread to listen
-    listening_thread = std::jthread[&]() {
-        // solo aceptamos una conexion
-        struct sockaddr_in client_addr;
-        socklen_t client_len = sizeof(client_addr);
-        client_fd = accept(server_socket_fd, (struct sockaddr*)&client_addr,
-                           &client_len);
-        if (client_fd > 0) {
-            if (!accept_callback(client_fd, client_addr)) {
-                LOG_ERROR("Something went wrong in accept_callback");
-            } else {
-                OrderProtocol::sockets.push_back(this);
-            }
