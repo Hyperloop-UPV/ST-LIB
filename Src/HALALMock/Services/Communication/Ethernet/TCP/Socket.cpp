@@ -5,7 +5,6 @@ std::unordered_map<EthernetNode, Socket*> Socket::connecting_sockets = {};
 #include "HALALMock/Services/Logger/Logger.hpp"
 
 #define BUFFER_SIZE 1024
-unordered_map<EthernetNode, Socket*> Socket::connecting_sockets = {};
 
 Socket::Socket() = default;
 
