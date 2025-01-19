@@ -231,74 +231,55 @@ bool ServerSocket::configure_server_socket() {
     }
     return true;
 }
-void ServerSocket::configure_server_socket_and_listen() {
-    create_server_socket();
-    if (!configure_server_socket()) {
-        LOG_ERROR("Can't configure ServerSocket");
-        close();
-        return;
-    }
-    if (listen(server_socket_fd, SOMAXCONN) < 0) {
-        LOG_ERROR("Can't listen");
-        close();
-        return;
-    }
-    state = LISTENING;
-    listening_sockets[local_port] = this;
-    // create a thread to listen
-    listening_thread = std::jthread[&]() {
-        // solo aceptamos una conexion
-        struct sockaddr_in client_addr;
-        socklen_t client_len = sizeof(client_addr);
-        client_fd = accept(server_socket_fd, (struct sockaddr*)&client_addr,
-                           &client_len);
-        if (client_fd > 0) {
-            if (!accept_callback(client_fd, client_addr)) {
-                LOG_ERROR("Something went wrong in accept_callback");
-            } else {
-                OrderProtocol::sockets.push_back(this);
-            }
 
+bool ServerSocket::accept_callback(int& client_fd,
+                                   sockaddr_in& client_address) {
+    if (listening_sockets.contains(local_port) && state == LISTENING) {
+        state = ACCEPTED;
+        remote_ip = IPV4(client_address.sin_addr.s_addr);
+        this->client_fd = client_fd;
+        // configure_server_socket
+        configure_server_socket(client_fd);
+        // create the receive thread
+        receive_thread = std::jthread(&ServerSocket::receive, this);
+        return true;
+    }
+    return false;
+}
+void ServerSocket::receive() {
+    while (state == ACCEPTED) {
+        uint8_t buffer[MAX_SIZE_BUFFER];  // Buffer for the data
+        ssize_t received_bytes = ::recv(client_fd, buffer, sizeof(buffer), 0);
+        if (received_bytes > 0) {
+            uint8_t* received_data = new uint8_t[received_bytes];
+            std::memcpy(received_data, buffer, received_bytes);
+            Order::process_data(this, received_data);
+            delete[] received_data;
         } else {
-            LOG_ERROR("Can't accept");
-            close();
+            LOG_WARNING(
+                "Unable to receive the data or Client Disconnected, "
+                "closing...");
+            state = CLOSING;
+            close_inside_thread();
             return;
         }
     }
 }
-bool ServerSocket::accept_callback(int client_fd, sockaddr_in client_address) {
-    if (listening_sockets.contains(local_port) && state == LISTENING) {
-        state = ACCEPTED;
-        remote_ip = IPV4(client_address.sin_addr.s_addr);
-        rx_packet_buffer = {};
-        handle_receive_from_client(client_fd);
-        return true;
-    } else {
-        return false;
+void ServerSocket::close_inside_thread() {
+    // close descriptors
+    if (server_socket_fd >= 0) {
+        ::close(server_socket_fd);
     }
-}
-void ServerSocket::handle_receive_from_client(int client_fd) {
-    receive_thread = std::jthread([client_fd]() {
-        uint8_t buffer[BUFFER_SIZE];  // Buffer for the data
-        ssize_t bytes_received;
-        while ((bytes_received = recv(client_fd, buffer, sizeof(buffer), 0)) >
-                   0 &&
-               state == ACCEPTED) {
-            Packet* packet;
-            packet->parse(*buffer);
-            {
-                std::lock_guard<std::mutex> lock(mtx);
-                rx_packet_buffer.push(&packet);
-                process_data();
-            }
+    if (client_fd >= 0) {
+        ::close(client_fd);
+    }
+    // clean the transmissions buffers
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        while (!tx_packet_buffer.empty()) {
+            tx_packet_buffer.pop();
         }
-        // if receive a 0 means that the client has finished the connection so
-        // we will close this server_socket
-        if (bytes_received == 0) {
-            LOG_WARNING("Client disconnected");
-        } else if (bytes_received < 0) {
-            LOG_ERROR("Error receiving data");
-        }
-        close();
-    });
+    }
+    listening_sockets[local_port] = this;
+    state = CLOSED;
 }

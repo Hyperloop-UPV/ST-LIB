@@ -43,9 +43,8 @@ void DatagramSocket::create_udp_socket() {
     servaddr.sin_port = htons(local_port);
     servaddr.sin_addr.s_addr = local_ip.address;
     if (bind(udp_socket, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        LOG_ERROR(std::format("Unable to bind to address {} in port {}",
-                              local_ip->string_address, local_port));
-        close(udp_socket);
+        LOG_ERROR("Unable to bind");
+        ::close(udp_socket);
         is_disconnected = true;
         return;
     }
@@ -61,13 +60,18 @@ void DatagramSocket::create_udp_socket() {
                 recvfrom(udp_socket, (uint8_t*)received_data, MAX_SIZE_PACKET,
                          0, (struct sockaddr*)&src_addr, &addr_len);
             if (size < 0) {
-                LOG_ERROR("Unable to receive data");
-                is_receiving = false;
-                return;
+                if (errno == EBADF) {
+                    LOG_WARNING("UDP socket has been closed");
+                    break;
+                } else {
+                    LOG_ERROR("Error while receiving data");
+                    continue;
+                }
             }
             // receive callback
             Packet::parse_data(received_data);
         }
+        is_receiving = false;
     });
     Ethernet::update();
 }
@@ -80,17 +84,15 @@ void DatagramSocket::operator=(DatagramSocket&& other) {
     other.is_disconnected = true;
 }
 
-void DatagramSocket::reconnect() {
-    is_disconnected = true;
-    close();
-    create_udp_socket();
-}
-
 void DatagramSocket::close() {
-    // check if receiving thread is on and delete it
-    if (is_receiving) {
-        receiving_udp_thread.~jthread();
+    if (!is_disconnected) {
+        if (::close(udp_socket)) {
+            LOG_ERROR("Unable to close UDP socket");
+        }
+        if (is_receiving) {
+            receiving_udp_thread.request_stop();
+            receiving_udp_thread.~jthread();
+        }
+        is_disconnected = true;
     }
-    ::close(udp_socket);
-    is_disconnected = true;
 }
