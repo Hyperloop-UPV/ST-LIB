@@ -84,61 +84,6 @@ void DatagramSocket::operator=(DatagramSocket&& other) {
     other.is_disconnected = true;
 }
 
-DatagramSocket::DatagramSocket(EthernetNode local_node,
-                               EthernetNode remote_node)
-    : DatagramSocket(local_node.ip, local_node.port, remote_node.ip,
-                     remote_node.port) {}
-
-DatagramSocket::~DatagramSocket() {
-    if (not is_disconnected) close();
-}
-void DatagramSocket::create_udp_socket() {
-    udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (udp_socket < 0) {
-        LOG_ERROR("Unable to create socket");
-    }
-    struct sockaddr_in servaddr;
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(local_port);
-    servaddr.sin_addr.s_addr = local_ip.address;
-    if (bind(udp_socket, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        LOG_ERROR(std::format("Unable to bind to address {} in port {}",
-                              local_ip->string_address, local_port));
-        close(udp_socket);
-        is_disconnected = true;
-        return;
-    }
-    is_disconnected = false;
-    // receiving callback
-    receiving_udp_thread = std::jthread([&]() {
-        is_receiving = true;
-        while (true) {
-            uint8_t received_data[1024];
-            struct sockaddr_in src_addr;
-            socklen_t addr_len = sizeof(src_addr);
-            ssize_t size =
-                recvfrom(udp_socket, (uint8_t*)received_data, MAX_SIZE_PACKET,
-                         0, (struct sockaddr*)&src_addr, &addr_len);
-            if (size < 0) {
-                LOG_ERROR("Unable to receive data");
-                is_receiving = false;
-                return;
-            }
-            // receive callback
-            Packet::parse_data(received_data);
-        }
-    });
-    Ethernet::update();
-}
-void DatagramSocket::operator=(DatagramSocket&& other) {
-    udp_socket = move(other.udp_socket);
-    local_ip = move(other.local_ip);
-    local_port = move(other.local_port);
-    remote_ip = other.remote_ip;
-    remote_port = other.remote_port;
-    other.is_disconnected = true;
-}
-
 void DatagramSocket::close() {
     if (!is_disconnected) {
         if (::close(udp_socket)) {
@@ -150,13 +95,4 @@ void DatagramSocket::close() {
         }
         is_disconnected = true;
     }
-}
-
-void DatagramSocket::close() {
-    // check if receiving thread is on and delete it
-    if (is_receiving) {
-        receiving_udp_thread.~jthread();
-    }
-    ::close(udp_socket);
-    is_disconnected = true;
 }
