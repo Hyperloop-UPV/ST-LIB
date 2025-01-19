@@ -187,6 +187,7 @@ void Socket::close() {
         tx_packet_buffer.pop();
     }
     state = CLOSING;
+    LOG_INFO("Socket has been closed correctly")
 }
 
 void Socket::reconnect() {  // I'm going to do in reconnect a total reset due to
