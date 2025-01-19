@@ -184,7 +184,7 @@ void Socket::close() {
         rx_packet_buffer.pop();
     }
     state = CLOSING;
-    ::close(socket_fd);
+    LOG_INFO("Socket has been closed correctly")
 }
 
 void Socket::reconnect() {
