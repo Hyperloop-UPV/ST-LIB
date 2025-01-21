@@ -11,12 +11,10 @@
 #include <netinet/in.h> 
 
 
-//temp include for tests:
-#include <iostream>
-
 
 
 uint16_t FDCAN::id_counter = 0;
+uint8_t FDCAN::Port_counter = 0;
 
 unordered_map<uint8_t, FDCAN::Instance*> FDCAN::registered_fdcan = {};
 
@@ -68,14 +66,15 @@ void FDCAN::start(){
 		instance->rx_queue = queue<FDCAN::Packet>();
 		instance->tx_data = vector<uint8_t>();
 		
-
+		instance->portcounter = Port_counter;
+		Port_counter++;
 		instance -> socket = socket(AF_INET,SOCK_DGRAM,0);
 		if(instance -> socket < 0){
 			ErrorHandler("Error creating socket for FDCAN %d", instance->fdcan_number);
 		}
 		sockaddr_in BroadcastAddress;
 		BroadcastAddress.sin_family = AF_INET;
-		BroadcastAddress.sin_port = htons(uint16_t(FDCAN_PORT_BASE) + Port_counter);
+		BroadcastAddress.sin_port = htons(uint16_t(FDCAN_PORT_BASE) + instance->portcounter);
 		BroadcastAddress.sin_addr.s_addr = inet_addr(fdcan_ip_adress.c_str());
 
 		int enabled = 1;
@@ -106,7 +105,7 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
 	}
 	sockaddr_in destination;
     destination.sin_family = AF_INET;
-    destination.sin_port = htons(uint16_t(FDCAN_PORT_SEND)+ Port_counter);
+    destination.sin_port = htons(uint16_t(FDCAN_PORT_SEND)+ instance->portcounter);
     destination.sin_addr.s_addr = inet_addr(fdcan_ip_adress.c_str());
 
     size_t buffer_len = sizeof(message_id)+ sizeof(dlc) + dlc_to_number_of_bytes(dlc);
@@ -125,7 +124,6 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
 	size_t total_bytes_sent{0};	
 	while (total_bytes_sent < buffer_len) {
     	ssize_t bytes_sent = sendto(instance->socket, temp_data, (buffer_len- total_bytes_sent), 0,(const struct sockaddr*)&destination, sizeof(destination));
-		std::cout<<"Enviado "<<bytes_sent<<endl;
 		if (bytes_sent < 0) {
 			ErrorHandler("Error sending message with id: 0x%x by FDCAN %d", message_id, instance->fdcan_number);
 			delete[] temp_data;
@@ -152,14 +150,13 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 
 	sockaddr_in redieveadrr;
     redieveadrr.sin_family = AF_INET;
-    redieveadrr.sin_port = htons(uint16_t(FDCAN_PORT_SEND) + Port_counter);
+    redieveadrr.sin_port = htons(uint16_t(FDCAN_PORT_BASE) + instance->portcounter);
     redieveadrr.sin_addr.s_addr = inet_addr(fdcan_ip_adress.c_str());
 
 	socklen_t len = sizeof(redieveadrr);
 	void* recv_buffer = malloc(72);
-	std::cout<<"Receiving data"<<endl;
 	int recv_bytes = recvfrom(instance->socket, recv_buffer, 72, 0, (struct sockaddr*)&redieveadrr, &len);
-	std::cout<<"Received data"<<endl;
+
 	if(recv_bytes<0){
 		ErrorHandler("Error receiving message by FDCAN %d", instance->fdcan_number);
 		free(recv_buffer);
@@ -170,9 +167,9 @@ if (not FDCAN::registered_fdcan.contains(id)) {
 
 	data->identifier = (recv_buffer_raw[0] << 24) | (recv_buffer_raw[1] << 16) | (recv_buffer_raw[2] << 8) | recv_buffer_raw[3];
 	data->data_length = static_cast<FDCAN::DLC>((recv_buffer_raw[4] << 24) | (recv_buffer_raw[5] << 16) | (recv_buffer_raw[6] << 8) | recv_buffer_raw[7]);
-	for (uint8_t i = 8; i < (dlc_to_number_of_bytes(data->data_length)); i++)
+	for (uint8_t i = 8; i < (data->data_length+8); i++){
 		data->rx_data[i-8] = recv_buffer_raw[i];
-	free(recv_buffer_raw);
+	}
 	free(recv_buffer);
 	return true;
 }
