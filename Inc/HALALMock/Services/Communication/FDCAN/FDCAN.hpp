@@ -9,8 +9,9 @@ using std::queue;
 using std::unordered_map;
 using std::vector;
 
-#define FDCAN_PORT_BASE 7070
-#define FDCAN_PORT_SEND 6969
+
+extern const uint16_t FDCAN_PORT_SEND;
+extern const uint16_t FDCAN_PORT_BASE;
 extern const std::string fdcan_ip_adress;
 
 class FDCAN {
@@ -59,6 +60,7 @@ class FDCAN {
         uint8_t rx_queue_max_size = 64;
         vector<uint8_t> tx_data;
         uint8_t fdcan_number;
+        uint8_t portcounter;
         uint16_t socket;
         bool start = false;
     };
