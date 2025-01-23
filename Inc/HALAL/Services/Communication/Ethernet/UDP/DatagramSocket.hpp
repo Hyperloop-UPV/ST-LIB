@@ -1,48 +1,48 @@
 #pragma once
-#include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
-#include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALAL/Models/Packets/Packet.hpp"
+#include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
+#include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
 
 #ifdef HAL_ETH_MODULE_ENABLED
 #define PBUF_POOL_MEMORY_DESC_POSITION 8
 
-class DatagramSocket{
-private:
-	struct udp_pcb* udp_control_block;
-	static void receive_callback(void *args, struct udp_pcb *udp_control_block, struct pbuf *packet_buffer, const ip_addr_t *remote_address, u16_t port);
-	bool send_packet(Packet& packet){
-		uint8_t* packet_buffer = packet.build();
+class DatagramSocket {
+   public:
+    struct udp_pcb* udp_control_block;
 
-		struct pbuf* tx_buffer = pbuf_alloc(PBUF_TRANSPORT, packet.size, PBUF_RAM);
-		pbuf_take(tx_buffer, packet_buffer, packet.size);
-		udp_send(udp_control_block, tx_buffer);
-		pbuf_free(tx_buffer);
+    IPV4 local_ip;
+    uint32_t local_port;
+    IPV4 remote_ip;
+    uint32_t remote_port;
+    bool is_disconnected = true;
 
-		return true;
-	}
-public:
-	IPV4 local_ip;
-	uint32_t local_port;
-	IPV4 remote_ip;
-	uint32_t remote_port;
-	bool is_disconnected = true;
+    DatagramSocket();
+    DatagramSocket(DatagramSocket&& other);
+    DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip,
+                   uint32_t remote_port);
+    DatagramSocket(EthernetNode local_node, EthernetNode remote_node);
+    ~DatagramSocket();
 
-	DatagramSocket();
-	DatagramSocket(DatagramSocket&& other);
-	DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port);
-	DatagramSocket(EthernetNode local_node, EthernetNode remote_node);
-	~DatagramSocket();
+    void operator=(DatagramSocket&&);
 
-	void operator=(DatagramSocket&&);
+    void reconnect();
 
-	
+    static void receive_callback(void* args, struct udp_pcb* udp_control_block,
+                                 struct pbuf* packet_buffer,
+                                 const ip_addr_t* remote_address, u16_t port);
+    bool send_packet(Packet& packet) {
+        uint8_t* packet_buffer = packet.build();
 
-	void reconnect();
+        struct pbuf* tx_buffer =
+            pbuf_alloc(PBUF_TRANSPORT, packet.size, PBUF_RAM);
+        pbuf_take(tx_buffer, packet_buffer, packet.size);
+        udp_send(udp_control_block, tx_buffer);
+        pbuf_free(tx_buffer);
 
-	void close();
+        return true;
+    }
 
-
+    void close();
 };
-
 
 #endif

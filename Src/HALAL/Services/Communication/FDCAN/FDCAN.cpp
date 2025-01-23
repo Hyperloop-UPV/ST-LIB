@@ -106,10 +106,10 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
 }
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs){
-	FDCAN::read(FDCAN::handle_to_id[hfdcan],&packet);
-	if(packet.identifier == FDCAN::ID::FAULT_ID){
-		ErrorHandler("FAULT PROPAGATED via CAN");
-	}
+	// FDCAN::read(FDCAN::handle_to_id[hfdcan],&packet);
+	// if(packet.identifier == FDCAN::ID::FAULT_ID){
+		// ErrorHandler("FAULT PROPAGATED via CAN");
+	// }
 }
 
 bool FDCAN::read(uint8_t id, FDCAN::Packet* data){
