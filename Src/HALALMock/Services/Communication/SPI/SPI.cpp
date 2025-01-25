@@ -36,8 +36,9 @@ void sender_slave_thread(SPI::Instance& spi_instance) {
     while (true) {
         // Wait to be selected
         std::unique_lock select_lock(spi_instance.selected_mx);
-        spi_instance.cv_selected.wait(select_lock, [&spi_instance] {
+        spi_instance.cv_selected.wait_for(select_lock, std::chrono::milliseconds(100), [&spi_instance] {
             EmulatedPin& e_pin = SharedMemory::get_pin(*spi_instance.SS);
+            LOG_DEBUG("Transmitter thread waiting to be selected");
             return e_pin.PinData.spi.is_on == true;
         });
         select_lock.unlock();
@@ -124,17 +125,29 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
         return 0;
     }
 
-    SPI::Instance* spi_instance = SPI::available_spi[spi];
+    SPI::Instance* spi_instance(SPI::available_spi[spi]);
 
     EmulatedPin& SCK_pin = SharedMemory::get_pin(*spi_instance->SCK);
     EmulatedPin& MOSI_pin = SharedMemory::get_pin(*spi_instance->MOSI);
     EmulatedPin& MISO_pin = SharedMemory::get_pin(*spi_instance->MISO);
 
-    if (SCK_pin.type != PinType::NOT_USED ||
-        MOSI_pin.type != PinType::NOT_USED ||
-        MISO_pin.type != PinType::NOT_USED) {
-        ErrorHandler("The SPI pins are already used");
-        return 0;
+    if (SCK_pin.type != PinType::NOT_USED) {
+        LOG_FATAL(
+            std::format("Attempt to inscribe pin {} to SPI, when it is already "
+                        "registered",
+                        spi_instance->SCK->to_string()));
+    }
+    if (MOSI_pin.type != PinType::NOT_USED) {
+        LOG_FATAL(
+            std::format("Attempt to inscribe pin {} to SPI, when it is already "
+                        "registered",
+                        spi_instance->MOSI->to_string()));
+    }
+    if (MISO_pin.type != PinType::NOT_USED) {
+        LOG_FATAL(
+            std::format("Attempt to inscribe pin {} to SPI, when it is already "
+                        "registered",
+                        spi_instance->MISO->to_string()));
     }
 
     SCK_pin.type = PinType::SPI;
@@ -157,6 +170,10 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
     SS_pin.type = PinType::SPI;
     SS_pin.PinData.spi.is_on = false;  // When this pin turns on, the simulator
                                        // slave know that is selected.
+
+    LOG_DEBUG(std::format(
+        "Pin {} is {} and pointer is {}", spi_instance->SS->to_string(),
+        SS_pin.PinData.spi.is_on, static_cast<const void*>(&SS_pin)));
 
     // Prepare local address
     sockaddr_in local_address;
@@ -216,8 +233,11 @@ void SPI::start() {
     for (auto [_, spi] : SPI::registered_spi) {
         SPI::init(spi);
         EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
-        SS_pin.PinData.spi.is_on =
-            true;  // This pin tells the simulator to connect
+        SS_pin.PinData.spi.is_on = true;
+
+        LOG_DEBUG(std::format("Pin {} is {} and pointer is {}",
+                              spi->SS->to_string(), SS_pin.PinData.spi.is_on,
+                              static_cast<const void*>(&SS_pin)));
     }
 }
 
@@ -261,7 +281,7 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
     if (spi_instance->mode == SPIMode::SLAVE) {
         // Wait to be selected
         std::unique_lock select_lock(spi_instance->selected_mx);
-        spi_instance->cv_selected.wait(select_lock, [&spi_instance] {
+        spi_instance->cv_selected.wait_for(select_lock, std::chrono::milliseconds(100), [&spi_instance] {
             EmulatedPin& e_pin = SharedMemory::get_pin(*spi_instance->SS);
             return e_pin.PinData.spi.is_on == true;
         });
@@ -559,6 +579,10 @@ void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
 void SPI::turn_on_chip_select(SPI::Instance* spi) {
     EmulatedPin& SS_pin = SharedMemory::get_pin(*spi->SS);
     SS_pin.PinData.spi.is_on = true;
+
+    SS_pin = SharedMemory::get_pin(*spi->SS);
+    LOG_DEBUG(std::format("Pin {} set to {}", spi->SS->to_string(),
+                          SS_pin.PinData.spi.is_on));
 }
 
 void SPI::turn_off_chip_select(SPI::Instance* spi) {
