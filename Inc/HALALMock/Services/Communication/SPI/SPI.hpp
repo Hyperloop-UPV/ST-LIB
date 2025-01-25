@@ -42,7 +42,7 @@ class SPI {
         Pin* MOSI; /**< MOSI pin. */
         Pin* MISO; /**< MISO pin. */
         Pin* SS;   /**< Slave select pin. */
-        std::pair<char*, uint16_t> destination_address;
+        std::pair<const char*, uint16_t> destination_address;
         int socket;
         Pin* RS; /**< Ready Slave pin (optional)*/
         uint8_t RShandler;
@@ -77,18 +77,6 @@ class SPI {
         std::mutex transmission_mx;
         std::condition_variable cv_transmission;
 
-        std::jthread receiver_thread;
-        std::queue<span<uint8_t>> reception_queue;
-        std::mutex reception_mx;
-        std::condition_variable cv_reception;
-
-        std::jthread sender_receiver_thread;
-        std::queue<std::pair<span<uint8_t>, span<uint8_t>>>
-            transmission_reception_queue;
-        std::mutex transmission_reception_mx;
-        std::condition_variable cv_transmission_reception;
-
-        std::atomic<bool> selected = false;
         std::condition_variable cv_selected;
         std::mutex selected_mx;
 

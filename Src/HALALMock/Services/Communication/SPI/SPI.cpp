@@ -21,13 +21,12 @@ void sender_slave_thread(SPI::Instance& spi_instance) {
     dest_address.sin_family = AF_INET;  // Set IPv4
     dest_address.sin_port =
         htons(spi_instance.destination_address.second);  // Set port
-    int result =
-        inet_pton(AF_INET, spi_instance.destination_address.first,
-                  &dest_address.sin_addr);  // Set broadcast IP, supposing that
-                                            // whe have a mask = 255.255.255.0
+    int result = inet_pton(AF_INET, spi_instance.destination_address.first,
+                           &dest_address.sin_addr);
     if (result <= 0) {
         if (result == 0) {
-            ErrorHandler("Invalid broadcast address");
+            ErrorHandler(std::format("Invalid destination address: %s",
+                                     spi_instance.destination_address.first));
         } else {
             ErrorHandler("Error setting IP: %s", strerror(errno));
         }
@@ -35,9 +34,18 @@ void sender_slave_thread(SPI::Instance& spi_instance) {
 
     // Init sending loop
     while (true) {
+        // Wait to be selected
+        std::unique_lock select_lock(spi_instance.selected_mx);
+        spi_instance.cv_selected.wait(select_lock, [&spi_instance] {
+            EmulatedPin& e_pin = SharedMemory::get_pin(*spi_instance.SS);
+            return e_pin.PinData.spi.is_on == true;
+        });
+        select_lock.unlock();
+
         // Wait for the queue to has data to send
         std::unique_lock lock(spi_instance.transmission_mx);
         spi_instance.cv_transmission.wait(lock, [&spi_instance] {
+            LOG_DEBUG("Transmitter thread waiting to send data");
             return !spi_instance.transmission_queue.empty();
         });
 
@@ -48,6 +56,8 @@ void sender_slave_thread(SPI::Instance& spi_instance) {
         if (sendto(spi_instance.socket, data.data(), data.size(), 0,
                    (struct sockaddr*)&dest_address, sizeof(dest_address)) < 0) {
             ErrorHandler("Send error: %s", strerror(errno));
+        } else {
+            LOG_DEBUG("Data sended");
         }
 
         // Erase data sended from queue
@@ -68,17 +78,11 @@ void sender_master_thread(SPI::Instance& spi_instance) {
                                             // whe have a mask = 255.255.255.0
     if (result <= 0) {
         if (result == 0) {
-            ErrorHandler("Invalid broadcast address");
+            ErrorHandler(std::format("Invalid destination address: {}",
+                                     spi_instance.destination_address.first));
         } else {
             ErrorHandler("Error setting IP: %s", strerror(errno));
         }
-    }
-
-    // Send SLAVE_SELECT command
-    const char* select_command = "1";
-    if (sendto(spi_instance.socket, select_command, strlen(select_command), 0,
-               (struct sockaddr*)&dest_address, sizeof(dest_address)) < 0) {
-        ErrorHandler("Send error: %s", strerror(errno));
     }
 
     // Init sending loop
@@ -86,214 +90,24 @@ void sender_master_thread(SPI::Instance& spi_instance) {
         // Wait for the queue to has data to send
         std::unique_lock lock(spi_instance.transmission_mx);
         spi_instance.cv_transmission.wait(lock, [&spi_instance] {
+            LOG_DEBUG("Transmitter thread waiting to send data");
             return !spi_instance.transmission_queue.empty();
         });
 
         // Grab data to send from queue
         span<uint8_t> data = spi_instance.transmission_queue.front();
 
-        // Add a '0' before data to indicate that is a normal packet
-        std::vector<uint8_t> buffer;
-        buffer.push_back(0);
-        buffer.insert(buffer.end(), data.begin(), data.end());
-
         // Send data
-        if (sendto(spi_instance.socket, buffer.data(), buffer.size(), 0,
+        if (sendto(spi_instance.socket, data.data(), data.size(), 0,
                    (struct sockaddr*)&dest_address, sizeof(dest_address)) < 0) {
             ErrorHandler("Send error: %s", strerror(errno));
+        } else {
+            LOG_DEBUG("Data sended");
         }
 
         // Erase data sended from queue
         spi_instance.transmission_queue.pop();
         lock.unlock();
-    }
-}
-
-void receiver_slave_thread(SPI::Instance& spi_instance) {
-    std::unique_lock lock(spi_instance.reception_mx);
-    span<uint8_t> data;
-
-    while (true) {
-        // Waiting to receive a command
-        char command;
-        if (recv(spi_instance.socket, &command, 1, MSG_WAITALL) < 0) {
-            ErrorHandler("Receive error: %s", strerror(errno));
-        }
-
-        // Compute command
-        switch (command) {
-            case 0:  // Normal packet
-                if (!spi_instance.selected) break;
-                // Wait to the user to request a reception
-                spi_instance.cv_reception.wait(lock, [&spi_instance] {
-                    return !spi_instance.reception_queue.empty();
-                });
-                data = spi_instance.reception_queue.front();
-
-                // Receive the packet
-                if (recv(spi_instance.socket, data.data(), data.size(),
-                         MSG_WAITALL) < 0) {
-                    ErrorHandler("Receive error: %s", strerror(errno));
-                }
-
-                // Pop the request reception from the queue
-                spi_instance.reception_queue.pop();
-
-                lock.unlock();
-                break;
-            case 1:  // SLAVE_SELECT
-                spi_instance.selected = true;
-                break;
-            case 2:  // SLAVE_DESELECT
-                spi_instance.selected = false;
-                break;
-        }
-    }
-}
-
-void receiver_master_thread(SPI::Instance& spi_instance) {
-    std::unique_lock lock(spi_instance.reception_mx);
-
-    while (true) {
-        // Wait to the user to request a reception
-        spi_instance.cv_reception.wait(lock, [&spi_instance] {
-            return !spi_instance.reception_queue.empty();
-        });
-        span<uint8_t> data = spi_instance.reception_queue.front();
-
-        // Receive the packet
-        if (recv(spi_instance.socket, data.data(), data.size(), MSG_WAITALL) <
-            0) {
-            ErrorHandler("Receive error: %s", strerror(errno));
-        }
-
-        // Pop the request reception from the queue
-        spi_instance.reception_queue.pop();
-
-        lock.unlock();
-    }
-}
-
-void sender_receiver_slave_thread(SPI::Instance& spi_instance,
-                                  const uint8_t id, std::function<void(uint8_t)> callback) {
-    // Prepare destination address
-    sockaddr_in dest_address;
-    dest_address.sin_family = AF_INET;  // Set IPv4
-    dest_address.sin_port =
-        htons(spi_instance.destination_address.second);  // Set port
-    int result =
-        inet_pton(AF_INET, spi_instance.destination_address.first,
-                  &dest_address.sin_addr);  // Set broadcast IP, supposing that
-                                            // whe have a mask = 255.255.255.0
-    if (result <= 0) {
-        if (result == 0) {
-            ErrorHandler("Invalid broadcast address");
-        } else {
-            ErrorHandler("Error setting IP: %s", strerror(errno));
-        }
-    }
-
-    // Init sending-receiving loop
-    while (true) {
-        // Wait the user to ask for a transmission-reception
-        std::unique_lock tx_rx_lock(spi_instance.transmission_reception_mx);
-        spi_instance.cv_transmission_reception.wait(tx_rx_lock, [&spi_instance] {
-            return !spi_instance.transmission_reception_queue.empty();
-        });
-
-        // Wait this instance to be selected by the master
-        std::unique_lock select_lock(spi_instance.selected_mx);
-        spi_instance.cv_transmission_reception.wait(
-            select_lock, [&spi_instance] { return &spi_instance.selected; });
-
-        // Send data
-        std::pair<span<uint8_t>, span<uint8_t>> data =
-            spi_instance.transmission_reception_queue.front();
-        if (sendto(spi_instance.socket, data.first.data(), data.first.size(), 0,
-                   (struct sockaddr*)&dest_address, sizeof(dest_address)) < 0) {
-            ErrorHandler("Send error: %s", strerror(errno));
-        }
-
-        // Receive data
-        char command;
-        if (recv(spi_instance.socket, &command, 1, MSG_WAITALL) < 0) {
-            ErrorHandler("Receive error: %s", strerror(errno));
-        }
-
-        // Compute command
-        switch (command) {
-            case 0:  // Normal packet
-                if (!spi_instance.selected) break;
-                // Receive the packet
-                if (recv(spi_instance.socket, data.second.data(), data.second.size(),
-                         MSG_WAITALL) < 0) {
-                    ErrorHandler("Receive error: %s", strerror(errno));
-                }
-                break;
-            case 1:  // SLAVE_SELECT
-                spi_instance.selected = true;
-                break;
-            case 2:  // SLAVE_DESELECT
-                spi_instance.selected = false;
-                break;
-        }
-
-        spi_instance.transmission_reception_queue.pop();
-        select_lock.unlock();
-        tx_rx_lock.unlock();
-
-        callback(id);
-    }
-}
-
-void sender_receiver_master_thread(SPI::Instance& spi_instance,
-                                   const uint8_t id, std::function<void(uint8_t)> callback) {
-    // Prepare destination address
-    sockaddr_in dest_address;
-    dest_address.sin_family = AF_INET;  // Set IPv4
-    dest_address.sin_port =
-        htons(spi_instance.destination_address.second);  // Set port
-    int result =
-        inet_pton(AF_INET, spi_instance.destination_address.first,
-                  &dest_address.sin_addr);  // Set broadcast IP, supposing that
-                                            // whe have a mask = 255.255.255.0
-    if (result <= 0) {
-        if (result == 0) {
-            ErrorHandler("Invalid broadcast address");
-        } else {
-            ErrorHandler("Error setting IP: %s", strerror(errno));
-        }
-    }
-
-    // Init sending-receiving loop
-    while (true) {
-        // Wait the user to ask for a transmission-reception
-        std::unique_lock lock(spi_instance.transmission_reception_mx);
-        spi_instance.cv_transmission_reception.wait(lock, [&spi_instance] {
-            return !spi_instance.transmission_reception_queue.empty();
-        });
-
-        // Reach data from queue
-        std::pair<span<uint8_t>, span<uint8_t>> data =
-            spi_instance.transmission_reception_queue.front();
-
-        // Add a '0' before data to indicate that is a normal packet
-        std::vector<uint8_t> buffer;
-        buffer.push_back(0);
-        buffer.insert(buffer.end(), data.first.begin(), data.first.end());
-        if (sendto(spi_instance.socket, data.first.data(), data.first.size(), 0,
-                   (struct sockaddr*)&dest_address, sizeof(dest_address)) < 0) {
-            ErrorHandler("Send error: %s", strerror(errno));
-        }
-        if (recv(spi_instance.socket, data.second.data(), data.second.size(),
-                 MSG_WAITALL) < 0) {
-            ErrorHandler("Receive error: %s", strerror(errno));
-        }
-
-        spi_instance.transmission_reception_queue.pop();
-        lock.unlock();
-
-        callback(id);
     }
 }
 
@@ -370,27 +184,11 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
 
     // Init sender and receiver threads
     if (spi_instance->mode == SPIMode::MASTER) {
-        spi_instance->sender_thread = std::jthread([&spi_instance]() {
-            sender_master_thread(*spi_instance);
-        });
-        spi_instance->receiver_thread = std::jthread([&spi_instance]() {
-            receiver_master_thread(*spi_instance);
-        });
-        spi_instance->sender_receiver_thread =
-            std::jthread([&spi_instance, &id]() {
-            sender_receiver_master_thread(*spi_instance, id, &SPI::TxRxCpltCallback);
-        });
+        spi_instance->sender_thread = std::jthread(
+            [spi_instance]() { sender_master_thread(*spi_instance); });
     } else {
-        spi_instance->sender_thread = std::jthread([&spi_instance]() {
-            sender_slave_thread(*spi_instance);
-        });
-        spi_instance->receiver_thread = std::jthread([&spi_instance]() {
-            receiver_slave_thread(*spi_instance);
-        });
-        spi_instance->sender_receiver_thread =
-            std::jthread([&spi_instance, &id]() {
-            sender_receiver_slave_thread(*spi_instance, id, &SPI::TxRxCpltCallback);
-        });
+        spi_instance->sender_thread = std::jthread(
+            [spi_instance]() { sender_slave_thread(*spi_instance); });
     }
 
     SPI::registered_spi[id] = spi_instance;
@@ -444,7 +242,7 @@ bool SPI::transmit(uint8_t id, span<uint8_t> data) {
     spi_instance->transmission_queue.push(data);
     lock.unlock();
     spi_instance->cv_transmission.notify_one();
-
+    LOG_DEBUG("Data ready to transmit");
     return true;
 }
 
@@ -460,12 +258,24 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
 
     SPI::Instance* spi_instance(registered_spi[id]);
 
-    std::unique_lock lock(spi_instance->reception_mx);
-    spi_instance->reception_queue.push(data);
-    lock.unlock();
-    spi_instance->cv_reception.notify_one();
+    if (spi_instance->mode == SPIMode::SLAVE) {
+        // Wait to be selected
+        std::unique_lock select_lock(spi_instance->selected_mx);
+        spi_instance->cv_selected.wait(select_lock, [&spi_instance] {
+            EmulatedPin& e_pin = SharedMemory::get_pin(*spi_instance->SS);
+            return e_pin.PinData.spi.is_on == true;
+        });
+        select_lock.unlock();
+    }
 
-    return true;
+    // Receive the packet
+    if (recv(spi_instance->socket, data.data(), data.size(), MSG_WAITALL) < 0) {
+        LOG_ERROR(std::format("Receive error: {}", strerror(errno)));
+        return false;
+    } else {
+        LOG_DEBUG("Data received");
+        return true;
+    }
 }
 
 bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
@@ -475,13 +285,9 @@ bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
         return false;
     }
 
-    SPI::Instance* spi_instance(registered_spi[id]);
-
-    std::unique_lock lock(spi_instance->transmission_reception_mx);
-    spi_instance->transmission_reception_queue.push(
-        std::pair<span<uint8_t>, span<uint8_t>>(command_data, receive_data));
-    lock.unlock();
-    spi_instance->cv_transmission_reception.notify_one();
+    transmit(id, command_data);
+    receive(id, receive_data);
+    TxRxCpltCallback(id);
 
     return true;
 }
