@@ -66,12 +66,10 @@ TEST(EXTITest, Inscribe){
     EXPECT_EQ(id2, 2);
     EXPECT_EQ(ExternalInterrupt::id_counter, 2);
 
-    SharedMemory::close();
 }
 
 TEST(EXTITest, Start_Stop){
 
-    SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
     ASSERT_FALSE(ExternalInterrupt::is_running);
 
@@ -84,12 +82,10 @@ TEST(EXTITest, Start_Stop){
 
     ASSERT_FALSE(ExternalInterrupt::is_running);
 
-    SharedMemory::close();
 }
 
 TEST(EXTITest, TurnOn){
 
-    SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
     uint8_t* pin_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PE0]);
 
@@ -102,13 +98,11 @@ TEST(EXTITest, TurnOn){
     ASSERT_TRUE(*reinterpret_cast<bool*>(pin_memory+5));
 
 
-    SharedMemory::close();
 }
 
 
 TEST(EXTITest, get_pin_value){
 
-    SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
     uint8_t* pin_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PE1]);
 
@@ -121,13 +115,10 @@ TEST(EXTITest, get_pin_value){
 
     signal = ExternalInterrupt::get_pin_value(id2);
     ASSERT_TRUE(signal);
-    SharedMemory::close();
 }
 
 
 TEST(EXTITest, handle_interrupt_1){
-
-    SharedMemory::start("GPIO_Name", "State_Machine_Name");
     ExternalInterrupt::turn_on(id1);
     ExternalInterrupt::turn_on(id2);
     uint8_t* PE0_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PE0]);
@@ -150,12 +141,10 @@ TEST(EXTITest, handle_interrupt_1){
     ASSERT_TRUE(enter_on_callback_1);
     ASSERT_TRUE(enter_on_callback_2);
 
-    SharedMemory::close();
 }
 
 TEST(EXTITest, handle_interrupt_concurrece){
 
-    SharedMemory::start("GPIO_Name", "State_Machine_Name");
      uint8_t* PE0_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PE0]);
     *reinterpret_cast<bool*>(PE0_memory+6) = PinState::OFF;
 

@@ -19,7 +19,7 @@ TEST(InputCapture, Inscribe){
     SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
     //inscribe correct PIN
-    uint8_t id1 = InputCapture::inscribe(PF0);
+    id1 = InputCapture::inscribe(PF0);
 
     uint8_t* PF0_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PF0]);
     uint8_t* PA0_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PA0]);
@@ -46,48 +46,40 @@ TEST(InputCapture, Inscribe){
     EXPECT_EQ(id, 0);
     EXPECT_EQ(InputCapture::id_counter, 2);
 
-    SharedMemory::close();
 }
 
 TEST(InputCapture, TurnOn){
 
-    SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
     EmulatedPin &pin = SharedMemory::get_pin(PF0);
 
-    bool is_on;
-    is_on = InputCapture::active_instances[id1].is_on;
+    bool is_on = false;
+    is_on = *(InputCapture::active_instances[id1].is_on);
     ASSERT_FALSE(is_on);
     InputCapture::turn_on(id1);
-    is_on = InputCapture::active_instances[id1].is_on;
+    is_on = *(InputCapture::active_instances[id1].is_on);
     ASSERT_TRUE(is_on);
 
-    SharedMemory::close();
 }
 
 TEST(InputCapture, TurnOff){
 
-    SharedMemory::start("GPIO_Name", "State_Machine_Name");
-
     EmulatedPin &pin = SharedMemory::get_pin(PF0);
 
     InputCapture::turn_on(id1);
 
     bool is_on;
-    is_on = InputCapture::active_instances[id1].is_on;
+    is_on = *(InputCapture::active_instances[id1].is_on);
     InputCapture::turn_on(id1);
     ASSERT_TRUE(is_on);
 
     InputCapture::turn_off(id1);
-    is_on = InputCapture::active_instances[id1].is_on;
+    is_on = *(InputCapture::active_instances[id1].is_on);
     ASSERT_FALSE(is_on);
 
-    SharedMemory::close();
 }
 
 TEST(InputCapture, ReadFrequency){
-
-    SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
     uint8_t* PE1_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PE1]);
     uint8_t id = InputCapture::inscribe(PE1);
@@ -110,13 +102,12 @@ TEST(InputCapture, ReadFrequency){
     frequency = InputCapture::read_frequency(11);
     EXPECT_EQ(0, frequency);
 
-    SharedMemory::close();
+
 }
 
 
 TEST(InputCapture, ReadDutyCycle){
 
-    SharedMemory::start("GPIO_Name", "State_Machine_Name");
 
     uint8_t* PE2_memory = reinterpret_cast<uint8_t*>(SharedMemory::gpio_memory + SHM::pin_offsets[PE2]);
     uint8_t id = InputCapture::inscribe(PE2);
