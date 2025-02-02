@@ -102,6 +102,8 @@ StateMachine::StateMachine(){
 	state_machine_id_in_shm = ++(*SharedMemory::state_machine_count);
 	SharedMemory::update_current_state(state_machine_id_in_shm,initial_state);
 }
+#else
+StateMachine::StateMachine(){}
 #endif
 
 /**
