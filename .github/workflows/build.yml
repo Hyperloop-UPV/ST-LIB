@@ -1,0 +1,51 @@
+name: Build Project
+
+on:
+  workflow_call:
+    inputs:
+      preset:
+        description: |
+          'CMake preset to build the project, run `cmake --build --list-presets' to see a complete list of options'
+        required: true
+        type: string
+        default: 'nucleo-debug'
+    outputs:
+      build-artifact:
+        description: 'Build result artifact id for later use'
+        value: ${{ jobs.build.outputs.build-artifact }}
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: |
+          'CMake preset to build the project, run `cmake --build --list-presets' to see a complete list of options'
+        required: true
+        type: string
+        default: 'nucleo-debug'
+
+jobs:
+  build:
+    name: Build Project
+    runs-on: ubuntu-24.04
+    outputs:
+      build-artifact: ${{ steps.upload-build-artifact.outputs.artifact-id }}
+    container:
+      image: jmaralo/hyperloop-upv-firmware:0.3.0
+    steps:
+      - name: Clone Project
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Build
+        run: |
+          cmake --preset ${{ inputs.preset }} .
+          cmake --build --preset ${{ inputs.preset }}
+      - name: Upload Build
+        id: upload-build-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.preset }}
+          path: out/build/test.elf
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: ignore
+

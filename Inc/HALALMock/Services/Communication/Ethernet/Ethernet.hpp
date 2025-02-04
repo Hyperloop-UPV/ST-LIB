@@ -1,19 +1,13 @@
-/*
- * EthernetNode.cpp
- *
- *  Created on: Nov 23, 2022
- *      Author: stefa
- */
-
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"
 #include "HALALMock/Models/PinModel/Pin.hpp"
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/EthernetHelper.hpp"
-#define TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS 500
+//changed the times for linux
+#define TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE 1
 #define TCP_KEEPALIVE_TRIES_UNTIL_DISCONNECTION 10
-#define TCP_SPACE_BETWEEN_KEEPALIVE_TRIES_MS 100
+#define TCP_SPACE_BETWEEN_KEEPALIVE_TRIES 1
 
 class Ethernet{
 public:
@@ -28,8 +22,5 @@ public:
 	 * @brief handles the received messages by ethernet
 	 */
 	static void update();
-
-private:
-	static void mpu_start();
 };
 

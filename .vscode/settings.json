@@ -4,6 +4,7 @@
     "C_Cpp.clang_format_fallbackStyle": "{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 80}",
     "C_Cpp.formatting": "clangFormat",
     "C_Cpp.clang_format_style": "{BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 80}",
-    "C_Cpp.clang_format_sortIncludes": true
+    "C_Cpp.clang_format_sortIncludes": true,
+    "C_Cpp.intelliSenseCacheSize": 0
   }
   

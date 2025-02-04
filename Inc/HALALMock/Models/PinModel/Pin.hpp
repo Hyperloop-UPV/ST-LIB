@@ -71,14 +71,14 @@ enum OperationMode {
     ALTERNATIVE,
 };
 
-enum PinState { OFF, ON };
+enum PinState: uint8_t { OFF, ON };
 
-enum TRIGGER{
+enum TRIGGER: uint8_t {
     RISING_EDGE = 1,
     FAILING_EDGE = 0,
     BOTH_EDGES = 2
 };
-enum class PinType {
+enum class PinType: uint8_t {
     NOT_USED,
     DigitalOutput,
     DigitalInput,
@@ -95,52 +95,66 @@ enum class PinType {
     // TODO: Add more types
 
 };
-struct DigitalOutput_MockPin{
+
+/// In STM32H723ZG, the ADC1 and ADC2 has 16 bits as their maximum
+    /// resolution, while the ADC3 has 12 bits. Both of them can be configured
+    /// to has less resolution than its maximum
+    enum class ADCResolution : uint32_t {
+        ADC_RES_16BITS = 0x00000000,
+        ADC_RES_14BITS = 0x00000004,
+        ADC_RES_12BITS = 0x00000008,
+        ADC_RES_10BITS = 0x0000000C
+    };
+
+
+struct __attribute__((packed)) DigitalOutput_MockPin{
     bool state;
 } ;
-struct DigitalInput_MockPin {
+struct __attribute__((packed)) DigitalInput_MockPin {
     PinState curr_state;
 } ;
-struct PWM_MockPin {
+struct __attribute__((packed)) PWM_MockPin {
     float duty_cycle;
     uint32_t frequency;
     bool is_on;
-    std::chrono::nanoseconds dead_time_ns;
+    int64_t dead_time_ns;
 } ;
-struct DualPWM_MockPin{
+struct __attribute__((packed)) DualPWM_MockPin{
     float duty_cycle;
     uint32_t frequency;
     bool is_on;
-    std::chrono::nanoseconds dead_time_ns;
+    int64_t dead_time_ns;
 } ;
-struct ADC_MockPin{
+struct __attribute__((packed)) ADC_MockPin{
     uint16_t value;
     bool is_on;
+    ADCResolution resolution;
 } ;
-struct EXTIPin_MockPin{
+struct __attribute__((packed)) EXTIPin_MockPin{
     uint32_t priority;
     bool is_on;
     bool trigger_signal;
     TRIGGER trigger_mode;
 } ;
-struct Encoder_MockPin{
+struct __attribute__((packed)) Encoder_MockPin{
     uint32_t count_value;
     bool direction;
     bool is_on;
 } ;
-struct InputCapure_MockPin{
+struct __attribute__((packed)) InputCapure_MockPin{
     uint8_t duty_cycle;
     uint32_t frequency;
-};
-struct FDCAN_MockPin{
-
-};
-struct SPI_MockPin{
     bool is_on;
 };
-struct EmulatedPin {
+struct __attribute__((packed)) FDCAN_MockPin{
+
+};
+struct __attribute__((packed)) SPI_MockPin{
+    bool is_on;
+};
+struct __attribute__((packed)) EmulatedPin {
     PinType type =  PinType::NOT_USED;  // Always check type before using the union
-    union PinDataU {
+    union __attribute__((packed)) PinDataU {
         DigitalOutput_MockPin   digital_output;
         DigitalInput_MockPin    digital_input;
         PWM_MockPin             pwm;
@@ -196,6 +210,16 @@ struct hash<Pin> {
     }
 };
 }  // namespace std
+
+namespace std {
+    template<>
+    struct hash<std::pair<Pin, Pin>> {
+        std::size_t operator()(const std::pair<Pin, Pin>& p) const {
+            std::hash<Pin> pin_hasher;
+            return pin_hasher(p.first) ^ (pin_hasher(p.second) << 1);
+        }
+    };
+}
 
 extern Pin PA0;
 extern Pin PA1;

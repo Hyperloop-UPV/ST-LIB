@@ -1,19 +1,23 @@
 cmake_minimum_required (VERSION 3.14)
 
-project (ST-LIB C CXX)
-set(STLIB_LIBRARY st-lib)
+if(DEFINED STLIB_NAME_SUFFIX)
+  project (ST-LIB-${STLIB_NAME_SUFFIX} C CXX)
+  set(STLIB_LIBRARY st-lib-${STLIB_NAME_SUFFIX})
+else()
+  project (ST-LIB C CXX)
+  set(STLIB_LIBRARY st-lib)
+endif()
+if (NOT PROJECT_IS_TOP_LEVEL)
+  set(STLIB_LIBRARY ${STLIB_LIBRARY} PARENT_SCOPE)
+endif()
 
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
 
-if (NOT CMAKE_CROSSCOMPILING)
-  if (PROJECT_IS_TOP_LEVEL)
-    enable_testing()
-  endif()
-  add_subdirectory(Tests)
-endif()
+message(STATUS "${PROJECT_NAME} Ethernet: ${USE_ETHERNET}")
+message(STATUS "${PROJECT_NAME} Nucleo:   ${TARGET_NUCLEO}")
 
-if (PROJECT_IS_TOP_LEVEL)
+if ((PROJECT_IS_TOP_LEVEL AND (NOT CMAKE_CROSSCOMPILING)))
   include(FetchContent)
   option(BUILD_GMOCK OFF)
   option(INSTALL_GTEST OFF)
@@ -25,6 +29,10 @@ if (PROJECT_IS_TOP_LEVEL)
   FetchContent_MakeAvailable(googletest)
   add_library(GTest::GTest INTERFACE IMPORTED)
   target_link_libraries(GTest::GTest INTERFACE gtest_main)
+endif()
+
+if (NOT CMAKE_CROSSCOMPILING)
+  add_subdirectory(Tests)
 endif()
 
 # This should be an explicit list of files, but there are just too many files :(
@@ -103,7 +111,7 @@ target_compile_definitions(${STLIB_LIBRARY} PRIVATE
 
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:SIM_ON>
 
-  $<$<BOOL:${USING_ETHERNET}>:STLIB_ETH>
+  $<$<BOOL:${USE_ETHERNET}>:STLIB_ETH>
   $<IF:$<BOOL:${TARGET_NUCLEO}>,NUCLEO,BOARD>
   $<IF:$<BOOL:${TARGET_NUCLEO}>,HSE_VALUE=8000000,HSE_VALUE=25000000>
 )
@@ -124,9 +132,12 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   
   $<$<COMPILE_LANGUAGE:CXX>:-Wall>
   $<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>
-  $<$<COMPILE_LANGUAGE:CXX>:-Werror>
+  $<$<COMPILE_LANGUAGE:CXX>:-Werror> 
+  $<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-zero-variadic-macro-arguments>
+  $<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+  $<$<COMPILE_LANGUAGE:CXX>:-Wno-address-of-packed-member>  # Add this line
 )
 
 target_include_directories(${STLIB_LIBRARY} PRIVATE

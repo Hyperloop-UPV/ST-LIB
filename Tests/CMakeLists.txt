@@ -1,4 +1,8 @@
-set(STLIB_TEST_EXECUTABLE stlib-test)
+if(DEFINED STLIB_NAME_SUFFIX)
+    set(STLIB_TEST_EXECUTABLE st-lib-${STLIB_NAME_SUFFIX}-test)
+else()
+    set(STLIB_TEST_EXECUTABLE st-lib-test)
+endif()
 
 message(STATUS "Generating test executable for ST-LIB")
 include(CTest)
@@ -6,8 +10,15 @@ enable_testing()
 add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/Runes/Pins.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Runes/SimRunes.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/HelloTests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/DigitalOutTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/DigitalInTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Time/test_time.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/EncoderTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/InputCaptureTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/ADCTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/PWMTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/DualPWMTest.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/EXTITest.cpp
 )
 
 set_target_properties(${STLIB_TEST_EXECUTABLE} PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED C_STANDARD 11 C_STANDARD_REQUIRED)
@@ -30,3 +41,12 @@ target_include_directories(${STLIB_TEST_EXECUTABLE} PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(${STLIB_TEST_EXECUTABLE})
+
+# Create symlink to test executable for CI/CD to pick it up
+add_custom_command(
+    TARGET ${STLIB_TEST_EXECUTABLE}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_CURRENT_BINARY_DIR}/${STLIB_TEST_EXECUTABLE}
+    ${CMAKE_SOURCE_DIR}/out/build/test.elf
+)

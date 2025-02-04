@@ -6,6 +6,7 @@
  */
 
 #include "HALALMock/Services/Encoder/Encoder.hpp"
+#include <iostream>
 
 
 
@@ -22,7 +23,7 @@ uint8_t Encoder::inscribe(Pin &pin1, Pin &pin2) {
             pin1.to_string().c_str(), pin2.to_string().c_str());
         return 0;
     }
-    uint8_t id = Encoder::id_counter++;
+    uint8_t id = ++Encoder::id_counter;
     Encoder::registered_encoder[id] = doublepin;
 
     EmulatedPin &pin1_data = SharedMemory::get_pin(pin1);
@@ -38,6 +39,8 @@ uint8_t Encoder::inscribe(Pin &pin1, Pin &pin2) {
     } else {
         ErrorHandler("Pin1:%s or Pin2:%s are being used already",
                      pin1.to_string(), pin2.to_string());
+        id_counter--;
+        return 0;
     }
     return id;
 }

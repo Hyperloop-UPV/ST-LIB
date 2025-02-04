@@ -18,7 +18,7 @@ class InputCapture {
         Pin pin;
         uint32_t* frequency{nullptr};
         uint8_t* duty_cycle{nullptr};
-        bool is_active;
+        bool* is_on{nullptr};
 
         Instance() = default;
         Instance(Pin& pin, void* peripheral, uint32_t channel_rising,

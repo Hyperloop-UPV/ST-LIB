@@ -9,15 +9,15 @@
  *  amount of lag, defined by the threshold "max_lag".
  *
  */
-#pragma once
 
-#include "Inc/HALALMock/Services/Time/Time.hpp"
+/*
+#include "HALALMock/Services/Time/Time.hpp"
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <cmath>
 
-#ifdef TESTING
+
 
 double measure_lag(double simulation_speed, int test_duration_seconds) {
 
@@ -79,5 +79,4 @@ double find_max_simulation_speed(double max_lag) {
     return best_speed;
 }
 
-
-#endif
+*/

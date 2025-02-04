@@ -12,7 +12,8 @@
 
 uint8_t ADC::id_counter{0};
 unordered_map<uint8_t, ADC::Instance> ADC::active_instances{};
-unordered_map<uint8_t, EmulatedPin> ADC::active_emulated_instances{};
+unordered_map<uint8_t, EmulatedPin*> ADC::active_emulated_instances{};
+unordered_map<uint8_t, Pin> ADC::id_to_pin{}; 
 
 uint8_t ADC::inscribe(Pin pin) {
 	if (not available_instances.contains(pin)) {
@@ -28,21 +29,28 @@ uint8_t ADC::inscribe(Pin pin) {
 	}
 
 	Pin::inscribe(pin, OperationMode::ANALOG);
+	emulated_pin.type = PinType::ADC;
 	active_instances[id_counter] = available_instances[pin];
+	id_to_pin[id_counter] = pin;
 	return id_counter++;
 }
 
 void ADC::start() {
-	// Storing emulated pins with their corresponding instance
-	uint8_t idx = 0;
-	for (auto& [pin, instance] : available_instances) {
-		for(auto& [id,inst] : active_instances){
-			if(&inst == &instance)
-				idx = id;
-		}
-		EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
-		active_emulated_instances[idx] = emulated_pin;
-	}
+    // Clear any existing mappings
+    active_emulated_instances.clear();
+
+    // Map each active ADC ID to its corresponding EmulatedPin
+    for (const auto& [id, instance] : active_instances) {
+        auto pin_it = id_to_pin.find(id);
+        if (pin_it == id_to_pin.end()) {
+            ErrorHandler("No pin mapped for ADC ID %u", id);
+            continue;
+        }
+        Pin pin = pin_it->second;
+        EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
+        active_emulated_instances[id] = &emulated_pin;
+		active_emulated_instances[id]->PinData.adc.resolution=instance.resolution;
+    }
 }
 
 void ADC::turn_on(uint8_t id){
@@ -51,18 +59,19 @@ void ADC::turn_on(uint8_t id){
 	}
 
 	active_instances[id].is_on = true;
+	active_emulated_instances[id]->PinData.adc.is_on = true;
 }
 
 float ADC::get_value(uint8_t id) {
 	Instance& instance = active_instances[id];
 
-	EmulatedPin& emulated_pin = active_emulated_instances[id];
-	if (emulated_pin.type != PinType::ADC) {
+	EmulatedPin* emulated_pin = active_emulated_instances[id];
+	if (emulated_pin->type != PinType::ADC) {
 		ErrorHandler("Pin %s is not configured to be used for ADC usage", emulated_pin);
 		return 0;
 	}
 	ADCResolution resolution = static_cast<ADCResolution>(instance.resolution);
-	uint16_t raw = emulated_pin.PinData.adc.value;
+	uint16_t raw = emulated_pin->PinData.adc.value;
 	switch (resolution) {
 		case ADCResolution::ADC_RES_16BITS:
 			return (raw * ADC_MAX_VOLTAGE) / (float)MAX_16BIT;
@@ -81,14 +90,14 @@ float ADC::get_value(uint8_t id) {
 uint16_t ADC::get_int_value(uint8_t id) {
 	Instance& instance = active_instances[id];
 	
-	EmulatedPin& emulated_pin = active_emulated_instances[id];
-	if (emulated_pin.type != PinType::ADC) {
+	EmulatedPin* emulated_pin = active_emulated_instances[id];
+	if (emulated_pin->type != PinType::ADC) {
 		ErrorHandler("Pin %s is not configured to be used for ADC usage", emulated_pin);
 		return 0;
 	}
 
 	ADCResolution resolution = static_cast<ADCResolution>(instance.resolution);
-	uint16_t raw = emulated_pin.PinData.adc.value;
+	uint16_t raw = emulated_pin->PinData.adc.value;
 	switch (resolution) {
 		case ADCResolution::ADC_RES_16BITS:
 			return raw;
@@ -105,5 +114,8 @@ uint16_t ADC::get_int_value(uint8_t id) {
 }
 
 uint16_t* ADC::get_value_pointer(uint8_t id) {
-	return &active_emulated_instances[id].PinData.adc.value;
+	if (active_emulated_instances.find(id) != active_emulated_instances.end())
+        return &active_emulated_instances[id]->PinData.adc.value;
+    else
+		return nullptr;
 }

@@ -34,7 +34,8 @@ class FDCAN {
         BYTES_48 = 0x000E0000U,
         BYTES_64 = 0x000F0000U,
         DEFAULT = UINT32_MAX,
-    };
+	};
+
     enum ID { FAULT_ID = 1 };
 
     struct Packet {
@@ -42,7 +43,7 @@ class FDCAN {
         uint32_t identifier;
         DLC data_length;
     };
-
+    static std::string ip;
    private:
     /**
      * @brief Struct which defines all data referring to FDCAN peripherals. It
@@ -50,7 +51,6 @@ class FDCAN {
      * instances should be used.
      *
      */
-    static uint8_t Port_counter;
     struct Instance {
         Pin TX;
         Pin RX;
@@ -63,8 +63,9 @@ class FDCAN {
         uint8_t portcounter;
         uint16_t socket;
         bool start = false;
-    };
+        uint16_t port;
 
+    };
    public:
     /**
      * @brief Enum which abstracts the use of the Instance struct to facilitate

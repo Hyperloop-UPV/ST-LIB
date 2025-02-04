@@ -28,17 +28,7 @@ using std::string;
 
 class ADC {
    public:
-    /// In STM32H723ZG, the ADC1 and ADC2 has 16 bits as their maximum
-    /// resolution, while the ADC3 has 12 bits. Both of them can be configured
-    /// to has less resolution than its maximum
-    enum class ADCResolution : uint32_t {
-        ADC_RES_16BITS = 0x00000000,
-        ADC_RES_14BITS = 0x00000004,
-        ADC_RES_12BITS = 0x00000008,
-        ADC_RES_10BITS = 0x0000000C
-    };
-
-
+    
     //modified the Instance to store the resolution, as this is Pin and even
     //routing specific, should be defined in config file by user.
     // the new map will be slightly different though, in order to remove all the dependencies
@@ -78,7 +68,9 @@ class ADC {
     static map<Pin, Instance> available_instances;
 
     static unordered_map<uint8_t,Instance> active_instances;
-    static unordered_map<uint8_t, EmulatedPin> active_emulated_instances;
+    static unordered_map<uint8_t, EmulatedPin*> active_emulated_instances;
+
+    static unordered_map<uint8_t,Pin> id_to_pin;
 
     static uint8_t id_counter;
 };

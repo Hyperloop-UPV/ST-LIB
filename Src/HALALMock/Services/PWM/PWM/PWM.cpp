@@ -6,6 +6,11 @@ PWM::PWM(Pin& pin) {
     If the actual code doesn't work it might be related to
 	the timers and the channels
 	*/
+	if (not available_pwm.contains(pin)) {
+		ErrorHandler("Pin %s is not registered as an available PWM", pin.to_string());
+		return;
+	}
+	
 	EmulatedPin &pin_data = SharedMemory::get_pin(pin);
 	if(pin_data.type == PinType::NOT_USED){
 		pin_data.type = PinType::PWM;
@@ -19,7 +24,7 @@ PWM::PWM(Pin& pin) {
 		*duty_cycle = 0.0f;
 		*is_on = false;
 		*frequency = 0;
-		*dead_time_ns = std::chrono::nanoseconds(0);
+		*dead_time_ns = std::chrono::nanoseconds(0).count();
 	}else{
 		ErrorHandler("Pin %s is being used already",pin.to_string());
 	}
@@ -50,12 +55,8 @@ float PWM::get_duty_cycle(){
 }
 void PWM::set_dead_time(std::chrono::nanoseconds dead_t_ns)
 {
-	*dead_time_ns=dead_t_ns;
-	if(*is_on){
+	if(*is_on)
 		ErrorHandler("%s","This function can not be called if the PWM is on");
-	}
-	/*
-		Code that creates a dead time in the mock where duty_cycle is 0
-	*/
-	return;
+	else
+		*dead_time_ns=dead_t_ns.count();	
 }
