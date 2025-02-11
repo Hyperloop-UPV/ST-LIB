@@ -79,6 +79,7 @@ class FDCAN {
     };
 
     static uint16_t id_counter;
+    static uint8_t Port_counter;
 
     static unordered_map<uint8_t, FDCAN::Instance*> registered_fdcan;
     static unordered_map<FDCAN::Peripheral, FDCAN::Instance*> available_fdcans;

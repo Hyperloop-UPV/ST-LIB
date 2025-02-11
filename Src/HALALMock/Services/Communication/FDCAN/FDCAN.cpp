@@ -66,8 +66,8 @@ void FDCAN::start(){
 		instance->rx_queue = queue<FDCAN::Packet>();
 		instance->tx_data = vector<uint8_t>();
 		
-		instance->portcounter = Port_counter;
-		Port_counter++;
+		instance->portcounter = FDCAN::Port_counter;
+		FDCAN::Port_counter++;
 		instance -> socket = socket(AF_INET,SOCK_DGRAM,0);
 		if(instance -> socket < 0){
 			ErrorHandler("Error creating socket for FDCAN %d", instance->fdcan_number);
