@@ -120,7 +120,7 @@ public:
 	bool is_on = true;
 
 
-	StateMachine() = default;
+	StateMachine();
 	StateMachine(state_id initial_state);
 
 	void add_state(state_id state);

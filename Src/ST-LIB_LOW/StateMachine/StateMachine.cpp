@@ -97,6 +97,14 @@ void State::add_state_order(uint16_t id){
 	state_orders_ids.push_back(id);
 }
 
+#ifdef SIM_ON
+StateMachine::StateMachine(){
+	state_machine_id_in_shm = ++(*SharedMemory::state_machine_count);
+	SharedMemory::update_current_state(state_machine_id_in_shm,initial_state);
+}
+#else
+StateMachine::StateMachine(){}
+#endif
 
 /**
  * This is a constructor for a StateMachine object that initializes the initial state and creates a
