@@ -1,6 +1,12 @@
 # ST-LIB
 
-It is recommended to set up an `STLIB_PATH` env variable pointint to the root directory where the ST-LIB is located so that other team tools work out of the box. Many tutorials exist on how to set an environment variable in different OSs, you should easily find one by googling it.
+Library to simplify programming an STM32 H7 MCU taking advantage of C++ objects.
+
+The library is divided into three levels:
+
+* HALAL (HAL Abstraction Layer): takes the STM32 HAL functions and exposes an object oriented interface
+* STLIB-LOW: provides low level utilities on top of the HALAL and a couple of fundamental abstractions.
+* STLIB-HIGH: provides high level programming utilities to validate sensor values and implement control loops.
 
 ## Container Setup
 To use it you must install [Dev Containers extension on VSCode](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and [Docker](https://www.docker.com). Be careful,use the instructions related to your OS, as docker doesn't work the same way in all OS's.
