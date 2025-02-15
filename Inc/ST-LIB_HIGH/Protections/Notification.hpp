@@ -9,7 +9,7 @@ class Notification : public Order{
 private:
 	typedef uint16_t message_size_t;
 	uint16_t id;
-    void(*callback)() = nullptr;
+    std::function<void()> callback = nullptr;
     string tx_message;
     message_size_t tx_message_size;
     string rx_message;
@@ -26,7 +26,7 @@ public:
     	Packet::packets[id] = this;
     }
 
-    void set_callback(void(*callback)()) override {
+    void set_callback(std::function<void()> callback) override {
     	this->callback = callback;
     }
 
