@@ -11,7 +11,7 @@
 
 class Order : public Packet{
 public:
-    virtual void set_callback(void(*callback)(void)) = 0;
+    virtual void set_callback(std::function<void()> callback) = 0;
     virtual void process() = 0;
     virtual void parse(OrderProtocol* socket, uint8_t* data) = 0;
     void parse(uint8_t* data) override {
@@ -35,10 +35,10 @@ protected:
 template<size_t BufferLength,class... Types> requires NotCallablePack<Types*...>
 class StackOrder : public StackPacket<BufferLength,Types...>, public Order{
 public:
-    StackOrder(uint16_t id,void(*callback)(void), Types*... values) : StackPacket<BufferLength,Types...>(id,values...), callback(callback) {orders[id] = this;}
+    StackOrder(uint16_t id,std::function<void()> callback, Types*... values) : StackPacket<BufferLength,Types...>(id,values...), callback(callback) {orders[id] = this;}
     StackOrder(uint16_t id, Types*... values) : StackPacket<BufferLength,Types...>(id,values...) {orders[id] = this;}
-    void(*callback)(void) = nullptr;
-    void set_callback(void(*callback)(void)) override {
+    std::function<void()> callback = nullptr;
+    void set_callback(std::function<void()> callback) override {
         this->callback = callback;
     }
     void process() override {
@@ -67,7 +67,7 @@ public:
 
 #if __cpp_deduction_guides >= 201606
 template<class... Types> requires NotCallablePack<Types*...>
-StackOrder(uint16_t id,void(*callback)(void), Types*... values)->StackOrder<(!has_container<Types...>::value)*total_sizeof<Types...>::value, Types...>;
+StackOrder(uint16_t id,std::function<void()> callback, Types*... values)->StackOrder<(!has_container<Types...>::value)*total_sizeof<Types...>::value, Types...>;
 
 template<class... Types> requires NotCallablePack<Types*...>
 StackOrder(uint16_t id, Types*... values)->StackOrder<(!has_container<Types...>::value)*total_sizeof<Types...>::value, Types...>;
@@ -76,13 +76,13 @@ StackOrder(uint16_t id, Types*... values)->StackOrder<(!has_container<Types...>:
 class HeapOrder : public HeapPacket, public Order{
 public:
     template<class... Types>
-    HeapOrder(uint16_t id,void(*callback)(void), Types*... values) : HeapPacket(id,values...), callback(callback) {orders[id] = this;}
+    HeapOrder(uint16_t id,std::function<void()> callback, Types*... values) : HeapPacket(id,values...), callback(callback) {orders[id] = this;}
 
     template<class... Types>
     HeapOrder(uint16_t id, Types*... values) : HeapPacket(id,values...) {orders[id] = this;}
 
-    void(*callback)(void) = nullptr;
-    void set_callback(void(*callback)(void)) override {
+    std::function<void()> callback = nullptr;
+    void set_callback(std::function<void()> callback) override {
         this->callback = callback;
     }
     void process() override {
