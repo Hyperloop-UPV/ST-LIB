@@ -20,7 +20,7 @@
 class EncoderSensor{
 public:
 	EncoderSensor() = default;
-	EncoderSensor(Pin pin1, Pin pin2, double* position, double* direction, double* speed, double* acceleration);
+	EncoderSensor(Pin pin1, Pin pin2, double* position, bool* direction, double* speed, double* acceleration);
 	void start();
 	void read();
 	void reset();
@@ -29,7 +29,7 @@ public:
 protected:
 	uint8_t id;
 	double* position;
-	double* direction;
+	bool* direction;
 	double* speed;
 	double* acceleration;
 	double time;
