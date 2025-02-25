@@ -4,7 +4,7 @@
  *  Created on: 30 oct. 2022
  *      Author: alejandro
  */
-#include "InputCapture/InputCapture.hpp"
+#include "HALAL/Services/InputCapture/InputCapture.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 uint8_t InputCapture::id_counter = 0;
@@ -30,7 +30,7 @@ InputCapture::Instance::Instance(Pin& pin, TimerPeripheral* peripheral, uint32_t
 	}
 
 uint8_t InputCapture::inscribe(Pin& pin){
- 	if (not available_instances.contains(pin)) {
+ 	if (not available_instances.contains(pin) || pin.mode != OperationMode::NOT_USED) {
 		ErrorHandler(" The pin %s is already used or isn t available for InputCapture usage", pin.to_string().c_str());
  		return 0;
  	}
@@ -38,6 +38,7 @@ uint8_t InputCapture::inscribe(Pin& pin){
 	Pin::inscribe(pin, TIMER_ALTERNATE_FUNCTION);
 
  	Instance data = available_instances[pin];
+	id_counter++;
 	active_instances[id_counter] = data;
 	active_instances[id_counter].id = id_counter;
 
@@ -45,7 +46,7 @@ uint8_t InputCapture::inscribe(Pin& pin){
 	uint32_t channel_rising = active_instances[id_counter].channel_rising;
 	uint32_t channel_falling = active_instances[id_counter].channel_falling;
 	channels.push_back({channel_rising, channel_falling});
-	return id_counter++;
+	return id_counter;
 }
 
 void InputCapture::turn_on(uint8_t id){

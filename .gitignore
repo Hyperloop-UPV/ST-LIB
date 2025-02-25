@@ -1,22 +1,91 @@
-#compiler output
+# *-----------------------*
+# |        General        |
+# *-----------------------*
+
+# Python
+__pycache__/
+
+# Build
 Debug/
 Release/
-cmake/build/
+build/
+out/
+
+# IDE
+*.launch
+.metadata
+.settings/
 compile_commands.json
 
-#test folder
-Pruebas/
-PRUEBAS/
+# *-----------------------*
+# |         CMake         |
+# *-----------------------*
 
-#ccls cache
-.ccls-cache/
-.cache/
-
-#vscode 
-.vscode
-.cproject
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+CMakeUserPresets.json
 .cache
 
-.settings
-build
-!build/build.sh
+# *-----------------------*
+# |         C/C++         |
+# *-----------------------*
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.ko
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+*.so.*
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+*.lo
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb

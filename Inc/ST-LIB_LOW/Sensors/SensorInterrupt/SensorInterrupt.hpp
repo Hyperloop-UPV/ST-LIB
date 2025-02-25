@@ -7,14 +7,14 @@
  */
 
 #pragma once
-#include "EXTI/EXTI.hpp"
+#include "HALAL/HALAL.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 class SensorInterrupt{
 public:
 	SensorInterrupt() = default;
-	SensorInterrupt(Pin &pin, std::function<void()> &&action, PinState *value, ExternalInterrupt::TRIGGER trigger = ExternalInterrupt::RISING);
-	SensorInterrupt(Pin &pin, std::function<void()> &&action, PinState &value, ExternalInterrupt::TRIGGER trigger = ExternalInterrupt::RISING);
+	SensorInterrupt(Pin &pin, std::function<void()> &&action, PinState *value, TRIGGER trigger = TRIGGER::RISING_EDGE);
+	SensorInterrupt(Pin &pin, std::function<void()> &&action, PinState &value, TRIGGER trigger = TRIGGER::RISING_EDGE);
 	void read();
 	uint8_t get_id();
 

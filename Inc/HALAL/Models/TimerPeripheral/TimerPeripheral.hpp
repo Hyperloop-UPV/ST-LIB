@@ -48,12 +48,12 @@ public:
 	private:
 		InitData() = default;
 	public:
+		TIM_TYPE type;
 		uint32_t prescaler;
 		uint32_t period;
 		uint32_t deadtime;
 		uint32_t polarity;
 		uint32_t negated_polarity;
-		TIM_TYPE type;
 		vector<PWMData> pwm_channels = {};
 		vector<pair<uint32_t, uint32_t>> input_capture_channels = {};
 		InitData(TIM_TYPE type, uint32_t prescaler = 5,

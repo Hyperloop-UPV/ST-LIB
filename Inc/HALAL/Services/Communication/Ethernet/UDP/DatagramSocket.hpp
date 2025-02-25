@@ -1,15 +1,17 @@
 #pragma once
-#include "Communication/Ethernet/EthernetNode.hpp"
-#include "Communication/Ethernet/Ethernet.hpp"
-#include "Packets/Packet.hpp"
+#include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
+#include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
+#include "HALAL/Models/Packets/Packet.hpp"
 
 #ifdef HAL_ETH_MODULE_ENABLED
 #define PBUF_POOL_MEMORY_DESC_POSITION 8
 
 class DatagramSocket{
-public:
-
+private:
 	struct udp_pcb* udp_control_block;
+	static void receive_callback(void *args, struct udp_pcb *udp_control_block, struct pbuf *packet_buffer, const ip_addr_t *remote_address, u16_t port);
+	
+public:
 	IPV4 local_ip;
 	uint32_t local_port;
 	IPV4 remote_ip;
@@ -34,14 +36,13 @@ public:
 
 		return true;
 	}
+	
 
 	void reconnect();
 
 	void close();
 
-private:
-	static void receive_callback(void *args, struct udp_pcb *udp_control_block, struct pbuf *packet_buffer, const ip_addr_t *remote_address, u16_t port);
-	
+
 };
 
 

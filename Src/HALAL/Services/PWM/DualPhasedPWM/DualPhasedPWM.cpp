@@ -5,7 +5,7 @@
  *      Author: aleja
  */
 
-#include "PWM/DualPhasedPWM/DualPhasedPWM.hpp"
+#include "HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 
 DualPhasedPWM::DualPhasedPWM(Pin& pin, Pin& pin_negated) {
 	if (not TimerPeripheral::available_dual_pwms.contains({pin, pin_negated})) {
@@ -50,12 +50,27 @@ void DualPhasedPWM::set_duty_cycle(float duty_cycle){
 		end_high = end_high - arr * max_range * raw_phase / 5000.0;
 
 
+		peripheral->handle->Instance->CR2 &= ~TIM_CR2_CCPC;
+		peripheral->handle->Instance->CR2 &= ~TIM_CR2_CCUS;
+
 		__HAL_TIM_SET_COMPARE(peripheral->handle, channel, start_high);
 
 		if (channel % 8 == 0) {
 			__HAL_TIM_SET_COMPARE(peripheral->handle, channel + 4, end_high);
+			peripheral->handle->Instance->EGR |= TIM_EGR_UG;
+			peripheral->handle->Instance->CR2 |= TIM_CR2_CCPC;
+			peripheral->handle->Instance->CR2 |= TIM_CR2_CCUS;
+			TIM_CCxChannelCmd(peripheral->handle->Instance, channel, TIM_CCx_ENABLE);
+			TIM_CCxChannelCmd(peripheral->handle->Instance, channel+4, TIM_CCx_ENABLE);
+			__HAL_TIM_MOE_ENABLE(peripheral->handle);
 		} else {
 			__HAL_TIM_SET_COMPARE(peripheral->handle, channel - 4, end_high);
+			peripheral->handle->Instance->EGR |= TIM_EGR_UG;
+			peripheral->handle->Instance->CR2 |= TIM_CR2_CCPC;
+			peripheral->handle->Instance->CR2 |= TIM_CR2_CCUS;
+			TIM_CCxChannelCmd(peripheral->handle->Instance, channel, TIM_CCx_ENABLE);
+			TIM_CCxChannelCmd(peripheral->handle->Instance, channel-4, TIM_CCx_ENABLE);
+			__HAL_TIM_MOE_ENABLE(peripheral->handle);
 		}
 }
 

@@ -6,7 +6,8 @@
  */
 
 #pragma once
-#include "Communication/Ethernet/TCP/ServerSocket.hpp"
+#ifdef STLIB_ETH
+#include "HALAL/HALAL.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #ifndef MAX_CONNECTIONS_TCP_SERVER
@@ -40,3 +41,5 @@ public:
 
 	static void update_servers();
 };
+
+#endif //STLIB_ETH

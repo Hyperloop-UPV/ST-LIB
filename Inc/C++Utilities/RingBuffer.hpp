@@ -15,7 +15,6 @@ public:
 	/**
 	 * @brief introduces a new item on the Ring Buffer unless it is full. Returns false when the Ring Buffer is full.
 	 */
-	[[nodiscard("Push may fail if the Buffer is full")]]
 	bool push(item_type item){
 		if(msize == mcapacity){
 			return false;
@@ -57,6 +56,15 @@ public:
 			mhead_index = 0;
 		}
 		return buffer[return_index];
+	}
+
+	/**
+	 * @brief pop later and push new. Don't care size of buffer, needs to be initialize before
+	 */
+	void push_pop(item_type item){
+		mhead_index = (mhead_index+1)%mcapacity;
+		mlast_index = (mlast_index+1)%mcapacity;
+		buffer[mhead_index] = item;
 	}
 
 	item_type latest()const{

@@ -17,7 +17,6 @@
 #include "HALAL/Services/Time/RTC.hpp"
 // HIGH RESOLUTION TIMERS
 extern TIM_HandleTypeDef htim2;		// Used for the global timer (3,36nS step)
-
 extern TIM_HandleTypeDef htim5;		// Used for the high precision alarms (1uS)
 
 // MID RESOLUTION TIMERS
@@ -41,6 +40,8 @@ private :
 		bool is_on = false;
 	};
 
+
+
 	static constexpr uint32_t HIGH_PRECISION_MAX_ARR = 4294967295;
 	static constexpr uint32_t MID_PRECISION_MAX_ARR = 4294967295;
 	static constexpr uint32_t mid_precision_step_in_us = 50;
@@ -48,6 +49,9 @@ private :
 	static uint64_t low_precision_tick;
 	static uint64_t mid_precision_tick;
 	static bool mid_precision_registered;
+
+	static unordered_map<TIM_HandleTypeDef*, TIM_TypeDef*> timer32_by_timer32handler_map;
+	static unordered_map<TIM_HandleTypeDef*, IRQn_Type> timer32interrupt_by_timer32handler_map;
 
 	static unordered_map<uint8_t, Alarm> high_precision_alarms_by_id;
 	static unordered_map<TIM_HandleTypeDef*, Alarm> high_precision_alarms_by_timer;
@@ -62,6 +66,7 @@ private :
 	static void init_timer(TIM_TypeDef* tim, TIM_HandleTypeDef* htim,uint32_t prescaler, uint32_t period, IRQn_Type interrupt_channel);
 	static void ConfigTimer(TIM_HandleTypeDef* tim, uint32_t period_in_us);
 	static bool is_valid_timer(TIM_HandleTypeDef* tim);
+	static void hal_enable_timer(TIM_HandleTypeDef* tim);
 
 public :
 	static TIM_HandleTypeDef* global_timer;

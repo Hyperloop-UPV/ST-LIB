@@ -7,13 +7,13 @@
 
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
-#include "ADC/ADC.hpp"
-#include "EXTI/EXTI.hpp"
+#include "HALAL/HALAL.hpp"
 
 class Sensor{
 public:
 	static void start();
 	static vector<uint8_t> adc_id_list;
 	static vector<uint8_t> EXTI_id_list;
+	static vector<uint8_t> inputcapture_id_list;
 };
 

@@ -2,11 +2,8 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "Packets/Order.hpp"
-#include "BoardID/BoardID.hpp"
 #include "Protection.hpp"
-#include "Time/Time.hpp"
-#include "Packets/OrderProtocol.hpp"
+#include "HALAL/HALAL.hpp"
 
 class Notification : public Order{
 private:
@@ -70,7 +67,7 @@ public:
     	}
     }
 
-    void parse(OrderProtocol* socket, void* data) {
+    void parse(OrderProtocol* socket, uint8_t* data) {
     	received_socket = socket;
     	char* temp = (char*)malloc(get_string_size(data));
     	memcpy(temp, data+sizeof(id)+sizeof(message_size_t), get_string_size(data));
@@ -98,7 +95,7 @@ public:
 
 private:
 
-    uint16_t get_string_size(void* buffer){
+    uint16_t get_string_size(uint8_t* buffer){
     	return *(uint16_t*)(buffer + sizeof(id));
     }
 };

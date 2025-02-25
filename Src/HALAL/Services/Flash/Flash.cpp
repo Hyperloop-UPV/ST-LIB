@@ -5,7 +5,7 @@
  *      Author: Pablo
  */
 
-#include "Flash/Flash.hpp"
+#include "HALAL/Services/Flash/Flash.hpp"
 
 void Flash::read(uint32_t source_addr, uint32_t* result, uint32_t number_of_words){
 	if (source_addr < FLASH_START_ADDRESS || source_addr > FLASH_END_ADDRESS) {
@@ -40,12 +40,12 @@ bool Flash::write(uint32_t * source, uint32_t dest_addr, uint32_t number_of_word
 	uint32_t end_address = dest_addr + ((number_of_words * 4) - 4);
 	uint32_t end_sector = Flash::get_sector(end_address);
 	uint8_t number_of_sectors = end_sector - start_sector + 1;
-	uint32_t buffer[SECTOR_SIZE_IN_WORDS * number_of_sectors];
+	std::unique_ptr<uint32_t[]> buffer = std::make_unique_for_overwrite<uint32_t[]>(SECTOR_SIZE_IN_WORDS * number_of_sectors);
 	start_relative_position_in_words = (dest_addr - start_sector_addr) / 4 ;
 	end_relative_position_in_words = start_relative_position_in_words + number_of_words - 1;
 	source_pos = 0;
 
-	Flash::read(start_sector_addr, buffer, SECTOR_SIZE_IN_WORDS * number_of_sectors);
+	Flash::read(start_sector_addr, buffer.get(), SECTOR_SIZE_IN_WORDS * number_of_sectors);
 	for (buff_pos = start_relative_position_in_words; buff_pos <= end_relative_position_in_words && source_pos < number_of_words; ++buff_pos ) {
 		buffer[buff_pos] = source[source_pos];
 		source_pos++;

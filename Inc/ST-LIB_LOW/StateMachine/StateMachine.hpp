@@ -4,17 +4,18 @@
 
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
-#include "Time/Time.hpp"
+#include "HALAL/HALAL.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "StateMachine/StateOrder.hpp"
 
+#ifdef SIM_ON
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
+#endif
 
 
-#ifdef HAL_TIM_MODULE_ENABLED
-
-typedef std::chrono::milliseconds ms;
-typedef std::chrono::microseconds us;
-typedef std::chrono::seconds s;
+using ms = std::chrono::milliseconds;
+using us = std::chrono::microseconds;
+using s  = std::chrono::seconds;
 
 enum AlarmType{
 	LOW_PRECISION,
@@ -119,7 +120,7 @@ public:
 	bool is_on = true;
 
 
-	StateMachine() = default;
+	StateMachine();
 	StateMachine(state_id initial_state);
 
 	void add_state(state_id state);
@@ -163,6 +164,10 @@ public:
 	void refresh_state_orders();
 
 	unordered_map<state_id, State>& get_states();
+	
+	#ifdef SIM_ON
+	uint8_t get_id_in_shm();
+	#endif
 
 
 private:
@@ -174,6 +179,9 @@ private:
 	void exit_state(state_id old_state);
 	void register_all_timed_actions(state_id state);
 	void unregister_all_timed_actions(state_id state);
+	#ifdef SIM_ON
+		uint8_t state_machine_id_in_shm;
+	#endif
 };
 
 template<class TimeUnit>
@@ -272,4 +280,3 @@ TimedAction* StateMachine::add_high_precision_cyclic_action(function<void()> act
 	return add_high_precision_cyclic_action(action, period, current_state);
 }
 
-#endif

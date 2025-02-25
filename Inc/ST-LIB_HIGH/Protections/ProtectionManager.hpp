@@ -2,10 +2,8 @@
 
 #include "Protection.hpp"
 #include "StateMachine/StateMachine.hpp"
-#include "Packets/Order.hpp"
-#include "Time/Time.hpp"
+#include "HALAL/HALAL.hpp"
 #include "Notification.hpp"
-#include "BoardID/BoardID.hpp"
 
 #define getname(var) #var
 #define add_protection(src,...)  \
@@ -35,6 +33,7 @@
 class ProtectionManager {
 public:
 	typedef uint8_t state_id;
+	static bool external_trigger;
 
 	static const uint64_t notify_delay_in_nanoseconds = 100'000'000;
 	static uint64_t last_notify;
@@ -70,6 +69,7 @@ private:
 	static constexpr uint16_t fault_id = 3;
 	static char* message;
 	static size_t message_size;
+    static bool test_fault;
 	static constexpr const char* format = "{\"boardId\": %s, \"timestamp\":{%s}, %s}";
 
     static Boards::ID board_id;
@@ -82,7 +82,9 @@ private:
     static Notification warning_notification;
     static StackOrder<0> fault_order;
 
+    static void tcp_to_fault();
     static void to_fault();
+    static void external_to_fault();
 };
 
 

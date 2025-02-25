@@ -1,4 +1,4 @@
-#include "IPV4/IPV4.hpp"
+#include "HALAL/Models/IPV4/IPV4.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
 IPV4::IPV4(string address) : string_address(address){
@@ -13,7 +13,7 @@ IPV4::IPV4(string address) : string_address(address){
 }
 
 IPV4::IPV4(const char* address) {
-    char* temp_ip = (char*)malloc(strlen(address));
+    char* temp_ip = (char*)malloc(strlen(address)+1);
     strcpy(temp_ip,address);
     string_address = temp_ip;
     const char* token = strtok(temp_ip,".");
@@ -35,7 +35,7 @@ IPV4::IPV4(ip_addr_t address) : address(address){
 IPV4::IPV4() = default;
 
 void IPV4::operator =(const char* address){
-    char* temp_ip = (char*)malloc(strlen(address));
+    char* temp_ip = (char*)malloc(strlen(address)+1);
     strcpy(temp_ip,address);
     string_address = temp_ip;
     const char* token = strtok(temp_ip,".");

@@ -4,7 +4,7 @@
  *  Created on: Nov 23, 2022
  *      Author: stefa
  */
-#include "Communication/Ethernet/TCP/Socket.hpp"
+#include "HALAL/Services/Communication/Ethernet/TCP/Socket.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
@@ -13,7 +13,7 @@ unordered_map<EthernetNode,Socket*> Socket::connecting_sockets = {};
 
 Socket::Socket() = default;
 
-Socket::Socket(Socket&& other):remote_port(move(remote_port)), connection_control_block(move(other.connection_control_block)),
+Socket::Socket(Socket&& other):connection_control_block(move(other.connection_control_block)),remote_port(move(remote_port)), 
 	 state(other.state){
 	EthernetNode remote_node(other.remote_ip, other.remote_port);
 	connecting_sockets[remote_node] = this;
@@ -21,7 +21,7 @@ Socket::Socket(Socket&& other):remote_port(move(remote_port)), connection_contro
 
 void Socket::operator=(Socket&& other){
 	connection_control_block = move(other.connection_control_block);
-	remote_port = move(remote_port);
+	remote_port = move(other.remote_port);
 	state = other.state;
 	EthernetNode remote_node(other.remote_ip, other.remote_port);
 	connecting_sockets[remote_node] = this;
@@ -35,7 +35,9 @@ Socket::~Socket(){
 	else OrderProtocol::sockets.erase(it);
 }
 
-Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port): local_ip(local_ip), local_port(local_port),remote_ip(remote_ip), remote_port(remote_port){
+Socket::Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port,bool use_keep_alive):
+	local_ip(local_ip), local_port(local_port),remote_ip(remote_ip), remote_port(remote_port),use_keep_alives{use_keep_alive}
+{
 	if(not Ethernet::is_running) {
 		ErrorHandler("Cannot declare TCP socket before Ethernet::start()");
 		return;
@@ -185,7 +187,8 @@ err_t Socket::connect_callback(void* arg, struct tcp_pcb* client_control_block, 
 		tcp_poll(client_control_block, poll_callback,0);
 		tcp_sent(client_control_block, send_callback);
 		tcp_err(client_control_block, error_callback);
-		config_keepalive(client_control_block, socket);
+		if(socket->use_keep_alives)
+			config_keepalive(client_control_block, socket);
 
 		return ERR_OK;
 	}else return ERROR;
@@ -250,7 +253,7 @@ err_t Socket::send_callback(void* arg, struct tcp_pcb* client_control_block, uin
 void Socket::error_callback(void *arg, err_t error){
 	Socket* socket = (Socket*) arg;
 		socket->close();
-		ErrorHandler("Client socket error: %d. Socket closed",error);
+		ErrorHandler("Client socket error: %d. Socket closed, remote ip: %s",error,socket->remote_ip.string_address);
 }
 
 void Socket::connection_error_callback(void *arg, err_t error){

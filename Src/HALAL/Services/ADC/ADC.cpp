@@ -5,7 +5,7 @@
  *      Author: alejandro
  */
 
-#include "ADC/ADC.hpp"
+#include "HALAL/Services/ADC/ADC.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #if defined(HAL_ADC_MODULE_ENABLED) && defined(HAL_LPTIM_MODULE_ENABLED)
@@ -101,6 +101,11 @@ uint16_t ADC::get_int_value(uint8_t id) {
 	else {
 		return raw;
 	}
+}
+
+uint16_t* ADC::get_value_pointer(uint8_t id) {
+	Instance& instance = active_instances[id];
+	return &instance.peripheral->dma_data_buffer[instance.rank];
 }
 
 void ADC::init(Peripheral& peripheral) {

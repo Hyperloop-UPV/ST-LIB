@@ -4,8 +4,8 @@
  *  Created on: Nov 23, 2022
  *      Author: stefa
  */
-
-#include "Communication/Ethernet/TCP/ServerSocket.hpp"
+#ifdef STLIB_ETH
+#include "HALAL/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 #include "lwip/priv/tcp_priv.h"
 #include "ErrorHandler/ErrorHandler.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
@@ -48,8 +48,8 @@ ServerSocket::ServerSocket(IPV4 local_ip, uint32_t local_port, uint32_t inactivi
 }
 
 
-ServerSocket::ServerSocket(ServerSocket&& other) : server_control_block(move(other.server_control_block)), local_ip(move(other.local_ip)), local_port(move(other.local_port))
-, state(other.state){
+ServerSocket::ServerSocket(ServerSocket&& other) : local_ip(move(other.local_ip)), local_port(move(other.local_port))
+, state(other.state),server_control_block(move(other.server_control_block)) {
 	listening_sockets[local_port] = this;
 	tx_packet_buffer = {};
 	rx_packet_buffer = {};
@@ -277,4 +277,5 @@ void ServerSocket::config_keepalive(tcp_pcb* control_block, ServerSocket* server
 }
 
 
-#endif
+#endif //HAL_ETH_MODULE_ENABLED
+#endif //STLIB_ETH

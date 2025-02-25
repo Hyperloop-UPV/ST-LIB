@@ -8,9 +8,9 @@
 #pragma once
 #include <string>
 
-#include "PinModel/Pin.hpp"
-#include "LowPowerTimer/LowPowerTimer.hpp"
-#include "DMA/DMA.hpp"
+#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Models/LowPowerTimer/LowPowerTimer.hpp"
+#include "HALAL/Models/DMA/DMA.hpp"
 
 #if defined(HAL_ADC_MODULE_ENABLED) && defined(HAL_LPTIM_MODULE_ENABLED)
 
@@ -133,6 +133,16 @@ public:
 	 * @return the value of the ADC, in uint16_t format. 0 is minimum possible value and max_uint16_t is the maximum.
 	 */
 	static uint16_t get_int_value(uint8_t id);
+
+	/**
+	 * @brief Function that returns the pointer where the DMA of the ADC writes its value, for maximum efficiency on the access
+	 *
+	 * This function has no protection of any kind, other that checking that an adc exists before giving the pointer back.
+	 * If the ADC is running or not should be handled by the user.
+	 * The adcs of the adc3 peripheral are not aligned in the buffer, and are instead aligned in the get functions.
+	 * If the values are accessed from the buffer, is the responsibility of the user to handle the shift problems.
+	 */
+	static uint16_t* get_value_pointer(uint8_t id);
 
 	static Peripheral peripherals[3];
 

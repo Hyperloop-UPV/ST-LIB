@@ -6,21 +6,21 @@
  */
 #pragma once
 
-#include "Packet.hpp"
-#include "OrderProtocol.hpp"
+#include "HALAL/Models/Packets/Packet.hpp"
+#include "HALAL/Models/Packets/OrderProtocol.hpp"
 
 class Order : public Packet{
 public:
     virtual void set_callback(void(*callback)(void)) = 0;
     virtual void process() = 0;
-    virtual void parse(OrderProtocol* socket, void* data) = 0;
-    void parse(void* data) override {
+    virtual void parse(OrderProtocol* socket, uint8_t* data) = 0;
+    void parse(uint8_t* data) override {
     	parse(nullptr, data);
     }
     static void process_by_id(uint16_t id) {
         if (orders.find(id) != orders.end()) orders[id]->process();
     }
-    static void process_data(OrderProtocol* socket, void* data) {
+    static void process_data(OrderProtocol* socket, uint8_t* data) {
         uint16_t id = Packet::get_id(data);
         if (orders.contains(id)) {
             orders[id]->parse(socket, data);
@@ -47,10 +47,10 @@ public:
     uint8_t* build() override {
         return StackPacket<BufferLength,Types...>::build();
     }
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         StackPacket<BufferLength,Types...>::parse(data);
     }
-    void parse(OrderProtocol* socket, void* data) override{
+    void parse(OrderProtocol* socket, uint8_t* data) override{
     	parse(data);
     }
     size_t get_size() override {
@@ -91,10 +91,10 @@ public:
     uint8_t* build() override {
         return HeapPacket::build();
     }
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         HeapPacket::parse(data);
     }
-    void parse(OrderProtocol* socket, void* data){
+    void parse(OrderProtocol* socket, uint8_t* data){
     	parse(data);
     }
     size_t get_size() override {

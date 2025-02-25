@@ -8,8 +8,8 @@
 #pragma once
 
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "PacketValue.hpp"
-#include "DataStructures/StackTuple.hpp"
+#include "HALAL/Models/Packets/PacketValue.hpp"
+#include "HALAL/Models/DataStructures/StackTuple.hpp"
 
 
 /**
@@ -23,7 +23,7 @@ public:
 	/**
 	 * @brief function that receives binary data and uses it to update the variables
 	 */
-	virtual void parse(void* data) = 0;
+	virtual void parse(uint8_t* data) = 0;
 
 	/**
 	 * @brief function that transforms the variables into binary data and saves it on the buffer
@@ -50,7 +50,7 @@ public:
         SPIBasePacket::buffer = buffer;
     }
 
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         for (PacketValue<>* value : values) {
             value->parse(data);
             data += value->get_size();
@@ -75,7 +75,7 @@ public:
     	size = 0;
     }
 
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
     }
 
     uint8_t* build() override {

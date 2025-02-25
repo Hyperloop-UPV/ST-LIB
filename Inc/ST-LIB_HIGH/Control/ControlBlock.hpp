@@ -24,3 +24,5 @@ template<class InputType, class OutputType>
 void ControlBlock<InputType, OutputType>::input(InputType input_value){
     this->input_value = input_value;
 }
+
+

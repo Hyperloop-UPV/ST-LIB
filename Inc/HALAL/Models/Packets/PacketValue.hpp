@@ -1,7 +1,7 @@
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"
-#include "Concepts/Concepts.hpp"
+#include "HALAL/Models/Concepts/Concepts.hpp"
 
 struct empty_type {};
 
@@ -16,8 +16,8 @@ public:
     virtual void* get_pointer() = 0;
     virtual void set_pointer(void* pointer) = 0;
     virtual size_t get_size() = 0;
-    virtual void parse(void* data) = 0;
-    virtual void copy_to(void* data) = 0;
+    virtual void parse(uint8_t* data) = 0;
+    virtual void copy_to(uint8_t* data) = 0;
 };
 
 template<class Type> requires NotContainer<Type> 
@@ -39,10 +39,10 @@ public:
     size_t get_size() override {
         return sizeof(Type);
     }
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         *src = *((Type*)data);
     }
-    void copy_to(void* data) override {
+    void copy_to(uint8_t* data) override {
         *((Type*)data) = *src;
     }
 };
@@ -67,10 +67,10 @@ public:
     size_t get_size() override {
         return sizeof(double);
     }
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         *src = *((double*)data);
     }
-    void copy_to(void* data) override {
+    void copy_to(uint8_t* data) override {
         memcpy(data,src,get_size());
     }
 };
@@ -98,10 +98,10 @@ public:
     size_t get_size() override {
         return src->size()*sizeof(typename Type::value_type);
     }
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         memcpy(src->data(), data, get_size());
     }
-    void copy_to(void* data) override {
+    void copy_to(uint8_t* data) override {
         memcpy(data, src->data(), get_size());
     }
 };
@@ -130,10 +130,10 @@ public:
     size_t get_size() override {
         return strlen(src->c_str()) + 1;
     }
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         memcpy(src->data(), data, get_size());
     }
-    void copy_to(void* data) override {
+    void copy_to(uint8_t* data) override {
         memcpy(data, src->data(), get_size());
     }
 };
@@ -157,10 +157,10 @@ public:
     size_t get_size() override {
         return N*sizeof(Type);
     }
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         memcpy(src, data, get_size());
     }
-    void copy_to(void* data) override {
+    void copy_to(uint8_t* data) override {
         memcpy(data, src, get_size());
     }
 };
@@ -189,13 +189,13 @@ public:
     size_t get_size() override {
         return N*sizeof(Type);
     }
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         for(Type* i : *src) {
             *i = *(Type*)data;
             data += sizeof(Type);
         }
     }
-    void copy_to(void* data) override {
+    void copy_to(uint8_t* data) override {
         for(Type* i : *src) {
             *(Type*)data = *i;
             data += sizeof(Type);

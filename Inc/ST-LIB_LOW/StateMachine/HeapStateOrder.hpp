@@ -21,7 +21,7 @@ public:
     	if (callback != nullptr && state_machine.is_on && state_machine.current_state == state) callback();
     }
 
-    void parse(OrderProtocol* socket, void* data)override{
+    void parse(OrderProtocol* socket, uint8_t* data)override{
     	if(state_machine.is_on && state_machine.current_state == state) HeapOrder::parse(data);
     }
 };

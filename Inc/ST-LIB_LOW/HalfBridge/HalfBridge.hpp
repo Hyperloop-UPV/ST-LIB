@@ -7,10 +7,7 @@
 
 #pragma once
 
-#include "Time/Time.hpp"
-#include "DigitalOutputService/DigitalOutputService.hpp"
-#include "PWM/PhasedPWM/PhasedPWM.hpp"
-#include "PWM/DualPhasedPWM/DualPhasedPWM.hpp"
+#include "HALAL/HALAL.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 class HalfBridge {

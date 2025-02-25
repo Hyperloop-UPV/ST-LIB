@@ -5,10 +5,11 @@
  *      Author: aleja
  */
 
-#include "TimerPeripheral/TimerPeripheral.hpp"
+#include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 
 map<TIM_HandleTypeDef*, TIM_TypeDef*> TimerPeripheral::handle_to_timer= {
 		{&htim1, TIM1},
+		{&htim2, TIM2},
 		{&htim3, TIM3},
 		{&htim4, TIM4},
 		{&htim8, TIM8},
@@ -17,15 +18,16 @@ map<TIM_HandleTypeDef*, TIM_TypeDef*> TimerPeripheral::handle_to_timer= {
 		{&htim16, TIM16},
 		{&htim17, TIM17},
 		{&htim23, TIM23},
+		{&htim24, TIM24}
 };
 
 
 TimerPeripheral::InitData::InitData(
 		TIM_TYPE type, uint32_t prescaler, uint32_t period, uint32_t deadtime, uint32_t polarity, uint32_t negated_polarity) :
+		type(type),
 		prescaler(prescaler),
 		period(period),
 		deadtime(deadtime),
-		type(type),
 		polarity(polarity),
 		negated_polarity(negated_polarity)
 		{}

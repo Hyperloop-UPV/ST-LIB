@@ -6,16 +6,31 @@
  */
 #pragma once
 
-#include "Communication/Ethernet/EthernetNode.hpp"
-#include "Communication/Ethernet/Ethernet.hpp"
-#include "Packets/Packet.hpp"
-#include "Packets/Order.hpp"
-#include "Packets/OrderProtocol.hpp"
+#include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
+#include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
+#include "HALAL/Models/Packets/Packet.hpp"
+#include "HALAL/Models/Packets/Order.hpp"
+#include "HALAL/Models/Packets/OrderProtocol.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
 #define PBUF_POOL_MEMORY_DESC_POSITION 8
 
 class Socket : public OrderProtocol{
+private:
+	tcp_pcb* connection_control_block;
+	tcp_pcb* socket_control_block;
+	queue<struct pbuf*> tx_packet_buffer;
+	queue<struct pbuf*> rx_packet_buffer;
+	void process_data();
+	static err_t connect_callback(void* arg, struct tcp_pcb* client_control_block, err_t error);
+	static err_t receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error);
+	static err_t poll_callback(void* arg, struct tcp_pcb* client_control_block);
+	static err_t send_callback(void* arg, struct tcp_pcb* client_control_block, uint16_t length);
+	static void error_callback(void *arg, err_t error);
+
+	static err_t connection_poll_callback(void* arg, struct tcp_pcb* connection_control_block);
+	static void connection_error_callback(void *arg, err_t error);
+	static void config_keepalive(tcp_pcb* control_block, Socket* socket);
 public:
 	enum SocketState{
 		INACTIVE,
@@ -27,14 +42,12 @@ public:
 	uint32_t local_port;
 	IPV4 remote_ip;
 	uint32_t remote_port;
-	tcp_pcb* connection_control_block;
-	tcp_pcb* socket_control_block;
+	
 	SocketState state;
-	queue<struct pbuf*> tx_packet_buffer;
-	queue<struct pbuf*> rx_packet_buffer;
+	
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;
 	bool pending_connection_reset = false;
-
+	bool use_keep_alives{true};
 	struct KeepaliveConfig{
 		uint32_t inactivity_time_until_keepalive_ms = TCP_INACTIVITY_TIME_UNTIL_KEEPALIVE_MS;
 		uint32_t space_between_tries_ms = TCP_SPACE_BETWEEN_KEEPALIVE_TRIES_MS;
@@ -43,7 +56,7 @@ public:
 
 	Socket();
 	Socket(Socket&& other);
-	Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port);
+	Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port,bool use_keep_alives = true);
 	Socket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port, uint32_t inactivity_time_until_keepalive_ms, uint32_t space_between_tries_ms, uint32_t tries_until_disconnection);
 	Socket(EthernetNode local_node, EthernetNode remote_node);
 	~Socket();
@@ -64,6 +77,7 @@ public:
 	 * @brief puts the order data into the tx_packet_buffer and sends it
 	 * @return true if the data was sent successfully, false otherwise
 	 */
+
 	bool send_order(Order& order) override{
 		if(state != CONNECTED){
 			reconnect();
@@ -90,23 +104,7 @@ public:
 		send();
 		return true;
 	}
-
 	void send();
-
-	void process_data();
-
 	bool is_connected();
-
-	static err_t connect_callback(void* arg, struct tcp_pcb* client_control_block, err_t error);
-	static err_t receive_callback(void* arg, struct tcp_pcb* client_control_block, struct pbuf* packet_buffer, err_t error);
-	static err_t poll_callback(void* arg, struct tcp_pcb* client_control_block);
-	static err_t send_callback(void* arg, struct tcp_pcb* client_control_block, uint16_t length);
-	static void error_callback(void *arg, err_t error);
-
-	static err_t connection_poll_callback(void* arg, struct tcp_pcb* connection_control_block);
-	static void connection_error_callback(void *arg, err_t error);
-
-	static void config_keepalive(tcp_pcb* control_block, Socket* socket);
-
 };
 #endif

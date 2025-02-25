@@ -1,9 +1,8 @@
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"
-#include "Concepts/Concepts.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "Flash/Flash.hpp"
+#include "HALAL/HALAL.hpp"
 #include "FlashVariable.hpp"
 
 #define FLASH_STORER_MAX_SIZE		((uint32_t)(1028*64))

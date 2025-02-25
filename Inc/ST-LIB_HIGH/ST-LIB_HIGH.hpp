@@ -22,8 +22,10 @@
 #include "Control/Blocks/MatrixMultiplier.hpp"
 #include "Control/Blocks/MeanCalculator.hpp"
 #include "Control/ControlSystem.hpp"
-#include "FlashStorer/FlashStorer.hpp"
-
+#ifdef SIM_ON
+#else
+	#include "FlashStorer/FlashStorer.hpp"
+#endif
 namespace STLIB_HIGH {
 	void start();
 }

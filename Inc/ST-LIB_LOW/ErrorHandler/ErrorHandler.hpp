@@ -8,8 +8,14 @@
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"
-#include "Time/Time.hpp"
-#include "Communication/UART/UART.hpp"
+#ifndef SIM_ON
+#include "HALAL/Services/Time/Time.hpp"
+#include "HALAL/Services/Communication/UART/UART.hpp"
+#else
+#include "HALALMock/Services/Time/Time.hpp"
+#include "HALALMock/Services/Communication/UART/UART.hpp"
+#include "HALALMock/Services/Logger/Logger.hpp"
+#endif
 
 class ErrorHandlerModel {
 private:

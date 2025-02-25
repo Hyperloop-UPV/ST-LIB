@@ -1,0 +1,236 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "mcu",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "toolchainFile": "${sourceDir}/toolchains/stm32.cmake",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "sim",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "nucleo-debug",
+            "displayName": "Nucleo [DBG]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "TARGET_NUCLEO": "ON"
+            }
+        },
+        {
+            "name": "nucleo-release",
+            "displayName": "Nucleo [REL]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "TARGET_NUCLEO": "ON"
+            }
+        },
+        {
+            "name": "nucleo-relwithdebinfo",
+            "displayName": "Nucleo [RWD]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "TARGET_NUCLEO": "ON"
+            }
+        },
+        {
+            "name": "nucleo-debug-eth",
+            "displayName": "Nucleo [DBG] [ETH]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "TARGET_NUCLEO": "ON",
+                "USE_ETHERNET": "ON"
+            }
+        },
+        {
+            "name": "nucleo-release-eth",
+            "displayName": "Nucleo [REL] [ETH]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "TARGET_NUCLEO": "ON",
+                "USE_ETHERNET": "ON"
+            }
+        },
+        {
+            "name": "nucleo-relwithdebinfo-eth",
+            "displayName": "Nucleo [RWD] [ETH]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "TARGET_NUCLEO": "ON",
+                "USE_ETHERNET": "ON"
+            }
+        },
+        {
+            "name": "board-debug",
+            "displayName": "Board [DBG]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "board-release",
+            "displayName": "Board [REL]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "board-relwithdebinfo",
+            "displayName": "Board [RWD]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            }
+        },
+        {
+            "name": "board-debug-eth",
+            "displayName": "Board [DBG] [ETH]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "USE_ETHERNET": "ON"
+            }
+        },
+        {
+            "name": "board-release-eth",
+            "displayName": "Board [REL] [ETH]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "USE_ETHERNET": "ON"
+            }
+        },
+        {
+            "name": "board-relwithdebinfo-eth",
+            "displayName": "Board [RWD] [ETH]",
+            "inherits": [
+                "mcu"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "USE_ETHERNET": "ON"
+            }
+        },
+        {
+            "name": "simulator",
+            "displayName": "Simulator",
+            "inherits": [
+                "sim"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "nucleo-debug",
+            "displayName": "Nucleo [DBG]",
+            "configurePreset": "nucleo-debug"
+        },
+        {
+            "name": "nucleo-release",
+            "displayName": "Nucleo [REL]",
+            "configurePreset": "nucleo-release"
+        },
+        {
+            "name": "nucleo-relwithdebinfo",
+            "displayName": "Nucleo [RWD]",
+            "configurePreset": "nucleo-relwithdebinfo"
+        },
+        {
+            "name": "nucleo-debug-eth",
+            "displayName": "Nucleo [DBG] [ETH]",
+            "configurePreset": "nucleo-debug-eth"
+        },
+        {
+            "name": "nucleo-release-eth",
+            "displayName": "Nucleo [REL] [ETH]",
+            "configurePreset": "nucleo-release-eth"
+        },
+        {
+            "name": "nucleo-relwithdebinfo-eth",
+            "displayName": "Nucleo [RWD] [ETH]",
+            "configurePreset": "nucleo-relwithdebinfo-eth"
+        },
+        {
+            "name": "board-debug",
+            "displayName": "Board [DBG]",
+            "configurePreset": "board-debug"
+        },
+        {
+            "name": "board-release",
+            "displayName": "Board [REL]",
+            "configurePreset": "board-release"
+        },
+        {
+            "name": "board-relwithdebinfo",
+            "displayName": "Board [RWD]",
+            "configurePreset": "board-relwithdebinfo"
+        },
+        {
+            "name": "board-debug-eth",
+            "displayName": "Board [DBG] [ETH]",
+            "configurePreset": "board-debug-eth"
+        },
+        {
+            "name": "board-release-eth",
+            "displayName": "Board [REL] [ETH]",
+            "configurePreset": "board-release-eth"
+        },
+        {
+            "name": "board-relwithdebinfo-eth",
+            "displayName": "Board [RWD] [ETH]",
+            "configurePreset": "board-relwithdebinfo-eth"
+        },
+        {
+            "name": "simulator",
+            "displayName": "Simulator",
+            "configurePreset": "simulator"
+        }
+    ]
+}

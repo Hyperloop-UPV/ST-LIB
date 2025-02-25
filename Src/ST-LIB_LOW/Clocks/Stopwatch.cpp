@@ -6,7 +6,7 @@
  */
 
 #include "Clocks/Stopwatch.hpp"
-#include "Time/Time.hpp"
+#include "HALAL/HALAL.hpp"
 
 
 void Stopwatch::start(const string id){

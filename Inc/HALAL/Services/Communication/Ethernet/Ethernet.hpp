@@ -8,11 +8,11 @@
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"
-#include "PinModel/Pin.hpp"
-#include "EthernetNode.hpp"
+#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "lwip.h"
 #include "ethernetif.h"
-#include "EthernetHelper.hpp"
+#include "HALAL/Services/Communication/Ethernet/EthernetHelper.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
 #define ETHERNET_POOLS_BASE_ADDRESS 0x30000000

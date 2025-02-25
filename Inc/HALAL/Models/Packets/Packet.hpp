@@ -1,20 +1,20 @@
 #pragma once
 
-#include "PacketValue.hpp"
-#include "DataStructures/StackTuple.hpp"
+#include "HALAL/Models/Packets/PacketValue.hpp"
+#include "HALAL/Models/DataStructures/StackTuple.hpp"
 
 class Packet{
 public:
     size_t size;
     virtual uint8_t* build() = 0;
-    virtual void parse(void* data) = 0;
+    virtual void parse(uint8_t* data) = 0;
     virtual size_t get_size() = 0;
     virtual uint16_t get_id() = 0; 
     virtual void set_pointer(size_t index, void* pointer) = 0;
-    static uint16_t get_id(void* data) {
+    static uint16_t get_id(uint8_t* data) {
         return *((uint16_t*)data);
     }
-    static void parse_data(void* data){
+    static void parse_data(uint8_t* data){
         uint16_t id = get_id(data);
         if(packets.contains(id)) packets[id]->parse(data);
     }
@@ -38,7 +38,7 @@ public:
         packets[id] = this;
         size = BufferLength + sizeof(id);
     }
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         data+=sizeof(id);
         for (PacketValue<>* value : values) {
             value->parse(data);
@@ -86,7 +86,7 @@ public:
         packets[id] = this;
     }
 
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         data+=sizeof(id);
         for (PacketValue<>* value : values) {
             value->parse(data);
@@ -144,7 +144,7 @@ public:
     const size_t size = sizeof(id);
     StackPacket() = default;
     StackPacket(uint16_t id) : id(id){packets[id] = this;}
-    void parse(void* data) override {}
+    void parse(uint8_t* data) override {}
     uint8_t* build() override {
         return (uint8_t*)&id;
     }
@@ -181,7 +181,7 @@ public:
     	packets[id] = this;
     }
 
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         data += sizeof(id);
         for (unique_ptr<PacketValue<>>& value : values) {
             value.get()->parse(data);

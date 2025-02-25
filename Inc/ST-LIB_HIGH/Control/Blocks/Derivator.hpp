@@ -73,3 +73,27 @@ class SimpleDerivator : public ControlBlock<double,double>{
             }
         }
 };
+
+class SimpleFloatDerivator : public ControlBlock<float,float>{
+    public:
+        float period;
+        static constexpr int N = 2;
+        float buffer[N] = {0.0};
+        int index = 0;
+    public:
+        SimpleFloatDerivator(float period): ControlBlock<float,float>(0.0), period(period){ output_value = 0.0;}
+        void execute()override{
+            buffer[index] = input_value;
+            output_value = (buffer[index] - buffer[((index-1)%(N) + (N))%(N)])/period;
+            index++;
+            index %= N;
+            return;
+        }
+        void reset(){
+        	output_value = 0;
+            index = 0;
+            for(int i = 0; i < N; i++){
+                buffer[i] = 0.0;
+            }
+        }
+};

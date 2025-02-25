@@ -7,8 +7,7 @@
  */
 
 #pragma once
-#include "DigitalInputService/DigitalInputService.hpp"
-#include "EXTI/EXTI.hpp"
+#include "HALAL/HALAL.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 

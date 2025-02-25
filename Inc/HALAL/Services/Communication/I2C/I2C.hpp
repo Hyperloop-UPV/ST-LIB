@@ -6,11 +6,11 @@
  */
 #pragma once
 
-#include "PinModel/Pin.hpp"
+#include "HALAL/Models/PinModel/Pin.hpp"
 #include "C++Utilities/CppUtils.hpp"
-#include "Packets/I2CPacket.hpp"
+#include "HALAL/Models/Packets/I2CPacket.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "DMA/DMA.hpp"
+#include "HALAL/Models/DMA/DMA.hpp"
 
 #define HALAL_I2C_EMPTY_ID (uint16_t)0
 
@@ -29,8 +29,8 @@ private:
 	 *
 	 */
 	struct Instance {
-		Pin SCL;
-		Pin SDA;
+		Pin &SCL;
+		Pin &SDA;
 		I2C_HandleTypeDef *hi2c;
 		I2C_TypeDef *instance;
 		DMA::Stream RX_DMA;
@@ -136,6 +136,11 @@ public:
 	 * @return bool Return true if the UART transmit operation is busy and false if not.
 	 */
 	static bool is_busy(uint8_t id);
+
+	/**
+	 * @brief This method resets the i2c handler entirely so a board can recover from a communication fail without a full reset
+	 */
+	static void reset(uint8_t id);
 
 private:
 	/**

@@ -4,7 +4,7 @@
  *  Created on: 12 dec. 2022
  *      Author: Pablo, Ricardo
  */
-#include "Communication/I2C/I2C.hpp"
+#include "HALAL/Services/Communication/I2C/I2C.hpp"
 
 #ifdef HAL_I2C_MODULE_ENABLED
 
@@ -60,7 +60,7 @@ bool I2C::transmit_next_packet(uint8_t id, I2CPacket &packet) {
 	if (hdma_i2c2_tx.State != 0x01U) {
 	}
 
-	if (HAL_I2C_Master_Transmit_DMA(i2c->hi2c, packet.get_id(),
+	if (HAL_I2C_Master_Transmit_DMA(i2c->hi2c, packet.get_id()<<1,
 			packet.get_data(), packet.get_size()) != HAL_OK) {
 		ErrorHandler("I2C Error during memory read DMA!\n\r");
 		return false;
@@ -81,9 +81,9 @@ bool I2C::transmit_next_packet_polling(uint8_t id, I2CPacket &packet) {
 		return false;
 	}
 
-	if (HAL_I2C_Master_Transmit(i2c->hi2c, packet.get_id(), packet.get_data(),
-			packet.get_size(), 1000) != HAL_OK) {
-		ErrorHandler("Error during I2C transmission \n\r");
+	if (HAL_I2C_Master_Transmit(i2c->hi2c, packet.get_id()<<1, packet.get_data(),
+			packet.get_size(), 50) != HAL_OK) {
+		//ErrorHandler("Error during I2C transmission \n\r");
 		return false;
 	}
 	return true;
@@ -104,7 +104,7 @@ bool I2C::receive_next_packet(uint8_t id, I2CPacket &packet) {
 
 	*packet.get_data() = 0;
 
-	if (HAL_I2C_Master_Receive_DMA(i2c->hi2c, packet.get_id(),
+	if (HAL_I2C_Master_Receive_DMA(i2c->hi2c, packet.get_id()<<1,
 			packet.get_data(), packet.get_size()) != HAL_OK) {
 		ErrorHandler("I2C Error during memory write DMA!\n\r");
 		return false;
@@ -129,9 +129,9 @@ bool I2C::receive_next_packet_polling(uint8_t id, I2CPacket &packet) {
 
 	*packet.get_data() = 0;
 
-	if (HAL_I2C_Master_Receive(i2c->hi2c, packet.get_id(), packet.get_data(),
-			packet.get_size(), 1000) != HAL_OK) {
-		ErrorHandler("I2C Error during receive!\n\r");
+	if (HAL_I2C_Master_Receive(i2c->hi2c, packet.get_id()<<1, packet.get_data(),
+			packet.get_size(), 50) != HAL_OK) {
+		//ErrorHandler("I2C Error during receive!\n\r");
 		return false;
 	}
 
@@ -168,7 +168,7 @@ bool I2C::read_from(uint8_t id, I2CPacket &packet, uint16_t mem_addr,
 		return false;
 	}
 
-	if (HAL_I2C_Mem_Read_DMA(i2c->hi2c, packet.get_id(), mem_addr, 1,
+	if (HAL_I2C_Mem_Read_DMA(i2c->hi2c, packet.get_id()<<1, mem_addr, 1,
 			packet.get_data(), packet.get_size())) {
 		ErrorHandler("I2C Error during memory read DMA!\n\r");
 		return false;
@@ -192,7 +192,7 @@ bool I2C::write_to(uint8_t id, I2CPacket &packet, uint16_t mem_addr,
 		return false;
 	}
 
-	if (HAL_I2C_Mem_Write_DMA(i2c->hi2c, packet.get_id(), mem_addr, mem_size,
+	if (HAL_I2C_Mem_Write_DMA(i2c->hi2c, packet.get_id()<<1, mem_addr, mem_size,
 			packet.get_data(), packet.get_size())) {
 		ErrorHandler("I2C Error during memory write DMA!\n\r");
 		return false;
@@ -225,6 +225,12 @@ bool I2C::is_busy(uint8_t id) {
 	}
 
 	return false;
+}
+
+void I2C::reset(uint8_t id) {
+	I2C::Instance *i2c = I2C::active_i2c[id];
+	HAL_I2C_DeInit(i2c->hi2c);
+	HAL_I2C_Init(i2c->hi2c);
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hspi) {

@@ -5,6 +5,10 @@
 #include "StateMachine/StateMachine.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
+#ifdef SIM_ON
+#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
+#endif
+
 void State::enter() {
 	for (function<void()>& action : on_enter_actions) {
 		action();
@@ -93,6 +97,14 @@ void State::add_state_order(uint16_t id){
 	state_orders_ids.push_back(id);
 }
 
+#ifdef SIM_ON
+StateMachine::StateMachine(){
+	state_machine_id_in_shm = ++(*SharedMemory::state_machine_count);
+	SharedMemory::update_current_state(state_machine_id_in_shm,initial_state);
+}
+#else
+StateMachine::StateMachine(){}
+#endif
 
 /**
  * This is a constructor for a StateMachine object that initializes the initial state and creates a
@@ -105,6 +117,11 @@ StateMachine::StateMachine(uint8_t initial_state) :
 	initial_state(initial_state), current_state(initial_state) {
 	add_state(initial_state);
 	enter_state(initial_state);
+
+	#ifdef SIM_ON
+		state_machine_id_in_shm = ++(*SharedMemory::state_machine_count);
+		SharedMemory::update_current_state(state_machine_id_in_shm,initial_state);
+	#endif
 }
 
 /**
@@ -248,7 +265,7 @@ void StateMachine::add_state_machine(StateMachine& state_machine, uint8_t state)
  * checks for transitions in a nested state machine if applicable.
  */
 void StateMachine::check_transitions() {
-	for (auto const state_transition : transitions[current_state]) {
+	for (auto const& state_transition : transitions[current_state]) {
 		if (state_transition.second()) {
 			force_change_state(state_transition.first);
 		}
@@ -269,11 +286,15 @@ void StateMachine::force_change_state(uint8_t new_state) {
 
 	unregister_all_timed_actions(current_state);
 	exit_state(current_state);
-
+	
 	current_state = new_state;
 
 	enter_state(current_state);
 	register_all_timed_actions(current_state);
+
+	#ifdef SIM_ON
+		SharedMemory::update_current_state(state_machine_id_in_shm,current_state);
+	#endif
 }
 
 void StateMachine::remove_cyclic_action(TimedAction* action) {
@@ -342,3 +363,9 @@ unordered_map<StateMachine::state_id, State>& StateMachine::get_states(){
 void StateMachine::refresh_state_orders(){
 	if(states[current_state].state_orders_ids.size() != 0) StateOrder::add_state_orders(states[current_state].state_orders_ids);
 }
+
+#ifdef SIM_ON
+uint8_t StateMachine::get_id_in_shm(){
+	return state_machine_id_in_shm;
+}
+#endif

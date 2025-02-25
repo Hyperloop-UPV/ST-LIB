@@ -1,5 +1,5 @@
 #pragma once
-#include "ADC/ADC.hpp"
+#include "HALAL/HALAL.hpp"
 #include "Sensors/Sensor/Sensor.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "Control/ControlBlock.hpp"

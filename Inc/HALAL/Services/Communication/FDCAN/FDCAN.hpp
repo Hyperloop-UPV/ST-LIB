@@ -21,7 +21,7 @@ using std::queue;
 
 class FDCAN{
 public:
-	enum DLC{
+	enum DLC : uint32_t{
 		BYTES_0 = FDCAN_DLC_BYTES_0,
 		BYTES_1 = FDCAN_DLC_BYTES_1,
 		BYTES_2 = FDCAN_DLC_BYTES_2,
@@ -40,9 +40,12 @@ public:
 		BYTES_64 = FDCAN_DLC_BYTES_64,
 		DEFAULT = UINT32_MAX,
 	};
+    enum ID{
+        FAULT_ID = 1
+    };
 
 	struct Packet{
-		vector<uint8_t> rx_data;
+		array<uint8_t,64> rx_data;
 		uint32_t identifier;
 		DLC data_length;
 
@@ -87,6 +90,8 @@ public:
     static unordered_map<uint8_t, FDCAN::Instance*> registered_fdcan;
     static unordered_map<FDCAN::Peripheral, FDCAN::Instance*> available_fdcans;
     static unordered_map<FDCAN_HandleTypeDef*, FDCAN::Instance*> handle_to_fdcan;
+    static unordered_map<FDCAN::Instance*,uint8_t> instance_to_id;
+    static unordered_map<FDCAN_HandleTypeDef*,uint8_t> handle_to_id;
     static unordered_map<FDCAN::DLC, uint8_t> dlc_to_len;
     /**
 	* @brief FDCAN  wrapper enum of the STM32H723.
@@ -108,7 +113,7 @@ public:
 
     static void start();
 
-    static bool transmit(uint8_t id, uint32_t message_id, span<uint8_t> data, FDCAN::DLC dlc = FDCAN::DLC::DEFAULT);
+    static bool transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::DLC dlc = FDCAN::DLC::DEFAULT);
 
     static bool read(uint8_t id, FDCAN::Packet* data);
 
@@ -119,7 +124,7 @@ public:
 	 * @return bool Return true if the data queue has any packet.
 	 */
 	static bool received_test(uint8_t id);
-
+    static Packet packet;
 private:
 
     static void init(FDCAN::Instance* fdcan);

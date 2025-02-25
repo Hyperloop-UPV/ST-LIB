@@ -13,10 +13,10 @@ public:
         return;
     }
 
-    void parse(void* data) override {
+    void parse(uint8_t* data) override {
         return;
     }
-    void parse(OrderProtocol* socket, void* data) override{
+    void parse(OrderProtocol* socket, uint8_t* data) override{
     	struct pbuf* packet = pbuf_alloc(PBUF_TRANSPORT, get_size(), PBUF_POOL);
         pbuf_take(packet, data, get_size());
         forwarding_socket.tx_packet_buffer.push(packet);

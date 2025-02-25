@@ -20,7 +20,7 @@ public:
     	if (this->callback != nullptr && state_machine.is_on && state_machine.current_state == state) this->callback();
     }
 
-    void parse(OrderProtocol* socket, void* data)override{
+    void parse(OrderProtocol* socket, uint8_t* data)override{
     	if(state_machine.is_on && state_machine.current_state == state) StackOrder<BufferLength,Types...>::parse(data);
     }
 };
