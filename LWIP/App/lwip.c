@@ -28,6 +28,7 @@
 #include "ethernetif.h"
 
 /* USER CODE BEGIN 0 */
+
 /* USER CODE END 0 */
 /* Private function prototypes -----------------------------------------------*/
 static void ethernet_link_status_updated(struct netif *netif);
