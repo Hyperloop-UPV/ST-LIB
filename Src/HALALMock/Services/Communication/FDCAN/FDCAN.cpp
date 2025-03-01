@@ -65,6 +65,11 @@ void FDCAN::start(){
 		FDCAN::Instance* instance = inst.second;
 		instance->rx_queue = queue<FDCAN::Packet>();
 		instance->tx_data = vector<uint8_t>();
+		EmulatedPin& TX_pin = SharedMemory::get_pin(instance->TX);
+		EmulatedPin& RX_pin = SharedMemory::get_pin(instance->RX);
+		TX_pin.PinData.fdcan.is_on = true;
+		RX_pin.PinData.fdcan.is_on = true;
+
 		
 		instance->portcounter = FDCAN::Port_counter;
 		FDCAN::Port_counter++;

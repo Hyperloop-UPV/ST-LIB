@@ -147,7 +147,7 @@ struct __attribute__((packed)) InputCapure_MockPin{
     bool is_on;
 };
 struct __attribute__((packed)) FDCAN_MockPin{
-
+    bool is_on;
 };
 struct __attribute__((packed)) SPI_MockPin{
     bool is_on;
