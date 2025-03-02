@@ -47,6 +47,8 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 		ErrorHandler("Pin %d is already in use",fdcan_instance->RX);
 	}
 
+	TX_data.PinData.fdcan.is_on = false;
+	RX_data.PinData.fdcan.is_on = false;
 	uint8_t id = FDCAN::id_counter++;
 
 	FDCAN::registered_fdcan[id] = fdcan_instance;
