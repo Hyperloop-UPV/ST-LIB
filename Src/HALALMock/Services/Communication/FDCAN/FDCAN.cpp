@@ -47,6 +47,8 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 		ErrorHandler("Pin %d is already in use",fdcan_instance->RX);
 	}
 
+	TX_data.PinData.fdcan.is_on = false;
+	RX_data.PinData.fdcan.is_on = false;
 	uint8_t id = FDCAN::id_counter++;
 
 	FDCAN::registered_fdcan[id] = fdcan_instance;
@@ -65,6 +67,11 @@ void FDCAN::start(){
 		FDCAN::Instance* instance = inst.second;
 		instance->rx_queue = queue<FDCAN::Packet>();
 		instance->tx_data = vector<uint8_t>();
+		EmulatedPin& TX_pin = SharedMemory::get_pin(instance->TX);
+		EmulatedPin& RX_pin = SharedMemory::get_pin(instance->RX);
+		TX_pin.PinData.fdcan.is_on = true;
+		RX_pin.PinData.fdcan.is_on = true;
+
 		
 		instance->portcounter = FDCAN::Port_counter;
 		FDCAN::Port_counter++;
