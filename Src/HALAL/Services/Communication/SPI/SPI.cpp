@@ -161,10 +161,36 @@ bool SPI::receive(uint8_t id, span<uint8_t> data) {
     }
 
     SPI::Instance* spi = SPI::registered_spi[id];
+    turn_off_chip_select(spi);
+    HAL_StatusTypeDef errorcode =
+        HAL_SPI_Receive(spi->hspi, data.data(), data.size(), 10);
+    turn_on_chip_select(spi);
+    switch (errorcode) {
+        case HAL_OK:
+            return true;
+            break;
+        case HAL_BUSY:
+            return false;
+            break;
+        default:
+            ErrorHandler(
+                "Error while transmiting and receiving with spi DMA. Errorcode "
+                "%u",
+                (uint8_t)errorcode);
+            return false;
+            break;
+    }
+}
+bool SPI::receive_DMA(uint8_t id, span<uint8_t> data) {
+    if (!SPI::registered_spi.contains(id)) {
+        ErrorHandler("No SPI registered with id %u", id);
+        return false;
+    }
+
+    SPI::Instance* spi = SPI::registered_spi[id];
 
     HAL_StatusTypeDef errorcode =
         HAL_SPI_Receive_DMA(spi->hspi, data.data(), data.size());
-    turn_on_chip_select(spi);
     switch (errorcode) {
         case HAL_OK:
             return true;
@@ -190,11 +216,33 @@ bool SPI::transmit_and_receive(uint8_t id, span<uint8_t> command_data,
     }
 
     SPI::Instance* spi = SPI::registered_spi[id];
+    turn_off_chip_select(spi);
+    HAL_StatusTypeDef errorcode = HAL_SPI_Transmit(
+        spi->hspi, command_data.data(), command_data.size(), 10);
+    if (errorcode != HAL_OK) {
+        return false;
+    }
+    if (HAL_SPI_Receive(spi->hspi, receive_data.data(), receive_data.size(),
+                        10) != HAL_OK) {
+        turn_on_chip_select(spi);
+        ErrorHandler("Error during receive in %s", spi->name.c_str());
+        return false;
+    }
+    turn_on_chip_select(spi);
+    return true;
+}
+bool SPI::transmit_and_receive_DMA(uint8_t id, span<uint8_t> command_data,
+                                   span<uint8_t> receive_data) {
+    if (!SPI::registered_spi.contains(id)) {
+        ErrorHandler("No SPI registered with id %u", id);
+        return false;
+    }
+
+    SPI::Instance* spi = SPI::registered_spi[id];
 
     HAL_StatusTypeDef errorcode =
         HAL_SPI_TransmitReceive_DMA(spi->hspi, command_data.data(),
                                     receive_data.data(), command_data.size());
-    turn_on_chip_select(spi);
     switch (errorcode) {
         case HAL_OK:
             return true;
