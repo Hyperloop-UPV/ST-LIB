@@ -260,7 +260,7 @@ struct Boundary<Type, OUT_OF_RANGE> : public BoundaryInterface{
 	Boundary(Type* src, Type lower_boundary, Type upper_boundary): src(src), lower_boundary(lower_boundary), upper_boundary(upper_boundary){}
 	Protections::FaultType check_bounds()override{
 		if(*src < lower_boundary || *src > upper_boundary) return Protections::FAULT;
-		if(has_warning_level && *src < lower_boundary || *src > upper_boundary){
+		if(has_warning_level && ((*src < lower_boundary) || (*src > upper_boundary))){
 				return Protections::WARNING;
 		}
 		return Protections::OK;
