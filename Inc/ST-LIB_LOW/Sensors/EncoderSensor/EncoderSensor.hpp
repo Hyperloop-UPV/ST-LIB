@@ -7,40 +7,75 @@
  */
 
 #pragma once
-#include "HALAL/HALAL.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
+#include "HALAL/HALAL.hpp"
 
-#define COUNTER_DISTANCE_IN_METERS 0.0001
-#define N_FRAMES 100
-#define FRAME_SIZE_IN_SECONDS 0.005
-#define START_COUNTER UINT32_MAX / 2
+template <size_t SAMPLES>
+class EncoderSensor {
+    constexpr static uint32_t START_COUNTER{UINT32_MAX / 2};
 
+    const double counter_distance_m;
+    const int64_t delay_between_samples;
 
+    uint8_t encoder_id;
 
-class EncoderSensor{
-public:
-	EncoderSensor() = default;
-	EncoderSensor(Pin pin1, Pin pin2, double* position, bool* direction, double* speed, double* acceleration);
-	void start();
-	void read();
-	void reset();
-	uint8_t get_id();
+    uint64_t last_measurement_clock{0};
+    // We want to get the last buffer element and the midpoint, if the number of
+    // elements is odd, these points and the present won't be evenly spaced
+    // across time. The SAMPLES computation rounds it down to make it even
+    RingBuffer<uint32_t, (SAMPLES / 2) * 2> past_delta_counters{};
 
-protected:
-	uint8_t id;
-	double* position;
-	bool* direction;
-	double* speed;
-	double* acceleration;
-	double time;
-	// double positions[N_FRAMES];
-	// double times[N_FRAMES];
-	// double speeds[N_FRAMES];
-	RingBuffer<double, N_FRAMES> positions;
-	RingBuffer<double, N_FRAMES> times;
-	RingBuffer<double, N_FRAMES> speeds;
-	uint64_t last_clock_time;
+    double position{0.0};
+    double speed{0.0};
+    double acceleration{0.0};
 
-private:
-	void update_arrays();
+   public:
+    EncoderSensor(Pin &pin1, Pin &pin2, const double counter_distance_m,
+                  const int64_t delay_between_samples)
+        : counter_distance_m(counter_distance_m),
+          encoder_id(Encoder::inscribe(pin1, pin2)) {
+        for (size_t i{0}; i < SAMPLES; ++i) past_delta_counters.push(0);
+    }
+
+    void turn_on() { Encoder::turn_on(encoder_id); }
+    void turn_off() { Encoder::turn_off(encoder_id); }
+
+    void reset() {
+        Encoder::reset(encoder_id);
+        for (size_t i{0}; i < SAMPLES; ++i) past_delta_counters.push_pop(0);
+    }
+
+    void read() {
+        uint64_t clock{Time::get_global_tick()};
+
+        if (Encoder::get_delta_clock(clock, last_measurement_clock) <
+            delay_between_samples)
+            return;
+
+        uint32_t counter{Encoder::get_counter(encoder_id)};
+
+        uint32_t delta_counter{counter - START_COUNTER};
+        const uint32_t &previous_delta_counter{
+            past_delta_counters[past_delta_counters.size() / 2 - 1]};
+        const uint32_t &previous_previous_delta_counter{
+            past_delta_counters[past_delta_counters.size() - 1]};
+
+        position = delta_counter * counter_distance_m;
+
+        // https://en.wikipedia.org/wiki/Finite_difference_coefficient#Backward_finite_difference
+        speed = ((3.0 * delta_counter / 2.0) - (2.0 * previous_delta_counter) +
+                 (previous_previous_delta_counter / 2.0)) *
+                counter_distance_m;
+
+        acceleration = (delta_counter - (2.0 * previous_delta_counter) +
+                        previous_previous_delta_counter) *
+                       counter_distance_m;
+
+        last_measurement_clock = clock;
+        past_delta_counters.push_pop(delta_counter);
+    }
+
+    double *get_position() { return &position; }
+    double *get_speed() { return &speed; }
+    double *get_acceleration() { return &acceleration; }
 };
