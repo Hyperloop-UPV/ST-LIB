@@ -24,14 +24,23 @@ class EncoderSensor {
     // across time. The SAMPLES computation rounds it down to make it even
     RingBuffer<uint32_t, (SAMPLES / 2) * 2> past_delta_counters{};
 
-    double position{0.0};
-    double speed{0.0};
-    double acceleration{0.0};
+    enum Direction : uint8_t { FORWARD = 0, BACKWARDS = 1 };
+
+    Direction *direction;
+    double *position;
+    double *speed;
+    double *acceleration;
 
    public:
-    EncoderSensor(Pin &pin1, Pin &pin2, const double counter_distance_m)
+    EncoderSensor(Pin &pin1, Pin &pin2, const double counter_distance_m,
+                  Direction *direction, double *position, double *speed,
+                  double *acceleration)
         : counter_distance_m(counter_distance_m),
-          encoder_id(Encoder::inscribe(pin1, pin2)) {
+          encoder_id(Encoder::inscribe(pin1, pin2)),
+          direction(direction),
+          position(position),
+          speed(speed),
+          acceleration(acceleration) {
         for (size_t i{0}; i < SAMPLES; ++i) past_delta_counters.push(0);
     }
 
@@ -53,21 +62,19 @@ class EncoderSensor {
         const uint32_t &previous_previous_delta_counter{
             past_delta_counters[past_delta_counters.size() - 1]};
 
-        position = delta_counter * counter_distance_m;
+        *position = delta_counter * counter_distance_m;
 
         // https://en.wikipedia.org/wiki/Finite_difference_coefficient#Backward_finite_difference
-        speed = ((3.0 * delta_counter / 2.0) - (2.0 * previous_delta_counter) +
-                 (previous_previous_delta_counter / 2.0)) *
-                counter_distance_m;
+        *speed = ((3.0 * delta_counter / 2.0) - (2.0 * previous_delta_counter) +
+                  (previous_previous_delta_counter / 2.0)) *
+                 counter_distance_m;
 
-        acceleration = (delta_counter - (2.0 * previous_delta_counter) +
-                        previous_previous_delta_counter) *
-                       counter_distance_m;
+        *acceleration = (delta_counter - (2.0 * previous_delta_counter) +
+                         previous_previous_delta_counter) *
+                        counter_distance_m;
+
+        *direction = Encoder::get_direction(encoder_id) ? FORWARD : BACKWARDS;
 
         past_delta_counters.push_pop(delta_counter);
     }
-
-    double *get_position() { return &position; }
-    double *get_speed() { return &speed; }
-    double *get_acceleration() { return &acceleration; }
 };
