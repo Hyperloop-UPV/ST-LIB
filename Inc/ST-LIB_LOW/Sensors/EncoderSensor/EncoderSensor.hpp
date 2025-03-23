@@ -19,7 +19,6 @@ class EncoderSensor {
 
     uint8_t encoder_id;
 
-    uint64_t last_measurement_clock{0};
     // We want to get the last buffer element and the midpoint, if the number of
     // elements is odd, these points and the present won't be evenly spaced
     // across time. The SAMPLES computation rounds it down to make it even
@@ -30,8 +29,7 @@ class EncoderSensor {
     double acceleration{0.0};
 
    public:
-    EncoderSensor(Pin &pin1, Pin &pin2, const double counter_distance_m,
-                  const int64_t delay_between_samples)
+    EncoderSensor(Pin &pin1, Pin &pin2, const double counter_distance_m)
         : counter_distance_m(counter_distance_m),
           encoder_id(Encoder::inscribe(pin1, pin2)) {
         for (size_t i{0}; i < SAMPLES; ++i) past_delta_counters.push(0);
@@ -45,13 +43,8 @@ class EncoderSensor {
         for (size_t i{0}; i < SAMPLES; ++i) past_delta_counters.push_pop(0);
     }
 
+    // must be called on equally spaced time periods
     void read() {
-        uint64_t clock{Time::get_global_tick()};
-
-        if (Encoder::get_delta_clock(clock, last_measurement_clock) <
-            delay_between_samples)
-            return;
-
         uint32_t counter{Encoder::get_counter(encoder_id)};
 
         uint32_t delta_counter{counter - START_COUNTER};
@@ -71,7 +64,6 @@ class EncoderSensor {
                         previous_previous_delta_counter) *
                        counter_distance_m;
 
-        last_measurement_clock = clock;
         past_delta_counters.push_pop(delta_counter);
     }
 
