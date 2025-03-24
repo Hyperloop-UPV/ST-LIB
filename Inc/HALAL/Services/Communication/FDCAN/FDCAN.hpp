@@ -147,7 +147,7 @@ private:
 
 };
 
-template<CANBitRatesSpeed Speed,CANMode Mode,CANIdentifier id>
+template<CANBitRatesSpeed Speed,CANMode Mode,CANIdentifier message_id>
 uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	if (!FDCAN::available_fdcans.contains(fdcan)) {
 		ErrorHandler(" The FDCAN peripheral %d is already used or does not exists.", (uint16_t)fdcan);
@@ -155,17 +155,17 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	}
 
 	FDCAN::Instance* fdcan_instance = FDCAN::available_fdcans[fdcan];
-    if constexpr(Mode == CANMode::CAN_FDCAN_MODE)
+    if constexpr(Mode == CANMode::CAN_FDCAN_MODE){
         fdcan_instance->tx_header.FDFormat = FDCAN_FD_CAN;
-    else
+    }else{
         fdcan_instance->tx_header.FDFormat = FDCAN_CLASSIC_CAN;
-
+    }
 	fdcan_instance->tx_header.DataLength = fdcan_instance->dlc;
 	fdcan_instance->tx_header.TxFrameType = FDCAN_DATA_FRAME;
 	fdcan_instance->tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
     fdcan_instance->tx_header.BitRateSwitch = FDCAN_BRS_OFF;
 
-    if constexpr(id == CANIdentifier::CAN_29_BIT_IDENTIFIER){	   
+    if constexpr(message_id == CANIdentifier::CAN_29_BIT_IDENTIFIER){	   
         fdcan_instance->tx_header.IdType = FDCAN_EXTENDED_ID;
         fdcan_instance->hfdcan->Init.FrameFormat = FDCAN_FRAME_FD_NO_BRS;
     }else{
