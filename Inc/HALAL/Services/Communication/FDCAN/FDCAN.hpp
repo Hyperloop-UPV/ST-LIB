@@ -24,13 +24,17 @@ enum class CANBitRatesSpeed{
     CANN_1_Mbit = 3
 };
 
-enum class CANMode{
-    CAN_NORMAL_MODE = 0,
-    CAN_FDCAN_MODE = 1
+enum class CANFormat{
+    CAN_NORMAL_FORMAT = 0,
+    CAN_FDCAN_FORMAT = 1
 };
 enum class CANIdentifier{
     CAN_11_BIT_IDENTIFIER = 0,
     CAN_29_BIT_IDENTIFIER = 1
+};
+enum class CANMode{
+    CAN_MODE_NORMAL = 0,
+    CAN_MODE_LOOPBACK = 4
 };
 
 class FDCAN{
@@ -122,7 +126,7 @@ public:
     static FDCAN::Instance instance1;
     static FDCAN::Instance instance2;
     static FDCAN::Instance instance3;
-template<CANBitRatesSpeed Speed,CANMode Mode,CANIdentifier id>
+template<CANBitRatesSpeed Speed,CANFormat Format,CANIdentifier id,CANMode Mode>
     static uint8_t inscribe(FDCAN::Peripheral& fdcan);
 
     static void start();
@@ -147,7 +151,7 @@ private:
 
 };
 
-template<CANBitRatesSpeed Speed,CANMode Mode,CANIdentifier message_id>
+template<CANBitRatesSpeed Speed,CANFormat format,CANIdentifier message_id,CANMode mode>
 uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	if (!FDCAN::available_fdcans.contains(fdcan)) {
 		ErrorHandler(" The FDCAN peripheral %d is already used or does not exists.", (uint16_t)fdcan);
@@ -155,7 +159,7 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	}
 
 	FDCAN::Instance* fdcan_instance = FDCAN::available_fdcans[fdcan];
-    if constexpr(Mode == CANMode::CAN_FDCAN_MODE){
+    if constexpr(format == CANFormat::CAN_FDCAN_FORMAT){
         fdcan_instance->tx_header.FDFormat = FDCAN_FD_CAN;
     }else{
         fdcan_instance->tx_header.FDFormat = FDCAN_CLASSIC_CAN;
@@ -177,7 +181,8 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	fdcan_instance->tx_header.Identifier = 0x0;
 
 	fdcan_instance->hfdcan->Instance = fdcan_instance->instance;
-	fdcan_instance->hfdcan->Init.Mode = FDCAN_MODE_NORMAL;
+// use NORMAL or EXTERNAL_LOOPBACK mode
+	fdcan_instance->hfdcan->Init.Mode = static_cast<uint32_t>(mode);
 	fdcan_instance->hfdcan->Init.AutoRetransmission = DISABLE;
 	fdcan_instance->hfdcan->Init.TransmitPause = DISABLE;
 	fdcan_instance->hfdcan->Init.ProtocolException = DISABLE;
