@@ -17,7 +17,21 @@ using std::unordered_map;
 using std::vector;
 using std::queue;
 
+enum class CANBitRatesSpeed{
+    CAN_125_kbit = 0,
+    CAN_250_kbit = 1,
+    CAN_500_kbit = 2,
+    CANN_1_Mbit = 3
+};
 
+enum class CANMode{
+    CAN_NORMAL_MODE = 0,
+    CAN_FDCAN_MODE = 1
+};
+enum class CANIdentifier{
+    CAN_11_BIT_IDENTIFIER = 0,
+    CAN_29_BIT_IDENTIFIER = 1
+};
 
 class FDCAN{
 public:
@@ -108,7 +122,7 @@ public:
     static FDCAN::Instance instance1;
     static FDCAN::Instance instance2;
     static FDCAN::Instance instance3;
-
+template<CANBitRatesSpeed Speed,CANMode Mode,CANIdentifier id>
     static uint8_t inscribe(FDCAN::Peripheral& fdcan);
 
     static void start();
@@ -132,5 +146,91 @@ private:
 
 
 };
+
+template<CANBitRatesSpeed Speed,CANMode Mode,CANIdentifier id>
+uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
+	if (!FDCAN::available_fdcans.contains(fdcan)) {
+		ErrorHandler(" The FDCAN peripheral %d is already used or does not exists.", (uint16_t)fdcan);
+		return 0;
+	}
+
+	FDCAN::Instance* fdcan_instance = FDCAN::available_fdcans[fdcan];
+    if constexpr(Mode == CANMode::CAN_FDCAN_MODE)
+        fdcan_instance->tx_header.FDFormat = FDCAN_FD_CAN;
+    else
+        fdcan_instance->tx_header.FDFormat = FDCAN_CLASSIC_CAN;
+
+	fdcan_instance->tx_header.DataLength = fdcan_instance->dlc;
+	fdcan_instance->tx_header.TxFrameType = FDCAN_DATA_FRAME;
+	fdcan_instance->tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+    fdcan_instance->tx_header.BitRateSwitch = FDCAN_BRS_OFF;
+
+    if constexpr(id == CANIdentifier::CAN_29_BIT_IDENTIFIER){	   
+        fdcan_instance->tx_header.IdType = FDCAN_EXTENDED_ID;
+        fdcan_instance->hfdcan->Init.FrameFormat = FDCAN_FRAME_FD_NO_BRS;
+    }else{
+        fdcan_instance->tx_header.IdType = FDCAN_STANDARD_ID;
+        fdcan_instance->hfdcan->Init.FrameFormat = FDCAN_FRAME_CLASSIC;
+    }
+	fdcan_instance->tx_header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+	fdcan_instance->tx_header.MessageMarker = 0;
+	fdcan_instance->tx_header.Identifier = 0x0;
+
+	fdcan_instance->hfdcan->Instance = fdcan_instance->instance;
+	fdcan_instance->hfdcan->Init.Mode = FDCAN_MODE_NORMAL;
+	fdcan_instance->hfdcan->Init.AutoRetransmission = DISABLE;
+	fdcan_instance->hfdcan->Init.TransmitPause = DISABLE;
+	fdcan_instance->hfdcan->Init.ProtocolException = DISABLE;
+///////////////////////////////////////////////////////////
+    if constexpr(Speed == CANBitRatesSpeed::CAN_125_kbit){
+        fdcan_instance->hfdcan->Init.NominalPrescaler = 20;
+        fdcan_instance->hfdcan->Init.NominalSyncJumpWidth = 2;
+        fdcan_instance->hfdcan->Init.NominalTimeSeg1 = 5;
+        fdcan_instance->hfdcan->Init.NominalTimeSeg2 = 2;
+    }else if constexpr(Speed == CANBitRatesSpeed::CAN_250_kbit){
+        fdcan_instance->hfdcan->Init.NominalPrescaler = 10;
+        fdcan_instance->hfdcan->Init.NominalSyncJumpWidth = 2;
+        fdcan_instance->hfdcan->Init.NominalTimeSeg1 = 5;
+        fdcan_instance->hfdcan->Init.NominalTimeSeg2 = 2;
+    }else if constexpr(Speed == CANBitRatesSpeed::CAN_500_kbit){
+        fdcan_instance->hfdcan->Init.NominalPrescaler = 5;
+        fdcan_instance->hfdcan->Init.NominalSyncJumpWidth = 2;
+        fdcan_instance->hfdcan->Init.NominalTimeSeg1 = 5;
+        fdcan_instance->hfdcan->Init.NominalTimeSeg2 = 2;
+    }else if constexpr(Speed == CANBitRatesSpeed::CANN_1_Mbit){
+        fdcan_instance->hfdcan->Init.NominalPrescaler = 1;
+        fdcan_instance->hfdcan->Init.NominalSyncJumpWidth = 4;
+        fdcan_instance->hfdcan->Init.NominalTimeSeg1 = 15;
+        fdcan_instance->hfdcan->Init.NominalTimeSeg2 = 4;
+    }
+////////////////////////////////////////////////////////////
+	fdcan_instance->hfdcan->Init.DataPrescaler = 11;
+	fdcan_instance->hfdcan->Init.DataSyncJumpWidth = 4;
+	fdcan_instance->hfdcan->Init.DataTimeSeg1 = 17;
+	fdcan_instance->hfdcan->Init.DataTimeSeg2 = 8;
+	fdcan_instance->hfdcan->Init.MessageRAMOffset = 0;
+	fdcan_instance->hfdcan->Init.StdFiltersNbr = 0;
+	fdcan_instance->hfdcan->Init.ExtFiltersNbr = 0;
+	fdcan_instance->hfdcan->Init.RxFifo0ElmtsNbr = 16;
+	fdcan_instance->hfdcan->Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_64;
+	fdcan_instance->hfdcan->Init.RxFifo1ElmtsNbr = 0;
+	fdcan_instance->hfdcan->Init.RxFifo1ElmtSize = FDCAN_DATA_BYTES_64;
+	fdcan_instance->hfdcan->Init.RxBuffersNbr = 0;
+	fdcan_instance->hfdcan->Init.RxBufferSize = FDCAN_DATA_BYTES_64;
+	fdcan_instance->hfdcan->Init.TxEventsNbr = 0;
+	fdcan_instance->hfdcan->Init.TxBuffersNbr = 0;
+	fdcan_instance->hfdcan->Init.TxFifoQueueElmtsNbr = 16;
+	fdcan_instance->hfdcan->Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
+	fdcan_instance->hfdcan->Init.TxElmtSize = FDCAN_DATA_BYTES_8;
+
+	Pin::inscribe(fdcan_instance->TX, ALTERNATIVE);
+	Pin::inscribe(fdcan_instance->RX, ALTERNATIVE);
+
+	uint8_t id = FDCAN::id_counter++;
+
+	FDCAN::registered_fdcan[id] = fdcan_instance;
+
+	return id;
+}
 
 #endif
