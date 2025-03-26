@@ -1,36 +1,35 @@
 #pragma once
-#include "HALAL/Models/PinModel/Pin.hpp"
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-
+#include "HALAL/Models/PinModel/Pin.hpp"
 
 extern IWDG_HandleTypeDef watchdog_handle;
-
 
 /**
  * @brief The watchdog class resets the board when it gets stuck inside a loop
  *
- * To ensure that the code its not stuck, the refresh function must be called at least once each period
- * Otherwise, the Watchdog will reset the board. The Watchdog its not active until it is started.
+ * To ensure that the code its not stuck, the refresh function must be called at
+ * least once each period Otherwise, the Watchdog will reset the board. The
+ * Watchdog its not active until it is started.
  */
-class Watchdog{
-public:
-
-    template<typename TimeUnit>
-    static void start(chrono::duration<int64_t, TimeUnit> period){
-    	if((chrono::duration_cast<chrono::microseconds>(period)).count() > 32000000){
-    		ErrorHandler("Watchdog refresh interval is too big");
-    	}
-    	if((chrono::duration_cast<chrono::microseconds>(period)).count() < 125){
-    		ErrorHandler("Watchdog refresh interval is too short");
-    	}
-        uint64_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
-        uint32_t RL = (uint64_t)((double) microseconds / 4 / 31.25) - 1;
+class Watchdog {
+   public:
+    static std::chrono::microseconds watchdog_time;
+    
+    static void start() {
+        if ((chrono::duration_cast<chrono::microseconds>(watchdog_time)).count() > 32000000) {
+            ErrorHandler("Watchdog refresh interval is too big");
+        }
+        if ((chrono::duration_cast<chrono::microseconds>(watchdog_time)).count() < 125) {
+            ErrorHandler("Watchdog refresh interval is too short");
+        }
+        uint64_t milliseconds = chrono::duration_cast<chrono::milliseconds>(watchdog_time).count();
+        uint32_t RL = double(milliseconds) * 8.0 - 1; // this is the formule for the Reload
         uint32_t prescaler = 0;
-
-        while(RL > 4095){
-        	microseconds /= 2;
-        	prescaler += 1;
+        while (RL > 4095) {
+            milliseconds /= 2;
+            prescaler += 1;
+            RL = double(milliseconds) * 8.0 - 1;
         }
 
         watchdog_handle.Instance = IWDG1;
@@ -40,8 +39,11 @@ public:
         HAL_IWDG_Init(&watchdog_handle);
     }
 
-    static inline void refresh(){
-    	__HAL_IWDG_RELOAD_COUNTER(&watchdog_handle);
+    static void refresh() {
+        HAL_IWDG_Refresh(&watchdog_handle);
     }
-
+    template <typename TimeUnit>
+    Watchdog(chrono::duration<int64_t, TimeUnit> period) {
+        watchdog_time = std::chrono::duration_cast<std::chrono::microseconds>(period);
+    }
 };

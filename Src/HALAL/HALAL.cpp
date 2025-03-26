@@ -67,7 +67,9 @@ void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 #else
     Ethernet::start(ip, subnet_mask, gateway);
 #endif
-
+#ifdef HAL_IWDG_MODULE_ENABLED
+    Watchdog::start();
+#endif
 #ifdef HAL_TIM_MODULE_ENABLED
     Encoder::start();
     Global_RTC::start_rtc();
