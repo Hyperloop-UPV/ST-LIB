@@ -4,6 +4,7 @@
 #include "HALAL/Models/PinModel/Pin.hpp"
 
 extern IWDG_HandleTypeDef watchdog_handle;
+extern bool reset_by_iwdg;
 
 /**
  * @brief The watchdog class resets the board when it gets stuck inside a loop
@@ -41,6 +42,13 @@ class Watchdog {
 
     static void refresh() {
         HAL_IWDG_Refresh(&watchdog_handle);
+    }
+    static void check_reset_flag(){
+        if (__HAL_RCC_GET_FLAG(RCC_FLAG_IWDG1RST)) {
+            reset_by_iwdg = true;
+            
+        }
+        __HAL_RCC_CLEAR_RESET_FLAGS();
     }
     template <typename TimeUnit>
     Watchdog(chrono::duration<int64_t, TimeUnit> period) {
