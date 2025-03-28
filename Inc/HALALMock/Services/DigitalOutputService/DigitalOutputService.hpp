@@ -19,5 +19,5 @@ class DigitalOutputService {
     static void turn_off(uint8_t id);
     static void set_pin_state(uint8_t id, PinState state);
     static void toggle(uint8_t id);
-    static void force_lock_pin_state(uint8_t id, PinState state);
+    static void lock_pin_state(uint8_t id, PinState state);
 };

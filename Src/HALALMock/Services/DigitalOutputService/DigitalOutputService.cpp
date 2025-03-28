@@ -70,6 +70,6 @@ void DigitalOutputService::toggle(uint8_t id) {
         : emulated_pin.PinData.digital_output.state = PinState::ON;
 }
 
-bool DigitalOutputService::force_lock_pin_state(uint8_t id, PinState state) {
+bool DigitalOutputService::lock_pin_state(uint8_t id, PinState state) {
     set_pin_state(id, state);
 }

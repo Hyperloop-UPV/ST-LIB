@@ -58,7 +58,7 @@ void DigitalOutputService::toggle(uint8_t id) {
     HAL_GPIO_TogglePin(pin.port, pin.gpio_pin);
 }
 
-bool DigitalOutputService::force_lock_pin_state(uint8_t id, PinState state) {
+bool DigitalOutputService::lock_pin_state(uint8_t id, PinState state) {
     if (not DigitalOutputService::service_ids.contains(id)) {
         ErrorHandler("ID %d is not registered as a DigitalOutput", id);
         return false;

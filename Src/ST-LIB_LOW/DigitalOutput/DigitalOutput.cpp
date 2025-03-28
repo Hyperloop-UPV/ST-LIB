@@ -20,6 +20,6 @@ void DigitalOutput::set_pin_state(PinState state) {
 
 void DigitalOutput::toggle() { DigitalOutputService::toggle(id); }
 
-bool DigitalOutput::force_lock_pin_state(PinState state) {
-    return DigitalOutputService::force_lock_pin_state(id, state);
+bool DigitalOutput::lock_pin_state(PinState state) {
+    return DigitalOutputService::lock_pin_state(id, state);
 }
