@@ -12,11 +12,14 @@ map<uint8_t, Pin> DigitalOutputService::service_ids = {};
 
 uint8_t DigitalOutputService::inscribe(Pin& pin) {
     EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
-		if (emulated_pin.type != PinType::NOT_USED) {
-		ErrorHandler("Pin %s is not available for DigitalOutput usage, is already using as %s", pin.to_string().c_str(), emulated_pin.type);
-		return 0;
-		}
-	emulated_pin.type = PinType::DigitalOutput;
+    if (emulated_pin.type != PinType::NOT_USED) {
+        ErrorHandler(
+            "Pin %s is not available for DigitalOutput usage, is already using "
+            "as %s",
+            pin.to_string().c_str(), emulated_pin.type);
+        return 0;
+    }
+    emulated_pin.type = PinType::DigitalOutput;
     Pin::inscribe(pin, OUTPUT);
     DigitalOutputService::service_ids[id_counter] = pin;
     return id_counter++;
@@ -62,7 +65,11 @@ void DigitalOutputService::toggle(uint8_t id) {
 
     Pin pin = DigitalOutputService::service_ids[id];
     EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
-    emulated_pin.PinData.digital_output.state == PinState::ON ?
-           emulated_pin.PinData.digital_output.state = PinState::OFF : 
-           emulated_pin.PinData.digital_output.state = PinState::ON;
+    emulated_pin.PinData.digital_output.state == PinState::ON
+        ? emulated_pin.PinData.digital_output.state = PinState::OFF
+        : emulated_pin.PinData.digital_output.state = PinState::ON;
+}
+
+bool DigitalOutputService::force_lock_state(uint8_t id, PinState state) {
+    set_pin_state(id, state);
 }
