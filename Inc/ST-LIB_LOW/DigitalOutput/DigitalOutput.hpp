@@ -18,7 +18,7 @@ class DigitalOutput {
     void turn_off();
     void toggle();
     void set_pin_state(PinState state);
-    bool force_lock_state(PinState state);
+    bool force_lock_pin_state(PinState state);
 
    private:
     Pin pin;
