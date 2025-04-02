@@ -72,4 +72,5 @@ void DigitalOutputService::toggle(uint8_t id) {
 
 bool DigitalOutputService::lock_pin_state(uint8_t id, PinState state) {
     set_pin_state(id, state);
+    return true;
 }
