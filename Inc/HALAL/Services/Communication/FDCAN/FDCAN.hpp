@@ -21,7 +21,7 @@ enum class CANBitRatesSpeed{
     CAN_125_kbit = 0,
     CAN_250_kbit = 1,
     CAN_500_kbit = 2,
-    CANN_1_Mbit = 3
+    CAN_1_Mbit = 3
 };
 
 enum class CANFormat{
