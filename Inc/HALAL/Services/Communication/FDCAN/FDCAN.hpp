@@ -202,7 +202,7 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
         fdcan_instance->hfdcan->Init.NominalSyncJumpWidth = 2;
         fdcan_instance->hfdcan->Init.NominalTimeSeg1 = 5;
         fdcan_instance->hfdcan->Init.NominalTimeSeg2 = 2;
-    }else if constexpr(Speed == CANBitRatesSpeed::CANN_1_Mbit){
+    }else if constexpr(Speed == CANBitRatesSpeed::CAN_1_Mbit){
         fdcan_instance->hfdcan->Init.NominalPrescaler = 1;
         fdcan_instance->hfdcan->Init.NominalSyncJumpWidth = 4;
         fdcan_instance->hfdcan->Init.NominalTimeSeg1 = 15;
