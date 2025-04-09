@@ -3,30 +3,50 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/PinModel/Pin.hpp"
+#include "core_cm7.h"
 
-volatile unsigned int *DWT_CYCCNT;
-volatile unsigned int *DWT_CONTROL;
-volatile unsigned int *SCB_DEMCR;
-// habra que poner para hacerlo con traza y sin traza en un template
+#if !defined DWT_LSR_Present_Msk
+#define DWT_LSR_Present_Msk ITM_LSR_Present_Msk
+#endif
+#if !defined DWT_LSR_Access_Msk
+#define DWT_LSR_Access_Msk ITM_LSR_Access_Msk
+#endif
+#define DWT_LAR_KEY 0xC5ACCE55
+#define DEMCR_TRCENA 0x01000000
+#define DWT_CTRL_CYCCNTENA 0x00000001
+
 class DataWatchpointTrace {
    public:
-    static void reset_cnt() {
-        DWT_CYCCNT = (unsigned int *)0xE0001004;
-        DWT_CONTROL = (unsigned int *)0xE0001000;
-        SCB_DEMCR = (unsigned int *)0xE000EDFC;
-        *SCB_DEMCR |= 0x01000000;  // enable DWT
-        *DWT_CONTROL |= 1;         // enable the counter
-        *DWT_CYCCNT = 0;           // reset counter
+    static void start() {
+        unlock_dwt();
+        reset_cnt();
     }
     static unsigned int start_count() {
-        *DWT_CONTROL |= 1;   // enables the counter
-        return *DWT_CYCCNT;  // returns the current value of the counter
+        DWT->CTRL |= DWT_CTRL_CYCCNTENA;  // enables the counter
+        DWT->CYCCNT = 0;
+        return DWT->CYCCNT;
     }
     static unsigned int stop_count() {
-        *DWT_CONTROL &= ~1;  // disables the counter
-        return *DWT_CYCCNT;  // returns the current value of the counter
+        DWT->CTRL &= ~DWT_CTRL_CYCCNTENA;  // disable the counter
+        return DWT->CYCCNT;
     }
     static unsigned int get_count() {
-        return *DWT_CYCCNT;  // returns the current value of the counter
+        return DWT->CYCCNT;  // returns the current value of the counter
+    }
+
+   private:
+    static void reset_cnt() {
+        CoreDebug->DEMCR |= DEMCR_TRCENA;
+        DWT->CYCCNT = 0;  // reset the counter
+        DWT->CTRL = 0;
+    }
+
+    static void unlock_dwt() {  // unlock the dwt
+        uint32_t lsr = DWT->LSR;
+        if ((lsr & DWT_LSR_Present_Msk) != 0) {
+            if ((lsr & DWT_LSR_Access_Msk) != 0) {
+                DWT->LAR = DWT_LAR_KEY;
+            }
+        }
     }
 };
