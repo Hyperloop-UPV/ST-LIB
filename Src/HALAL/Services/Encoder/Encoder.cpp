@@ -86,11 +86,6 @@ void Encoder::reset(uint8_t id) {
 }
 
 uint32_t Encoder::get_counter(uint8_t id) {
-    if (not Encoder::registered_encoder.contains(id)) {
-        ErrorHandler("No encoder registered with id %u", id);
-        return 0;
-    }
-
     TimerPeripheral* timer = pin_timer_map[registered_encoder[id]];
 
     return timer->handle->Instance->CNT;
