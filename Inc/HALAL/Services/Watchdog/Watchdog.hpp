@@ -9,9 +9,9 @@ extern bool reset_by_iwdg;
 /**
  * @brief The watchdog class resets the board when it gets stuck inside a loop
  *
- * To ensure that the code its not stuck, the refresh function must be called at
- * least once each period Otherwise, the Watchdog will reset the board. The
- * Watchdog its not active until it is started.
+ * To ensure that the code is not stuck, the refresh function must be called at
+ * least once every period; otherwise, the Watchdog will reset the board. The
+ * Watchdog is not active until it is started.
  */
 class Watchdog {
    public:
