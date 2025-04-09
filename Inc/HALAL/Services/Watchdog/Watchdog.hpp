@@ -25,7 +25,7 @@ class Watchdog {
             ErrorHandler("Watchdog refresh interval is too short");
         }
         uint64_t milliseconds = chrono::duration_cast<chrono::milliseconds>(watchdog_time).count();
-        uint32_t RL = double(milliseconds) * 8.0 - 1; // this is the formule for the Reload
+        uint32_t RL = double(milliseconds) * 8.0 - 1; // this is the formula for the Reload
         uint32_t prescaler = 0;
         while (RL > 4095) {
             milliseconds /= 2;
