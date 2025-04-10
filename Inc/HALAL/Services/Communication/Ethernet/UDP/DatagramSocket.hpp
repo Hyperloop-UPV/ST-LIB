@@ -15,7 +15,6 @@ class DatagramSocket {
     IPV4 remote_ip;
     uint32_t remote_port;
     bool is_disconnected = true;
-
     DatagramSocket();
     DatagramSocket(DatagramSocket&& other);
     DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip,
@@ -26,6 +25,7 @@ class DatagramSocket {
     void operator=(DatagramSocket&&);
 
     void reconnect();
+
 
     static void receive_callback(void* args, struct udp_pcb* udp_control_block,
                                  struct pbuf* packet_buffer,

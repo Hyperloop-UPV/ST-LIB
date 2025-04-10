@@ -1,11 +1,5 @@
-/*
- * Socket.hpp
- *
- *  Created on: 14 nov. 2022
- *      Author: stefa
- */
 #pragma once
-#ifdef STLIB_ETH
+
 
 #include "HALALMock/Services/Communication/Ethernet/EthernetNode.hpp"
 #include "HALALMock/Services/Communication/Ethernet/Ethernet.hpp"
@@ -14,22 +8,22 @@
 #include "HALALMock/Models/Packets/OrderProtocol.hpp"
 #include <iostream>
 #include <thread>
-
+#include <poll.h>
 class Socket : public OrderProtocol{
 private:
 	
 	std::jthread receiving_thread;
-	std::jthread wait_for_connection_thread;
-	std::atomic<bool> is_receiving;
-	std::atomic<bool> is_connecting;
+	std::atomic<bool> is_receiving = false;
 	std::mutex mutex; 
+	std::queue<Packet*> tx_packet_buffer;
+	//socket_descriptor
+	int socket_fd;
 	void start_receiving();
 	void receive();
-	void create_socket();
+	bool create_socket();
 	bool configure_socket();
-	void connect_thread();
-	void configure_socket_and_connect();
 	void connection_callback();
+	void connect_attempt();
 
 public:
 	enum SocketState{
@@ -43,10 +37,6 @@ public:
 	IPV4 remote_ip;
 	uint32_t remote_port;
 	SocketState state;
-	queue<HeapPacket*> tx_packet_buffer;
-	queue<HeapPacket*> rx_packet_buffer;
-	//socket_descriptor
-	int socket_fd;
 	static unordered_map<EthernetNode,Socket*> connecting_sockets;
 	bool pending_connection_reset = false;
 	bool use_keep_alives{true};
@@ -90,10 +80,8 @@ public:
 	}
 
 	void send();
-
-	void process_data();
-
+	
 	bool is_connected();
-
+	
 };
-#endif //STLIB_ETH
+

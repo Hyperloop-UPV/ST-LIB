@@ -9,9 +9,14 @@ using std::queue;
 using std::unordered_map;
 using std::vector;
 
-class FDCAN{
-public:
-	enum DLC : uint32_t{
+
+extern const uint16_t FDCAN_PORT_SEND;
+extern const uint16_t FDCAN_PORT_BASE;
+extern const std::string fdcan_ip_adress;
+
+class FDCAN {
+   public:
+    enum DLC : uint32_t {
         BYTES_0 = 0x00000000U,
         BYTES_1 = 0x00010000U,
         BYTES_2 = 0x00020000U,
@@ -55,6 +60,7 @@ public:
         uint8_t rx_queue_max_size = 64;
         vector<uint8_t> tx_data;
         uint8_t fdcan_number;
+        uint8_t portcounter;
         uint16_t socket;
         bool start = false;
         uint16_t port;
@@ -73,6 +79,7 @@ public:
     };
 
     static uint16_t id_counter;
+    static uint8_t Port_counter;
 
     static unordered_map<uint8_t, FDCAN::Instance*> registered_fdcan;
     static unordered_map<FDCAN::Peripheral, FDCAN::Instance*> available_fdcans;

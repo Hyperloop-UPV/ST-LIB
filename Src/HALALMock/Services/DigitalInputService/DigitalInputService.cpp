@@ -11,6 +11,12 @@ uint8_t DigitalInput::id_counter = 0;
 map<uint8_t,Pin> DigitalInput::service_ids = {};
 
 uint8_t DigitalInput::inscribe(Pin& pin){
+		EmulatedPin& emulated_pin = SharedMemory::get_pin(pin);
+		if (emulated_pin.type != PinType::NOT_USED) {
+		ErrorHandler("Pin %s is not available for DigitalInput usage, is already using as %s", pin.to_string().c_str(), emulated_pin.type);
+		return 0;
+		}
+		emulated_pin.type = PinType::DigitalInput;
 		Pin::inscribe(pin, INPUT);
 		DigitalInput::service_ids[id_counter] = pin;
 		return id_counter++;

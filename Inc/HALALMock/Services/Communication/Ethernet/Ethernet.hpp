@@ -1,10 +1,3 @@
-/*
- * EthernetNode.cpp
- *
- *  Created on: Nov 23, 2022
- *      Author: stefa
- */
-
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"

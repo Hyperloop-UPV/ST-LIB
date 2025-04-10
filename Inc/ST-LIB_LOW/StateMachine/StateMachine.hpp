@@ -120,7 +120,7 @@ public:
 	bool is_on = true;
 
 
-	StateMachine() = default;
+	StateMachine();
 	StateMachine(state_id initial_state);
 
 	void add_state(state_id state);
@@ -164,6 +164,10 @@ public:
 	void refresh_state_orders();
 
 	unordered_map<state_id, State>& get_states();
+	
+	#ifdef SIM_ON
+	uint8_t get_id_in_shm();
+	#endif
 
 
 private:

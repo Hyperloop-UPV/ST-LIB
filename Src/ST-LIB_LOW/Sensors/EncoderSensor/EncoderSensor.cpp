@@ -1,6 +1,6 @@
 #include "Sensors/EncoderSensor/EncoderSensor.hpp"
 
-EncoderSensor::EncoderSensor(Pin pin1, Pin pin2, double *position, double* direction, double *speed, double *acceleration)
+EncoderSensor::EncoderSensor(Pin pin1, Pin pin2, double *position, bool* direction, double *speed, double *acceleration)
 : position(position), direction(direction), speed(speed), acceleration(acceleration){
 	id = Encoder::inscribe(pin1,pin2);
 }
@@ -23,7 +23,7 @@ void EncoderSensor::start(){
 void EncoderSensor::read(){
 	uint32_t counter = Encoder::get_counter(id);
 	uint64_t clock_time = Time::get_global_tick();
-	*direction = (double)Encoder::get_direction(id);
+	*direction = Encoder::get_direction(id);
 
 	int64_t delta_clock = Encoder::get_delta_clock(clock_time, last_clock_time);
 	

@@ -29,11 +29,14 @@ uint8_t InputCapture::inscribe(Pin& pin){
 	active_instances[id_counter].id = id_counter;
 
 	EmulatedPin& sim_pin = SharedMemory::get_pin(pin);
+	sim_pin.type = PinType::INPUTCAPTURE;
 	active_instances[id_counter].duty_cycle = &(sim_pin.PinData.input_capture.duty_cycle);
 	active_instances[id_counter].frequency = &(sim_pin.PinData.input_capture.frequency);
+	active_instances[id_counter].is_on = &(sim_pin.PinData.input_capture.is_on);
 
 	*active_instances[id_counter].duty_cycle = 0;
 	*active_instances[id_counter].frequency = 0;
+	*active_instances[id_counter].is_on = false;
 
 	return id_counter;
 
@@ -45,8 +48,9 @@ void InputCapture::turn_on(uint8_t id){
 		ErrorHandler("ID %d is not registered as an active_instance", id);
 		return;
 	}
+
 	Instance& instance = active_instances[id];
-	instance.is_active = true;
+	*instance.is_on = true;
 
 }
 
@@ -56,7 +60,7 @@ void InputCapture::turn_off(uint8_t id){
 		return;
 	}
 	Instance& instance = active_instances[id];
-	instance.is_active = false;
+	*instance.is_on = false;
 
 }
 
@@ -66,7 +70,7 @@ uint32_t InputCapture::read_frequency(uint8_t id) {
 		return 0;
 	}
 	Instance& instance = active_instances[id];
-	if(!instance.is_active)
+	if(!*(instance.is_on))
 	{
 		return 0;
 	}
@@ -80,7 +84,7 @@ uint8_t InputCapture::read_duty_cycle(uint8_t id) {
 		return 0;
 	}
 	Instance& instance = active_instances[id];
-	if(!instance.is_active)
+	if(!*(instance.is_on))
 	{
 		return 0;
 	}

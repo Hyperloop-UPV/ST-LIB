@@ -4,7 +4,7 @@
         {
             "name": "mcu",
             "hidden": true,
-            "generator": "Unix Makefiles",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "toolchainFile": "${sourceDir}/toolchains/stm32.cmake",
             "installDir": "${sourceDir}/out/install/${presetName}",
@@ -16,7 +16,7 @@
         {
             "name": "sim",
             "hidden": true,
-            "generator": "Unix Makefiles",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "installDir": "${sourceDir}/out/install/${presetName}",
             "cacheVariables": {
@@ -164,6 +164,73 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "nucleo-debug",
+            "displayName": "Nucleo [DBG]",
+            "configurePreset": "nucleo-debug"
+        },
+        {
+            "name": "nucleo-release",
+            "displayName": "Nucleo [REL]",
+            "configurePreset": "nucleo-release"
+        },
+        {
+            "name": "nucleo-relwithdebinfo",
+            "displayName": "Nucleo [RWD]",
+            "configurePreset": "nucleo-relwithdebinfo"
+        },
+        {
+            "name": "nucleo-debug-eth",
+            "displayName": "Nucleo [DBG] [ETH]",
+            "configurePreset": "nucleo-debug-eth"
+        },
+        {
+            "name": "nucleo-release-eth",
+            "displayName": "Nucleo [REL] [ETH]",
+            "configurePreset": "nucleo-release-eth"
+        },
+        {
+            "name": "nucleo-relwithdebinfo-eth",
+            "displayName": "Nucleo [RWD] [ETH]",
+            "configurePreset": "nucleo-relwithdebinfo-eth"
+        },
+        {
+            "name": "board-debug",
+            "displayName": "Board [DBG]",
+            "configurePreset": "board-debug"
+        },
+        {
+            "name": "board-release",
+            "displayName": "Board [REL]",
+            "configurePreset": "board-release"
+        },
+        {
+            "name": "board-relwithdebinfo",
+            "displayName": "Board [RWD]",
+            "configurePreset": "board-relwithdebinfo"
+        },
+        {
+            "name": "board-debug-eth",
+            "displayName": "Board [DBG] [ETH]",
+            "configurePreset": "board-debug-eth"
+        },
+        {
+            "name": "board-release-eth",
+            "displayName": "Board [REL] [ETH]",
+            "configurePreset": "board-release-eth"
+        },
+        {
+            "name": "board-relwithdebinfo-eth",
+            "displayName": "Board [RWD] [ETH]",
+            "configurePreset": "board-relwithdebinfo-eth"
+        },
+        {
+            "name": "simulator",
+            "displayName": "Simulator",
+            "configurePreset": "simulator"
         }
     ]
 }

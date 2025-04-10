@@ -1,4 +1,4 @@
 #!/bin/sh
 
 cd out/build/simulator/Tests
-./stlib-test
+./st-lib-test
