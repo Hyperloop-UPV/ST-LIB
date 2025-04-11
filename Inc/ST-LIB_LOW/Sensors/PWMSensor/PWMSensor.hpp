@@ -13,8 +13,9 @@ template<class Type>
 class PWMSensor {
 protected:
 	uint8_t id;
-	Type *duty_cycle;
 	Type *frequency;
+	Type *duty_cycle;
+	
 
 public:
 	PWMSensor() = default;
