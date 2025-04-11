@@ -29,14 +29,14 @@ class EncoderSensor {
     RingBuffer<int64_t, (SAMPLES / 2) * 2> past_delta_counters{};
 
     Direction *direction;
-    double *position;
-    double *speed;
-    double *acceleration;
+    float *position;
+    float *speed;
+    float *acceleration;
 
    public:
     EncoderSensor(Pin &pin1, Pin &pin2, const double counter_distance_m,
                   const double sample_time_s, Direction *direction,
-                  double *position, double *speed, double *acceleration)
+                  float *position, float *speed, float *acceleration)
         : counter_distance_m(counter_distance_m),
           sample_time_s(sample_time_s),
           encoder_id(Encoder::inscribe(pin1, pin2)),

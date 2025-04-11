@@ -10,8 +10,6 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 
-TIM_HandleTypeDef* Time::low_precision_timer = &htim7;
-
 uint8_t Time::high_precision_ids = 0;
 uint8_t Time::low_precision_ids = 0;
 uint8_t Time::mid_precision_ids = 0;
