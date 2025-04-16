@@ -47,17 +47,19 @@ void TimerPeripheral::init() {
 		handle->Instance = handle_to_timer[handle];
 		handle->Init.Prescaler = init_data.prescaler;
 		handle->Init.CounterMode = TIM_COUNTERMODE_UP;
-		for (PWMData pwm_data : init_data.pwm_channels) {
+    	handle->Init.Period = init_data.period;
+        handle->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+        handle->Init.RepetitionCounter = 0;
+        handle->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+        for (PWMData pwm_data : init_data.pwm_channels) {
 			if (pwm_data.mode == PHASED) {
-				handle->Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
-				break;
+				handle->Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED3;
+				handle->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+			    break;
 			}
 		}
-		handle->Init.Period = init_data.period;
-		handle->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-		handle->Init.RepetitionCounter = 0;
-		handle->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-
+		
+		
 		if (init_data.type == BASE) {
 			if (HAL_TIM_Base_Init(handle) != HAL_OK){
 				ErrorHandler("Unable to init base timer on %d", name.c_str());
@@ -111,8 +113,7 @@ void TimerPeripheral::init() {
 			sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
 
 			if (pwm_data.mode == PHASED) {
-				//ASSYMETRIC_MODE_1 means one output per pair of registers (CCR1 - CCR2) for example
-				sConfigOC.OCMode = TIM_OCMODE_ASSYMETRIC_PWM1;
+				sConfigOC.OCMode = TIM_OCMODE_PWM1;
 				if (HAL_TIM_PWM_ConfigChannel(handle, &sConfigOC, pwm_data.channel) != HAL_OK) {
 					ErrorHandler("Unable to configure a PWM channel on %d", name.c_str());
 				}

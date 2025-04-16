@@ -19,7 +19,8 @@ PWM::PWM(Pin& pin) {
 	TimerPeripheral& timer = TimerPeripheral::available_pwm.at(pin).first;
 	TimerPeripheral::PWMData& pwm_data = TimerPeripheral::available_pwm.at(pin).second;
 
-	if (pwm_data.mode != TimerPeripheral::PWM_MODE::NORMAL) {
+    if (pwm_data.mode != TimerPeripheral::PWM_MODE::NORMAL) {
+		is_phased = true;
 		ErrorHandler("Pin %s is not registered as a NORMAL PWM", pin.to_string());
 	}
 
@@ -59,9 +60,12 @@ void PWM::set_duty_cycle(float duty_cycle) {
 }
 
 void PWM::set_frequency(uint32_t frequency) {
+	if(is_phased){
+		frequency = 2*frequency;
+	}
 	this->frequency = frequency;
 	TIM_TypeDef& timer = *peripheral->handle->Instance;
-	timer.ARR = (HAL_RCC_GetPCLK1Freq()*2 / (timer.PSC+1)) / frequency;
+    timer.ARR = (HAL_RCC_GetPCLK1Freq() * 2 / (timer.PSC + 1)) / frequency;
 	set_duty_cycle(duty_cycle);
 }
 
