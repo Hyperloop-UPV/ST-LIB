@@ -11,7 +11,7 @@
 #include "ST-LIB.hpp"
 
 void STLIB::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway, UART::Peripheral& printf_peripheral) {
-	HALAL::start(ip, subnet_mask, gateway, printf_peripheral);
+  HALAL::start(ip, subnet_mask, gateway, printf_peripheral);
 	STLIB_LOW::start();
 	STLIB_HIGH::start();
 }
@@ -22,11 +22,14 @@ void STLIB::start(string ip, string subnet_mask, string gateaway,  UART::Periphe
 
 
 void STLIB::update() {
+#ifdef HAL_IWDG_MODULE_ENABLED
+  Watchdog::refresh();
+#endif
 #if !defined STLIB_ETH
 #else
 	Ethernet::update();
   Server::update_servers();
 #endif
-	ErrorHandlerModel::ErrorHandlerUpdate();
+    ErrorHandlerModel::ErrorHandlerUpdate();
 	
 }
