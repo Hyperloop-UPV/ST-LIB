@@ -22,8 +22,10 @@ void STLIB::start(string ip, string subnet_mask, string gateaway,  UART::Periphe
 
 
 void STLIB::update() {
-#ifdef HAL_IWDG_MODULE_ENABLED
-  Watchdog::refresh();
+#ifdef NDEBUG
+  #ifdef HAL_IWDG_MODULE_ENABLED
+    Watchdog::refresh();
+  #endif
 #endif
 #if !defined STLIB_ETH
 #else
