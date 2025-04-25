@@ -13,7 +13,6 @@ void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 
 #ifdef HAL_IWDG_MODULE_ENABLED
     Watchdog::check_reset_flag();
-    Watchdog::start();
 #endif
 #if !defined STLIB_ETH
 #else
@@ -83,6 +82,11 @@ void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 #ifdef HAL_EXTI_MODULE_ENABLED
     ExternalInterrupt::start();
 #endif
+#ifdef NDEBUG
+    #ifdef HAL_IWDG_MODULE_ENABLED
+        Watchdog::start();
+    #endif
+#endif 
 }
 #else
 // Simulator start
