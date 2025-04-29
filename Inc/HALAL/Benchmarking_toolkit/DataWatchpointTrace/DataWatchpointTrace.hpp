@@ -20,6 +20,12 @@
     It provides a more predictable and reliable method for measuring 
     performance compared to using time-based measurements.
 */
+/*
+ To use this class you should use:
+    - start_count() -> and store in a variable the CYCCNT (this should be really close to zero)
+    - stop_count() -> and store in a variable the actual CYCCNT.
+    The difference will be the number of clock cycles done in the algorithm
+*/
 class DataWatchpointTrace {
    public:
     static void start() {
