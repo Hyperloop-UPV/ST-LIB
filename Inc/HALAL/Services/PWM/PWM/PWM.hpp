@@ -20,7 +20,7 @@ protected:
 	float duty_cycle;
 	uint32_t frequency;
 	bool is_on = false;
-	bool is_phased = false;
+	bool is_center_aligned = false;
 	static constexpr float CLOCK_FREQ_MHZ_WITHOUT_PRESCALER = 275;
 	static constexpr float clock_period_ns = (1/CLOCK_FREQ_MHZ_WITHOUT_PRESCALER)*1'000;
 	bool is_initialized = false;

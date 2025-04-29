@@ -30,7 +30,8 @@ class TimerPeripheral {
 public:
 	enum PWM_MODE : uint8_t {
 		NORMAL = 0,
-		PHASED = 1
+		PHASED = 1,
+		CENTER_ALIGNED = 2
 	};
 
 	enum TIM_TYPE {

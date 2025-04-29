@@ -19,9 +19,11 @@ PWM::PWM(Pin& pin) {
 	TimerPeripheral& timer = TimerPeripheral::available_pwm.at(pin).first;
 	TimerPeripheral::PWMData& pwm_data = TimerPeripheral::available_pwm.at(pin).second;
 
-    if (pwm_data.mode != TimerPeripheral::PWM_MODE::NORMAL) {
-		is_phased = true;
-		ErrorHandler("Pin %s is not registered as a NORMAL PWM", pin.to_string());
+    if (pwm_data.mode == TimerPeripheral::PWM_MODE::CENTER_ALIGNED) {
+		is_center_aligned = true;
+	}
+	if(pwm_data.mode == TimerPeripheral::PWM_MODE::PHASED){
+		ErrorHandler("Pin %s is registered as Phased being a single PWM", pin.to_string());
 	}
 
 	peripheral = &timer;
@@ -60,7 +62,7 @@ void PWM::set_duty_cycle(float duty_cycle) {
 }
 
 void PWM::set_frequency(uint32_t frequency) {
-	if(is_phased){
+	if(is_center_aligned){
 		frequency = 2*frequency;
 	}
 	this->frequency = frequency;
