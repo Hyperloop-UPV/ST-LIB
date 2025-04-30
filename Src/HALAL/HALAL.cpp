@@ -10,6 +10,10 @@
 #ifndef SIM_ON
 void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
                   UART::Peripheral& printf_peripheral) {
+
+#ifdef HAL_IWDG_MODULE_ENABLED
+    Watchdog::check_reset_flag();
+#endif
 #if !defined STLIB_ETH
 #else
     Ethernet::inscribe();
@@ -67,7 +71,6 @@ void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 #else
     Ethernet::start(ip, subnet_mask, gateway);
 #endif
-
 #ifdef HAL_TIM_MODULE_ENABLED
     Encoder::start();
     Global_RTC::start_rtc();
@@ -79,6 +82,11 @@ void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 #ifdef HAL_EXTI_MODULE_ENABLED
     ExternalInterrupt::start();
 #endif
+#ifdef NDEBUG
+    #ifdef HAL_IWDG_MODULE_ENABLED
+        Watchdog::start();
+    #endif
+#endif 
 }
 #else
 // Simulator start
