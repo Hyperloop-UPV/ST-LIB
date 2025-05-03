@@ -83,7 +83,10 @@ void ProtectionManager::check_protections() {
             ProtectionManager::to_fault();
         }
         Global_RTC::update_rtc_data();
-        ProtectionManager::notify(protection);
+        if(Time::get_global_tick() > last_notify + notify_delay_in_nanoseconds) {
+            ProtectionManager::notify(protection);
+            last_notify = Time::get_global_tick();
+        }
     }
 }
 
@@ -115,12 +118,9 @@ void ProtectionManager::notify(Protection& protection) {
     }
     for (OrderProtocol* socket : OrderProtocol::sockets) {
         if (protection.fault_protection) {
-            if (!(protection.fault_protection->boundary_type_id ==
-                  ERROR_HANDLER) ||
-                ErrorHandlerModel::error_to_communicate) {
+
                 socket->send_order(*protection.fault_protection->fault_message);
                 ErrorHandlerModel::error_to_communicate = false;
-            }
         }
         for (auto& warning : protection.warnings_triggered) {
             if (warning->boundary_type_id == INFO_WARNING - 2) {
