@@ -48,7 +48,7 @@ void TimerPeripheral::init() {
 		handle->Init.Prescaler = init_data.prescaler;
 		handle->Init.CounterMode = TIM_COUNTERMODE_UP;
 		handle->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-        for (PWMData pwm_data : init_data.pwm_channels) {
+        for (PWMData &pwm_data : init_data.pwm_channels) {
 			if (pwm_data.mode == PHASED) {
 				handle->Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
 			    break;
@@ -91,7 +91,7 @@ void TimerPeripheral::init() {
 			ErrorHandler("Unable to configure master synchronization on %d", name.c_str());
 		}
 
-		for (pair<uint32_t, uint32_t> channels_rising_falling : init_data.input_capture_channels) {
+		for (pair<uint32_t, uint32_t> &channels_rising_falling : init_data.input_capture_channels) {
 			sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
 			sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
 			sConfigIC.ICFilter = 0;
@@ -107,7 +107,7 @@ void TimerPeripheral::init() {
 			}
 		}
 
-		for (PWMData pwm_data : init_data.pwm_channels) {
+		for (PWMData &pwm_data : init_data.pwm_channels) {
 			sConfigOC.OCPolarity = init_data.polarity;
 			sConfigOC.OCNPolarity = init_data.negated_polarity;
 			sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
@@ -159,7 +159,7 @@ void TimerPeripheral::init() {
 }
 
 void TimerPeripheral::start() {
-	for (TimerPeripheral timer : timers) {
+	for (TimerPeripheral &timer : timers) {
 		if (timer.is_registered()) {
 			timer.init();
 		}
