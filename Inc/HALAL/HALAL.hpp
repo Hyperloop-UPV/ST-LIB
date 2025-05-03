@@ -10,6 +10,7 @@
 #include "HALAL/Services/ADC/ADC.hpp"
 #include "HALAL/Services/PWM/PWM/PWM.hpp"
 #include "HALAL/Services/PWM/DualPWM/DualPWM.hpp"
+#include "HALAL/Services/PWM/DualCenterPWM/DualCenterPWM.hpp"
 #include "HALAL/Services/PWM/PhasedPWM/PhasedPWM.hpp"
 #include "HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 #include "HALAL/Services/Time/Time.hpp"
