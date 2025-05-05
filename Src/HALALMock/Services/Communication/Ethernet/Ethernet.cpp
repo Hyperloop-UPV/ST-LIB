@@ -8,11 +8,11 @@ uint8_t IP_ADDRESS[4], NETMASK_ADDRESS[4], GATEWAY_ADDRESS[4];
 
 bool Ethernet::is_ready = false;
 bool Ethernet::is_running = false;
-void Ethernet::start(string local_ip, string subnet_mask, string gateway) {
-    start(IPV4(local_ip), IPV4(subnet_mask), IPV4(gateway));
+void Ethernet::start(string local_mac, string local_ip, string subnet_mask, string gateway) {
+    start(MAC(local_mac), IPV4(local_ip), IPV4(subnet_mask), IPV4(gateway));
 }
 
-void Ethernet::start(IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway) {
+void Ethernet::start(MAC local_mac, IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway) {
     if (!is_running && is_ready) {
         ipaddr = local_ip.address;
         netmask = subnet_mask.address;
