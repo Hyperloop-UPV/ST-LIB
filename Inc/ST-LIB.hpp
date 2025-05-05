@@ -6,7 +6,7 @@
 class STLIB {
 public:
 
-	static void start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateaway, UART::Peripheral& printf_peripheral);
+	static void start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway, UART::Peripheral& printf_peripheral);
 	static void start(
 			string mac = "00:80:e1:00:00:00",
 			string ip = "192.168.1.4",
