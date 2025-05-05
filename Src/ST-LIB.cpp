@@ -10,14 +10,14 @@
 
 #include "ST-LIB.hpp"
 
-void STLIB::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway, UART::Peripheral& printf_peripheral) {
-  HALAL::start(ip, subnet_mask, gateway, printf_peripheral);
+void STLIB::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway, UART::Peripheral& printf_peripheral) {
+  HALAL::start(mac, ip, subnet_mask, gateway, printf_peripheral);
 	STLIB_LOW::start();
 	STLIB_HIGH::start();
 }
 
-void STLIB::start(string ip, string subnet_mask, string gateaway,  UART::Peripheral& printf_peripheral){
-	STLIB::start(IPV4(ip),IPV4(subnet_mask),IPV4(gateaway),printf_peripheral);
+void STLIB::start(string mac, string ip, string subnet_mask, string gateaway,  UART::Peripheral& printf_peripheral){
+	STLIB::start(MAC(mac), IPV4(ip),IPV4(subnet_mask),IPV4(gateaway),printf_peripheral);
 }
 
 

@@ -13,6 +13,8 @@
 #include "lwip.h"
 #include "ethernetif.h"
 #include "HALAL/Services/Communication/Ethernet/EthernetHelper.hpp"
+#include "HALAL/Models/MAC/MAC.hpp"
+
 #ifdef HAL_ETH_MODULE_ENABLED
 
 #define ETHERNET_POOLS_BASE_ADDRESS 0x30000000
@@ -27,8 +29,8 @@ public:
 	static bool is_running;
 
 	static void inscribe();
-	static void start(string local_ip, string subnet_mask, string gateway);
-	static void start(IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway);
+	static void start(string local_mac, string local_ip, string subnet_mask, string gateway);
+	static void start(MAC local_mac, IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway);
 
 	/**
 	 * @brief handles the received messages by ethernet
