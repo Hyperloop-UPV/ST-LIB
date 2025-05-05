@@ -8,7 +8,7 @@ public:
 
 	static void start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateaway, UART::Peripheral& printf_peripheral);
 	static void start(
-			string mac = "00:80:41:00:00:00",
+			string mac = "00:80:e1:00:00:00",
 			string ip = "192.168.1.4",
 			string subnet_mask = "255.255.0.0",
 			string gateway = "192.168.1.1",
