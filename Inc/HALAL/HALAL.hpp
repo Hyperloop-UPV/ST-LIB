@@ -70,5 +70,5 @@
 #endif
 
 namespace HALAL {
-	void start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway, UART::Peripheral& printf_peripheral);
+	void start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway, UART::Peripheral& printf_peripheral);
 }

@@ -67,11 +67,11 @@ void Ethernet::mpu_start(){
 	  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 }
 
-void Ethernet::start(string local_ip, string subnet_mask, string gateway){
-	start(IPV4(local_ip), IPV4(subnet_mask), IPV4(gateway));
+void Ethernet::start(string local_mac, string local_ip, string subnet_mask, string gateway){
+	start(MAC(local_mac), IPV4(local_ip), IPV4(subnet_mask), IPV4(gateway));
 }
 
-void Ethernet::start(IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway){
+void Ethernet::start(MAC local_mac, IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway){
 	if(!is_running && is_ready){
 		ipaddr = local_ip.address;
 		netmask = subnet_mask.address;
@@ -88,6 +88,12 @@ void Ethernet::start(IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway){
 		GATEWAY_ADDRESS[1] = (gw.addr >> 8) & 0xFF;
 		GATEWAY_ADDRESS[2] = (gw.addr >> 16) & 0xFF;
 		GATEWAY_ADDRESS[3] = (gw.addr >> 24) & 0xFF;
+		gnetif.hwaddr[0] = local_mac.address[0];
+		gnetif.hwaddr[1] = local_mac.address[1];
+		gnetif.hwaddr[2] = local_mac.address[2];
+		gnetif.hwaddr[3] = local_mac.address[3];
+		gnetif.hwaddr[4] = local_mac.address[4];
+		gnetif.hwaddr[5] = local_mac.address[5];
 		MX_LWIP_Init();
 		is_running = true;
 	}else{

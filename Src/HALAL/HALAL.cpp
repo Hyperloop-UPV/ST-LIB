@@ -8,7 +8,7 @@
 #include "HALAL/HALAL.hpp"
 
 #ifndef SIM_ON
-void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
+void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
                   UART::Peripheral& printf_peripheral) {
 
 #ifdef HAL_IWDG_MODULE_ENABLED
@@ -69,7 +69,7 @@ void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 
 #if !defined STLIB_ETH
 #else
-    Ethernet::start(ip, subnet_mask, gateway);
+    Ethernet::start(mac, ip, subnet_mask, gateway);
 #endif
 #ifdef HAL_TIM_MODULE_ENABLED
     Encoder::start();
@@ -90,13 +90,13 @@ void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 }
 #else
 // Simulator start
-void HALAL::start(IPV4 ip, IPV4 subnet_mask, IPV4 gateway, UART::Peripheral& printf_peripheral) {
+void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway, UART::Peripheral& printf_peripheral) {
     Ethernet::inscribe();
     Pin::start();
     ADC::start();
     SPI::start();
     FDCAN::start();
-    Ethernet::start(ip, subnet_mask, gateway);
+    Ethernet::start(mac, ip, subnet_mask, gateway);
     Encoder::start();
     Global_RTC::start_rtc();
     Time::start();
