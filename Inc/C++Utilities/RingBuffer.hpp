@@ -58,6 +58,10 @@ class RingBuffer {
         return buffer[move_backward(front, index + 1)];
     }
 
+    T &last() { return buffer[back]; }
+
+    T &first() { return buffer[move_backward(front, 1)]; }
+
     constexpr size_t capacity() { return N; }
     size_t size() { return stored_items; }
     bool is_full() { return size() >= capacity(); }

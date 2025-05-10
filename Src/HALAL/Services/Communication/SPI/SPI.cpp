@@ -328,7 +328,8 @@ void SPI::Order_update() {
             if (spi->state == SPI::IDLE) {
                 if (!spi->SPIOrderQueue.is_empty()) {
                     spi->state = SPI::STARTING_ORDER;
-                    *(spi->SPIOrderID) = spi->SPIOrderQueue.pop();
+                    *(spi->SPIOrderID) = spi->SPIOrderQueue.last();
+                    spi->SPIOrderQueue.pop();
                     master_check_available_end(spi);
                 }
             }
