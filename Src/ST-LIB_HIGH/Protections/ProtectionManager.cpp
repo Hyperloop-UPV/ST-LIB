@@ -83,9 +83,9 @@ void ProtectionManager::check_protections() {
             ProtectionManager::to_fault();
         }
         Global_RTC::update_rtc_data();
-        if(Time::get_global_tick() > last_notify + notify_delay_in_nanoseconds) {
+        if(Time::get_global_tick() > protection.get_last_notify_tick() + notify_delay_in_nanoseconds) {
             ProtectionManager::notify(protection);
-            last_notify = Time::get_global_tick();
+            protection.update_last_notify_tick(Time::get_global_tick());
         }
     }
 }
@@ -143,10 +143,6 @@ void ProtectionManager::notify(Protection& protection) {
 }
 
 void ProtectionManager::propagate_fault() {
-    if (!test_fault) {
-        ErrorHandler("Fail on Board with ID:", NULL,
-                     ProtectionManager::board_id);
-    }
     for (OrderProtocol* socket : OrderProtocol::sockets) {
         socket->send_order(ProtectionManager::fault_order);
     }
@@ -155,7 +151,6 @@ void ProtectionManager::propagate_fault() {
 Boards::ID ProtectionManager::board_id = Boards::ID::NOBOARD;
 size_t ProtectionManager::message_size = 0;
 char* ProtectionManager::message = nullptr;
-bool ProtectionManager::test_fault = false;
 ProtectionManager::state_id ProtectionManager::fault_state_id = 255;
 vector<Protection> ProtectionManager::low_frequency_protections = {};
 vector<Protection> ProtectionManager::high_frequency_protections = {};
