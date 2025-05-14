@@ -45,6 +45,7 @@ public:
         for(shared_ptr<BoundaryInterface>& bound: boundaries){
             auto fault_type = bound->check_bounds();
             idx++;
+            fault_protection = nullptr;
             switch(fault_type){
                 // in case a Protection has more than one boundary, give priority to fault messages
                 case Protections::FAULT:

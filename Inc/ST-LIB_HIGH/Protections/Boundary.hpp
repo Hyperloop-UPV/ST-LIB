@@ -264,7 +264,7 @@ struct Boundary<Type, OUT_OF_RANGE> : public BoundaryInterface{
 				&Global_RTC::global_RTC.hour,&Global_RTC::global_RTC.day,&Global_RTC::global_RTC.month,&Global_RTC::global_RTC.year);
 			
 		}else{
-			ok_message = new HeapOrder(uint16_t{3222},&format_id,&boundary_type_id,&name,&boundary.lower_boundary,&boundary.upper_boundary,this->src,
+			ok_message = new HeapOrder(uint16_t{3222},&format_id,&boundary_type_id,&name,&this->lower_boundary,&this->upper_boundary,this->src,
 				&Global_RTC::global_RTC.counter,&Global_RTC::global_RTC.second,&Global_RTC::global_RTC.minute,
 				&Global_RTC::global_RTC.hour,&Global_RTC::global_RTC.day,&Global_RTC::global_RTC.month,&Global_RTC::global_RTC.year);
 		}
