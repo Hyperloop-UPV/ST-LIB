@@ -51,6 +51,10 @@ public:
                     fault_protection = bound.get();
                     // adding the fault_protection to the vector is not desired,
                     // the fault signal should propagate as fast as possible
+                    if(bound->warning_already_triggered){}
+                    else{
+                        bound->warning_already_triggered = true;
+                    }
                     return Protections::FAULT;
                 case Protections::WARNING:
                     //warnings are non fatal, but we cannot waste time, we need to check if any
