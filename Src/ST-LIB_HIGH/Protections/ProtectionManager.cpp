@@ -103,12 +103,10 @@ void ProtectionManager::check_high_frequency_protections() {
             ProtectionManager::to_fault();
         }   
         Global_RTC::update_rtc_data();
-        if (Time::get_global_tick() > last_notify + notify_delay_in_nanoseconds) {
+        if(Time::get_global_tick() > protection.get_last_notify_tick() + notify_delay_in_nanoseconds) {
             ProtectionManager::notify(protection);
-            last_notify = Time::get_global_tick();
+            protection.update_last_notify_tick(Time::get_global_tick());
         }
-   
-        ProtectionManager::notify(protection);
     }
 }
 
