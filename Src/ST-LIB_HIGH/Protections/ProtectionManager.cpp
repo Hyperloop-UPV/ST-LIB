@@ -115,13 +115,12 @@ void ProtectionManager::warn(string message) {
 }
 
 void ProtectionManager::notify(Protection& protection) {
-    if (protection.fault_protection->boundary_type_id == ERROR_HANDLER) {
-        protection.fault_protection->update_error_handler_message(
-            protection.fault_protection->get_error_handler_string());
-    }
     for (OrderProtocol* socket : OrderProtocol::sockets) {
         if (protection.fault_protection) {
-
+            if (protection.fault_protection->boundary_type_id == ERROR_HANDLER) {
+                    protection.fault_protection->update_error_handler_message(
+                        protection.fault_protection->get_error_handler_string());
+                }
                 socket->send_order(*protection.fault_protection->fault_message);
                 ErrorHandlerModel::error_to_communicate = false;
         }
