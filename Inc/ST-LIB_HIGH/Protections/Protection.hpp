@@ -14,7 +14,14 @@ private:
     static constexpr Protections::FaultType fault_type = Protections::FaultType::FAULT;
     uint8_t triggered_protecions_idx[4]{};
     uint8_t triggered_oks_idx[4]{};
+    uint64_t last_notify_tick{0};
 public:
+    const uint64_t get_last_notify_tick()const{
+        return last_notify_tick;
+    }
+    void update_last_notify_tick(uint64_t new_tick){
+        last_notify_tick = new_tick;
+    }
     vector<shared_ptr<BoundaryInterface>> warnings_triggered;
     vector<shared_ptr<BoundaryInterface>> oks_triggered;
     template<class Type, ProtectionType... Protector, template<class,ProtectionType> class Boundaries>
@@ -38,12 +45,17 @@ public:
         for(shared_ptr<BoundaryInterface>& bound: boundaries){
             auto fault_type = bound->check_bounds();
             idx++;
+            fault_protection = nullptr;
             switch(fault_type){
                 // in case a Protection has more than one boundary, give priority to fault messages
                 case Protections::FAULT:
                     fault_protection = bound.get();
                     // adding the fault_protection to the vector is not desired,
                     // the fault signal should propagate as fast as possible
+                    if(bound->warning_already_triggered){}
+                    else{
+                        bound->warning_already_triggered = true;
+                    }
                     return Protections::FAULT;
                 case Protections::WARNING:
                     //warnings are non fatal, but we cannot waste time, we need to check if any
