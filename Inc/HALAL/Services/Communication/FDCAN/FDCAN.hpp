@@ -226,7 +226,7 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
 	fdcan_instance->hfdcan->Init.TxBuffersNbr = 0;
 	fdcan_instance->hfdcan->Init.TxFifoQueueElmtsNbr = 16;
 	fdcan_instance->hfdcan->Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
-	fdcan_instance->hfdcan->Init.TxElmtSize = FDCAN_DATA_BYTES_8;
+	fdcan_instance->hfdcan->Init.TxElmtSize = FDCAN_DATA_BYTES_64;
 
 	Pin::inscribe(fdcan_instance->TX, ALTERNATIVE);
 	Pin::inscribe(fdcan_instance->RX, ALTERNATIVE);
