@@ -143,6 +143,9 @@ void ProtectionManager::propagate_fault() {
     for (OrderProtocol* socket : OrderProtocol::sockets) {
         socket->send_order(ProtectionManager::fault_order);
     }
+    for(const auto& [key,value] : FDCAN::registered_fdcan){
+        FDCAN::transmit(key,FDCAN::ID::FAULT_ID,NULL);
+	}
 }
 
 Boards::ID ProtectionManager::board_id = Boards::ID::NOBOARD;
