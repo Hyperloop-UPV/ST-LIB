@@ -246,7 +246,7 @@ void StateMachine::add_transition(uint8_t old_state, uint8_t new_state,
 void StateMachine::add_state_machine(StateMachine& state_machine, uint8_t state) {
 	if(nested_state_machine.contains(state)){
 		ErrorHandler("Only one Nested State Machine can be added per state, tried to add to state: %d", state);
-		return; //PROBLEMA AQUI!!!!
+		return;
 	}
 
 	if(not state_machine.states[state_machine.current_state].cyclic_actions.empty()){
