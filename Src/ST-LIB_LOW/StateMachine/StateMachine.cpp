@@ -244,11 +244,6 @@ void StateMachine::add_transition(uint8_t old_state, uint8_t new_state,
  * @param state The state to which the nested state machine is being added.
  */
 void StateMachine::add_state_machine(StateMachine& state_machine, uint8_t state) {
-	if(nested_state_machine.contains(state)){
-		ErrorHandler("Only one Nested State Machine can be added per state, tried to add to state: %d", state);
-		return;
-	}
-
 	if(not state_machine.states[state_machine.current_state].cyclic_actions.empty()){
 		ErrorHandler("Nested State Machine current state has actions registered, must be empty until nesting");
 	}
