@@ -336,7 +336,7 @@ void StateMachine::exit_state(state_id state) {
 	if (nested_state_machine.contains(state)) {
 		for (StateMachine* nested_sm : nested_state_machine[state]) {
 			nested_sm->is_on = false;
-			nested_sm->enter_state(nested_sm->current_state);
+			nested_sm->exit_state(nested_sm->current_state);
 		}
 	}
 }
