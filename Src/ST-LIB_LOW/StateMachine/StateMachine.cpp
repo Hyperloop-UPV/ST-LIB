@@ -246,14 +246,14 @@ void StateMachine::add_transition(uint8_t old_state, uint8_t new_state,
 void StateMachine::add_state_machine(StateMachine& state_machine, uint8_t state) {
 	if(nested_state_machine.contains(state)){
 		ErrorHandler("Only one Nested State Machine can be added per state, tried to add to state: %d", state);
-		return;
+		return; //PROBLEMA AQUI!!!!
 	}
 
 	if(not state_machine.states[state_machine.current_state].cyclic_actions.empty()){
 		ErrorHandler("Nested State Machine current state has actions registered, must be empty until nesting");
 	}
 
-	nested_state_machine[state] = &state_machine;
+	nested_state_machine[state].push_back(&state_machine);
 
 	if (current_state != state) {
 		state_machine.is_on = false;
@@ -265,15 +265,17 @@ void StateMachine::add_state_machine(StateMachine& state_machine, uint8_t state)
  * checks for transitions in a nested state machine if applicable.
  */
 void StateMachine::check_transitions() {
-	for (auto const& state_transition : transitions[current_state]) {
-		if (state_transition.second()) {
-			force_change_state(state_transition.first);
-		}
-	}
+    for (auto const& state_transition : transitions[current_state]) {
+        if (state_transition.second()) {
+            force_change_state(state_transition.first);
+        }
+    }
 
-	if (nested_state_machine.contains(current_state)) {
-		nested_state_machine[current_state]->check_transitions();
-	}
+    if (nested_state_machine.contains(current_state)) {
+        for (StateMachine* nested_sm : nested_state_machine[current_state]) {
+            nested_sm->check_transitions();
+        }
+    }
 }
 
 void StateMachine::force_change_state(uint8_t new_state) {
@@ -321,9 +323,10 @@ void StateMachine::enter_state(state_id state) {
 	states[state].enter();
 
 	if (nested_state_machine.contains(state)) {
-		StateMachine* nested_sm = nested_state_machine[state];
-		nested_sm->is_on = true;
-		nested_sm->enter_state(nested_sm->current_state);
+		for (StateMachine* nested_sm : nested_state_machine[state]) {
+			nested_sm->is_on = true;
+			nested_sm->enter_state(nested_sm->current_state);
+		}
 	}
 }
 
@@ -331,10 +334,10 @@ void StateMachine::exit_state(state_id state) {
 	states[state].exit();
 
 	if (nested_state_machine.contains(state)) {
-		StateMachine* nested_sm = nested_state_machine[state];
-		nested_sm->is_on = false;
-		nested_sm->exit_state(nested_sm->current_state);
-		nested_sm->current_state = nested_sm->initial_state;
+		for (StateMachine* nested_sm : nested_state_machine[state]) {
+			nested_sm->is_on = false;
+			nested_sm->enter_state(nested_sm->current_state);
+		}
 	}
 }
 
@@ -342,8 +345,9 @@ void StateMachine::register_all_timed_actions(state_id state) {
 	states[state].register_all_timed_actions();
 
 	if (nested_state_machine.contains(current_state)) {
-		StateMachine* nested_sm = nested_state_machine[current_state];
-		nested_sm->states[nested_sm->current_state].register_all_timed_actions();
+		for (StateMachine* nested_sm : nested_state_machine[current_state]) {
+			nested_sm->states[nested_sm->current_state].register_all_timed_actions();
+		}
 	}
 }
 
@@ -351,8 +355,9 @@ void StateMachine::unregister_all_timed_actions(state_id state) {
 	states[state].unregister_all_timed_actions();
 
 	if (nested_state_machine.contains(current_state)) {
-		StateMachine* nested_sm = nested_state_machine[current_state];
-		nested_sm->states[nested_sm->current_state].unregister_all_timed_actions();
+		for (StateMachine* nested_sm : nested_state_machine[current_state]) {
+			nested_sm->states[nested_sm->current_state].unregister_all_timed_actions();
+		}
 	}
 }
 

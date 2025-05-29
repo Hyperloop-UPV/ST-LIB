@@ -173,7 +173,8 @@ public:
 private:
 	unordered_map<state_id, State> states;
 	unordered_map<state_id, unordered_map<state_id, function<bool()>>> transitions;
-	unordered_map<state_id, StateMachine*> nested_state_machine;
+	unordered_map<state_id, vector<StateMachine*>> nested_state_machine;
+	
 
 	void enter_state(state_id new_state);
 	void exit_state(state_id old_state);
