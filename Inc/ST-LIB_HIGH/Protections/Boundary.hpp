@@ -31,9 +31,9 @@ enum ProtectionType : uint8_t {
 struct BoundaryInterface{
 public:
     virtual Protections::FaultType check_bounds() = 0;
-	HeapOrder* fault_message;
-	HeapOrder* warn_message;
-	HeapOrder* ok_message;
+	HeapOrder* fault_message{nullptr};
+	HeapOrder* warn_message{nullptr};
+	HeapOrder* ok_message{nullptr};
 	void update_name(char* n){
 		name = n;
 		if(strlen(n) > NAME_MAX_LEN){
@@ -70,8 +70,8 @@ protected:
 	string name;
 	//max variable name
 	static constexpr uint8_t NAME_MAX_LEN = 40;
-	uint8_t format_id;
-	uint8_t string_len;
+	uint8_t format_id{255};
+	uint8_t string_len{0};
 };
 
 template<class Type, ProtectionType Protector> struct Boundary;
@@ -84,7 +84,7 @@ struct Boundary<Type, BELOW> : public BoundaryInterface{
 	Type boundary;
 	Type warning_threshold;
 	//to get a snapshot of the value when the protection is triggered
-	Type frozen_value;
+	Type frozen_value{};
 	constexpr Boundary(const Type warn, const Type bound)
 	: has_warning_level{true}, boundary(bound), warning_threshold(warn){
 		// i havent been able to find a way to do a static_assertion.
@@ -142,9 +142,9 @@ struct Boundary<Type, ABOVE> : public BoundaryInterface{
 	static constexpr ProtectionType Protector = ABOVE;
 	bool has_warning_level{false};
 	Type* src = nullptr;
-	Type boundary;
-	Type warning_threshold;
-	Type frozen_value;
+	Type boundary{};
+	Type warning_threshold{};
+	Type frozen_value{};
 
 	Boundary(Type warning_threshold, Type boundary): has_warning_level{true}, boundary(boundary), warning_threshold(warning_threshold){
 		if(warning_threshold > boundary){
@@ -197,7 +197,7 @@ struct Boundary<Type, EQUALS> : public BoundaryInterface{
 	static constexpr ProtectionType Protector = EQUALS;
 	Type* src = nullptr;
 	Type boundary;
-	Type frozen_value;
+	Type frozen_value{};
 
 	Boundary(Type boundary): boundary(boundary){};
 	Boundary(Type* src, Boundary<Type, Protector> boundary): 
@@ -222,7 +222,7 @@ struct Boundary<Type, NOT_EQUALS> : public BoundaryInterface{
 	static constexpr ProtectionType Protector = NOT_EQUALS;
 	Type* src = nullptr;
 	Type boundary;
-	Type frozen_value;
+	Type frozen_value{};
 
 
 	Boundary(Type boundary): boundary(boundary){};
@@ -250,7 +250,7 @@ struct Boundary<Type, OUT_OF_RANGE> : public BoundaryInterface{
 	Type* src = nullptr;
 	Type lower_boundary, upper_boundary;
 	Type lower_warning, upper_warning;
-	Type frozen_value;
+	Type frozen_value{};
 
 
 	bool has_warning_level{false};
@@ -332,8 +332,8 @@ struct Boundary<void, ERROR_HANDLER> : public BoundaryInterface{
 	}
 	private:
 		
-		string error_handler_string;
-		uint16_t error_handler_string_len;
+		string error_handler_string{};
+		uint16_t error_handler_string_len{};
 		static constexpr uint16_t ERROR_HANDLER_MSG_MAX_LEN = 255;
 };
 
@@ -371,8 +371,8 @@ struct Boundary<void,INFO_WARNING> : public BoundaryInterface{
 	}
 	private:
 		
-		string warning_string;
-		uint16_t warning_string_len;
+		string warning_string{};
+		uint16_t warning_string_len{};
 		static constexpr uint16_t WARNING_HANDLER_MSG_MAX_LEN = 255;
 };
 
