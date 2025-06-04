@@ -32,12 +32,15 @@ public:
             orders[id]->process();
         }
     }  
+    Order(){
+        remote_ip.reserve(15);
+    }
 };
 
 template<size_t BufferLength,class... Types> requires NotCallablePack<Types*...>
 class StackOrder : public StackPacket<BufferLength,Types...>, public Order{
 public:
-    StackOrder(uint16_t id,void(*callback)(void), Types*... values) : StackPacket<BufferLength,Types...>(id,values...), callback(callback) {orders[id] = this; remote_ip.reserve()}
+    StackOrder(uint16_t id,void(*callback)(void), Types*... values) : StackPacket<BufferLength,Types...>(id,values...), callback(callback) {orders[id] = this; }
     StackOrder(uint16_t id, Types*... values) : StackPacket<BufferLength,Types...>(id,values...) {orders[id] = this;}
     void(*callback)(void) = nullptr;
     void set_callback(void(*callback)(void)) override {
