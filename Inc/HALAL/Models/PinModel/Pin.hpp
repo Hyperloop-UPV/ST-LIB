@@ -72,12 +72,12 @@ enum OperationMode{
 	ALTERNATIVE,
 };
 
-enum PinState{
+enum PinState: uint8_t{
 	OFF,
 	ON
 };
 
-enum TRIGGER{
+enum TRIGGER: uint8_t{
     RISING_EDGE = 1,
     FAILING_EDGE = 0,
     BOTH_EDGES = 2
