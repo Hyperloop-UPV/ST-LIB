@@ -76,12 +76,7 @@ bool FDCAN::transmit(uint8_t id, uint32_t message_id, const char* data, FDCAN::D
 	return true;
 }
 
-void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs){
-	// FDCAN::read(FDCAN::handle_to_id[hfdcan],&packet);
-	// if(packet.identifier == FDCAN::ID::FAULT_ID){
-		// ErrorHandler("FAULT PROPAGATED via CAN");
-	// }
-}
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs){}
 
 bool FDCAN::read(uint8_t id, FDCAN::Packet* data){
 	if (not FDCAN::registered_fdcan.contains(id)) {
@@ -94,7 +89,9 @@ bool FDCAN::read(uint8_t id, FDCAN::Packet* data){
 	}
 	FDCAN_RxHeaderTypeDef header_buffer = FDCAN_RxHeaderTypeDef();
 	HAL_FDCAN_GetRxMessage(FDCAN::registered_fdcan.at(id)->hfdcan, FDCAN::registered_fdcan.at(id)->rx_location, &header_buffer, data->rx_data.data());
-
+	if(data->identifier == FDCAN::ID::FAULT_ID){
+		ErrorHandler("FAULT PROPAGATED via CAN");
+	}
 	data->identifier = header_buffer.Identifier;
 	data->data_length = static_cast<FDCAN::DLC>(header_buffer.DataLength);
 
