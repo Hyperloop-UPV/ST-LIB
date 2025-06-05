@@ -11,6 +11,7 @@ StackOrder<0> ProtectionManager::fault_order(Protections::FAULT,
                                              external_to_fault);
 uint64_t ProtectionManager::last_notify = 0;
 bool ProtectionManager::external_trigger = false;
+bool ProtectionManager::test_fault = false;
 void* error_handler;
 void* info_warning;
 
