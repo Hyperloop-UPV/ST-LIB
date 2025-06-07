@@ -121,7 +121,11 @@ void ServerSocket::process_data(){
 		rx_packet_buffer.pop();
 		uint8_t* new_data = (uint8_t*)(packet->payload);
 		tcp_recved(client_control_block, packet->tot_len);
-		Order::process_data(this, new_data);
+		uint16_t id = Packet::get_id(new_data);
+		if (Order::	orders.contains(id)) {
+			Order::orders[id]->store_ip_order(remote_ip.string_address);
+			Order::process_data(this, new_data);
+		}
 		pbuf_free(packet);
 	}
 }
