@@ -122,7 +122,7 @@ void ServerSocket::process_data(){
 		uint8_t* new_data = (uint8_t*)(packet->payload);
 		tcp_recved(client_control_block, packet->tot_len);
 		uint16_t id = Packet::get_id(new_data);
-		if (Order::	orders.contains(id)) {
+		if (Order::orders.contains(id)) {
 			Order::orders[id]->store_ip_order(remote_ip.string_address);
 			Order::process_data(this, new_data);
 		}

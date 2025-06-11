@@ -11,13 +11,13 @@
 
 class Order : public Packet{
 public: 
-    string remote_ip;
+    string *remote_ip;
     static map<uint16_t,Order*> orders;
     virtual void set_callback(void(*callback)(void)) = 0;
     virtual void process() = 0;
     virtual void parse(OrderProtocol* socket, uint8_t* data) = 0;
-    void store_ip_order(string ip){
-        remote_ip = ip;
+    void store_ip_order(string &ip){
+        remote_ip = &ip;
     }
     void parse(uint8_t* data) override {
     	parse(nullptr, data);
@@ -27,14 +27,11 @@ public:
     }
     static void process_data(OrderProtocol* socket, uint8_t* data) {
         uint16_t id = Packet::get_id(data);
-        if (orders.contains(id)) {
+        if (orders.contains(id)){
             orders[id]->parse(socket, data);
             orders[id]->process();
         }
     }  
-    Order(){
-        remote_ip.reserve(15);
-    }
 };
 
 template<size_t BufferLength,class... Types> requires NotCallablePack<Types*...>
