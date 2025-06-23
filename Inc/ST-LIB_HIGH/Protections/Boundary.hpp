@@ -80,7 +80,7 @@ struct Boundary<Type, BELOW> : public BoundaryInterface {
     bool has_warning_level{false};
     Type* src = nullptr;
     Type boundary;
-    Type warning_threshold;
+    Type warning_threshold{std::numeric_limits<Type>::max()};
     // to get a snapshot of the value when the protection is triggered
     Type frozen_value{};
     constexpr Boundary(const Type warn, const Type bound)
