@@ -245,6 +245,13 @@ struct Boundary<Type, EQUALS> : public BoundaryInterface {
             &Global_RTC::global_RTC.minute, &Global_RTC::global_RTC.hour,
             &Global_RTC::global_RTC.day, &Global_RTC::global_RTC.month,
             &Global_RTC::global_RTC.year);
+        ok_message = new HeapOrder(
+            uint16_t{2333}, &format_id, &boundary_type_id, &name,
+            &this->boundary, &this->frozen_value,
+            &Global_RTC::global_RTC.counter, &Global_RTC::global_RTC.second,
+            &Global_RTC::global_RTC.minute, &Global_RTC::global_RTC.hour,
+            &Global_RTC::global_RTC.day, &Global_RTC::global_RTC.month,
+            &Global_RTC::global_RTC.year);
     }
     Boundary(Type* src, Type boundary) : src(src), boundary(boundary) {}
     Protections::FaultType check_bounds() override {
@@ -273,6 +280,13 @@ struct Boundary<Type, NOT_EQUALS> : public BoundaryInterface {
             &Global_RTC::global_RTC.minute, &Global_RTC::global_RTC.hour,
             &Global_RTC::global_RTC.day, &Global_RTC::global_RTC.month,
             &Global_RTC::global_RTC.year);
+        ok_message = new HeapOrder(
+            uint16_t{2444}, &format_id, &boundary_type_id, &name,
+            &this->boundary, &this->frozen_value,
+            &Global_RTC::global_RTC.counter, &Global_RTC::global_RTC.second,
+            &Global_RTC::global_RTC.minute, &Global_RTC::global_RTC.hour,
+            &Global_RTC::global_RTC.day, &Global_RTC::global_RTC.month,
+            &Global_RTC::global_RTC.year);
     }
     Boundary(Type* src, Type boundary) : src(src), boundary(boundary) {}
     Protections::FaultType check_bounds() override {
@@ -286,27 +300,31 @@ template <class Type>
 struct Boundary<Type, OUT_OF_RANGE> : public BoundaryInterface {
     static constexpr ProtectionType Protector = OUT_OF_RANGE;
     Type* src = nullptr;
-    Type lower_boundary, upper_boundary;
-    Type lower_warning, upper_warning;
+    Type lower_warning;
+    Type upper_warning;
+    Type lower_boundary;
+    Type upper_boundary;
     Type frozen_value{};
 
     bool has_warning_level{false};
     Boundary(Type lower_warning, Type upper_warning, Type lower_boundary,
              Type upper_boundary)
-        : lower_boundary(lower_boundary),
+        : lower_warning(lower_warning),
+          upper_warning(upper_warning),
+          lower_boundary(lower_boundary),
           upper_boundary(upper_boundary),
-          has_warning_level{true},
-          lower_warning(lower_warning),
-          upper_warning(upper_warning) {
+          has_warning_level{true}
+        {
         if (lower_warning < lower_boundary || upper_warning > upper_boundary) {
             ErrorHandler("Warning thresholds are outside of boundaries");
         }
     };
     Boundary(Type lower_boundary, Type upper_boundary)
-        : lower_boundary(lower_boundary),
-          upper_boundary(upper_boundary),
-          lower_warning(std::numeric_limits<Type>::min()),
-          upper_warning(std::numeric_limits<Type>::max()) {};
+        :   lower_warning(std::numeric_limits<Type>::min()),
+            upper_warning(std::numeric_limits<Type>::max()),  
+            lower_boundary(lower_boundary),
+            upper_boundary(upper_boundary)
+        {};
     Boundary(Type* src, Boundary<Type, Protector> boundary)
         : src(src),
           lower_boundary(boundary.lower_boundary),
