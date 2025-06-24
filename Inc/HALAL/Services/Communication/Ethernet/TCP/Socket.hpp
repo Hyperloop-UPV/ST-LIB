@@ -11,6 +11,7 @@
 #include "HALAL/Models/Packets/Packet.hpp"
 #include "HALAL/Models/Packets/Order.hpp"
 #include "HALAL/Models/Packets/OrderProtocol.hpp"
+#include "HALAL/Models/Packets/Packet.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
 #define PBUF_POOL_MEMORY_DESC_POSITION 8

@@ -10,10 +10,15 @@
 #include "HALAL/Models/Packets/OrderProtocol.hpp"
 
 class Order : public Packet{
-public:
+public: 
+    string *remote_ip;
+    static map<uint16_t,Order*> orders;
     virtual void set_callback(void(*callback)(void)) = 0;
     virtual void process() = 0;
     virtual void parse(OrderProtocol* socket, uint8_t* data) = 0;
+    void store_ip_order(string &ip){
+        remote_ip = &ip;
+    }
     void parse(uint8_t* data) override {
     	parse(nullptr, data);
     }
@@ -22,20 +27,17 @@ public:
     }
     static void process_data(OrderProtocol* socket, uint8_t* data) {
         uint16_t id = Packet::get_id(data);
-        if (orders.contains(id)) {
+        if (orders.contains(id)){
             orders[id]->parse(socket, data);
             orders[id]->process();
         }
-    }
-
-protected:
-    static map<uint16_t,Order*> orders;
+    }  
 };
 
 template<size_t BufferLength,class... Types> requires NotCallablePack<Types*...>
 class StackOrder : public StackPacket<BufferLength,Types...>, public Order{
 public:
-    StackOrder(uint16_t id,void(*callback)(void), Types*... values) : StackPacket<BufferLength,Types...>(id,values...), callback(callback) {orders[id] = this;}
+    StackOrder(uint16_t id,void(*callback)(void), Types*... values) : StackPacket<BufferLength,Types...>(id,values...), callback(callback) {orders[id] = this; }
     StackOrder(uint16_t id, Types*... values) : StackPacket<BufferLength,Types...>(id,values...) {orders[id] = this;}
     void(*callback)(void) = nullptr;
     void set_callback(void(*callback)(void)) override {
