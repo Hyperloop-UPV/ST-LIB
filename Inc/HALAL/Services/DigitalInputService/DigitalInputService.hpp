@@ -15,6 +15,7 @@ public:
 	static uint8_t id_counter;
 
 	static uint8_t inscribe(Pin& pin);
+	static uint8_t inscribe(Pin& pin, OperationMode mode);
 	static PinState read_pin_state(uint8_t id);
 };
 #endif

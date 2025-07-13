@@ -70,6 +70,7 @@ enum OperationMode {
     EXTERNAL_INTERRUPT_RISING_FALLING,
     TIMER_ALTERNATE_FUNCTION,
     ALTERNATIVE,
+    PULL_DOWN_INPUT,
 };
 
 enum PinState : uint8_t { OFF, ON };

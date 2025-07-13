@@ -16,6 +16,17 @@ uint8_t DigitalInput::inscribe(Pin& pin){
 		return id_counter++;
 }
 
+uint8_t DigitalInput::inscribe(Pin& pin, OperationMode mode){
+	if(mode != INPUT || mode != PULL_DOWN_INPUT)
+	{
+		ErrorHandler("You can't inscribe a digital input with this mode");
+		return -1;
+	}
+	Pin::inscribe(pin, mode);
+	DigitalInput::service_ids[id_counter] = pin;
+	return id_counter++;
+}
+
 PinState DigitalInput::read_pin_state(uint8_t id){
 	if (not DigitalInput::service_ids.contains(id)){
 		ErrorHandler("ID %d is not registered as a DigitalInput", id);
