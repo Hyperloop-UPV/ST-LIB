@@ -17,7 +17,7 @@ uint8_t DigitalInput::inscribe(Pin& pin){
 }
 
 uint8_t DigitalInput::inscribe(Pin& pin, OperationMode mode){
-	if(mode != INPUT || mode != PULL_DOWN_INPUT)
+	if(mode != INPUT && mode != PULL_DOWN_INPUT)
 	{
 		ErrorHandler("You can't inscribe a digital input with this mode");
 		return -1;
