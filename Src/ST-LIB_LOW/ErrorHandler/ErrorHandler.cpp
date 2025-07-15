@@ -62,13 +62,5 @@ void ErrorHandlerModel::ErrorHandlerUpdate(){
 		return;
 	}
 
-#ifdef HAL_UART_MODULE_ENABLED
-	if (!UART::printf_ready) {
-		return;
-	}
-
-	printf("Error: %s%s", ErrorHandlerModel::description.c_str(), endl);
-#endif
-
 }
 

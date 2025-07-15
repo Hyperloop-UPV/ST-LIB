@@ -82,7 +82,7 @@ class ProtectionManager {
         "{\"boardId\": %s, \"timestamp\":{%s}, %s}";
 
     static Boards::ID board_id;
-    static vector<Protection> low_frequency_protections;
+    static deque<Protection> low_frequency_protections;
     static vector<Protection> high_frequency_protections;
     static StateMachine* general_state_machine;
     static state_id fault_state_id;

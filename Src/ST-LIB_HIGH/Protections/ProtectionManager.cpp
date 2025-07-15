@@ -153,5 +153,5 @@ Boards::ID ProtectionManager::board_id = Boards::ID::NOBOARD;
 size_t ProtectionManager::message_size = 0;
 char* ProtectionManager::message = nullptr;
 ProtectionManager::state_id ProtectionManager::fault_state_id = 255;
-vector<Protection> ProtectionManager::low_frequency_protections = {};
+deque<Protection> ProtectionManager::low_frequency_protections = {};
 vector<Protection> ProtectionManager::high_frequency_protections = {};
