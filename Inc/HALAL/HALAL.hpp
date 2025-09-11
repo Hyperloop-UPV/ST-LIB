@@ -39,6 +39,8 @@
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"
 #include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
+#include "HALAL/Benchmarking_toolkit/DataWatchpointTrace/DataWatchpointTrace.hpp"
+#include "HALAL/Benchmarking_toolkit/Benchmarking.hpp"
 #else
 #include "HALALMock/Services/DigitalOutputService/DigitalOutputService.hpp"
 #include "HALALMock/Services/DigitalInputService/DigitalInputService.hpp"
