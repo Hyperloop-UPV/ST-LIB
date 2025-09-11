@@ -28,36 +28,20 @@
 */
 class DataWatchpointTrace {
    public:
-    static void start() {
-        unlock_dwt();
-        reset_cnt();
-    }
-    static unsigned int start_count() {
+    static void enable() {
         DWT->CTRL |= DWT_CTRL_CYCCNTENA;  // enables the counter
-        DWT->CYCCNT = 0;
-        return DWT->CYCCNT;
     }
-    static unsigned int stop_count() {
+    static void disable(){
         DWT->CTRL &= ~DWT_CTRL_CYCCNTENA;  // disable the counter
-        return DWT->CYCCNT;
     }
+
     static unsigned int get_count() {
         return DWT->CYCCNT;  // returns the current value of the counter
     }
 
    private:
     static void reset_cnt() {
-        CoreDebug->DEMCR |= DEMCR_TRCENA;
         DWT->CYCCNT = 0;  // reset the counter
-        DWT->CTRL = 0;
-    }
 
-    static void unlock_dwt() {  // unlock the dwt
-        uint32_t lsr = DWT->LSR;
-        if ((lsr & DWT_LSR_Present_Msk) != 0) {
-            if ((lsr & DWT_LSR_Access_Msk) != 0) {
-                DWT->LAR = DWT_LAR_KEY;
-            }
-        }
     }
 };
