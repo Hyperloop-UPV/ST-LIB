@@ -5,7 +5,14 @@
 
 #include "HALAL/Benchmarking_toolkit/DataWatchpointTrace/DataWatchpointTrace.hpp"
 #include "SEGGER_RTT.h"
-
+template<size_t N>
+struct StringLiteral {
+    constexpr StringLiteral(const char (&str)[N]) {
+        std::copy_n(str, N, value);
+    }
+    
+    char value[N];
+};
 
 enum EVENTS : uint32_t{
     SIMPLE_MARK = 1,
@@ -30,7 +37,7 @@ struct Performace_Packet{
     uint32_t event_id;
 };
 
-template<uint32_t Configuration,EVENTS E = SIMPLE_MARK,uint32_t ID>
+template<uint32_t Configuration,EVENTS E = SIMPLE_MARK,uint32_t ID,StringLiteral name>
 constexpr void _benchmark_begin(Performace_Packet* p){
 
     if constexpr( Configuration & E){
@@ -66,11 +73,11 @@ constexpr void _benchmark_end(Performace_Packet* p){
 /**
  * 
  */
-#define BENCHMARK_BEGIN(TYPE,ID)      \
+#define BENCHMARK_BEGIN(TYPE,ID,NAME)      \
 {                                              \
     constexpr bool begin_##ID##_found = true;       \
     Performace_Packet p; \
-    _benchmark_begin<benchmark_configuration,TYPE,(uint32_t)ID>(&p);  \
+    _benchmark_begin<benchmark_configuration,TYPE,(uint32_t)ID,NAME>(&p);  \
         
 
 /**
