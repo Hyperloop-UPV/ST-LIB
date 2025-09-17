@@ -88,6 +88,7 @@ void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
     #endif
 #endif 
     DataWatchpointTrace::enable();
+    SEGGER_RTT_Init();
 }
 #else
 // Simulator start
