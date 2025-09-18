@@ -4,7 +4,7 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/PinModel/Pin.hpp"
 #include "core_cm7.h"
-
+#include "HALAL/Benchmarking_toolkit/Benchmarking.hpp"
 #if !defined DWT_LSR_Present_Msk
 #define DWT_LSR_Present_Msk ITM_LSR_Present_Msk
 #endif
@@ -28,8 +28,20 @@
 */
 class DataWatchpointTrace {
    public:
+    static uint32_t num_overflows;
     static void enable() {
-        DWT->CTRL |= DWT_CTRL_CYCCNTENA;  // enables the counter
+        DWT->CTRL |= DWT_CTRL_CYCCNTENA | DWT_CTRL_EXCTRCENA_Msk | DWT_CTRL_EXCEVTENA_Msk;  // enables the counter
+        DWT->FUNCTION0 |= (1 << 7) | 0b1000; // enable comparison
+        DWT->COMP0 = 0xFFFFFFFF; // detect overflow
+    }
+    /**
+     * needs to be done via polling because there is no way to trigger an interrupt
+     */
+    static void check_overflow(){
+        uint32_t cached_function_0 = DWT->FUNCTION0;
+        if( cached_function_0 &= DWT_FUNCTION_MATCHED_Msk){
+            increment_overflow();
+        }
     }
     static void disable(){
         DWT->CTRL &= ~DWT_CTRL_CYCCNTENA;  // disable the counter
