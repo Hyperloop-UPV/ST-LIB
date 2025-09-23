@@ -6,120 +6,111 @@
  */
 
 #include "HALAL/Models/PinModel/Pin.hpp"
-
 #include "ErrorHandler/ErrorHandler.hpp"
 
-Pin::Pin() {}
 
-Pin::Pin(GPIOPort port, GPIOPin gpio_pin)
-    : port((GPIO_TypeDef*)port), gpio_pin(gpio_pin) {}
 
-Pin::Pin(GPIOPort port, GPIOPin gpio_pin,
-         AlternativeFunction alternative_function)
-    : port((GPIO_TypeDef*)port),
-      gpio_pin(gpio_pin),
-      alternative_function(alternative_function) {}
+// consteval std::string_view Pin::port_string() const {
+//     switch (*port) {
+//         case PORT_A: return "PA";
+//         case PORT_B: return "PB";
+//         case PORT_C: return "PC";
+//         case PORT_D: return "PD";
+//         case PORT_E: return "PE";
+// 		case PORT_F: return "PF";
+//         case PORT_G: return "PG";
+//         case PORT_H: return "PH";
+//     }
+// 	static_assert(always_false<GPIO_TypeDef*>, "Pin::port_string(): puerto no valido");
+// }
+// consteval std::string_view Pin::pin_string() const {
+//     switch(gpio_pin){
+//         case PIN_0: return "0";   case PIN_1: return "1";   case PIN_2: return "2";
+//         case PIN_3: return "3";   case PIN_4: return "4";   case PIN_5: return "5";
+//         case PIN_6: return "6";   case PIN_7: return "7";   case PIN_8: return "8";
+//     	case PIN_9: return "9";   case PIN_10: return "10"; case PIN_11: return "11";
+//         case PIN_12: return "12"; case PIN_13: return "13"; case PIN_14: return "14";
+//         case PIN_15: return "15"; case PIN_ALL: return "ALL";
+//     }
+//     static_assert(always_false<GPIOPin>, "Pin::pin_string(): Pin no válido");
+// }
 
-const vector<reference_wrapper<Pin>> Pin::pinVector = {
-    PA0,  PA1,  PA10, PA11, PA12, PA9,  PB0,  PB1,  PB10, PB11, PB12,
-    PB13, PB14, PB15, PB2,  PB4,  PB5,  PB6,  PB7,  PB8,  PB9,  PC0,
-    PC1,  PC10, PC11, PC12, PC13, PC14, PC15, PC2,  PC3,  PC4,  PC5,
-    PC6,  PC7,  PC8,  PC9,  PD0,  PD1,  PD10, PD11, PD12, PD13, PD14,
-    PD15, PD2,  PD3,  PD4,  PD5,  PD6,  PD7,  PD8,  PD9,  PE0,  PE1,
-    PE10, PE11, PE12, PE13, PE14, PE15, PE2,  PE3,  PE4,  PE5,  PE6,
-    PE7,  PE8,  PE9,  PF0,  PF1,  PF10, PF11, PF12, PF13, PF14, PF15,
-    PF2,  PF3,  PF4,  PF5,  PF6,  PF7,  PF8,  PF9,  PG0,  PG1,  PG10,
-    PG11, PG12, PG13, PG14, PG15, PG2,  PG3,  PG4,  PG5,  PG6,  PG7,
-    PG8,  PG9,  PH0,  PH1,  PA2,  PA3,  PA4,  PA5,  PA6,  PA7,  PA8};
-
-const map<GPIOPin, const string> Pin::gpio_pin_to_string = {
-    {PIN_0, "0"},    {PIN_1, "1"},   {PIN_2, "2"},   {PIN_3, "3"},
-    {PIN_4, "4"},    {PIN_5, "5"},   {PIN_6, "6"},   {PIN_7, "7"},
-    {PIN_8, "8"},    {PIN_9, "9"},   {PIN_10, "10"}, {PIN_11, "11"},
-    {PIN_12, "12"},  {PIN_13, "13"}, {PIN_14, "14"}, {PIN_15, "15"},
-    {PIN_ALL, "ALL"}};
-const map<GPIO_TypeDef*, const string> Pin::port_to_string = {
-    {(GPIO_TypeDef*)PORT_A, "PA"}, {(GPIO_TypeDef*)PORT_B, "PB"},
-    {(GPIO_TypeDef*)PORT_C, "PC"}, {(GPIO_TypeDef*)PORT_D, "PD"},
-    {(GPIO_TypeDef*)PORT_E, "PE"}, {(GPIO_TypeDef*)PORT_F, "PF"},
-    {(GPIO_TypeDef*)PORT_G, "PG"}, {(GPIO_TypeDef*)PORT_H, "PH"}};
+// consteval std::string_view Pin::to_string() const {
+//         constexpr size_t max_len = 5;
+//         char buffer[max_len] = {}; 
+//         size_t idx = 0;
+//         for (char c : port_string()) buffer[idx++] = c;
+//         for (char c : pin_string())  buffer[idx++] = c;
+//         return std::string_view(buffer, idx);
+// }
+const map<GPIOPin,const string> gpio_pin_to_string = {{PIN_0,"0"}, {PIN_1,"1"}, {PIN_2,"2"}, {PIN_3,"3"}, {PIN_4,"4"}, {PIN_5,"5"}, {PIN_6,"6"}, {PIN_7,"7"}, {PIN_8,"8"}, {PIN_9,"9"}, {PIN_10,"10"}, {PIN_11,"11"}, {PIN_12,"12"}, {PIN_13,"13"}, {PIN_14,"14"}, {PIN_15,"15"},{PIN_ALL,"ALL"}};
+const map<GPIO_TypeDef*,const string> port_to_string = {{(GPIO_TypeDef*)PORT_A,"PA"}, {(GPIO_TypeDef*)PORT_B,"PB"}, {(GPIO_TypeDef*)PORT_C,"PC"}, {(GPIO_TypeDef*)PORT_D,"PD"}, {(GPIO_TypeDef*)PORT_E,"PE"}, {(GPIO_TypeDef*)PORT_F,"PF"}, {(GPIO_TypeDef*)PORT_G,"PG"}, {(GPIO_TypeDef*)PORT_H,"PH"}};
 
 const string Pin::to_string() const {
-    return (port_to_string.at(port) + gpio_pin_to_string.at(gpio_pin));
+	return (port_to_string.at((GPIO_TypeDef*)port) + gpio_pin_to_string.at(gpio_pin));
 }
 
-void Pin::inscribe(Pin& pin, OperationMode mode) {
-    if (pin.mode != OperationMode::NOT_USED) {
-        ErrorHandler("Pin %s is already registered, cannot register twice",
-                     pin.to_string().c_str());
-        return;
-    }
-    pin.mode = mode;
-}
 
-void Pin::start() {
-    GPIO_InitTypeDef GPIO_InitStruct;
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOD_CLK_ENABLE();
-    __HAL_RCC_GPIOE_CLK_ENABLE();
-    __HAL_RCC_GPIOF_CLK_ENABLE();
-    __HAL_RCC_GPIOG_CLK_ENABLE();
+void Pin::start(){
+	GPIO_InitTypeDef GPIO_InitStruct;
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOD_CLK_ENABLE();
+	__HAL_RCC_GPIOE_CLK_ENABLE();
+	__HAL_RCC_GPIOF_CLK_ENABLE();
+	__HAL_RCC_GPIOG_CLK_ENABLE();
 
-    for (Pin& pin : Pin::pinVector) {
-        GPIO_InitStruct = {0};
-        GPIO_InitStruct.Pin = pin.gpio_pin;
-        switch (pin.mode) {
-            case OperationMode::NOT_USED:
-                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
+	for(const Pin& pin : pinArray){
+		GPIO_TypeDef *port = (GPIO_TypeDef*)pin.port;
+		GPIO_InitStruct = {0};
+		GPIO_InitStruct.Pin = pin.gpio_pin;
+		switch(pin.mode){
 
-            case OperationMode::OUTPUT:
-                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
+		case OperationMode::NOT_USED:
+			GPIO_InitStruct.Mode =  GPIO_MODE_INPUT;
+			GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+			HAL_GPIO_Init(port, &GPIO_InitStruct);
+			break;
 
-            case OperationMode::INPUT:
-                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
+		case OperationMode::OUTPUT:
+			GPIO_InitStruct.Mode =  GPIO_MODE_OUTPUT_PP;
+			GPIO_InitStruct.Pull = GPIO_NOPULL;
+			GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+			HAL_GPIO_Init(port, &GPIO_InitStruct);
+			break;
 
-            case OperationMode::ANALOG:
-                GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-            case OperationMode::EXTERNAL_INTERRUPT_RISING:
-                GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-            case OperationMode::EXTERNAL_INTERRUPT_FALLING:
-                GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-            case OperationMode::EXTERNAL_INTERRUPT_RISING_FALLING:
-                GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-            case OperationMode::TIMER_ALTERNATE_FUNCTION:
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                GPIO_InitStruct.Alternate = pin.alternative_function;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
+		case OperationMode::INPUT:
+			GPIO_InitStruct.Mode =  GPIO_MODE_INPUT;
+			GPIO_InitStruct.Pull = GPIO_NOPULL;
+			HAL_GPIO_Init(port, &GPIO_InitStruct);
+			break;
 
-            default:
-                break;
-        }
-    }
+		case OperationMode::ANALOG:
+			GPIO_InitStruct.Mode =  GPIO_MODE_ANALOG;
+			GPIO_InitStruct.Pull = GPIO_NOPULL;
+			HAL_GPIO_Init(port, &GPIO_InitStruct);
+			break;
+		case OperationMode::EXTERNAL_INTERRUPT_RISING:
+			GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+			GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+			HAL_GPIO_Init(port, &GPIO_InitStruct);
+			break;
+		case OperationMode::EXTERNAL_INTERRUPT_FALLING:
+			GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+			GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+			HAL_GPIO_Init(port, &GPIO_InitStruct);
+			break;
+		case OperationMode::TIMER_ALTERNATE_FUNCTION:
+			GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+			GPIO_InitStruct.Pull = GPIO_NOPULL;
+			GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+			GPIO_InitStruct.Alternate = pin.alternative_function;
+			HAL_GPIO_Init(port, &GPIO_InitStruct);
+			break;
+
+		default:
+			break;
+		}
+	}
 }
