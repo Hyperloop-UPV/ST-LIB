@@ -144,10 +144,11 @@ struct Contains<T, TypeList<U, Rest...>>
                          Contains<T, TypeList<Rest...>>> {};
 
 
-template<typename... Ts>
-struct Registry {
-    using Pins = TypeList<Ts...>;
-    static void init() { (init_one(Ts{}), ...); }
+template<typename> struct Registry; // declaración primaria
+
+template<typename... Pins>
+struct Registry<TypeList<Pins...>> {
+    static void init() { (init_one(Pins{}), ...); }
 private:
     template<typename P>
     static void init_one(const P&) { 
