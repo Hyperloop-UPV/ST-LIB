@@ -19,7 +19,8 @@ enum EVENTS : uint32_t{
     ETH_TX = 4,
     ETH_RX = 8,
     SPI = 16,
-    CONTROL_ALGORITHM = 32
+    CONTROL_ALGORITHM = 32,
+    MAIN = 2 << 6
 };
 
 
