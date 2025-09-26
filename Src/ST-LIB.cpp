@@ -32,7 +32,9 @@ void STLIB::update() {
 	Ethernet::update();
   Server::update_servers();
 #endif
+#ifndef SIM_ON
     DataWatchpointTrace::check_overflow();
+#endif
     ErrorHandlerModel::ErrorHandlerUpdate();
 	
 }

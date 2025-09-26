@@ -87,8 +87,10 @@ void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
         Watchdog::start();
     #endif
 #endif 
+#ifndef SIM_ON
     DataWatchpointTrace::enable();
     BENCHMARKING_SETUP();
+#endif
 }
 #else
 // Simulator start
