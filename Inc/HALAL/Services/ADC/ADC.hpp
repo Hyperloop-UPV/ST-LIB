@@ -84,7 +84,7 @@ public:
 	 *
 	 * @return the id that represents the ADC inside this utility class, used in all its functions.
 	 */
-	static uint8_t inscribe(Pin pin);
+	consteval static uint8_t inscribe(Pin pin);
 
 	/**
 	 * @brief Method used in ST-LIBstart() to configure pins inscribed as ADCs.
