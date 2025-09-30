@@ -9,7 +9,8 @@
     "files.associations": {
       "mem.h": "c",
       "tinydir.h": "c",
-      "dirent.h": "c"
+      "dirent.h": "c",
+      "array": "cpp"
     }
   }
   

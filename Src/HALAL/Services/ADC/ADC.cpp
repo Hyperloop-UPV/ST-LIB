@@ -44,7 +44,8 @@ consteval uint8_t ADC::inscribe(Pin pin) {
     //     return 0;
     // }
 
-    pin.inscribe(ANALOG);
+    	pin.inscribe(ANALOG);
+		return registry.add(pin);
     // active_instances[id_counter] = available_instances[pin];
 
     // InitData& init_data = active_instances[id_counter].peripheral->init_data;
@@ -52,10 +53,10 @@ consteval uint8_t ADC::inscribe(Pin pin) {
     // active_instances[id_counter].rank = init_data.channels.size();
     // init_data.channels.push_back(active_instances[id_counter].channel);
     // return id_counter++;
-	return 0;
 }
 
 void ADC::start() {
+    initialize_from_registry();
     for (Peripheral& peripheral : peripherals) {
         if (peripheral.is_registered()) {
             ADC::init(peripheral);
@@ -118,6 +119,28 @@ uint16_t* ADC::get_value_pointer(uint8_t id) {
     return &instance.peripheral->dma_data_buffer[instance.rank];
 }
 
+void ADC::initialize_from_registry() {
+    // Inicializa las estructuras runtime desde el registro compile-time
+    for (uint8_t i = 0; i < registry.count; ++i) {
+        const InscribeEntry& entry = registry.entries[i];
+        if (!entry.is_valid) continue;
+        
+        Pin pin = entry.pin;
+        uint8_t id = entry.id;
+        
+        if (!available_instances.contains(pin)) {
+            // Error: pin no disponible para ADC
+            continue;
+        }
+        
+        active_instances[id] = available_instances[pin];
+        
+        InitData& init_data = active_instances[id].peripheral->init_data;
+        DMA::inscribe_stream(init_data.dma_stream);
+        active_instances[id].rank = init_data.channels.size();
+        init_data.channels.push_back(active_instances[id].channel);
+    }
+}
 void ADC::init(Peripheral& peripheral) {
     ADC_MultiModeTypeDef multimode = {0};
     ADC_ChannelConfTypeDef sConfig = {0};

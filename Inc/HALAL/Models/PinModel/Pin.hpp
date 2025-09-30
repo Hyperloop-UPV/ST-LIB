@@ -82,11 +82,11 @@ class Pin {
     GPIOPin gpio_pin;
     AlternativeFunction alternative_function;
     OperationMode mode = OperationMode::NOT_USED;
-    const map<GPIO_TypeDef*, const string> port_to_string;
-    const map<GPIOPin, const string> gpio_pin_to_string;
-    Pin();
+    // const map<GPIO_TypeDef*, const string> port_to_string;
+    // const map<GPIOPin, const string> gpio_pin_to_string;
+    constexpr Pin(){}
     constexpr Pin(GPIOPort port, GPIOPin pin);
-    Pin(GPIOPort port, GPIOPin pin, AlternativeFunction alternative_function);
+    constexpr Pin(GPIOPort port, GPIOPin pin, AlternativeFunction alternative_function);
     const string to_string() const;
     consteval void inscribe(OperationMode mode) {
         if (mode != OperationMode::NOT_USED) {

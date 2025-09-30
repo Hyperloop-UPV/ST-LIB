@@ -25,6 +25,7 @@ using std::string;
 #define MAX_12BIT 4095.0
 #define MAX_16BIT 65535.0
 
+#define MAX_ADC_INSTANCES 30
 
 /**
  * @brief A utility class that controls ADC inputs.
@@ -72,7 +73,57 @@ public:
 		Instance() = default;
 		Instance(Peripheral* peripheral, uint32_t channel);
 	};
-
+	struct InscribeEntry{
+		Pin pin;
+		uint8_t id;
+		bool is_valid;
+		consteval InscribeEntry(): pin(), id(0), is_valid(false) {}
+		consteval InscribeEntry(Pin p,uint8_t i): pin(p), id(i), is_valid(true){}
+	};
+	struct InscriptionRegistry {
+		std::array<InscribeEntry, MAX_ADC_INSTANCES> entries;
+		uint8_t count;
+		
+		consteval InscriptionRegistry() : entries(), count(0) {}
+		
+		consteval uint8_t add(Pin pin) {
+			if (count >= MAX_ADC_INSTANCES) {
+				return 255;
+			}
+			
+			// Verificar si el pin ya está inscrito
+			for (uint8_t i = 0; i < count; ++i) {
+				if (entries[i].pin == pin) {
+					// Pin ya inscrito, retornar su ID
+					return entries[i].id;
+				}
+			}
+			
+			uint8_t new_id = count;
+			entries[count] = InscribeEntry(pin, new_id);
+			count++;
+			return new_id;
+		}
+		
+		consteval bool contains(Pin pin) const {
+			for (uint8_t i = 0; i < count; ++i) {
+				if (entries[i].is_valid && entries[i].pin == pin) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		consteval uint8_t get_id(Pin pin) const {
+			for (uint8_t i = 0; i < count; ++i) {
+				if (entries[i].is_valid && entries[i].pin == pin) {
+					return entries[i].id;
+				}
+			}
+			return 255; // No encontrado
+		}
+	};
+	
 	/**
 	 * @brief A method to add a pin as an ADC input on the ST-LIB.
 
@@ -84,7 +135,11 @@ public:
 	 *
 	 * @return the id that represents the ADC inside this utility class, used in all its functions.
 	 */
+	static InscriptionRegistry registry;
 	consteval static uint8_t inscribe(Pin pin);
+	static const InscriptionRegistry& get_registry() {
+		return registry;
+	}
 
 	/**
 	 * @brief Method used in ST-LIBstart() to configure pins inscribed as ADCs.
@@ -153,6 +208,7 @@ private:
 	static uint8_t id_counter;
 
 	static void init(Peripheral& peripheral);
+	static void initialize_from_registry();
 };
 
 #endif
