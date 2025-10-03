@@ -9,14 +9,6 @@
 
 #include "ErrorHandler/ErrorHandler.hpp"
 
-constexpr Pin::Pin(GPIOPort port, GPIOPin gpio_pin)
-    : port((GPIO_TypeDef*)port), gpio_pin(gpio_pin) {}
-
-constexpr Pin::Pin(GPIOPort port, GPIOPin gpio_pin,
-         AlternativeFunction alternative_function)
-    : port((GPIO_TypeDef*)port),
-      gpio_pin(gpio_pin),
-      alternative_function(alternative_function) {}
 
 // const map<GPIOPin, const string> Pin::gpio_pin_to_string = {
 //     {PIN_0, "0"},    {PIN_1, "1"},   {PIN_2, "2"},   {PIN_3, "3"},
@@ -35,7 +27,6 @@ constexpr Pin::Pin(GPIOPort port, GPIOPin gpio_pin,
 // }
 
 void Pin::start() {
-    GPIO_InitTypeDef GPIO_InitStruct;
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -44,59 +35,8 @@ void Pin::start() {
     __HAL_RCC_GPIOF_CLK_ENABLE();
     __HAL_RCC_GPIOG_CLK_ENABLE();
 
-    for (Pin& pin : pinVector) {
-        GPIO_InitStruct = {0};
-        GPIO_InitStruct.Pin = pin.gpio_pin;
-        switch (pin.mode) {
-            case OperationMode::NOT_USED:
-                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-
-            case OperationMode::OUTPUT:
-                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-
-            case OperationMode::INPUT:
-                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-
-            case OperationMode::ANALOG:
-                GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-            case OperationMode::EXTERNAL_INTERRUPT_RISING:
-                GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-            case OperationMode::EXTERNAL_INTERRUPT_FALLING:
-                GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-            case OperationMode::EXTERNAL_INTERRUPT_RISING_FALLING:
-                GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-            case OperationMode::TIMER_ALTERNATE_FUNCTION:
-                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
-                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                GPIO_InitStruct.Alternate = pin.alternative_function;
-                HAL_GPIO_Init(pin.port, &GPIO_InitStruct);
-                break;
-
-            default:
-                break;
-        }
+    for (auto pin : pinArray) {
+        HAL_GPIO_Init(getGPIO(pin->port), &pin->GPIO_InitStruct);
     }
 }
+

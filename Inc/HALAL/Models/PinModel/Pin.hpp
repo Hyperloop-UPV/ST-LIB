@@ -10,7 +10,7 @@
 #define PERIPHERAL_BASE 0x40000000UL
 #define DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 PERIPHERAL_BASE + 0x18020000UL
 
-enum GPIOPin : uint16_t {
+enum class GPIOPin : uint16_t {
     PIN_0 = 0x0001,
     PIN_1 = 0x0002,
     PIN_2 = 0x0004,
@@ -30,7 +30,7 @@ enum GPIOPin : uint16_t {
     PIN_ALL = 0xFFFF
 };
 
-enum GPIOPort : uint32_t {
+enum class GPIOPort : uint32_t {
     PORT_A = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0000UL,
     PORT_B = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0400UL,
     PORT_C = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x0800UL,
@@ -41,7 +41,7 @@ enum GPIOPort : uint32_t {
     PORT_H = DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 + 0x1C00UL,
 };
 
-enum AlternativeFunction : uint8_t {
+enum class AlternativeFunction : uint8_t {
     AF0 = 0x00,
     AF1 = 0x01,
     AF2 = 0x02,
@@ -58,9 +58,10 @@ enum AlternativeFunction : uint8_t {
     AF13 = 0x0D,
     AF14 = 0x0E,
     AF15 = 0x0F,
+    NO_AF = 0xFF,
 };
 
-enum OperationMode {
+enum class OperationMode {
     NOT_USED,
     INPUT,
     OUTPUT,
@@ -72,28 +73,86 @@ enum OperationMode {
     ALTERNATIVE,
 };
 
-enum PinState : uint8_t { OFF, ON };
+enum class PinState : uint8_t { OFF, ON };
 
-enum TRIGGER : uint8_t { RISING_EDGE = 1, FAILING_EDGE = 0, BOTH_EDGES = 2 };
+enum class TRIGGER : uint8_t { RISING_EDGE = 1, FAILING_EDGE = 0, BOTH_EDGES = 2 };
+
+using enum GPIOPort;
+using enum GPIOPin;
+using enum AlternativeFunction;
+using enum OperationMode;
+class Pin;
+extern const std::array<const Pin*, 110> pinArray;
 
 class Pin {
+    private:
+        mutable GPIO_InitTypeDef GPIO_InitStruct{  // Configuration for OperationMode::Not used
+            .Mode = GPIO_MODE_INPUT,
+            .Pull = GPIO_PULLDOWN,
+        };
    public:
-    GPIO_TypeDef* port;
+    GPIOPort port;
     GPIOPin gpio_pin;
+    OperationMode mode{OperationMode::NOT_USED};
     AlternativeFunction alternative_function;
-    OperationMode mode = OperationMode::NOT_USED;
+    
     // const map<GPIO_TypeDef*, const string> port_to_string;
     // const map<GPIOPin, const string> gpio_pin_to_string;
-    constexpr Pin(){}
-    constexpr Pin(GPIOPort port, GPIOPin pin);
-    constexpr Pin(GPIOPort port, GPIOPin pin, AlternativeFunction alternative_function);
+    consteval Pin(){}
+    consteval Pin(GPIOPort port, GPIOPin pin):
+        port(port),
+        gpio_pin(pin),
+        alternative_function(AlternativeFunction::NO_AF){}
+    consteval Pin(GPIOPort port, GPIOPin pin, AlternativeFunction alternative_function): 
+        port(port),
+        gpio_pin(pin),
+        alternative_function(alternative_function){}
+
     const string to_string() const;
-    consteval void inscribe(OperationMode mode) {
-        if (mode != OperationMode::NOT_USED) {
-            static_assert("Pin is already registered, cannot register twice");
-            return;
+    template<OperationMode m>
+    constexpr void inscribe() {
+        static_assert(!(m == OperationMode::NOT_USED),"Pin is already registered, cannot register twice");
+        static_assert(!(m == ALTERNATIVE && alternative_function == AlternativeFunction::NO_AF), 
+            "You can't use that pin for Alternative");
+        mode = m;
+        GPIO_InitStruct.Pin = static_cast<uint32_t>(gpio_pin);
+        switch (mode) {
+            case OperationMode::OUTPUT:
+                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+                break;
+
+            case OperationMode::INPUT:
+                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                break;
+            case OperationMode::ANALOG:
+                GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                break;
+            case OperationMode::EXTERNAL_INTERRUPT_RISING:
+                GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+                break;
+            case OperationMode::EXTERNAL_INTERRUPT_FALLING:
+                GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+                break;
+            case OperationMode::EXTERNAL_INTERRUPT_RISING_FALLING:
+                GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+                GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+                break;
+            case OperationMode::TIMER_ALTERNATE_FUNCTION:
+                GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+                GPIO_InitStruct.Alternate = static_cast<uint32_t>(alternative_function);
+                break;
+
+            default:
+            break;
         }
-        this->mode = mode;
     }
     void start();
 
@@ -106,7 +165,19 @@ class Pin {
         return port < other.port;
     }
 };
-
+inline GPIO_TypeDef* getGPIO(GPIOPort port) {
+        switch(port) {
+            case GPIOPort::PORT_A: return GPIOA;
+            case GPIOPort::PORT_B: return GPIOB;
+            case GPIOPort::PORT_C: return GPIOC;
+            case GPIOPort::PORT_D: return GPIOD;
+            case GPIOPort::PORT_E: return GPIOE;
+            case GPIOPort::PORT_F: return GPIOF;
+            case GPIOPort::PORT_G: return GPIOG;
+            case GPIOPort::PORT_H: return GPIOH;
+            default: return nullptr; 
+        }
+}
 namespace std {
 template <>
 struct hash<Pin> {
@@ -115,136 +186,138 @@ struct hash<Pin> {
         using std::size_t;
         using std::string;
 
-        return ((hash<uint16_t>()(k.gpio_pin) ^
+        return ((hash<uint16_t>()(static_cast<uint16_t>(k.gpio_pin)) ^
                  (hash<uint32_t>()((uint32_t)(k.port)) << 1)) >>
                 1);
     }
 };
 }  // namespace std
 
-Pin PA0{};
-Pin PA1{};
-Pin PA2{};
-Pin PA3{};
-Pin PA4{};
-Pin PA5{};
-Pin PA6{};
-Pin PA7{};
-Pin PA8{};
-Pin PA9{};
-Pin PA10{};
-Pin PA11{};
-Pin PA12{};
-Pin PA13{};
-Pin PA14{};
-Pin PA15{};
-Pin PB0{};
-Pin PB1{};
-Pin PB2{};
-Pin PB3{};
-Pin PB4{};
-Pin PB5{};
-Pin PB6{};
-Pin PB7{};
-Pin PB8{};
-Pin PB9{};
-Pin PB10{};
-Pin PB11{};
-Pin PB12{};
-Pin PB13{};
-Pin PB14{};
-Pin PB15{};
-Pin PC0{};
-Pin PC1{};
-Pin PC2{};
-Pin PC3{};
-Pin PC4{};
-Pin PC5{};
-Pin PC6{};
-Pin PC7{};
-Pin PC8{};
-Pin PC9{};
-Pin PC10{};
-Pin PC11{};
-Pin PC12{};
-Pin PC13{};
-Pin PC14{};
-Pin PC15{};
-Pin PD0{};
-Pin PD1{};
-Pin PD2{};
-Pin PD3{};
-Pin PD4{};
-Pin PD5{};
-Pin PD6{};
-Pin PD7{};
-Pin PD8{};
-Pin PD9{};
-Pin PD10{};
-Pin PD11{};
-Pin PD12{};
-Pin PD13{};
-Pin PD14{};
-Pin PD15{};
-Pin PE0{};
-Pin PE1{};
-Pin PE2{};
-Pin PE3{};
-Pin PE4{};
-Pin PE5{};
-Pin PE6{};
-Pin PE7{};
-Pin PE8{};
-Pin PE9{};
-Pin PE10{};
-Pin PE11{};
-Pin PE12{};
-Pin PE13{};
-Pin PE14{};
-Pin PE15{};
-Pin PF0{};
-Pin PF1{};
-Pin PF2{};
-Pin PF3{};
-Pin PF4{};
-Pin PF5{};
-Pin PF6{};
-Pin PF7{};
-Pin PF8{};
-Pin PF9{};
-Pin PF10{};
-Pin PF11{};
-Pin PF12{};
-Pin PF13{};
-Pin PF14{};
-Pin PF15{};
-Pin PG0{};
-Pin PG1{};
-Pin PG2{};
-Pin PG3{};
-Pin PG4{};
-Pin PG5{};
-Pin PG6{};
-Pin PG7{};
-Pin PG8{};
-Pin PG9{};
-Pin PG10{};
-Pin PG11{};
-Pin PG12{};
-Pin PG13{};
-Pin PG14{};
-Pin PG15{};
-Pin PH0{};
-Pin PH1{};
+inline constexpr Pin PA0(PORT_A, PIN_0);
+inline constexpr Pin PA1(PORT_A, PIN_1);
+inline constexpr Pin PA2(PORT_A, PIN_2, AF11);
+inline constexpr Pin PA3(PORT_A, PIN_3);
+inline constexpr Pin PA4(PORT_A, PIN_4);
+inline constexpr Pin PA5(PORT_A, PIN_5);
+inline constexpr Pin PA6(PORT_A, PIN_6);
+inline constexpr Pin PA7(PORT_A, PIN_7);
+inline constexpr Pin PA8(PORT_A, PIN_8);
+inline constexpr Pin PA9(PORT_A, PIN_9, AF7);
+inline constexpr Pin PA10(PORT_A, PIN_10, AF7);
+inline constexpr Pin PA11(PORT_A, PIN_11, AF9);
+inline constexpr Pin PA12(PORT_A, PIN_12, AF9);
+inline constexpr Pin PA13(PORT_A, PIN_13);
+inline constexpr Pin PA14(PORT_A, PIN_14);
+inline constexpr Pin PA15(PORT_A, PIN_15);
+inline constexpr Pin PB0(PORT_B, PIN_0);
+inline constexpr Pin PB1(PORT_B, PIN_1);
+inline constexpr Pin PB2(PORT_B, PIN_2);
+inline constexpr Pin PB3(PORT_B, PIN_3);
+inline constexpr Pin PB4(PORT_B, PIN_4, AF2);
+inline constexpr Pin PB5(PORT_B, PIN_5, AF2);
+inline constexpr Pin PB6(PORT_B, PIN_6, AF1);
+inline constexpr Pin PB7(PORT_B, PIN_7, AF1);
+inline constexpr Pin PB8(PORT_B, PIN_8, AF1);
+inline constexpr Pin PB9(PORT_B, PIN_9, AF1);
+inline constexpr Pin PB10(PORT_B, PIN_10);
+inline constexpr Pin PB11(PORT_B, PIN_11);
+inline constexpr Pin PB12(PORT_B, PIN_12);
+inline constexpr Pin PB13(PORT_B, PIN_13, AF11);
+inline constexpr Pin PB14(PORT_B, PIN_14, AF2);
+inline constexpr Pin PB15(PORT_B, PIN_15, AF2);
+inline constexpr Pin PC0(PORT_C, PIN_0);
+inline constexpr Pin PC1(PORT_C, PIN_1, AF11);
+inline constexpr Pin PC2(PORT_C, PIN_2);
+inline constexpr Pin PC3(PORT_C, PIN_3);
+inline constexpr Pin PC4(PORT_C, PIN_4, AF11);
+inline constexpr Pin PC5(PORT_C, PIN_5, AF11);
+inline constexpr Pin PC6(PORT_C, PIN_6, AF3);
+inline constexpr Pin PC7(PORT_C, PIN_7, AF3);
+inline constexpr Pin PC8(PORT_C, PIN_8, AF2);
+inline constexpr Pin PC9(PORT_C, PIN_9, AF2);
+inline constexpr Pin PC10(PORT_C, PIN_10);
+inline constexpr Pin PC11(PORT_C, PIN_11);
+inline constexpr Pin PC12(PORT_C, PIN_12);
+inline constexpr Pin PC13(PORT_C, PIN_13);
+inline constexpr Pin PC14(PORT_C, PIN_14);
+inline constexpr Pin PC15(PORT_C, PIN_15);
+inline constexpr Pin PD0(PORT_D, PIN_0);
+inline constexpr Pin PD1(PORT_D, PIN_1);
+inline constexpr Pin PD2(PORT_D, PIN_2);
+inline constexpr Pin PD3(PORT_D, PIN_3);
+inline constexpr Pin PD4(PORT_D, PIN_4);
+inline constexpr Pin PD5(PORT_D, PIN_5, AF7);
+inline constexpr Pin PD6(PORT_D, PIN_6, AF7);
+inline constexpr Pin PD7(PORT_D, PIN_7);
+inline constexpr Pin PD8(PORT_D, PIN_8);
+inline constexpr Pin PD9(PORT_D, PIN_9);
+inline constexpr Pin PD10(PORT_D, PIN_10);
+inline constexpr Pin PD11(PORT_D, PIN_11);
+inline constexpr Pin PD12(PORT_D, PIN_12, AF2);
+inline constexpr Pin PD13(PORT_D, PIN_13, AF2);
+inline constexpr Pin PD14(PORT_D, PIN_14, AF2); 
+inline constexpr Pin PD15(PORT_D, PIN_15, AF2);
+inline constexpr Pin PE0(PORT_E, PIN_0);
+inline constexpr Pin PE1(PORT_E, PIN_1);
+inline constexpr Pin PE2(PORT_E, PIN_2);
+inline constexpr Pin PE3(PORT_E, PIN_3);
+inline constexpr Pin PE4(PORT_E, PIN_4, AF4);
+inline constexpr Pin PE5(PORT_E, PIN_5, AF4);
+inline constexpr Pin PE6(PORT_E, PIN_6, AF4);
+inline constexpr Pin PE7(PORT_E, PIN_7);
+inline constexpr Pin PE8(PORT_E, PIN_8, AF1);
+inline constexpr Pin PE9(PORT_E, PIN_9, AF1);
+inline constexpr Pin PE10(PORT_E, PIN_10, AF1);
+inline constexpr Pin PE11(PORT_E, PIN_11, AF1);
+inline constexpr Pin PE12(PORT_E, PIN_12, AF1);
+inline constexpr Pin PE13(PORT_E, PIN_13, AF1);
+inline constexpr Pin PE14(PORT_E, PIN_14, AF1);
+inline constexpr Pin PE15(PORT_E, PIN_15);
+inline constexpr Pin PF0(PORT_F, PIN_0, AF13);
+inline constexpr Pin PF1(PORT_F, PIN_1, AF13);
+inline constexpr Pin PF2(PORT_F, PIN_2, AF13);
+inline constexpr Pin PF3(PORT_F, PIN_3, AF13);
+inline constexpr Pin PF4(PORT_F, PIN_4);
+inline constexpr Pin PF5(PORT_F, PIN_5);
+inline constexpr Pin PF6(PORT_F, PIN_6);
+inline constexpr Pin PF7(PORT_F, PIN_7);
+inline constexpr Pin PF8(PORT_F, PIN_8);
+inline constexpr Pin PF9(PORT_F, PIN_9);
+inline constexpr Pin PF10(PORT_F, PIN_10);
+inline constexpr Pin PF11(PORT_F, PIN_11);
+inline constexpr Pin PF12(PORT_F, PIN_12);
+inline constexpr Pin PF13(PORT_F, PIN_13);
+inline constexpr Pin PF14(PORT_F, PIN_14);
+inline constexpr Pin PF15(PORT_F, PIN_15);
+inline constexpr Pin PG0(PORT_G, PIN_0);
+inline constexpr Pin PG1(PORT_G, PIN_1);
+inline constexpr Pin PG2(PORT_G, PIN_2);
+inline constexpr Pin PG3(PORT_G, PIN_3);
+inline constexpr Pin PG4(PORT_G, PIN_4);
+inline constexpr Pin PG5(PORT_G, PIN_5);
+inline constexpr Pin PG6(PORT_G, PIN_6);
+inline constexpr Pin PG7(PORT_G, PIN_7);
+inline constexpr Pin PG8(PORT_G, PIN_8);
+inline constexpr Pin PG9(PORT_G, PIN_9, AF2);
+inline constexpr Pin PG10(PORT_G, PIN_10, AF2);
+inline constexpr Pin PG11(PORT_G, PIN_11, AF11);
+inline constexpr Pin PG12(PORT_G, PIN_12);
+inline constexpr Pin PG13(PORT_G, PIN_13, AF11);
+inline constexpr Pin PG14(PORT_G, PIN_14);
+inline constexpr Pin PG15(PORT_G, PIN_15);
+inline constexpr Pin PH0(PORT_H, PIN_0);
+inline constexpr Pin PH1(PORT_H, PIN_1);
 
-const auto pinVector = std::to_array<reference_wrapper<Pin>>(
-    {PA0,  PA1,  PA10, PA11, PA12, PA9,  PB0,  PB1,  PB10, PB11, PB12,
-     PB13, PB14, PB15, PB2,  PB4,  PB5,  PB6,  PB7,  PB8,  PB9,  PC0,
-     PC1,  PC10, PC11, PC12, PC13, PC14, PC15, PC2,  PC3,  PC4,  PC5,
-     PC6,  PC7,  PC8,  PC9,  PD0,  PD1,  PD10, PD11, PD12, PD13, PD14,
-     PD15, PD2,  PD3,  PD4,  PD5,  PD6,  PD7,  PD8,  PD9,  PE0,  PE1,
-     PE10, PE11, PE12, PE13, PE14, PE15, PE2,  PE3,  PE4,  PE5,  PE6,
-     PE7,  PE8,  PE9,  PF0,  PF1,  PF10, PF11, PF12, PF13, PF14, PF15,
-     PF2,  PF3,  PF4,  PF5,  PF6,  PF7,  PF8,  PF9,  PG0,  PG1,  PG10,
-     PG11, PG12, PG13, PG14, PG15, PG2,  PG3,  PG4,  PG5,  PG6,  PG7,
-     PG8,  PG9,  PH0,  PH1,  PA2,  PA3,  PA4,  PA5,  PA6,  PA7,  PA8});
+
+inline constexpr std::array<const Pin*, 110> pinArray = {
+     &PA0,  &PA1,  &PA10, &PA11, &PA12, &PA9,  &PB0,  &PB1,  &PB10, &PB11, &PB12,
+     &PB13, &PB14, &PB15, &PB2,  &PB4,  &PB5,  &PB6,  &PB7,  &PB8,  &PB9,  &PC0,
+     &PC1,  &PC10, &PC11, &PC12, &PC13, &PC14, &PC15, &PC2,  &PC3,  &PC4,  &PC5,
+     &PC6,  &PC7,  &PC8,  &PC9,  &PD0,  &PD1,  &PD10, &PD11, &PD12, &PD13, &PD14,
+     &PD15, &PD2,  &PD3,  &PD4,  &PD5,  &PD6,  &PD7,  &PD8,  &PD9,  &PE0,  &PE1,
+     &PE10, &PE11, &PE12, &PE13, &PE14, &PE15, &PE2,  &PE3,  &PE4,  &PE5,  &PE6,
+     &PE7,  &PE8,  &PE9,  &PF0,  &PF1,  &PF10, &PF11, &PF12, &PF13, &PF14, &PF15,
+     &PF2,  &PF3,  &PF4,  &PF5,  &PF6,  &PF7,  &PF8,  &PF9,  &PG0,  &PG1,  &PG10,
+     &PG11, &PG12, &PG13, &PG14, &PG15, &PG2,  &PG3,  &PG4,  &PG5,  &PG6,  &PG7,
+     &PG8,  &PG9,  &PH0,  &PH1,  &PA2,  &PA3,  &PA4,  &PA5,  &PA6,  &PA7,  &PA8
+};

@@ -11,7 +11,7 @@
 #include "HALAL/Models/PinModel/Pin.hpp"
 #include "HALAL/Models/LowPowerTimer/LowPowerTimer.hpp"
 #include "HALAL/Models/DMA/DMA.hpp"
-
+#include "stm32h7xx_hal_adc.h"
 #if defined(HAL_ADC_MODULE_ENABLED) && defined(HAL_LPTIM_MODULE_ENABLED)
 
 using std::string;
@@ -26,6 +26,7 @@ using std::string;
 #define MAX_16BIT 65535.0
 
 #define MAX_ADC_INSTANCES 30
+
 
 /**
  * @brief A utility class that controls ADC inputs.
@@ -42,87 +43,47 @@ public:
 		ADC_TypeDef* adc;
 		uint32_t resolution;
 		uint32_t external_trigger;
-		vector<uint32_t> channels;
+		
 		DMA::Stream dma_stream;
-		string name;
 
-		InitData() = default;
-		InitData(ADC_TypeDef* adc, uint32_t resolution, uint32_t external_trigger, vector<uint32_t>& channels, DMA::Stream dma_stream, string name);
+		constexpr InitData() = default;
+		constexpr InitData(ADC_TypeDef* adc, uint32_t resolution,
+            uint32_t external_trigger,
+            DMA::Stream dma_stream)
+    : adc(adc),
+      resolution(resolution),
+      external_trigger(external_trigger),
+      dma_stream(dma_stream)
+	  {}
 	};
 
+	template<size_t T>
 	class Peripheral {
 	public:
+		array<bool,20> channels_active{false};
+		array<pair<Pin,uint8_t>,T>& pins_channel_available;
 		ADC_HandleTypeDef* handle;
 		uint16_t* dma_data_buffer;
 		LowPowerTimer timer;
 		InitData init_data;
 		bool is_on = false;
 
-		Peripheral() = default;
-		Peripheral(ADC_HandleTypeDef* handle, LowPowerTimer& timer, InitData& init_data);
+		constexpr Peripheral() = default;
+		constexpr Peripheral(ADC_HandleTypeDef* handle, LowPowerTimer& timer, InitData& init_data,array<pair<Pin,int>,T>& pins_channel_available);
 
 		bool is_registered();
 	};
 
 	class Instance {
 	public:
-		Peripheral* peripheral;
+		Peripheral<T>* peripheral;
 		uint32_t channel;
 		uint32_t rank;
 
 		Instance() = default;
-		Instance(Peripheral* peripheral, uint32_t channel);
+		Instance(Peripheral<T>* peripheral, uint32_t channel);
 	};
-	struct InscribeEntry{
-		Pin pin;
-		uint8_t id;
-		bool is_valid;
-		consteval InscribeEntry(): pin(), id(0), is_valid(false) {}
-		consteval InscribeEntry(Pin p,uint8_t i): pin(p), id(i), is_valid(true){}
-	};
-	struct InscriptionRegistry {
-		std::array<InscribeEntry, MAX_ADC_INSTANCES> entries;
-		uint8_t count;
-		
-		consteval InscriptionRegistry() : entries(), count(0) {}
-		
-		consteval uint8_t add(Pin pin) {
-			if (count >= MAX_ADC_INSTANCES) {
-				return 255;
-			}
-			
-			// Verificar si el pin ya está inscrito
-			for (uint8_t i = 0; i < count; ++i) {
-				if (entries[i].pin == pin) {
-					// Pin ya inscrito, retornar su ID
-					return entries[i].id;
-				}
-			}
-			
-			uint8_t new_id = count;
-			entries[count] = InscribeEntry(pin, new_id);
-			count++;
-			return new_id;
-		}
-		
-		consteval bool contains(Pin pin) const {
-			for (uint8_t i = 0; i < count; ++i) {
-				if (entries[i].is_valid && entries[i].pin == pin) {
-					return true;
-				}
-			}
-			return false;
-		}
-		
-		consteval uint8_t get_id(Pin pin) const {
-			for (uint8_t i = 0; i < count; ++i) {
-				if (entries[i].is_valid && entries[i].pin == pin) {
-					return entries[i].id;
-				}
-			}
-			return 255; // No encontrado
-		}
-	};
+	
 	
 	/**
 	 * @brief A method to add a pin as an ADC input on the ST-LIB.
@@ -135,10 +96,8 @@ public:
 	 *
 	 * @return the id that represents the ADC inside this utility class, used in all its functions.
 	 */
-	static InscriptionRegistry registry;
-	consteval static uint8_t inscribe(Pin pin);
-	static const InscriptionRegistry& get_registry() {
-		return registry;
+	consteval static uint8_t inscribe(Pin pin){
+			pin.inscribe<ANALOG>();
 	}
 
 	/**
@@ -199,7 +158,7 @@ public:
 	 */
 	static uint16_t* get_value_pointer(uint8_t id);
 
-	static Peripheral peripherals[3];
+	static Peripheral<T> peripherals[3];
 
 private:
 	static uint32_t ranks[16];
@@ -207,8 +166,13 @@ private:
 	static unordered_map<uint8_t, Instance> active_instances;
 	static uint8_t id_counter;
 
-	static void init(Peripheral& peripheral);
+	static void init(Peripheral<T>& peripheral);
 	static void initialize_from_registry();
 };
 
+inline constexpr array<pair<const Pin,uint8_t>,15> ADC3_pins_channels_availables = {
+std::make_pair(PF4,9), std::make_pair(PF5,4), std::make_pair(PF6,8), std::make_pair(PF4,9), std::make_pair(PF4,9), 
+std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9),
+std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9)
+};
 #endif

@@ -38,22 +38,6 @@ bool ADC::Peripheral::is_registered() { return init_data.channels.size(); }
 ADC::Instance::Instance(ADC::Peripheral* peripheral, uint32_t channel)
     : peripheral(peripheral), channel(channel) {}
 
-consteval uint8_t ADC::inscribe(Pin pin) {
-    // if (not available_instances.contains(pin)) {
-    //     static_assert("Pin is already used or isn t available for ADC usage");
-    //     return 0;
-    // }
-
-    	pin.inscribe(ANALOG);
-		return registry.add(pin);
-    // active_instances[id_counter] = available_instances[pin];
-
-    // InitData& init_data = active_instances[id_counter].peripheral->init_data;
-    // DMA::inscribe_stream(init_data.dma_stream);
-    // active_instances[id_counter].rank = init_data.channels.size();
-    // init_data.channels.push_back(active_instances[id_counter].channel);
-    // return id_counter++;
-}
 
 void ADC::start() {
     initialize_from_registry();
