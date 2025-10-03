@@ -66,7 +66,7 @@ public:
 		uint16_t* dma_data_buffer;
 		LowPowerTimer timer;
 		InitData init_data;
-		bool is_on = false;
+		uint8_t channels_in_use{0};
 
 		constexpr Peripheral() = default;
 		constexpr Peripheral(ADC_HandleTypeDef* handle, LowPowerTimer& timer, InitData& init_data,array<pair<Pin,int>,T>& pins_channel_available);
@@ -170,9 +170,22 @@ private:
 	static void initialize_from_registry();
 };
 
-inline constexpr array<pair<const Pin,uint8_t>,15> ADC3_pins_channels_availables = {
-std::make_pair(PF4,9), std::make_pair(PF5,4), std::make_pair(PF6,8), std::make_pair(PF4,9), std::make_pair(PF4,9), 
-std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9),
-std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9), std::make_pair(PF4,9)
+inline constexpr array<pair<const Pin,uint8_t>,12> ADC3_pins_channels_availables = {
+std::make_pair(PF3,5),std::make_pair(PF4,9), std::make_pair(PF5,4), std::make_pair(PF6,8), std::make_pair(PF7,3), 
+std::make_pair(PF8,7), std::make_pair(PF9,2), std::make_pair(PF10,6), std::make_pair(PC0,10), std::make_pair(PC1,11), 
+std::make_pair(PC2,0), std::make_pair(PC3,1)
+};//IT SAIS PC2 IN ADC3 CAN BE IN CHANEL 12 or channel 0
+
+inline constexpr array<pair<const Pin,uint8_t>,16> ADC2_pins_channels_availables = {
+std::make_pair(PC0,10), std::make_pair(PC1,11), std::make_pair(PC2,12), std::make_pair(PC3,13), std::make_pair(PA2,14), 
+std::make_pair(PA3,15), std::make_pair(PA4,18), std::make_pair(PA5,19), std::make_pair(PA6,3), std::make_pair(PC4,4),
+std::make_pair(PC5,8), std::make_pair(PA7,7), std::make_pair(PB1,5), std::make_pair(PF13,2),std::make_pair(PF14,6),
+std::make_pair(PB0,9)
+};
+inline constexpr array<pair<const Pin,uint8_t>,18> ADC1_pins_channels_availables = {
+std::make_pair(PA0,16),std::make_pair(PA1,17), std::make_pair(PC0,10), std::make_pair(PC1,11), std::make_pair(PC2,12),
+std::make_pair(PC3,13), std::make_pair(PA2,14), std::make_pair(PA3,15), std::make_pair(PA4,18), std::make_pair(PA5,19), 
+std::make_pair(PA6,3), std::make_pair(PC4,4),std::make_pair(PC5,8), std::make_pair(PA7,7), std::make_pair(PB1,5), 
+std::make_pair(PF11,2),std::make_pair(PF12,6),std::make_pair(PB0,9)
 };
 #endif
