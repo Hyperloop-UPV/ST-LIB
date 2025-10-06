@@ -75,7 +75,11 @@ enum class OperationMode {
 
 enum class PinState : uint8_t { OFF, ON };
 
-enum class TRIGGER : uint8_t { RISING_EDGE = 1, FAILING_EDGE = 0, BOTH_EDGES = 2 };
+enum class TRIGGER : uint8_t {
+    RISING_EDGE = 1,
+    FAILING_EDGE = 0,
+    BOTH_EDGES = 2
+};
 
 using enum GPIOPort;
 using enum GPIOPin;
@@ -85,35 +89,40 @@ class Pin;
 extern const std::array<const Pin*, 110> pinArray;
 
 class Pin {
-    private:
-        mutable GPIO_InitTypeDef GPIO_InitStruct{  // Configuration for OperationMode::Not used
-            .Mode = GPIO_MODE_INPUT,
-            .Pull = GPIO_PULLDOWN,
-        };
+   private:
+    mutable GPIO_InitTypeDef GPIO_InitStruct{
+        // Configuration for OperationMode::Not used
+        .Mode = GPIO_MODE_INPUT,
+        .Pull = GPIO_PULLDOWN,
+    };
+
    public:
     GPIOPort port;
     GPIOPin gpio_pin;
     OperationMode mode{OperationMode::NOT_USED};
     AlternativeFunction alternative_function;
-    
+
     // const map<GPIO_TypeDef*, const string> port_to_string;
     // const map<GPIOPin, const string> gpio_pin_to_string;
-    consteval Pin(){}
-    consteval Pin(GPIOPort port, GPIOPin pin):
-        port(port),
-        gpio_pin(pin),
-        alternative_function(AlternativeFunction::NO_AF){}
-    consteval Pin(GPIOPort port, GPIOPin pin, AlternativeFunction alternative_function): 
-        port(port),
-        gpio_pin(pin),
-        alternative_function(alternative_function){}
+    consteval Pin() {}
+    consteval Pin(GPIOPort port, GPIOPin pin)
+        : port(port),
+          gpio_pin(pin),
+          alternative_function(AlternativeFunction::NO_AF) {}
+    consteval Pin(GPIOPort port, GPIOPin pin,
+                  AlternativeFunction alternative_function)
+        : port(port),
+          gpio_pin(pin),
+          alternative_function(alternative_function) {}
 
     const string to_string() const;
-    template<OperationMode m>
-    constexpr void inscribe() {
-        static_assert(!(m == OperationMode::NOT_USED),"Pin is already registered, cannot register twice");
-        static_assert(!(m == ALTERNATIVE && alternative_function == AlternativeFunction::NO_AF), 
-            "You can't use that pin for Alternative");
+    template <OperationMode m>
+    constexpr void inscribe() const {
+        static_assert(!(m == OperationMode::NOT_USED),
+                      "Pin is already registered, cannot register twice");
+        static_assert(!(m == ALTERNATIVE &&
+                        alternative_function == AlternativeFunction::NO_AF),
+                      "You can't use that pin for Alternative");
         mode = m;
         GPIO_InitStruct.Pin = static_cast<uint32_t>(gpio_pin);
         switch (mode) {
@@ -147,11 +156,12 @@ class Pin {
                 GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-                GPIO_InitStruct.Alternate = static_cast<uint32_t>(alternative_function);
+                GPIO_InitStruct.Alternate =
+                    static_cast<uint32_t>(alternative_function);
                 break;
 
             default:
-            break;
+                break;
         }
     }
     void start();
@@ -166,17 +176,26 @@ class Pin {
     }
 };
 inline GPIO_TypeDef* getGPIO(GPIOPort port) {
-        switch(port) {
-            case GPIOPort::PORT_A: return GPIOA;
-            case GPIOPort::PORT_B: return GPIOB;
-            case GPIOPort::PORT_C: return GPIOC;
-            case GPIOPort::PORT_D: return GPIOD;
-            case GPIOPort::PORT_E: return GPIOE;
-            case GPIOPort::PORT_F: return GPIOF;
-            case GPIOPort::PORT_G: return GPIOG;
-            case GPIOPort::PORT_H: return GPIOH;
-            default: return nullptr; 
-        }
+    switch (port) {
+        case GPIOPort::PORT_A:
+            return GPIOA;
+        case GPIOPort::PORT_B:
+            return GPIOB;
+        case GPIOPort::PORT_C:
+            return GPIOC;
+        case GPIOPort::PORT_D:
+            return GPIOD;
+        case GPIOPort::PORT_E:
+            return GPIOE;
+        case GPIOPort::PORT_F:
+            return GPIOF;
+        case GPIOPort::PORT_G:
+            return GPIOG;
+        case GPIOPort::PORT_H:
+            return GPIOH;
+        default:
+            return nullptr;
+    }
 }
 namespace std {
 template <>
@@ -255,7 +274,7 @@ inline constexpr Pin PD10(PORT_D, PIN_10);
 inline constexpr Pin PD11(PORT_D, PIN_11);
 inline constexpr Pin PD12(PORT_D, PIN_12, AF2);
 inline constexpr Pin PD13(PORT_D, PIN_13, AF2);
-inline constexpr Pin PD14(PORT_D, PIN_14, AF2); 
+inline constexpr Pin PD14(PORT_D, PIN_14, AF2);
 inline constexpr Pin PD15(PORT_D, PIN_15, AF2);
 inline constexpr Pin PE0(PORT_E, PIN_0);
 inline constexpr Pin PE1(PORT_E, PIN_1);
@@ -308,16 +327,14 @@ inline constexpr Pin PG15(PORT_G, PIN_15);
 inline constexpr Pin PH0(PORT_H, PIN_0);
 inline constexpr Pin PH1(PORT_H, PIN_1);
 
-
 inline constexpr std::array<const Pin*, 110> pinArray = {
-     &PA0,  &PA1,  &PA10, &PA11, &PA12, &PA9,  &PB0,  &PB1,  &PB10, &PB11, &PB12,
-     &PB13, &PB14, &PB15, &PB2,  &PB4,  &PB5,  &PB6,  &PB7,  &PB8,  &PB9,  &PC0,
-     &PC1,  &PC10, &PC11, &PC12, &PC13, &PC14, &PC15, &PC2,  &PC3,  &PC4,  &PC5,
-     &PC6,  &PC7,  &PC8,  &PC9,  &PD0,  &PD1,  &PD10, &PD11, &PD12, &PD13, &PD14,
-     &PD15, &PD2,  &PD3,  &PD4,  &PD5,  &PD6,  &PD7,  &PD8,  &PD9,  &PE0,  &PE1,
-     &PE10, &PE11, &PE12, &PE13, &PE14, &PE15, &PE2,  &PE3,  &PE4,  &PE5,  &PE6,
-     &PE7,  &PE8,  &PE9,  &PF0,  &PF1,  &PF10, &PF11, &PF12, &PF13, &PF14, &PF15,
-     &PF2,  &PF3,  &PF4,  &PF5,  &PF6,  &PF7,  &PF8,  &PF9,  &PG0,  &PG1,  &PG10,
-     &PG11, &PG12, &PG13, &PG14, &PG15, &PG2,  &PG3,  &PG4,  &PG5,  &PG6,  &PG7,
-     &PG8,  &PG9,  &PH0,  &PH1,  &PA2,  &PA3,  &PA4,  &PA5,  &PA6,  &PA7,  &PA8
-};
+    &PA0,  &PA1,  &PA10, &PA11, &PA12, &PA9,  &PB0,  &PB1,  &PB10, &PB11, &PB12,
+    &PB13, &PB14, &PB15, &PB2,  &PB4,  &PB5,  &PB6,  &PB7,  &PB8,  &PB9,  &PC0,
+    &PC1,  &PC10, &PC11, &PC12, &PC13, &PC14, &PC15, &PC2,  &PC3,  &PC4,  &PC5,
+    &PC6,  &PC7,  &PC8,  &PC9,  &PD0,  &PD1,  &PD10, &PD11, &PD12, &PD13, &PD14,
+    &PD15, &PD2,  &PD3,  &PD4,  &PD5,  &PD6,  &PD7,  &PD8,  &PD9,  &PE0,  &PE1,
+    &PE10, &PE11, &PE12, &PE13, &PE14, &PE15, &PE2,  &PE3,  &PE4,  &PE5,  &PE6,
+    &PE7,  &PE8,  &PE9,  &PF0,  &PF1,  &PF10, &PF11, &PF12, &PF13, &PF14, &PF15,
+    &PF2,  &PF3,  &PF4,  &PF5,  &PF6,  &PF7,  &PF8,  &PF9,  &PG0,  &PG1,  &PG10,
+    &PG11, &PG12, &PG13, &PG14, &PG15, &PG2,  &PG3,  &PG4,  &PG5,  &PG6,  &PG7,
+    &PG8,  &PG9,  &PH0,  &PH1,  &PA2,  &PA3,  &PA4,  &PA5,  &PA6,  &PA7,  &PA8};
