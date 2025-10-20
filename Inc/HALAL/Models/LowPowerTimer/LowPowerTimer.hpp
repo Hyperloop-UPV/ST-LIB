@@ -21,15 +21,14 @@ using std::string;
 
 class LowPowerTimer {
 public:
-	LPTIM_TypeDef& instance;
+	uintptr_t instance;
 	LPTIM_HandleTypeDef& handle;
 	uint16_t period;
-	string name;
+	const char* name;
 
-	LowPowerTimer() = default;
-	LowPowerTimer(LPTIM_TypeDef& instance, LPTIM_HandleTypeDef& handle, uint16_t period, string name) :
-		instance(instance), handle(handle), period(period), name(name) {};
-
+	constexpr LowPowerTimer() = default;
+	constexpr LowPowerTimer(uintptr_t instance, LPTIM_HandleTypeDef& handle, uint16_t period, const char* name) :
+		instance(instance), handle(handle), period(period), name(name) {}
 	void init();
 };
 

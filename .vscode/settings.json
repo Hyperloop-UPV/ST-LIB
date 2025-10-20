@@ -98,6 +98,7 @@
       "typeinfo": "cpp",
       "valarray": "cpp",
       "variant": "cpp"
-    }
+    },
+    "idf.pythonInstallPath": "/usr/bin/python"
   }
   

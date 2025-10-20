@@ -10,11 +10,11 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "stm32h7xx_hal.h"
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
-
-
+#include <cassert>
+#define MAX_NUM_STREAMS 15
 class DMA {
 public:
-	enum Stream : uint8_t {
+	enum class Stream : uint8_t {
 		DMA1Stream0 = 11,
 		DMA1Stream1 = 12,
 		DMA1Stream2 = 13,
@@ -32,11 +32,34 @@ public:
 		DMA2Stream7 = 70,
 	};
 
-	static void inscribe_stream();
-	static void inscribe_stream(Stream dma_stream);
+void static  inline constexpr  inscribe_stream() {
+	for (int i = 0; i < MAX_NUM_STREAMS; i++) {
+		if (available_streams[i] == true) {
+			available_streams[i] = false;
+			return;
+		}
+	}
+	assert(false); // No DMA_Stream available
+}
+void static inline consteval inscribe_stream(Stream dma_stream) {
+		for(int i = 0; i < MAX_NUM_STREAMS; i++){
+			if(streams[i] == dma_stream && available_streams[i] == true){
+				available_streams[i] = false;
+				return;
+			}else{
+				break;
+			}
+		}
+		assert(false) //The DMA_STREAM that you want is not available;
+}
 	static void start();
 
 private:
-	static vector<Stream> available_streams;
-	static vector<Stream> inscribed_streams;
+	static   std::array<bool,MAX_NUM_STREAMS> available_streams{true};
+	static  constexpr std::array<Stream, 15> streams = {
+    Stream::DMA1Stream0, Stream::DMA1Stream1, Stream::DMA1Stream2, Stream::DMA1Stream3,
+    Stream::DMA1Stream4, Stream::DMA1Stream5, Stream::DMA1Stream6,
+    Stream::DMA2Stream0, Stream::DMA2Stream1, Stream::DMA2Stream2, Stream::DMA2Stream3,
+    Stream::DMA2Stream4, Stream::DMA2Stream5, Stream::DMA2Stream6, Stream::DMA2Stream7
+	};
 };
