@@ -18,6 +18,8 @@
 
 
 // We only have 6 peripherals using DMA for now, the new ssd will need to be added later here
+
+//The problem here is that this handles are defined in runes.cpp, so maybe we should declare this here? Idk
 extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_adc2;
 extern DMA_HandleTypeDef hdma_adc3;
@@ -79,6 +81,7 @@ public:
 	template<typename T>
 	void static inline constexpr  inscribe_stream(T* handle,Peripheral_type peripheral_type) 
 	{
+		Instance<T> instance;
 		static_assert(is_variant_member<Instance<T>, MyInstanceVariant>::value,
 		"Handle Type not allowed on DMA::inscribe_stream");
 		assert(handle != nullptr);
@@ -89,7 +92,6 @@ public:
 		{
 			case Peripheral_type::Adc1:
 			    static_assert(handle->Instance == ADC1, "Handle passed to DMA::inscribe_stream does not match Peripheral_type::Adc1");
-			    Instance<T> instance;
 				instance.handle = handle;
 				hdma_adc1.Instance = DMA1_Stream0;
 				hdma_adc1.Init.Request = DMA_REQUEST_ADC1;
@@ -111,7 +113,6 @@ public:
 
 			case Peripheral_type::Adc2:
 				static_assert(handle->Instance == ADC2, "Handle passed to DMA::inscribe_stream does not match Peripheral_type::Adc2");
-				Instance<T> instance;
 				instance.handle = handle;
 				hdma_adc2.Instance = DMA1_Stream1;
 				hdma_adc2.Init.Request = DMA_REQUEST_ADC2;
@@ -133,7 +134,6 @@ public:
 
 			case Peripheral_type::Adc3:
 				static_assert(handle->Instance == ADC3, "Handle passed to DMA::inscribe_stream does not match Peripheral_type::Adc3");
-				Instance<T> instance;
 				instance.handle = handle;
 				hdma_adc3.Instance = DMA1_Stream2;
 				hdma_adc3.Init.Request = DMA_REQUEST_ADC3;
@@ -155,7 +155,6 @@ public:
 
 			case Peripheral_type::I2c2:
 				static_assert(handle->Instance == I2C2, "Handle passed to DMA::inscribe_stream does not match Peripheral_type::I2c2");
-				Instance<T> instance;
 				instance.handle = handle;
 				hdma_i2c2_rx.Instance = DMA1_Stream3;
 				hdma_i2c2_rx.Init.Request = DMA_REQUEST_I2C2_RX;
@@ -195,7 +194,6 @@ public:
 
 			case Peripheral_type::Fmac:
 				static_assert(handle->Instance == FMAC, "Handle passed to DMA::inscribe_stream does not match Peripheral_type::Fmac");
-				Instance<T> instance;
 				hdma_fmac_preload.Instance = DMA2_Stream0;
 				hdma_fmac_preload.Init.Request = DMA_REQUEST_MEM2MEM;
 				hdma_fmac_preload.Init.Direction = DMA_MEMORY_TO_MEMORY;
@@ -249,7 +247,6 @@ public:
 
 			case Peripheral_type::Spi3:
 				static_assert(handle->Instance == SPI3, "Handle passed to DMA::inscribe_stream does not match Peripheral_type::Spi3");
-				Instance<T> instance;
 				hdma_spi3_rx.Instance = DMA1_Stream5;
 				hdma_spi3_rx.Init.Request = DMA_REQUEST_SPI3_RX;
 				hdma_spi3_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
