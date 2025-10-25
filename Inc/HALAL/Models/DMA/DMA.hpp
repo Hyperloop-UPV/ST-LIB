@@ -14,21 +14,18 @@
 #include <cassert>
 #include <variant>
 #define MAX_STREAMS 16
-
-
-// We only have 6 peripherals using DMA for now, the new ssd will need to be added later here
-
+#define STREAMS_USED 10
 
 class DMA {
 public:
 	template<typename T>
 	struct Peripheral_type_instance {
+        T* handle;
 		DMA_HandleTypeDef* dma_handle;
 		DMA_HandleTypeDef* global_handle;
-		T* handle;
-		Stream stream; // Maybe dejar IRQn type?
-		
+		IRQn_Type irqn; 
 	};
+
 	//To allow the array to be multiple types, idk first thing that came to mind
 	using InstanceList = std::variant<
 		Peripheral_type_instance<ADC_HandleTypeDef>,
@@ -37,13 +34,23 @@ public:
 		Peripheral_type_instance<SPI_HandleTypeDef>
 	>;
 
-	template<typename T>
-	void static inline constexpr inscribe_stream(T* handle);
+    constexpr void inscribe_stream_adc(ADC_HandleTypeDef* handle, DMA_Stream_TypeDef* stream);
+
+    constexpr void inscribe_stream_i2c(I2C_HandleTypeDef* handle, DMA_Stream_TypeDef* stream_rx, DMA_Stream_TypeDef* stream_tx);
+
+    constexpr void inscribe_stream_spi(SPI_HandleTypeDef* handle, DMA_Stream_TypeDef* stream_rx, DMA_Stream_TypeDef* stream_tx);
+
+    constexpr void inscribe_stream_fmac(FMAC_HandleTypeDef* handle, DMA_Stream_TypeDef* stream_preload, DMA_Stream_TypeDef* stream_read, DMA_Stream_TypeDef* stream_write);
+
+    
+
+    constexpr uint32_t get_dma_request(const void* instance, const bool mode);
+
+    constexpr IRQn_Type get_irqn(const DMA_Stream_TypeDef* stream);
 
 	static void start();
 
 private:
 	inline static constinit uint8_t inscribed_index = 0;
 	inline static constinit std::array<InstanceList, MAX_STREAMS> inscribed_streams{};
-
 };
