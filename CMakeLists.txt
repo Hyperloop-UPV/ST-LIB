@@ -184,7 +184,7 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-specs=nosys.specs>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-ffunction-sections>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fdata-sections>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fno-exceptions>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fexceptions>
   
   -Wno-psabi
   

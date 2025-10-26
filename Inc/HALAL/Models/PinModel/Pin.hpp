@@ -120,9 +120,12 @@
         constexpr void inscribe() const {
             static_assert(!(m == OperationMode::NOT_USED),
                         "Pin is already registered, cannot register twice");
-            static_assert(!(m == ALTERNATIVE &&
-                            alternative_function == AlternativeFunction::NO_AF),
-                        "You can't use that pin for Alternative");
+            if(m == OperationMode::ALTERNATIVE && alternative_function == AlternativeFunction::NO_AF){
+                    throw "You can't use that pin for Alternative";
+            }
+            // static_assert(!(m == ALTERNATIVE &&
+            //                 alternative_function == AlternativeFunction::NO_AF),
+            //             "You can't use that pin for Alternative");
             mode = m;
             GPIO_InitStruct.Pin = static_cast<uint32_t>(gpio_pin);
             switch (mode) {
@@ -163,7 +166,7 @@
                     break;
             }
         }
-        void start();
+        void static start();
 
         bool operator==(const Pin& other) const {
             return (gpio_pin == other.gpio_pin && port == other.port);
