@@ -34,23 +34,27 @@ public:
 		Peripheral_type_instance<SPI_HandleTypeDef>
 	>;
 
-    constexpr void inscribe_stream_adc(ADC_HandleTypeDef* handle, DMA_Stream_TypeDef* stream);
+    static constexpr void inscribe_stream_adc(ADC_HandleTypeDef* handle, DMA_Stream_TypeDef* stream);
 
-    constexpr void inscribe_stream_i2c(I2C_HandleTypeDef* handle, DMA_Stream_TypeDef* stream_rx, DMA_Stream_TypeDef* stream_tx);
+    static constexpr void inscribe_stream_i2c(I2C_HandleTypeDef* handle, DMA_Stream_TypeDef* stream_rx, DMA_Stream_TypeDef* stream_tx);
 
-    constexpr void inscribe_stream_spi(SPI_HandleTypeDef* handle, DMA_Stream_TypeDef* stream_rx, DMA_Stream_TypeDef* stream_tx);
+    static constexpr void inscribe_stream_spi(SPI_HandleTypeDef* handle, DMA_Stream_TypeDef* stream_rx, DMA_Stream_TypeDef* stream_tx);
 
-    constexpr void inscribe_stream_fmac(FMAC_HandleTypeDef* handle, DMA_Stream_TypeDef* stream_preload, DMA_Stream_TypeDef* stream_read, DMA_Stream_TypeDef* stream_write);
+    static constexpr void inscribe_stream_fmac(FMAC_HandleTypeDef* handle, DMA_Stream_TypeDef* stream_preload, DMA_Stream_TypeDef* stream_read, DMA_Stream_TypeDef* stream_write);
 
-    
 
-    constexpr uint32_t get_dma_request(const void* instance, const bool mode);
+    template<typename T, typename... Streams>
+    constexpr void inscribe_stream(T* handle, Streams*... streams);
 
-    constexpr IRQn_Type get_irqn(const DMA_Stream_TypeDef* stream);
+
+    static constexpr uint32_t get_dma_request(const void* instance, const bool mode);
+
+    static constexpr IRQn_Type get_irqn(const DMA_Stream_TypeDef* stream);
 
 	static void start();
 
 private:
 	inline static constinit uint8_t inscribed_index = 0;
 	inline static constinit std::array<InstanceList, MAX_STREAMS> inscribed_streams{};
+    inline static DMA_HandleTypeDef dma_handles[MAX_STREAMS];
 };
