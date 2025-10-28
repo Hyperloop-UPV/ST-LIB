@@ -109,16 +109,16 @@ void Ethernet::start(MAC local_mac, IPV4 local_ip, IPV4 subnet_mask, IPV4 gatewa
 
 void Ethernet::inscribe(){
 	if(!is_ready){
-		Pin::inscribe(PA1, ALTERNATIVE);
-		Pin::inscribe(PA2, ALTERNATIVE);
-		Pin::inscribe(PA7, ALTERNATIVE);
-		Pin::inscribe(PB13, ALTERNATIVE);
-		Pin::inscribe(PC1, ALTERNATIVE);
-		Pin::inscribe(PC4, ALTERNATIVE);
-		Pin::inscribe(PC5, ALTERNATIVE);
-		Pin::inscribe(PG11, ALTERNATIVE);
-		Pin::inscribe(PG0, ALTERNATIVE);
-		Pin::inscribe(PG13, ALTERNATIVE);
+		PA1.inscribe<ALTERNATIVE>();
+		PA2.inscribe<ALTERNATIVE>();
+		PA7.inscribe<ALTERNATIVE>();
+		PB13.inscribe<ALTERNATIVE>();
+		PC1.inscribe<ALTERNATIVE>();
+		PC4.inscribe<ALTERNATIVE>();
+		PC5.inscribe<ALTERNATIVE>();
+		PG11.inscribe<ALTERNATIVE>();
+		PG0.inscribe<ALTERNATIVE>();
+		PG13.inscribe<ALTERNATIVE>();
 		is_ready = true;
 	}else{
 		ErrorHandler("Unable to inscribe Ethernet because is already ready!");

@@ -1,6 +1,6 @@
 #include "Sensors/LookupSensor/LookupSensor.hpp"
 #include "Sensors/Sensor/Sensor.hpp"
-
+#ifdef LOOKUP_SENSOR_
 
 LookupSensor::LookupSensor(Pin &pin, double *table, int table_size, double *value) : table(table), table_size(table_size), value(value){
 	id = ADC::inscribe(pin);
@@ -23,3 +23,4 @@ void LookupSensor::read(){
 uint8_t LookupSensor::get_id(){
 	return id;
 }
+#endif

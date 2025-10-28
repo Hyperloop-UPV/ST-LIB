@@ -1,7 +1,7 @@
 #pragma once
 #include "LinearSensor.hpp"
 #include "Control/Blocks/MovingAverage.hpp"
-
+#ifdef FILTEREDLinearSensor_
 template<class Type,size_t N>
 class FilteredLinearSensor : public LinearSensor<Type>{
 	MovingAverage<N>& filter;
@@ -21,4 +21,5 @@ template<class Type,size_t N>
 FilteredLinearSensor(Pin& pin, Type slope, Type offset, Type* value, MovingAverage<N>& filter)->FilteredLinearSensor<Type,N>;
 template<class Type,size_t N>
 FilteredLinearSensor(Pin& pin, Type slope, Type offset, Type& value, MovingAverage<N>& filter)->FilteredLinearSensor<Type,N>;
+#endif
 #endif

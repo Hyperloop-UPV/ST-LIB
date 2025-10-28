@@ -24,8 +24,8 @@ DualPWM::DualPWM(Pin& pin, Pin& pin_negated) {
 		ErrorHandler("Pins %s and %s are not registered as a DUAL PWM", pin.to_string(), pin_negated.to_string());
 	}
 
-	Pin::inscribe(pin, TIMER_ALTERNATE_FUNCTION);
-	Pin::inscribe(pin_negated, TIMER_ALTERNATE_FUNCTION);
+	pin.inscribe<TIMER_ALTERNATE_FUNCTION>();
+    pin_negated.inscribe<TIMER_ALTERNATE_FUNCTION>();
 	timer.init_data.pwm_channels.push_back(pwm_data);
 
 	duty_cycle = 0;

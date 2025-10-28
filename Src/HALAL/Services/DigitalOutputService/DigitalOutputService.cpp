@@ -8,12 +8,12 @@
 #include "HALAL/Services/DigitalOutputService/DigitalOutputService.hpp"
 
 #include "ErrorHandler/ErrorHandler.hpp"
-
+#ifdef DIGITALOUTPUT
 uint8_t DigitalOutputService::id_counter = 0;
 map<uint8_t, Pin> DigitalOutputService::service_ids = {};
 
 uint8_t DigitalOutputService::inscribe(Pin& pin) {
-    Pin::inscribe(pin, OUTPUT);
+    pin.inscribe<OUTPUT>();
     DigitalOutputService::service_ids[id_counter] = pin;
     return id_counter++;
 }
@@ -69,3 +69,5 @@ bool DigitalOutputService::lock_pin_state(uint8_t id, PinState state) {
     HAL_StatusTypeDef locked = HAL_GPIO_LockPin(pin.port, pin.gpio_pin);
     return locked == HAL_OK;
 }
+
+#endif

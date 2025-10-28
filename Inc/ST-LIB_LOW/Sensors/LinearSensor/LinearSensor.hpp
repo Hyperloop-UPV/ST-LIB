@@ -9,7 +9,7 @@
 #include "HALAL/HALAL.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "Sensors/Sensor/Sensor.hpp"
-
+#ifdef LinearSensor_
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
 class LinearSensor {
@@ -93,3 +93,4 @@ template <class Type>
 Type *LinearSensor<Type>::get_value_pointer() const {
     return value;
 }
+#endif

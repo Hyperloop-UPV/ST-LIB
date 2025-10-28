@@ -6,7 +6,7 @@
  */
 
 #include "HALAL/Services/FMAC/FMAC.hpp"
-
+#ifdef FMAC_
 MultiplierAccelerator::FMACMemoryLayout MultiplierAccelerator::MemoryLayout;
 MultiplierAccelerator::FMACProcessInstance MultiplierAccelerator::Process;
 
@@ -169,3 +169,4 @@ void HAL_FMAC_ErrorCallback(FMAC_HandleTypeDef *hfmac){
 }
 
 
+#endif

@@ -6,7 +6,7 @@
  */
 
 #include "HALAL/Services/InfoWarning/InfoWarning.hpp"
-
+#ifdef INFOWARNING_
 string InfoWarning::description = "Error-No-Description-Found";
 string InfoWarning::line = "Error-No-Line-Found";
 string InfoWarning::func = "Error-No-Func-Found";
@@ -59,3 +59,4 @@ void InfoWarning::InfoWarningUpdate(){
 
 }
 
+#endif

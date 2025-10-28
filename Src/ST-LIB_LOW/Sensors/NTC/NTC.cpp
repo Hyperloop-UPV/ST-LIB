@@ -1,5 +1,5 @@
 #include "Sensors/NTC/NTC.hpp"
-
+#ifdef NTC_
 NTC::NTC(Pin &pin,float *src):value(src){
     id = ADC::inscribe(pin);
 
@@ -22,3 +22,4 @@ void NTC::read() {
 
     
 }
+#endif

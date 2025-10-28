@@ -8,7 +8,7 @@
 #include "HALAL/Services/EXTI/EXTI.hpp"
 
 #include "ErrorHandler/ErrorHandler.hpp"
-
+#ifdef EXTERNAL_INTERRUPT
 uint8_t ExternalInterrupt::id_counter = 0;
 map<uint8_t, Pin> ExternalInterrupt::service_ids = {};
 
@@ -72,3 +72,4 @@ bool ExternalInterrupt::get_pin_value(uint8_t id) {
     Pin& pin = service_ids[id];
     return HAL_GPIO_ReadPin(pin.port, pin.gpio_pin);
 }
+#endif 

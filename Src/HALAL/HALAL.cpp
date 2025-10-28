@@ -48,7 +48,7 @@ void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 #endif
 
 #ifdef HAL_ADC_MODULE_ENABLED
-    ADC::start();
+    ADC_Peripherals::start();
 #endif
 
 #ifdef HAL_I2C_MODULE_ENABLED

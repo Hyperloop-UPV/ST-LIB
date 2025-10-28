@@ -6,12 +6,12 @@
  */
 
 #include "HALAL/Services/DigitalInputService/DigitalInputService.hpp"
-
+#ifdef DIGITAL_INPUT
 uint8_t DigitalInput::id_counter = 0;
 map<uint8_t,Pin> DigitalInput::service_ids = {};
 
 uint8_t DigitalInput::inscribe(Pin& pin){
-		Pin::inscribe(pin, INPUT);
+		pin.inscribe<INPUT>();
 		DigitalInput::service_ids[id_counter] = pin;
 		return id_counter++;
 }
@@ -25,3 +25,4 @@ PinState DigitalInput::read_pin_state(uint8_t id){
 	Pin pin = DigitalInput::service_ids[id];
 	return (PinState)HAL_GPIO_ReadPin(pin.port, pin.gpio_pin);
 }
+#endif

@@ -28,7 +28,7 @@ public:
 	static map<uint16_t, Instance> instances;
 	static uint8_t id_counter;
 
-	static uint8_t inscribe(Pin& pin, function<void()>&& action, TRIGGER trigger=RISING_EDGE);
+	static uint8_t inscribe(Pin& pin, function<void()>&& action, TRIGGER trigger=TRIGGER::RISING_EDGE);
 	static void start();
 	static void turn_on(uint8_t id);
 	static void turn_off(uint8_t id);

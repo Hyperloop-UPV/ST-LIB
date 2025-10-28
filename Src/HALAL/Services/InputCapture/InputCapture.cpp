@@ -6,7 +6,7 @@
  */
 #include "HALAL/Services/InputCapture/InputCapture.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-
+#ifdef INPUT_CAPTURE_
 uint8_t InputCapture::id_counter = 0;
 map<uint8_t, InputCapture::Instance> InputCapture::active_instances = {};
 static map<uint32_t, uint32_t> channel_dict = {
@@ -132,4 +132,4 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
 }
 
-
+#endif

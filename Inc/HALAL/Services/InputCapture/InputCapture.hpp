@@ -22,8 +22,7 @@ public:
 		uint32_t channel_falling;
 		uint32_t frequency;
 		uint8_t duty_cycle;
-
-		Instance() = default;
+		
 		Instance(Pin& pin, TimerPeripheral* peripheral, uint32_t channel_rising, uint32_t channel_falling);
 	};
 

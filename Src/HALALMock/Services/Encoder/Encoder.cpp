@@ -4,7 +4,7 @@
  *  Created on: 27 oct. 2022
  *      Author: Pablo
  */
-
+#ifdef ENCODER_
 #include "HALALMock/Services/Encoder/Encoder.hpp"
 #include <iostream>
 
@@ -107,3 +107,4 @@ int64_t Encoder::get_delta_clock(uint64_t clock_time, uint64_t last_clock_time){
 		int64_t delta_clock = clock_time - last_clock_time;
 		return delta_clock;
 	}
+#endif

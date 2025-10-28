@@ -8,7 +8,7 @@
 #include "HALAL/Services/Encoder/Encoder.hpp"
 
 #ifdef HAL_TIM_MODULE_ENABLED
-
+#ifdef ENCODER_
 map<uint8_t, pair<Pin, Pin>> Encoder::registered_encoder = {};
 
 uint8_t Encoder::id_counter = 0;
@@ -22,9 +22,8 @@ uint8_t Encoder::inscribe(Pin& pin1, Pin& pin2) {
             pin1.to_string().c_str(), pin2.to_string().c_str());
         return 0;
     }
-
-    Pin::inscribe(pin1, ALTERNATIVE);
-    Pin::inscribe(pin2, ALTERNATIVE);
+    pin1.inscribe<ALTERNATIVE>();
+    pin2.inscribe<ALTERNATIVE>();
 
     uint8_t id = ++Encoder::id_counter;
     Encoder::registered_encoder[id] = doublepin;
@@ -153,4 +152,5 @@ int64_t Encoder::get_delta_clock(uint64_t clock_time,
     return delta_clock;
 }
 
+#endif
 #endif

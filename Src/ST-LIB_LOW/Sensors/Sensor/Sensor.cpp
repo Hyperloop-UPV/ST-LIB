@@ -1,5 +1,5 @@
 #include "Sensors/Sensor/Sensor.hpp"
-
+#ifdef SENSOR_
 vector<uint8_t> Sensor::adc_id_list{};
 vector<uint8_t> Sensor::EXTI_id_list{};
 vector<uint8_t> Sensor::inputcapture_id_list{};
@@ -18,3 +18,4 @@ void Sensor::start(){
 	}
 
 }
+#endif

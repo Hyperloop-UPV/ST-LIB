@@ -21,8 +21,8 @@ uint8_t UART::inscribe(UART::Peripheral& uart){
 
 	UART::Instance*	uart_instance = UART::available_uarts[uart];
 
-    Pin::inscribe(uart_instance->TX, ALTERNATIVE);
-    Pin::inscribe(uart_instance->RX, ALTERNATIVE);
+   // Pin::inscribe(uart_instance->TX, ALTERNATIVE);
+   // Pin::inscribe(uart_instance->RX, ALTERNATIVE);
 
     uint8_t id = UART::id_counter++;
 

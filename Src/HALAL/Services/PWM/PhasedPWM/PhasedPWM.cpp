@@ -27,8 +27,7 @@ PhasedPWM::PhasedPWM(Pin& pin) {
 
 	peripheral = &timer;
 	channel = pwm_data.channel;
-
-	Pin::inscribe(pin, TIMER_ALTERNATE_FUNCTION);
+	pin.inscribe<TIMER_ALTERNATE_FUNCTION>();
 	timer.init_data.pwm_channels.push_back(pwm_data);
 
 	duty_cycle = 0;

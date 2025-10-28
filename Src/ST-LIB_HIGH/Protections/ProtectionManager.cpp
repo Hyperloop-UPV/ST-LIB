@@ -1,7 +1,7 @@
 #include "Protections/ProtectionManager.hpp"
 
 #include "Protections/Notification.hpp"
-
+#ifdef ProtectionManager_
 StateMachine* ProtectionManager::general_state_machine = nullptr;
 Notification ProtectionManager::fault_notification = {
     ProtectionManager::fault_id, nullptr};
@@ -155,3 +155,5 @@ char* ProtectionManager::message = nullptr;
 ProtectionManager::state_id ProtectionManager::fault_state_id = 255;
 vector<Protection> ProtectionManager::low_frequency_protections = {};
 vector<Protection> ProtectionManager::high_frequency_protections = {};
+
+#endif
