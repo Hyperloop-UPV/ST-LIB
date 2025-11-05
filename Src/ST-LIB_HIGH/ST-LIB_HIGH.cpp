@@ -8,5 +8,5 @@
 #include "ST-LIB_HIGH.hpp"
 
 void STLIB_HIGH::start() {
-	ProtectionManager::add_standard_protections();
+	//ProtectionManager::add_standard_protections();
 }

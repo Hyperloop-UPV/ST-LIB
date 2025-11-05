@@ -8,5 +8,5 @@
 #include "ST-LIB_LOW.hpp"
 
 void STLIB_LOW::start() {
-	Sensor::start();
+	//Sensor::start();
 }

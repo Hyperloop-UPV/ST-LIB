@@ -1,6 +1,6 @@
 #include "Sensors/SensorInterrupt/SensorInterrupt.hpp"
 #include "Sensors/Sensor/Sensor.hpp"
-
+#ifdef SENSOR_
 SensorInterrupt::SensorInterrupt(Pin &pin, std::function<void()> &&action, PinState *value, TRIGGER trigger) : value(value) {
 	id = ExternalInterrupt::inscribe(pin, std::forward<std::function<void()>>(action), trigger);
 
@@ -16,3 +16,4 @@ void SensorInterrupt::read(){
 uint8_t SensorInterrupt::get_id(){
 	return id;
 }
+#endif

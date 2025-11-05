@@ -233,9 +233,10 @@ uint8_t FDCAN::inscribe(FDCAN::Peripheral& fdcan){
     else{
         fdcan_instance->hfdcan->Init.TxElmtSize = FDCAN_DATA_BYTES_64;
     }
-
-	Pin::inscribe(fdcan_instance->TX, ALTERNATIVE);
-	Pin::inscribe(fdcan_instance->RX, ALTERNATIVE);
+    fdcan_instance->TX.inscribe<ALTERNATIVE>();
+    fdcan_instance->RX.inscribe<ALTERNATIVE>();
+	// Pin::inscribe(fdcan_instance->TX, ALTERNATIVE);
+	// Pin::inscribe(fdcan_instance->RX, ALTERNATIVE);
 
 	uint8_t id = FDCAN::id_counter++;
 

@@ -36,7 +36,7 @@ void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 #endif
 
 #ifdef HAL_FMAC_MODULE_ENABLED
-    MultiplierAccelerator::start();
+    //MultiplierAccelerator::start();
 #endif
 
 #ifdef HAL_CORDIC_MODULE_ENABLED
@@ -72,7 +72,7 @@ void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
     Ethernet::start(mac, ip, subnet_mask, gateway);
 #endif
 #ifdef HAL_TIM_MODULE_ENABLED
-    Encoder::start();
+   // Encoder::start();
     Global_RTC::start_rtc();
     SNTP::sntp_update();
     TimerPeripheral::start();
@@ -80,7 +80,7 @@ void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 #endif
 
 #ifdef HAL_EXTI_MODULE_ENABLED
-    ExternalInterrupt::start();
+  //  ExternalInterrupt::start();
 #endif
 #ifdef NDEBUG
     #ifdef HAL_IWDG_MODULE_ENABLED
