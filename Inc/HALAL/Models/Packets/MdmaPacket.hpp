@@ -25,7 +25,7 @@ public:
 
     MdmaPacket(uint16_t id, Types*... values) = delete;
 
-    MdmaPacket(uint16_t id, Mdma* mdma, Types*... values) : Base(id, values...), mdma(mdma) {
+    MdmaPacket(uint16_t id, Mdma& mdma, Types*... values) : Base(id, values...), mdma(mdma) {
 
         // Inscribe MDMA list and save id or handle or whatever of the list
         // (TODO)
@@ -41,8 +41,8 @@ public:
     /**
      * @brief Build the packet data into provided buffer using MDMA
      */
-    uint8_t* build(uint8_t* buffer) {
-        // Trigger MDMA transfer
+    uint8_t* build(uint8_t* buffer, Mdma& mdma = nullptr) {
+        // Trigger MDMA transfer with the provided MDMA instance or the one stored in the packet (default channel)
         // (TODO)
 
         // Fallback until MDMA is implemented
@@ -50,7 +50,7 @@ public:
     }
     
 private:
-    Mdma* mdma;
+    Mdma& mdma;
     // MDMA descriptor management
     // (TODO)
 };
