@@ -6,10 +6,6 @@
 class MDMA{
 
     private:
-    static std::unordered_map<std::vector<MDMA_LinkNodeTypeDef>,uint8_t> linked_lists;
-    static std::unordered_map<Instance, uint8_t> instances;
-    inline static number_of_packets{0};
-    
     class Instance{
         public:
         MDMA_HandleTypeDef handle;
@@ -20,6 +16,9 @@ class MDMA{
 
 
     };
+    static std::unordered_map<std::vector<MDMA_LinkNodeTypeDef>,uint8_t> linked_lists;
+    static std::unordered_map<Instance, uint8_t> instances;
+    inline static uint8_t number_of_packets{0};
 
     const static uint32_t get_flag(const uint8_t size);
 
