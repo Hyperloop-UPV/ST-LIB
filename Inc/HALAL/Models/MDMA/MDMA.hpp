@@ -6,7 +6,7 @@
 class MDMA{
 
     private:
-    class Instance{
+    struct Instance{
         public:
         MDMA_HandleTypeDef handle;
         uint8_t id;
@@ -20,7 +20,7 @@ class MDMA{
     static std::unordered_map<Instance, uint8_t> instances;
     inline static uint8_t number_of_packets{0};
 
-    const static uint32_t get_flag(const uint8_t size);
+    const static uint32_t get_size(const uint8_t size);
 
     static void start();
 
@@ -45,7 +45,7 @@ class MDMA{
     static uint8_t merge_packets(const uint8_t packet_id1, const uint8_t packet_id2);
 
 
-    static void transfer_data(const uint8_t MDMA_id, const uint8_t packet_id);
+    static void transfer_data(const uint8_t MDMA_id, const uint8_t packet_id,uint8_t* destination_address);
 
 
 };
