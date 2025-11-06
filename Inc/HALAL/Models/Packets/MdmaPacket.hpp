@@ -35,19 +35,20 @@ public:
      * @brief Build the packet data into internal buffer
      */
     uint8_t* build() override {
-        return this->build(this->buffer);  // Calls build(uint8_t*)
-    }
-
-    /**
-     * @brief Build the packet data into provided buffer using MDMA
-     */
-    uint8_t* build(uint8_t* buffer, Mdma& mdma = nullptr) {
-        // Trigger MDMA transfer with the provided MDMA instance or the one stored in the packet (default channel)
+        // Trigger MDMA transfer with the stored MDMA instance, buffer is managed by the MDMA
         // (TODO)
 
         // Fallback until MDMA is implemented
         return Base::build();
     }
+
+    /**
+     * @brief Change the MDMA instance used for transfers
+     */
+    void set_mdma(Mdma& new_mdma) {
+        mdma = new_mdma;
+    }
+
     
 private:
     Mdma& mdma;
