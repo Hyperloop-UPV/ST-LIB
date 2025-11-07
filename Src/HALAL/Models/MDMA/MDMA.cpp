@@ -23,6 +23,25 @@ uint8_t MDMA::inscribe(uint8_t* data_buffer)
     Instance instance(mdma_handle, id, data_buffer);
     instances[id] = instance;
 
+    MDMA_LinkNodeConfTypeDef nodeConfig;
+
+    //Both source and destination, as well as block data length will change with the use of the transfer method, this is just a dummy initialisation
+    nodeConfig.SourceAddress       = (uint32_t)data_buffer; 
+    nodeConfig.DestinationAddress  = (uint32_t)data_buffer;
+    nodeConfig.BlockDataLength     = 1;
+    nodeConfig.SourceInc           = MDMA_SRC_INC_ENABLE;
+    nodeConfig.DestinationInc      = MDMA_DEST_INC_ENABLE;
+    nodeConfig.SourceDataSize      = MDMA_DATA_SIZE_BYTE;
+    nodeConfig.DestinationDataSize = MDMA_DATA_SIZE_BYTE;
+    nodeConfig.SourceBurst         = MDMA_SOURCE_BURST_SINGLE;
+    nodeConfig.DestinationBurst    = MDMA_DESTINATION_BURST_SINGLE;
+    
+    HAL_StatusTypeDef status = HAL_MDMA_LinkedList_CreateNode(&transfer_node, &nodeConfig);
+    if (status != HAL_OK)
+    {
+        ErrorHandler("Error creating linked list in MDMA");
+    }
+
     return id;
 }
 
@@ -110,4 +129,19 @@ uint8_t MDMA::add_packet(const uint8_t MDMA_id,const std::tuple<pointers...>& va
 
     linked_lists[number_of_packets++] = m_nodes;
     return number_of_packets;
+}
+
+void MDMA::transfer_data(const uint8_t MDMA_id,uint8_t* source_address,uint8_t* destination_address, const uint32_t data_length)
+{
+    Instance& instance = instances[MDMA_id];
+
+    transfer_node.CSAR = (uint32_t)source_address;
+    transfer_node.CDAR = (uint32_t)destination_address;
+    transfer_node.CBNDTR = data_length;
+
+    while(//Chequear que no esté funcionando);
+
+    HAL_MDMA_LinkedList_AddNode(&instance.handle, nullptr, &transfer_node);
+
+    //Algo....
 }
