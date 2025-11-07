@@ -2,6 +2,16 @@
 
 std::unordered_map<std::vector<MDMA_LinkNodeTypeDef>,uint8_t> MDMA::linked_lists = {};
 std::unordered_map<MDMA::Instance, uint8_t> MDMA::instances = {};
+std::unordered_map<uint8_t, uint32_t> MDMA::src_size_to_flags = {
+    {1, MDMA_SRC_DATASIZE_BYTE},
+    {2, MDMA_SRC_DATASIZE_HALFWORD},
+    {4, MDMA_SRC_DATASIZE_WORD}
+};
+std::unordered_map<uint8_t, uint32_t> MDMA::dst_size_to_flags = {
+    {1, MDMA_DEST_DATASIZE_BYTE},
+    {2, MDMA_DEST_DATASIZE_HALFWORD},
+    {4, MDMA_DEST_DATASIZE_WORD}
+};
 
 uint8_t MDMA::inscribe(uint8_t* data_buffer)
 {
@@ -11,7 +21,7 @@ uint8_t MDMA::inscribe(uint8_t* data_buffer)
 
     uint8_t id = instances.size();
     Instance instance(mdma_handle, id, data_buffer);
-    instances[instance] = id;
+    instances[id] = instance;
 
     return id;
 }
@@ -52,8 +62,8 @@ uint8_t MDMA::add_packet(const uint8_t MDMA_id,const std::tuple<pointers...>& va
             nodeConfig.BlockDataLength     = type_size;
             nodeConfig.SourceInc           = MDMA_SRC_INC_DISABLE;
             nodeConfig.DestinationInc      = MDMA_DEST_INC_DISABLE;
-            nodeConfig.SourceDataSize      = get_size(type_size);
-            nodeConfig.DestinationDataSize = get_size(type_size);
+            nodeConfig.SourceDataSize      = src_size_to_flags[type_size];
+            nodeConfig.DestinationDataSize = dst_size_to_flags[type_size];
             nodeConfig.SourceBurst         = MDMA_SOURCE_BURST_SINGLE;
             nodeConfig.DestinationBurst    = MDMA_DESTINATION_BURST_SINGLE;
             
@@ -71,13 +81,12 @@ uint8_t MDMA::add_packet(const uint8_t MDMA_id,const std::tuple<pointers...>& va
             HAL_MDMA_LinkedList_AddNode(&instance.handle, &m_nodes[i-1], &m_nodes[i]);
         }
         i++;
-    }
-
+    
     }, values);
 
     if (m_nodes.empty()) 
     {
-        ErrorHandler("Error creating linked list in MDMA")
+        ErrorHandler("Error creating linked list in MDMA");
     }
 
     MDMA_LinkNodeTypeDef node = {};
@@ -101,25 +110,4 @@ uint8_t MDMA::add_packet(const uint8_t MDMA_id,const std::tuple<pointers...>& va
 
     linked_lists[number_of_packets++] = m_nodes;
     return number_of_packets;
-}
-
-const uint32_t MDMA::get_size(const uint8_t size)
-{
-    uint32_t flags = 0;
-
-    switch (size) {
-        case 1: 
-            flags = MDMA_DATA_SIZE_BYTE;
-            break;
-        case 2: 
-            flags = MDMA_DATA_SIZE_HALFWORD;
-            break;
-        case 4: 
-            flags = MDMA_DATA_SIZE_WORD;
-            break;
-        default:
-            flags = MDMA_DATA_SIZE_BYTE;
-            break;
-    }
-    return flags;
 }

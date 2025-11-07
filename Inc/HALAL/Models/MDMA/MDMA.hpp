@@ -3,6 +3,10 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "stm32h7xx_hal.h"
 
+#ifdef MDMA
+#undef MDMA
+#endif
+
 class MDMA{
 
     private:
@@ -16,11 +20,11 @@ class MDMA{
 
 
     };
-    static std::unordered_map<std::vector<MDMA_LinkNodeTypeDef>,uint8_t> linked_lists;
-    static std::unordered_map<Instance, uint8_t> instances;
+    inline static std::unordered_map<uint8_t, std::vector<MDMA_LinkNodeTypeDef>> linked_lists{};
+    inline static std::unordered_map<uint8_t, Instance> instances{};
     inline static uint8_t number_of_packets{0};
-
-    const static uint32_t get_size(const uint8_t size);
+    static std::unordered_map<uint8_t, uint32_t> MDMA::dst_size_to_flags ;
+    static std::unordered_map<uint8_t, uint32_t> MDMA::src_size_to_flags ;
 
     static void start();
 
@@ -40,7 +44,7 @@ class MDMA{
     static uint8_t inscribe(uint8_t* data_buffer);
 
     template<typename... pointers>
-    static uint8_t add_packet(const uint8_t MDMA_id,const std::tuple<pointers...>& values);//Utilizar std::apply y std::dcltype
+    static uint8_t add_packet(const uint8_t MDMA_id,const std::tuple<pointers...>& values);
 
     static uint8_t merge_packets(const uint8_t packet_id1, const uint8_t packet_id2);
 
