@@ -2,7 +2,6 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "stm32h7xx_hal.h"
-#include "main.h"
 
 #ifdef MDMA
 #undef MDMA
@@ -16,8 +15,9 @@ class MDMA{
         MDMA_HandleTypeDef handle;
         uint8_t id;
         uint8_t *data_buffer;
+        uint8_t* destination_address;
         Instance() = default;
-        Instance(MDMA_HandleTypeDef handle, uint8_t id, uint8_t* data_buffer): handle(handle), id(id), data_buffer(data_buffer) {}
+        Instance(MDMA_HandleTypeDef handle, uint8_t id, uint8_t* data_buffer, uint8_t* destination_address=nullptr): handle(handle), id(id), data_buffer(data_buffer), destination_address(destination_address) {}
 
 
     };
@@ -26,7 +26,7 @@ class MDMA{
     inline static uint8_t number_of_packets{0};
     static std::unordered_map<uint8_t, uint32_t> dst_size_to_flags;
     static std::unordered_map<uint8_t, uint32_t> src_size_to_flags;
-    inline static MDMA_LinkNodeTypeDef transfer_node = {};
+    inline static MDMA_LinkNodeTypeDef transfer_node{};
 
     static void start();
 
@@ -38,21 +38,23 @@ class MDMA{
 
 	 * This method has to be invoked before the ST-LIB::start()
 	 *
-	 * @param data_buffer	the buffer where the MDMA will write the data, must be a non-cached buffer
+	 * @param data_buffer	the buffer where the MDMA will write the data, very important to be a non-cached buffer
+     * @param destination_address  the address where the MDMA will read the data from, if nullptr it will make it so that the destination varies dinamically
 	 *
 	 * @return the id that represents the MDMA channel with its designated buffer inside this utility class, used in all its functions.
 	 */
 
-    static uint8_t inscribe(uint8_t* data_buffer);
+    static uint8_t inscribe(uint8_t* data_buffer, uint8_t* destination_address=nullptr);
 
     template<typename... pointers>
     static uint8_t add_packet(const uint8_t MDMA_id,const std::tuple<pointers...>& values);
-
-    static uint8_t merge_packets(const uint8_t packet_id1, const uint8_t packet_id2);
+    
+    template<typename... PacketIds>
+    static uint8_t merge_packets(const uint8_t base_packet_id, const PacketIds... packets_id);
 
     static void transfer_data(const uint8_t MDMA_id,uint8_t* source_address,uint8_t* destination_address, const uint32_t data_length);
 
-    static void transfer_packet(const uint8_t MDMA_id, const uint8_t packet_id,uint8_t* destination_address);
+    static void transfer_packet(const uint8_t MDMA_id, const uint8_t packet_id,uint8_t* destination_address=nullptr);
 
 
 };
