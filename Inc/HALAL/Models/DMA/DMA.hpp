@@ -14,23 +14,29 @@
 
 #define MAX_STREAMS 16
 
-
-
 template<uint8_t N>
 struct Config {
     uint32_t instance;
-    uint8_t num_streams {N};
-    std::array<DMA_InitTypeDef, N> handles;
-    std::array<DMA_Stream_TypeDef*, N> streams;
-    std::array<IRQn_Type, N> irqn;
+    std::array<DMA_InitTypeDef, N> handles{};
+    std::array<DMA_Stream_TypeDef*, N> streams{};
+    std::array<IRQn_Type, N> irqn{};
+
+    constexpr Config(uint32_t inst,
+                     std::array<DMA_InitTypeDef, N> h,
+                     std::array<DMA_Stream_TypeDef*, N> s,
+                     std::array<IRQn_Type, N> i)
+        : instance(inst), handles(h), streams(s), irqn(i) {}
 };
 
 class DMA {
     public:
         template<auto Instance, uint32_t... Streams>
-        static constexpr auto inscribe_stream();
+        static consteval auto inscribe_stream();
         
         static void start();
+
+        template<auto Instance, auto... Bases>
+        constexpr bool is_one_of();
 
         template<auto Instance>
         constexpr bool is_spi();
@@ -86,64 +92,62 @@ class DMA {
 
 
 template<auto Instance, uint32_t... Streams>
-constexpr auto DMA::inscribe_stream(){
+consteval auto DMA::inscribe_stream() {
     constexpr std::size_t N = sizeof...(Streams);
     static_assert(N <= MAX_STREAMS, "Too many streams inscribed");
-    
-    Config<N> handleConfig; 
-    handleConfig.instance = Instance;
-    constexpr uint32_t stream_vals[N] = {Streams...};
-    handleConfig.streams = std::array<DMA_Stream_TypeDef*, N>{reinterpret_cast<DMA_Stream_TypeDef*>(Streams)...};
 
-    if constexpr (is_adc<Instance>()) {
-        static_assert(N == 1, "ADC DMA must have exactly one stream");
-    }
-    else if constexpr (is_fmac<Instance>()) {
-        static_assert(N == 3, "FMAC DMA must have exactly three streams");
-    }
-    else {
-        static_assert(N == 2, "Peripheral DMA must have exactly two streams (RX and TX)");
-    }
-    
-    // TODO: verificar que los streams no esten siendo usados   
-   
-    [&]<std::size_t... I>(std::index_sequence<I...>) {
-        (([&] {
-            handleConfig.handles[I].Request = get_Request<Instance, I>();
-            handleConfig.handles[I].Direction = get_Direction<Instance, I>();
-            handleConfig.handles[I].PeriphInc = get_PeriphInc<Instance, I>();
-            handleConfig.handles[I].MemInc = get_MemInc<Instance, I>();
-            handleConfig.handles[I].PeriphDataAlignment = get_PeriphDataAlignment<Instance, I>();
-            handleConfig.handles[I].MemDataAlignment = get_MemDataAlignment<Instance, I>();
-            handleConfig.handles[I].Mode = get_Mode<Instance, I>();
-            handleConfig.handles[I].Priority = get_Priority<Instance, I>();
-            handleConfig.handles[I].FIFOMode = get_FIFOMode<Instance, I>();
-            handleConfig.handles[I].FIFOThreshold = get_FIFOThreshold<Instance, I>();
-            handleConfig.handles[I].MemBurst = get_MemBurst<Instance, I>();
-            handleConfig.handles[I].PeriphBurst = get_PeriphBurst<Instance, I>();
+    constexpr std::array<DMA_Stream_TypeDef*, N> streams = { reinterpret_cast<DMA_Stream_TypeDef*>(Streams)... };
 
-            handleConfig[I] = get_irqn<stream_vals[I]>();
+    // Verificación de cantidad según periférico
+    if constexpr (is_adc<Instance>()) static_assert(N == 1, "ADC DMA must have exactly one stream");
+    else if constexpr (is_fmac<Instance>()) static_assert(N == 3, "FMAC DMA must have exactly three streams");
+    else static_assert(N == 2, "Peripheral DMA must have exactly two streams (RX and TX)");
 
-        }()), ...);
+    constexpr auto make_handles = []<std::size_t... I>(std::index_sequence<I...>) {
+        return std::array<DMA_InitTypeDef, N>{
+            DMA_InitTypeDef{
+                .Request             = get_Request<Instance, I>(),
+                .Direction           = get_Direction<Instance, I>(),
+                .PeriphInc           = get_PeriphInc<Instance, I>(),
+                .MemInc              = get_MemInc<Instance, I>(),
+                .PeriphDataAlignment = get_PeriphDataAlignment<Instance, I>(),
+                .MemDataAlignment    = get_MemDataAlignment<Instance, I>(),
+                .Mode                = get_Mode<Instance, I>(),
+                .Priority            = get_Priority<Instance, I>(),
+                .FIFOMode            = get_FIFOMode<Instance, I>(),
+                .FIFOThreshold       = get_FIFOThreshold<Instance, I>(),
+                .MemBurst            = get_MemBurst<Instance, I>(),
+                .PeriphBurst         = get_PeriphBurst<Instance, I>(),
+            }...
+        };
     }(std::make_index_sequence<N>{});
-    
-    return handleConfig;
+
+    constexpr auto make_irq = []<std::size_t... I>(std::index_sequence<I...>) {
+        return std::array<IRQn_Type, N>{ get_irqn<Streams>()... };
+    }(std::make_index_sequence<N>{});
+
+    return Config<N>{Instance, make_handles, streams, make_irq};
+}
+
+
+template<auto Instance, auto... Bases>
+constexpr bool DMA::is_one_of() {
+    return ((Instance == Bases) || ...);
 }
 
 template<auto Instance>
 constexpr bool DMA::is_spi() {
-    return Instance == SPI1_BASE || Instance == SPI2_BASE || Instance == SPI3_BASE ||
-    Instance == SPI4_BASE || Instance == SPI5_BASE;
+    return is_one_of<Instance, SPI1_BASE, SPI2_BASE, SPI3_BASE, SPI4_BASE, SPI5_BASE>();
 }
 
 template<auto Instance>
 constexpr bool DMA::is_i2c() {
-    return Instance == I2C1_BASE || Instance == I2C2_BASE || Instance == I2C3_BASE || Instance == I2C5_BASE;
+    return is_one_of<Instance, I2C1_BASE, I2C2_BASE, I2C3_BASE, I2C5_BASE>();
 }
 
 template<auto Instance>
 constexpr bool DMA::is_adc() {
-    return Instance == ADC1_BASE || Instance == ADC2_BASE || Instance == ADC3_BASE;
+    return is_one_of<Instance, ADC1_BASE, ADC2_BASE, ADC3_BASE>();
 }
 
 template<auto Instance>
@@ -153,23 +157,24 @@ constexpr bool DMA::is_fmac() {
 
 template<auto stream>
 constexpr IRQn_Type DMA::get_irqn() {
-    if (stream == DMA1_Stream0_BASE) return DMA1_Stream0_IRQn;
-    if (stream == DMA1_Stream1_BASE) return DMA1_Stream1_IRQn;
-    if (stream == DMA1_Stream2_BASE) return DMA1_Stream2_IRQn;
-    if (stream == DMA1_Stream3_BASE) return DMA1_Stream3_IRQn;
-    if (stream == DMA1_Stream4_BASE) return DMA1_Stream4_IRQn;
-    if (stream == DMA1_Stream5_BASE) return DMA1_Stream5_IRQn;
-    if (stream == DMA1_Stream6_BASE) return DMA1_Stream6_IRQn;
-    if (stream == DMA1_Stream7_BASE) return DMA1_Stream7_IRQn;
+    if constexpr (stream == DMA1_Stream0_BASE) return DMA1_Stream0_IRQn;
+    else if constexpr (stream == DMA1_Stream1_BASE) return DMA1_Stream1_IRQn;
+    else if constexpr (stream == DMA1_Stream2_BASE) return DMA1_Stream2_IRQn;
+    else if constexpr (stream == DMA1_Stream3_BASE) return DMA1_Stream3_IRQn;
+    else if constexpr (stream == DMA1_Stream4_BASE) return DMA1_Stream4_IRQn;
+    else if constexpr (stream == DMA1_Stream5_BASE) return DMA1_Stream5_IRQn;
+    else if constexpr (stream == DMA1_Stream6_BASE) return DMA1_Stream6_IRQn;
+    else if constexpr (stream == DMA1_Stream7_BASE) return DMA1_Stream7_IRQn;
 
-    if (stream == DMA2_Stream0_BASE) return DMA2_Stream0_IRQn;
-    if (stream == DMA2_Stream1_BASE) return DMA2_Stream1_IRQn;
-    if (stream == DMA2_Stream2_BASE) return DMA2_Stream2_IRQn;
-    if (stream == DMA2_Stream3_BASE) return DMA2_Stream3_IRQn;
-    if (stream == DMA2_Stream4_BASE) return DMA2_Stream4_IRQn;
-    if (stream == DMA2_Stream5_BASE) return DMA2_Stream5_IRQn;
-    if (stream == DMA2_Stream6_BASE) return DMA2_Stream6_IRQn;
-    return DMA2_Stream7_IRQn;
+    else if constexpr (stream == DMA2_Stream0_BASE) return DMA2_Stream0_IRQn;
+    else if constexpr (stream == DMA2_Stream1_BASE) return DMA2_Stream1_IRQn;
+    else if constexpr (stream == DMA2_Stream2_BASE) return DMA2_Stream2_IRQn;
+    else if constexpr (stream == DMA2_Stream3_BASE) return DMA2_Stream3_IRQn;
+    else if constexpr (stream == DMA2_Stream4_BASE) return DMA2_Stream4_IRQn;
+    else if constexpr (stream == DMA2_Stream5_BASE) return DMA2_Stream5_IRQn;
+    else if constexpr (stream == DMA2_Stream6_BASE) return DMA2_Stream6_IRQn;
+    else if constexpr (stream == DMA2_Stream7_BASE) return DMA2_Stream7_IRQn;
+    else static_assert([]{return false;}(), "Invalid DMA stream base address");
 }
 
 
@@ -238,7 +243,7 @@ constexpr uint32_t DMA::get_MemInc() {
 
 template<auto Instance, uint8_t i>
 constexpr uint32_t DMA::get_PeriphDataAlignment() {
-    if constexpr (is_spi<Instance>()){
+    if constexpr (is_i2c<Instance>()){
         return DMA_PDATAALIGN_WORD;
     }
     else if constexpr (is_spi<Instance>()){
@@ -250,7 +255,7 @@ constexpr uint32_t DMA::get_PeriphDataAlignment() {
 
 template<auto Instance, uint8_t i>
 constexpr uint32_t DMA::get_MemDataAlignment() {
-    if constexpr (is_spi<Instance>()){
+    if constexpr (is_i2c<Instance>()){
         return DMA_MDATAALIGN_WORD;
     }
     else if constexpr (is_spi<Instance>()){
