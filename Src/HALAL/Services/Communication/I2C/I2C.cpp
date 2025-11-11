@@ -23,7 +23,7 @@ uint8_t I2C::inscribe(I2C::Peripheral &i2c, uint8_t address) {
 	Pin::inscribe(i2c_instance->SCL, ALTERNATIVE);
 	Pin::inscribe(i2c_instance->SDA, ALTERNATIVE);
 
-	DMA::inscribe_stream_i2c(i2c_instance->hi2c, DMA1_Stream3, DMA1_Stream4);
+	constexpr auto dma_i2c1_config {DMA::inscribe_stream<I2C1_BASE, DMA1_Stream1_BASE, DMA1_Stream2_BASE>()};
 
 	uint8_t id = I2C::id_counter++;
 

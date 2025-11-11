@@ -18,12 +18,12 @@ template<uint8_t N>
 struct Config {
     uint32_t instance;
     std::array<DMA_InitTypeDef, N> handles{};
-    std::array<DMA_Stream_TypeDef*, N> streams{};
+    std::array<uint32_t, N> streams{};
     std::array<IRQn_Type, N> irqn{};
 
     constexpr Config(uint32_t inst,
                      std::array<DMA_InitTypeDef, N> h,
-                     std::array<DMA_Stream_TypeDef*, N> s,
+                     std::array<uint32_t, N> s,
                      std::array<IRQn_Type, N> i)
         : instance(inst), handles(h), streams(s), irqn(i) {}
 };
@@ -32,23 +32,23 @@ class DMA {
     public:
         template<auto Instance, uint32_t... Streams>
         static consteval auto inscribe_stream();
-        
+
         static void start();
 
         template<auto Instance, auto... Bases>
-        constexpr bool is_one_of();
+        static constexpr bool is_one_of();
 
         template<auto Instance>
-        constexpr bool is_spi();
+        static constexpr bool is_spi();
         
         template<auto Instance>
-        constexpr bool is_i2c();
+        static constexpr bool is_i2c();
 
         template<auto Instance>
-        constexpr bool is_adc();
+        static constexpr bool is_adc();
 
         template<auto Instance>
-        constexpr bool is_fmac();
+        static constexpr bool is_fmac();
         
         template<auto Instance, uint8_t i>
         static constexpr uint32_t get_Request();
@@ -96,7 +96,7 @@ consteval auto DMA::inscribe_stream() {
     constexpr std::size_t N = sizeof...(Streams);
     static_assert(N <= MAX_STREAMS, "Too many streams inscribed");
 
-    constexpr std::array<DMA_Stream_TypeDef*, N> streams = { reinterpret_cast<DMA_Stream_TypeDef*>(Streams)... };
+    constexpr std::array<uint32_t, N> streams = {(Streams)... };
 
     // Verificación de cantidad según periférico
     if constexpr (is_adc<Instance>()) static_assert(N == 1, "ADC DMA must have exactly one stream");

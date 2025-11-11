@@ -56,7 +56,7 @@ uint8_t SPI::inscribe(SPI::Peripheral& spi) {
 
     uint8_t id = SPI::id_counter++;
     if (spi_instance->use_DMA) {
-        DMA::inscribe_stream_spi(spi_instance->hspi, DMA1_Stream5, DMA1_Stream6);
+        constexpr auto dma_spi1_config {DMA::inscribe_stream<SPI1_BASE, DMA1_Stream3_BASE, DMA1_Stream4_BASE>()};
     }
     SPI::registered_spi[id] = spi_instance;
     SPI::registered_spi_by_handler[spi_instance->hspi] = spi_instance;
