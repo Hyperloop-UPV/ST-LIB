@@ -32,7 +32,7 @@ void MultiplierAccelerator::IIR_software_in_software_out_inscribe(uint16_t input
 }
 
 void MultiplierAccelerator::inscribe(){
-    constexpr auto fmac_dma_config {DMA::inscribe_stream<FMAC_BASE, DMA2_Stream0_BASE, DMA2_Stream1_BASE, DMA2_Stream2_BASE>()};
+    static constexpr auto fmac_dma_config {DMA::inscribe_stream<FMAC_BASE, DMA2_Stream0_BASE, DMA2_Stream1_BASE, DMA2_Stream2_BASE>()};
 }
 
 void MultiplierAccelerator::start(){
