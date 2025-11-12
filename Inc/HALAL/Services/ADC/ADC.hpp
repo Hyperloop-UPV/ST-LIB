@@ -271,11 +271,12 @@ enum class Strategy { Auto, Prefer, Only, LowPower };
 enum class Resolution : uint32_t {
     BITS_16 = 16,
     BITS_12 = 12,
+    NO_PRIORITY = 255,
 };
 
 template <const Pin& pin, Strategy strategy = Strategy::Auto,
           ADCId adcId = ADCId::peripheral1,
-          Resolution resolution = Resolution::BITS_16>
+          Resolution resolution = Resolution::NO_PRIORITY>
 // The priority is Strategy > resolution > peripheral
 //  In case auto or LowPower Resolution > Strategy
 consteval ADCEntry select_option() {
@@ -328,10 +329,31 @@ consteval ADCEntry select_option() {
     if (strategy == Strategy::LowPower) return *opts[best_entry_low_power];
     return *opts[0];
 }
+template <const Pin& p>
+struct adc_token{};                           
+
+namespace reg_adc{
+template <const Pin& p>
+constexpr Resolution get_resolution(){
+    return resolution_of(adc_token<adcEntry>{});
+}
+template <const Pin& p>
+constexpr Strategy get_strategy(){
+   return strategy_of(adc_token<adcEntry>{});
+}
+template <const Pin& p>
+constexpr ADCId get_peripheral(){
+   return peripheral_of(adc_token<adcEntry>{});
+}
+};
+
+
+
 
 template <const Pin& pin, Strategy strategy = Strategy::Auto,
           ADCId adcId = ADCId::peripheral1,
           Resolution resolution = Resolution::BITS_16>
+          
 class ADC {
     ADCEntry adc;
     uint32_t rank{};
@@ -341,7 +363,15 @@ class ADC {
     friend constexpr OperationMode mode_of(pin_token<pin>) {
         return OperationMode::ANALOG;
     }
-
+    friend constexpr Resolution resolution_of(adc_token<pin>){
+        return resolution;
+    }
+    friend constexpr Strategy strategy_of(adc_token<pin>){
+        return strategy;
+    }
+    friend constexpr ADCId adc_of(adc_token<pin>){
+        return adcId;
+    }
    public:
     consteval ADC() : adc(inscribe()) {
         rank = adc.adc_peripheral.attach(adc.pin, adc.ch);

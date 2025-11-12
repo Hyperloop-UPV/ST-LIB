@@ -11,12 +11,14 @@
 void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
                   UART::Peripheral& printf_peripheral) {
 
-#ifdef HAL_IWDG_MODULE_ENABLED
-    Watchdog::check_reset_flag();
-#endif
+
 #if !defined STLIB_ETH
 #else
     Ethernet::inscribe();
+#endif
+    constexpr std::array<PinConfig,110> PinConfigArray = make_pinConfigArray();
+#ifdef HAL_IWDG_MODULE_ENABLED
+    Watchdog::check_reset_flag();
 #endif
     MPUManager::start();
     HAL_Init();
@@ -28,7 +30,7 @@ void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 #endif
 
 #ifdef HAL_GPIO_MODULE_ENABLED
-    Pin::start();
+    Pin::start(PinConfigArray);
 #endif
 
 #ifdef HAL_DMA_MODULE_ENABLED

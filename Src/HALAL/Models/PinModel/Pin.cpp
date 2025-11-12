@@ -26,7 +26,7 @@
 //     return (port_to_string.at(port) + gpio_pin_to_string.at(gpio_pin));
 // }
 
-void Pin::start() {
+void Pin::start(const std::array<PinConfig,TOTAL_PIN_NUMBER> &pinConfigArray){
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -35,8 +35,9 @@ void Pin::start() {
     __HAL_RCC_GPIOF_CLK_ENABLE();
     __HAL_RCC_GPIOG_CLK_ENABLE();
 
-    for (auto pin : pinArray) {
-        HAL_GPIO_Init(getGPIO(pin->port), &pin->GPIO_InitStruct);
+    for (auto pinC : pinConfigArray) {
+        if(pinC.mode == OperationMode::ALTERNATIVE) continue;
+        HAL_GPIO_Init(getGPIO(pinC.pin->port), &pinC.init);
     }
 }
 

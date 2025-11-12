@@ -9,7 +9,7 @@
 
 #define PERIPHERAL_BASE 0x40000000UL
 #define DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 PERIPHERAL_BASE + 0x18020000UL
-
+#define TOTAL_PIN_NUMBER 110
 enum class GPIOPin : uint16_t {
     PIN_0 = 0x0001,
     PIN_1 = 0x0002,
@@ -85,7 +85,7 @@ using enum GPIOPort;
 using enum GPIOPin;
 using enum AlternativeFunction;
 using enum OperationMode;
-
+struct PinConfig;
 class Pin {
    private:
     mutable GPIO_InitTypeDef GPIO_InitStruct{
@@ -165,7 +165,7 @@ class Pin {
     //             break;
     //     }
     // }
-    void static start();
+    void static start(const std::array<PinConfig,TOTAL_PIN_NUMBER> &pinConfigArray);
 
     bool constexpr operator==(const Pin& other) const {
         return (gpio_pin == other.gpio_pin && port == other.port);
@@ -250,19 +250,19 @@ inline GPIO_TypeDef* getGPIO(GPIOPort port) {
     }
 }
 namespace std {
-template <>
-struct hash<Pin> {
-    std::size_t operator()(const Pin& k) const {
-        using std::hash;
-        using std::size_t;
-        using std::string;
+    template <>
+    struct hash<Pin> {
+        std::size_t operator()(const Pin& k) const {
+            using std::hash;
+            using std::size_t;
+            using std::string;
 
-        return ((hash<uint16_t>()(static_cast<uint16_t>(k.gpio_pin)) ^
-                 (hash<uint32_t>()((uint32_t)(k.port)) << 1)) >>
-                1);
-    }
-};
-}  // namespace std
+            return ((hash<uint16_t>()(static_cast<uint16_t>(k.gpio_pin)) ^
+                    (hash<uint32_t>()((uint32_t)(k.port)) << 1)) >>
+                    1);
+        }
+    };
+}  
 
 inline constexpr Pin PA0(PORT_A, PIN_0);
 inline constexpr Pin PA1(PORT_A, PIN_1);
@@ -379,7 +379,24 @@ inline constexpr Pin PG15(PORT_G, PIN_15);
 inline constexpr Pin PH0(PORT_H, PIN_0);
 inline constexpr Pin PH1(PORT_H, PIN_1);
 
-template <const Pin& P>
+struct PinConfig{
+    const Pin* pin;
+    GPIO_InitTypeDef init;
+    OperationMode mode;
+    bool constexpr operator==(const PinConfig& other) const {
+        return pin == other.pin;
+    }
+
+    bool constexpr operator<(const PinConfig& other) const {
+        return pin < other.pin;
+    }
+    consteval PinConfig(const Pin* pin,GPIO_InitTypeDef init,OperationMode mode):
+        pin(pin),
+        init(init),
+        mode(mode)
+    {}
+};
+template <const Pin& p>
 struct pin_token {};
 
 namespace reg {
@@ -398,7 +415,9 @@ constexpr OperationMode get_mode() {
 
 }  // namespace reg
 
-inline constexpr std::array<const Pin*, 110> pinArray = {
+
+
+inline constexpr std::array<const Pin*, TOTAL_PIN_NUMBER> pinArray = {
     &PA0,  &PA1,  &PA10, &PA11, &PA12, &PA9,  &PB0,  &PB1,  &PB10, &PB11, &PB12,
     &PB13, &PB14, &PB15, &PB2,  &PB4,  &PB5,  &PB6,  &PB7,  &PB8,  &PB9,  &PC0,
     &PC1,  &PC10, &PC11, &PC12, &PC13, &PC14, &PC15, &PC2,  &PC3,  &PC4,  &PC5,
@@ -409,3 +428,65 @@ inline constexpr std::array<const Pin*, 110> pinArray = {
     &PF2,  &PF3,  &PF4,  &PF5,  &PF6,  &PF7,  &PF8,  &PF9,  &PG0,  &PG1,  &PG10,
     &PG11, &PG12, &PG13, &PG14, &PG15, &PG2,  &PG3,  &PG4,  &PG5,  &PG6,  &PG7,
     &PG8,  &PG9,  &PH0,  &PH1,  &PA2,  &PA3,  &PA4,  &PA5,  &PA6,  &PA7,  &PA8};
+
+template<const Pin& pin>
+static consteval auto make_pin_config(){
+            GPIO_InitTypeDef init{};
+            constexpr OperationMode mode = reg::get_mode<pin>();
+            if (mode == OperationMode::ALTERNATIVE && pin.alternative_function == AlternativeFunction::NO_AF){
+                throw "You can't use mode Alternative with a pin without Alternative Function";
+            }
+            init.Pin = static_cast<uint32_t>(pin.gpio_pin);
+            switch (mode) {
+                case OperationMode::NOT_USED:
+                    init.Mode = GPIO_MODE_INPUT;
+                    init.Pull = GPIO_PULLDOWN;
+                    break;
+                case OperationMode::OUTPUT:
+                    init.Mode = GPIO_MODE_OUTPUT_PP;
+                    init.Pull = GPIO_NOPULL;
+                    init.Speed = GPIO_SPEED_FREQ_LOW;
+                    break;
+
+                case OperationMode::INPUT:
+                    init.Mode = GPIO_MODE_INPUT;
+                    init.Pull = GPIO_NOPULL;
+                    break;
+                case OperationMode::ANALOG:
+                    init.Mode = GPIO_MODE_ANALOG;
+                    init.Pull = GPIO_NOPULL;
+                    break;
+                case OperationMode::EXTERNAL_INTERRUPT_RISING:
+                    init.Mode = GPIO_MODE_IT_RISING;
+                    init.Pull = GPIO_PULLDOWN;
+                    break;
+                case OperationMode::EXTERNAL_INTERRUPT_FALLING:
+                    init.Mode = GPIO_MODE_IT_FALLING;
+                    init.Pull = GPIO_PULLDOWN;
+                    break;
+                case OperationMode::EXTERNAL_INTERRUPT_RISING_FALLING:
+                    init.Mode = GPIO_MODE_IT_RISING_FALLING;
+                    init.Pull = GPIO_PULLDOWN;
+                    break;
+                case OperationMode::TIMER_ALTERNATE_FUNCTION:
+                    init.Mode = GPIO_MODE_AF_PP;
+                    init.Pull = GPIO_NOPULL;
+                    init.Speed = GPIO_SPEED_FREQ_LOW;
+                    init.Alternate = static_cast<uint32_t>(pin.alternative_function);
+                    break;
+                default:
+                    break;
+            }
+            return PinConfig{&pin,init,mode};
+}
+
+template<std::size_t... I>
+static consteval auto make_pinConfigArray_impl(std::index_sequence<I...>) {
+    return std::array{
+        make_pin_config<*pinArray[I]>()...
+    };
+}
+
+consteval std::array<PinConfig,TOTAL_PIN_NUMBER> make_pinConfigArray() {
+    return make_pinConfigArray_impl(std::make_index_sequence<TOTAL_PIN_NUMBER>{});
+}
