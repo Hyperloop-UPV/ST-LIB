@@ -13,6 +13,7 @@
 #include "C++Utilities/RingBuffer.hpp"
 
 #define PROMISE_MAX_CONCURRENT 200
+#define PROMISE_MAX_UPDATES_PER_CYCLE 50
 
 /**
  * @brief A simple Promise implementation for asynchronous programming.
@@ -114,7 +115,9 @@ class Promise {
             return;
         }
         if (callback) {
+            __disable_irq();
             readyList.push(this);
+            __enable_irq();
         }
     }
 
@@ -123,11 +126,16 @@ class Promise {
      * @note This function should be called regularly in the main loop of your application.
      */
     static void update() {
-        while (readyList.size() > 0) {
+        uint16_t count = 0;
+        while (readyList.size() > 0 && count < PROMISE_MAX_UPDATES_PER_CYCLE) {
+            __disable_irq();
             Promise *p = readyList.first();
             readyList.pop();
+            __enable_irq();
+
             p->callback(p->context);
             Promise::arena.release(p);
+            count++;
         }
     }
 
