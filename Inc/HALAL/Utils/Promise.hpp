@@ -12,8 +12,19 @@
 #include "C++Utilities/Arena.hpp"
 #include "C++Utilities/RingBuffer.hpp"
 
+// Maximum number of concurrent Promises allowed in the arena.
+// Default is 200, which should be sufficient for most use cases. Increase if you expect higher concurrency.
+// You can override this value by defining PROMISE_MAX_CONCURRENT before including this header.
+#ifndef PROMISE_MAX_CONCURRENT
 #define PROMISE_MAX_CONCURRENT 200
+#endif
+
+// Maximum number of Promise updates processed per cycle.
+// Default is 50, which balances throughput and responsiveness. Tune this for your workload.
+// You can override this value by defining PROMISE_MAX_UPDATES_PER_CYCLE before including this header.
+#ifndef PROMISE_MAX_UPDATES_PER_CYCLE
 #define PROMISE_MAX_UPDATES_PER_CYCLE 50
+#endif
 
 /**
  * @brief A simple Promise implementation for asynchronous programming.
