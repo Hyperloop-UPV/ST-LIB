@@ -41,12 +41,16 @@
 #include "lwip/prot/iana.h"
 
 #ifdef __cplusplus
+extern "C" {
+#endif
 
-extern "C" void set_time(uint32_t sec, uint32_t us);
-extern "C" void set_rtc(uint16_t counter, uint8_t second, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint16_t year);
-extern "C" u32_t get_rtc_s();
-extern "C" u32_t get_rtc_us();
+void set_time(uint32_t sec, uint32_t us);
+void set_rtc(uint16_t counter, uint8_t second, uint8_t minute, uint8_t hour, uint8_t day, uint8_t month, uint16_t year);
+u32_t get_rtc_s();
+u32_t get_rtc_us();
 
+#ifdef __cplusplus
+}
 #endif
 
 #define SNTP_STARTUP_DELAY 0

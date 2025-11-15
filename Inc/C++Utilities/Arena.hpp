@@ -26,10 +26,10 @@ class Arena {
      * @return Pointer to the acquired element, or nullptr if the arena is full.
      */
     T* acquire() {
-        if (freeIndexes.empty()) {
+        if (freeIndexes.size() == 0) {
             return nullptr;
         }
-        size_t index = freeIndexes.front();
+        size_t index = freeIndexes.first();
         freeIndexes.pop();
         usedIndexesSet[index] = true;
         return &elements[index];
@@ -82,7 +82,9 @@ class Arena {
     size_t used() const { return S - freeIndexes.size(); }
 
     Arena() {
-        std::iota(freeIndexes.begin(), freeIndexes.end(), 0); // Initialize free indexes, {0, 1, 2, ..., S-1}
+        for (size_t i = 0; i < S; ++i) {
+            freeIndexes.push(i);
+        }
     }
     Arena(const Arena&) = delete;
     Arena& operator=(const Arena&) = delete;

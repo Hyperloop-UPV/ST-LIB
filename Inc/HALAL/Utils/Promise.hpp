@@ -11,12 +11,12 @@
 #include "C++Utilities/Arena.hpp"
 #include "C++Utilities/RingBuffer.hpp"
 
+#define PROMISE_MAX_CONCURRENT 200
+
 /**
  * @brief A simple Promise implementation for asynchronous programming.
  * @note Promises are allocated from a fixed-size memory arena, so you don't own the memory. Use Promise::release() to release them back to the arena if needed.
- * @tparam S The maximum number of Promises that can be allocated simultaneously. Use the default "PromiseDefault" alias for a standard size.
  */
-template<size_t S>
 class Promise {
     using Callback = void(*)(void*);
     using ChainedCallback = Promise*(*)(void*);
@@ -122,8 +122,8 @@ class Promise {
      * @note This function should be called regularly in the main loop of your application.
      */
     static void update() {
-        while (!readyList.empty()) {
-            Promise *p = readyList.front();
+        while (readyList.size() > 0) {
+            Promise *p = readyList.first();
             readyList.pop();
             p->callback(p->context);
             Promise::arena.release(p);
@@ -205,14 +205,10 @@ class Promise {
     bool isResolved = false;
     int counter = 0;
     Promise* next = nullptr;
-    static Arena<S, Promise<S>> arena;
-    static RingBuffer<Promise<S>*, S> readyList;
+    static Arena<PROMISE_MAX_CONCURRENT, Promise> arena;
+    static RingBuffer<Promise*, PROMISE_MAX_CONCURRENT> readyList;
 };
-template<size_t S>
-inline Arena<S, Promise<S>> Promise<S>::arena;
-template<size_t S>
-inline RingBuffer<Promise<S>*, S> Promise<S>::readyList;
-
-using PromiseDefault = Promise<200>;
+inline Arena<PROMISE_MAX_CONCURRENT, Promise> Promise::arena;
+inline RingBuffer<Promise*, PROMISE_MAX_CONCURRENT> Promise::readyList;
 
 #endif // PROMISE_HPP
