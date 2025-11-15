@@ -20,5 +20,5 @@ The only needed submodules are:
 
 ```sh
 git submodule init
-git submodule update Drivers/STM32H7xx_HAL_Driver Drivers/CMSIS Device/ST/STM32H7xx Drivers/BSP/Components/lan8742
+git submodule update STM32CubeH7/Drivers/STM32H7xx_HAL_Driver STM32CubeH7/Drivers/CMSIS STM32CubeH7/Device/ST/STM32H7xx Drivers/BSP/Components/lan8742
 ```
