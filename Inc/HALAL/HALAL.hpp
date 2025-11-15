@@ -40,6 +40,7 @@
 #include "HALAL/Models/Concepts/Concepts.hpp"
 #include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 #include "HALAL/Utils/Promise.hpp"
+#include "HALAL/Models/MDMA/MDMA.hpp"
 #else
 #include "HALALMock/Services/DigitalOutputService/DigitalOutputService.hpp"
 #include "HALALMock/Services/DigitalInputService/DigitalInputService.hpp"

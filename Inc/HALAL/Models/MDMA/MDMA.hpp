@@ -3,6 +3,7 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "stm32h7xx_hal.h"
 #include "ErrorHandler/ErrorHandler.hpp"
+#include "HALAL/Utils/Promise.hpp"
 
 #ifdef MDMA
 #undef MDMA
