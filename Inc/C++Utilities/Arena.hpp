@@ -55,10 +55,13 @@ class Arena {
      * @return True if the element was successfully released, false otherwise.
      */
     bool release(T* ele) {
-        if (ele < &elements[0] || ele >= &elements[S] || !usedIndexesSet[ele - &elements[0]]) {
+        if (ele < &elements[0] || ele >= &elements[S]) {
             return false;
         }
         size_t index = ele - &elements[0];
+        if (!usedIndexesSet[index]) {
+            return false; // Double free detected
+        }
         freeIndexes.push(index);
         usedIndexesSet[index] = false;
         return true;
@@ -70,8 +73,12 @@ class Arena {
      * @return True if the element was successfully destroyed and released, false otherwise.
      */
     bool destroy(T* ele) {
-        if (ele < &elements[0] || ele >= &elements[S] || !usedIndexesSet[ele - &elements[0]]) {
+        if (ele < &elements[0] || ele >= &elements[S]) {
             return false;
+        }
+        size_t index = ele - &elements[0];
+        if (!usedIndexesSet[index]) {
+            return false; // Double free detected
         }
         ele->~T();
         return release(ele);
