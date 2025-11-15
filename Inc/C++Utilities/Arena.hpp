@@ -70,11 +70,11 @@ class Arena {
      * @return True if the element was successfully destroyed and released, false otherwise.
      */
     bool destroy(T* ele) {
-        if (release(ele)) {
-            ele->~T();
-            return true;
+        if (ele < &elements[0] || ele >= &elements[S] || !usedIndexesSet[ele - &elements[0]]) {
+            return false;
         }
-        return false;
+        ele->~T();
+        return release(ele);
     }
 
     size_t capacity() const { return S; }
