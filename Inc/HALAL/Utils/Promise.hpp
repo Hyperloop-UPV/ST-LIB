@@ -84,11 +84,12 @@ class Promise {
     }
     
     /**
-     * @brief Register a Promise-returning chained callback to be called when the Promise is resolved. You can chain multiple Promises together using this method.
+     * @brief Register a Promise-returning chained callback to be called when the Promise is resolved. You can chain multiple Promises together using this method. Be extremely careful with memory management when using chained Promises.
      * @param cb The chained callback function that returns a new Promise.
      * @param ctx The context to be passed to the chained callback, can only be a pointer, you must manage the memory yourself.
      * @return Pointer to the newly created chained Promise.
      * @note If the Promise is already resolved, the chained callback is scheduled to be called in the next update cycle. You can call then whenever you want, but only one chained callback can be registered per Promise.
+     * @note You should not store the returned Promise pointer for long-term use, as it is managed by the Promise system. Call then on the returned Promise to register further callbacks.
      * @example
      * ```cpp
      * Promise* p1 = Promise::inscribe();
@@ -114,7 +115,9 @@ class Promise {
             Promise* p = static_cast<Promise*>(thisPtr);
             Promise* chained = p->chainedCallback(p->chainedContext);
             chained->then(p->next->callback, p->next->context);
-            release(p->next);
+            p->next->state.store(State::Ready, std::memory_order_release);
+            p->next->callback = nullptr;
+            p->next->context = nullptr;
         };
         
         State expected = State::Resolved;
@@ -155,7 +158,9 @@ class Promise {
             
             State expected = State::Ready;
             if (p.state.compare_exchange_strong(expected, State::Completed, std::memory_order_acq_rel)) {
-                p.callback(p.context);
+                if (p.callback) {
+                    p.callback(p.context);
+                }
                 toRelease[releaseCount++] = &p;
                 count++;
             }
