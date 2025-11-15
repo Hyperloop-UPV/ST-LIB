@@ -20,8 +20,9 @@ class MDMA{
         uint8_t* destination_address;
         Promise* promise;
         bool using_promise{false};
+        MDMA_LinkNodeTypeDef transfer_node{};
         Instance() = default;
-        Instance(MDMA_HandleTypeDef handle, uint8_t id, uint8_t* data_buffer, uint8_t* destination_address): handle(handle), id(id), data_buffer(data_buffer), destination_address(destination_address) {}
+        Instance(MDMA_HandleTypeDef handle, uint8_t id, uint8_t* data_buffer, uint8_t* destination_address,MDMA_LinkNodeTypeDef transfer_node): handle(handle), id(id), data_buffer(data_buffer), destination_address(destination_address), transfer_node(transfer_node) {}
 
 
     };
@@ -31,7 +32,6 @@ class MDMA{
     static std::unordered_map<uint8_t, uint32_t> src_size_to_flags;
     static std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> instance_to_channel;
     static std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> channel_to_instance;
-    inline static MDMA_LinkNodeTypeDef transfer_node{};
 
     inline static uint8_t number_of_packets{0};
 
