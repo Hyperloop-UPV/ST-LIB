@@ -86,24 +86,8 @@ class Arena {
     }
     Arena(const Arena&) = delete;
     Arena& operator=(const Arena&) = delete;
-    Arena(Arena&& other) noexcept : freeIndexes(std::move(other.freeIndexes)) {
-        std::copy(std::begin(other.usedIndexesSet), std::end(other.usedIndexesSet), std::begin(usedIndexesSet));
-        std::move(std::begin(other.elements), std::end(other.elements), std::begin(elements));
-
-        std::fill(std::begin(other.usedIndexesSet), std::end(other.usedIndexesSet), false);
-        std::iota(other.freeIndexes.begin(), other.freeIndexes.end(), 0);
-    }
-    Arena& operator=(Arena&& other) noexcept {
-        if (this != &other) {
-            freeIndexes = std::move(other.freeIndexes);
-            std::copy(std::begin(other.usedIndexesSet), std::end(other.usedIndexesSet), std::begin(usedIndexesSet));
-            std::move(std::begin(other.elements), std::end(other.elements), std::begin(elements));
-
-            std::fill(std::begin(other.usedIndexesSet), std::end(other.usedIndexesSet), false);
-            std::iota(other.freeIndexes.begin(), other.freeIndexes.end(), 0);
-        }
-        return *this;
-    }
+    Arena(Arena&& other) noexcept = delete;
+    Arena& operator=(Arena&& other) = delete;
 
    private:
     T elements[S];
