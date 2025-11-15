@@ -35,6 +35,10 @@ void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
     DMA::start();
 #endif
 
+#ifdef HAL_MDMA_MODULE_ENABLED
+    MDMA::start();
+#endif
+
 #ifdef HAL_FMAC_MODULE_ENABLED
     MultiplierAccelerator::start();
 #endif
