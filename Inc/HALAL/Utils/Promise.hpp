@@ -145,6 +145,8 @@ class Promise {
      */
     static void update() {
         uint16_t count = 0;
+        Promise* toRelease[PROMISE_MAX_UPDATES_PER_CYCLE];
+        uint16_t releaseCount = 0;
         
         for (Promise& p : arena) {
             if (count >= PROMISE_MAX_UPDATES_PER_CYCLE) {
@@ -154,9 +156,14 @@ class Promise {
             State expected = State::Ready;
             if (p.state.compare_exchange_strong(expected, State::Completed, std::memory_order_acq_rel)) {
                 p.callback(p.context);
-                Promise::arena.release(&p);
+                toRelease[releaseCount++] = &p;
                 count++;
             }
+        }
+        
+        // Release all completed Promises after iteration
+        for (uint16_t i = 0; i < releaseCount; i++) {
+            Promise::arena.release(toRelease[i]);
         }
     }
 
