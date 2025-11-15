@@ -91,6 +91,7 @@ void HALAL::start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
         Watchdog::start();
     #endif
 #endif 
+    Promise::update();
 }
 #else
 // Simulator start
