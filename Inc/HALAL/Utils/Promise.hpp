@@ -147,9 +147,6 @@ class Promise {
      */
     template<typename... Promises>
     static Promise* all(Promises*... promises) {
-        auto chained = Promise::inscribe();
-        chained->counter = sizeof...(promises);
-
         // Check if any promise already has a callback registered
         for (Promise* p : {promises...}) {
             if (p->callback != nullptr || p->chainedCallback != nullptr) {
@@ -157,16 +154,20 @@ class Promise {
             }
         }
 
+        auto allPromise = Promise::inscribe();
+        allPromise->counter = sizeof...(promises);
+
+
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
-                Promise* chained = static_cast<Promise*>(ctx);
-                int remaining = chained->counter.fetch_sub(1, std::memory_order_acq_rel) - 1;
+                Promise* allPromise = static_cast<Promise*>(ctx);
+                int remaining = allPromise->counter.fetch_sub(1, std::memory_order_acq_rel) - 1;
                 if (remaining == 0) {
-                    chained->resolve();
+                    allPromise->resolve();
                 }
-            }, chained);
+            }, allPromise);
         }
-        return chained;
+        return allPromise;
     }
 
     /**
@@ -177,13 +178,15 @@ class Promise {
      */
     template<typename... Args>
     static Promise* any(Args*... promises) {
-        auto anyPromise = Promise::inscribe();
         // Check if any promise already has a callback registered
         for (Promise* p : {promises...}) {
             if (p->callback != nullptr || p->chainedCallback != nullptr) {
                 return nullptr;
             }
         }
+
+        auto anyPromise = Promise::inscribe();
+        
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* anyPromise = static_cast<Promise*>(ctx);
