@@ -35,66 +35,103 @@ if (NOT CMAKE_CROSSCOMPILING)
   add_subdirectory(Tests)
 endif()
 
-# This should be an explicit list of files, but there are just too many files :(
-file(GLOB_RECURSE HEADER_DRIVER ${CMAKE_CURRENT_LIST_DIR}/Drivers/*.h )
-file(GLOB_RECURSE SOURCE_DRIVER ${CMAKE_CURRENT_LIST_DIR}/Drivers/*.c )
-file(GLOB_RECURSE HEADER_MIDDLEWARE ${CMAKE_CURRENT_LIST_DIR}/Middlewares/*.h)
-file(GLOB_RECURSE SOURCE_MIDDLEWARE ${CMAKE_CURRENT_LIST_DIR}/Middlewares/*.c)
-file(GLOB_RECURSE HEADER_LWIP ${CMAKE_CURRENT_LIST_DIR}/LWIP/*.h)
-file(GLOB_RECURSE SOURCE_LWIP ${CMAKE_CURRENT_LIST_DIR}/LWIP/*.c)
+set(STM32CUBEH7 "${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7")
+message("STM32CUBEH7: ${STM32CUBEH7}")
+
+if (CMAKE_CROSSCOMPILING)
+  # HAL driver source directory
+  set(HAL_DRIVER_SRC_DIR ${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Src)
+
+  set(HAL_SOURCES
+    # Core HAL stuff
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal.c
+
+    # Common "infrastructure"
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_cortex.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_rcc.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_rcc_ex.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_flash.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_flash_ex.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_pwr.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_pwr_ex.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_dma.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_dma_ex.c
+
+    # GPIO / EXTI
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_gpio.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_exti.c
+
+    # ADC
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc_ex.c
+
+    # DFSDM
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_dfsdm.c
+
+    # PWM -> TIM
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_tim.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_tim_ex.c
+
+    # UART
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_uart.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_uart_ex.c
+
+    # SD
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd_ex.c
+
+    # CAN / FDCAN
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_fdcan.c
+  )
+
+  set(LWIP_DIR ${STM32CUBEH7}/Middlewares/Third_Party/LwIP)
+  set(LAN8742_DIR ${STM32CUBEH7}/Drivers/BSP/Components/lan8742)
+
+  file(GLOB LWIP_SOURCES       # RECURSE not really needed here
+      ${LWIP_DIR}/src/core/*.c
+      ${LWIP_DIR}/src/core/ipv4/*.c
+      ${LWIP_DIR}/src/core/ipv6/*.c
+      ${LWIP_DIR}/src/api/*.c
+      ${LWIP_DIR}/src/netif/*.c
+      ${LWIP_DIR}/system/*.c
+      ${LAN8742_DIR}/lan8742.c
+  )
+
+  file(GLOB_RECURSE USER_SOURCE_LWIP ${CMAKE_CURRENT_LIST_DIR}/LWIP/*.c)
+
+  # HALAL
+  file(GLOB_RECURSE HALAL_C ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/*.c)
+  file(GLOB_RECURSE HALAL_CPP ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/*.cpp)
+endif()
 
 # CPP UTILITIES
-file(GLOB_RECURSE CPP_UTILITIES_H ${CMAKE_CURRENT_LIST_DIR}/Inc/C++Utilities/*.h)
-file(GLOB_RECURSE CPP_UTILITIES_HPP ${CMAKE_CURRENT_LIST_DIR}/Inc/C++Utilities/*.hpp)
 file(GLOB_RECURSE CPP_UTILITIES_C ${CMAKE_CURRENT_LIST_DIR}/Src/C++Utilities/*.c)
 file(GLOB_RECURSE CPP_UTILITIES_CPP ${CMAKE_CURRENT_LIST_DIR}/Src/C++Utilities/*.cpp)
 
-# HALAL (and Mock)
-file(GLOB_RECURSE HALAL_H ${CMAKE_CURRENT_LIST_DIR}/Inc/HALAL/*.h)
-file(GLOB_RECURSE HALAL_MOCK_H ${CMAKE_CURRENT_LIST_DIR}/Inc/HALALMock/*.h)
-list(REMOVE_ITEM HALAL_H ${HALAL_MOCK_H})
-file(GLOB_RECURSE HALAL_HPP ${CMAKE_CURRENT_LIST_DIR}/Inc/HALAL/*.hpp)
-file(GLOB_RECURSE HALAL_MOCK_HPP ${CMAKE_CURRENT_LIST_DIR}/Inc/HALALMock/*.hpp)
-list(REMOVE_ITEM HALAL_HPP ${HALAL_MOCK_HPP})
-file(GLOB_RECURSE HALAL_C ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/*.c)
+# HALAL Mock
 file(GLOB_RECURSE HALAL_MOCK_C ${CMAKE_CURRENT_LIST_DIR}/Src/HALALMock/*.c)
-list(REMOVE_ITEM HALAL_C ${HALAL_MOCK_C})
-file(GLOB_RECURSE HALAL_CPP ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/*.cpp)
 file(GLOB_RECURSE HALAL_MOCK_CPP ${CMAKE_CURRENT_LIST_DIR}/Src/HALALMock/*.cpp)
-list(REMOVE_ITEM HALAL_CPP ${HALAL_MOCK_CPP})
 
 # STLIB_LOW
-file(GLOB_RECURSE STLIB_LOW_H ${CMAKE_CURRENT_LIST_DIR}/Inc/ST-LIB_LOW/*.h)
-file(GLOB_RECURSE STLIB_LOW_HPP ${CMAKE_CURRENT_LIST_DIR}/Inc/ST-LIB_LOW/*.hpp)
 file(GLOB_RECURSE STLIB_LOW_C ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/*.c)
 file(GLOB_RECURSE STLIB_LOW_CPP ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/*.cpp)
 
 # STLIB_HIGH
-file(GLOB_RECURSE STLIB_HIGH_H ${CMAKE_CURRENT_LIST_DIR}/Inc/ST-LIB_HIGH/*.h)
-file(GLOB_RECURSE STLIB_HIGH_HPP ${CMAKE_CURRENT_LIST_DIR}/Inc/ST-LIB_HIGH/*.hpp)
 file(GLOB_RECURSE STLIB_HIGH_C ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/*.c)
 file(GLOB_RECURSE STLIB_HIGH_CPP ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/*.cpp)
 
 add_library(${STLIB_LIBRARY} STATIC
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HEADER_DRIVER}>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HEADER_MIDDLEWARE}>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HEADER_LWIP}>
-  ${CPP_UTILITIES_H}
-  $<IF:$<BOOL:${CMAKE_CROSSCOMPILING}>,${HALAL_H},${HALAL_MOCK_H}>
-  ${STLIB_LOW_H}
-  ${STLIB_HIGH_H}
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${SOURCE_DRIVER}>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${SOURCE_MIDDLEWARE}>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${SOURCE_LWIP}>
+  # Only compile these when cross-compiling for STM32
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HAL_SOURCES}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_SOURCES}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${USER_SOURCE_LWIP}>
+
+  # Always-built C / C++ utilities and ST-LIB layers
   ${CPP_UTILITIES_C}
   $<IF:$<BOOL:${CMAKE_CROSSCOMPILING}>,${HALAL_C},${HALAL_MOCK_C}>
   ${STLIB_LOW_C}
   ${STLIB_HIGH_C}
-  ${CPP_UTILITIES_HPP}
-  $<IF:$<BOOL:${CMAKE_CROSSCOMPILING}>,${HALAL_HPP},${HALAL_MOCK_HPP}>
-  ${CMAKE_CURRENT_LIST_DIR}/Inc/HALAL/HALAL.hpp
-  ${STLIB_LOW_HPP}
-  ${STLIB_HIGH_HPP}
+
   ${CPP_UTILITIES_CPP}
   $<IF:$<BOOL:${CMAKE_CROSSCOMPILING}>,${HALAL_CPP},${HALAL_MOCK_CPP}>
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/HALAL.cpp
@@ -141,27 +178,28 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
 )
 
 target_include_directories(${STLIB_LIBRARY} PRIVATE
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Drivers/CMSIS/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/system>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/netif/ppp>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/apps>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/priv>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/lwip/prot>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/netif>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/compat>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/arpa>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/net>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/posix/sys>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/src/include/compat/stdc>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Middlewares/Third_Party/LwIP/system/arch>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Drivers/BSP/Components>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Drivers/BSP/Components/lan8742>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Include>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Core_A/Include>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/system>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/netif/ppp>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/lwip>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/lwip/apps>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/lwip/priv>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/lwip/prot>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/netif>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/compat>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/compat/posix>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/compat/posix/arpa>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/compat/posix/net>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/compat/posix/sys>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/src/include/compat/stdc>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${LWIP_DIR}/system/arch>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/BSP/Components>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/BSP/Components/lan8742>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/LWIP/App>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/LWIP/Target>
   ${CMAKE_CURRENT_LIST_DIR}/Inc
