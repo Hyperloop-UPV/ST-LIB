@@ -39,55 +39,78 @@ set(STM32CUBEH7 "${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7")
 message("STM32CUBEH7: ${STM32CUBEH7}")
 
 if (CMAKE_CROSSCOMPILING)
-  # HAL driver source directory
   set(HAL_DRIVER_SRC_DIR ${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Src)
 
   set(HAL_SOURCES
-    # Core HAL stuff
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal.c
+      # Core HAL stuff
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal.c
 
-    # Common "infrastructure"
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_cortex.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_rcc.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_rcc_ex.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_flash.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_flash_ex.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_pwr.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_pwr_ex.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_dma.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_dma_ex.c
+      # Common "infrastructure"
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_cortex.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_rcc.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_rcc_ex.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_flash.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_flash_ex.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_pwr.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_pwr_ex.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_dma.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_dma_ex.c
 
-    # GPIO / EXTI
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_gpio.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_exti.c
+      # GPIO / EXTI
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_gpio.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_exti.c
 
-    # ADC
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc_ex.c
+      # ADC
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc_ex.c
 
-    # DFSDM
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_dfsdm.c
+      # DFSDM
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_dfsdm.c
 
-    # PWM -> TIM
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_tim.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_tim_ex.c
+      # PWM -> TIM
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_tim.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_tim_ex.c
 
-    # UART
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_uart.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_uart_ex.c
+      # UART
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_uart.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_uart_ex.c
 
-    # SD
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd.c
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd_ex.c
+      # SD
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd_ex.c
 
-    # CAN / FDCAN
-    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_fdcan.c
+      # CAN / FDCAN
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_fdcan.c
+
+      # SPI
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_spi.c
+
+      # Ethernet
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_eth.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_eth_ex.c
+
+      # LPTIM (low-power timers)
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_lptim.c
+
+      # RTC
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_rtc.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_rtc_ex.c
+
+      # I2C
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_i2c.c
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_i2c_ex.c
+
+      # FMAC
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_fmac.c
+
+      # CORDIC
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_cordic.c
   )
 
   set(LWIP_DIR ${STM32CUBEH7}/Middlewares/Third_Party/LwIP)
   set(LAN8742_DIR ${STM32CUBEH7}/Drivers/BSP/Components/lan8742)
 
-  file(GLOB LWIP_SOURCES       # RECURSE not really needed here
+  file(GLOB LWIP_SOURCES
       ${LWIP_DIR}/src/core/*.c
       ${LWIP_DIR}/src/core/ipv4/*.c
       ${LWIP_DIR}/src/core/ipv6/*.c
@@ -177,7 +200,7 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<COMPILE_LANGUAGE:CXX>:-Wno-address-of-packed-member>  # Add this line
 )
 
-target_include_directories(${STLIB_LIBRARY} PRIVATE
+target_include_directories(${STLIB_LIBRARY} PUBLIC
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Include>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Core_A/Include>
