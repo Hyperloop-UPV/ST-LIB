@@ -140,17 +140,15 @@ class Promise {
     static Promise* all(Promises*... promises) {
         auto chained = Promise::inscribe();
         chained->counter = sizeof...(promises);
+
+        // Check if any promise already has a callback registered
         for (Promise* p : {promises...}) {
             if (p->callback != nullptr || p->chainedCallback != nullptr) {
-                release(chained);
-                for (Promise* released : {promises...}) {
-                    if (released == p) {
-                        break;
-                    }
-                    release(released);
-                }
                 return nullptr;
             }
+        }
+
+        for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* chained = static_cast<Promise*>(ctx);
                 chained->counter--;
@@ -171,17 +169,13 @@ class Promise {
     template<typename... Args>
     static Promise* any(Args*... promises) {
         auto anyPromise = Promise::inscribe();
+        // Check if any promise already has a callback registered
         for (Promise* p : {promises...}) {
             if (p->callback != nullptr || p->chainedCallback != nullptr) {
-                release(anyPromise);
-                for (Promise* released : {promises...}) {
-                    if (released == p) {
-                        break;
-                    }
-                    release(released);
-                }
                 return nullptr;
             }
+        }
+        for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* anyPromise = static_cast<Promise*>(ctx);
                 anyPromise->resolve();
