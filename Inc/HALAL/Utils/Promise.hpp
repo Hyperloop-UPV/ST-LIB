@@ -8,6 +8,7 @@
 #ifndef PROMISE_HPP
 #define PROMISE_HPP
 
+#include <atomic>
 #include "C++Utilities/Arena.hpp"
 #include "C++Utilities/RingBuffer.hpp"
 
@@ -59,7 +60,7 @@ class Promise {
     void then(Callback cb, void* ctx = nullptr) {
         callback = cb;
         context = ctx;
-        if (isResolved) {
+        if (isResolved.load(std::memory_order_acquire)) {
             readyList.push(this);
         }
     }
@@ -96,7 +97,7 @@ class Promise {
             chained->then(p->next->callback, p->next->context);
             release(p->next);
         };
-        if (isResolved) {
+        if (isResolved.load(std::memory_order_acquire)) {
             readyList.push(this);
         }
         return next;
@@ -108,10 +109,10 @@ class Promise {
      * @note If the Promise is already resolved and the callback has not been called yet, calling this function has no effect.
      */
     void resolve() {
-        if (isResolved) {
+        bool expected = false;
+        if (!isResolved.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
             return;
         }
-        isResolved = true;
         if (callback) {
             readyList.push(this);
         }
@@ -151,8 +152,8 @@ class Promise {
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* chained = static_cast<Promise*>(ctx);
-                chained->counter--;
-                if (chained->counter == 0) {
+                int remaining = chained->counter.fetch_sub(1, std::memory_order_acq_rel) - 1;
+                if (remaining == 0) {
                     chained->resolve();
                 }
             }, chained);
@@ -196,8 +197,8 @@ class Promise {
     ChainedCallback chainedCallback;
     void* context;
     void* chainedContext;
-    bool isResolved = false;
-    int counter = 0;
+    std::atomic<bool> isResolved{false};
+    std::atomic<int> counter{0};
     Promise* next = nullptr;
     static Arena<PROMISE_MAX_CONCURRENT, Promise> arena;
     static RingBuffer<Promise*, PROMISE_MAX_CONCURRENT> readyList;
