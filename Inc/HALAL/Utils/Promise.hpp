@@ -61,9 +61,11 @@ class Promise {
     void then(Callback cb, void* ctx = nullptr) {
         callback = cb;
         context = ctx;
+        __disable_irq();
         if (isResolved.load(std::memory_order_acquire)) {
             readyList.push(this);
         }
+        __enable_irq();
     }
     /**
      * @brief Register a Promise-returning chained callback to be called when the Promise is resolved. You can chain multiple Promises together using this method.
@@ -98,9 +100,11 @@ class Promise {
             chained->then(p->next->callback, p->next->context);
             release(p->next);
         };
+        __disable_irq();
         if (isResolved.load(std::memory_order_acquire)) {
             readyList.push(this);
         }
+        __enable_irq();
         return next;
     }
 
@@ -186,7 +190,7 @@ class Promise {
         }
 
         auto anyPromise = Promise::inscribe();
-        
+
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* anyPromise = static_cast<Promise*>(ctx);
