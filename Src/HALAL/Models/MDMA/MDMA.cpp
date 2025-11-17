@@ -196,13 +196,15 @@ void MDMA::transfer_packet(const uint8_t MDMA_id, const uint8_t packet_id,uint8_
     uint8_t* final_destination = destination_address;
     if (final_destination == nullptr)
     {
+        if (instance.destination_address == nullptr)
+        {
+        ErrorHandler("No destination address provided for MDMA transfer");
+        }
+        
         final_destination = instance.destination_address;
     }
 
-    if (final_destination == nullptr)
-    {
-        ErrorHandler("No destination address provided for MDMA transfer");
-    }
+    
 
     nodes.back().CDAR = reinterpret_cast<uint32_t>(final_destination);
     nodes.back().CBNDTR = packet_sizes[packet_id];

@@ -215,82 +215,76 @@ inline uint8_t MDMA::add_packet(const uint8_t MDMA_id, const std::tuple<pointers
 }
 
 template<typename... PacketIds>
-inline uint8_t MDMA::merge_packets(const uint8_t MDMA_id,const uint8_t base_packet_id, const PacketIds... packets_id)
+inline uint8_t MDMA::merge_packets(const uint8_t MDMA_id, const uint8_t base_packet_id, const PacketIds... packets_id)
 {
-    Instance& instance = instances[MDMA_id];    
+    Instance& instance = instances[MDMA_id];
 
-    uint8_t new_packet_id = number_of_packets++;
-    std::vector<MDMA_LinkNodeTypeDef>& merged_nodes = linked_lists[new_packet_id];
+    auto& base_nodes = linked_lists[base_packet_id];
+    if (base_nodes.size() < 2)
+    {
+        ErrorHandler("MDMA packet merge requires packets with at least one data node");
+    }
+
+    const uint32_t buffer_address = reinterpret_cast<uint32_t>(instance.data_buffer);
+
+    size_t total_data_nodes = 0;
+    auto count_nodes = [&](uint8_t packet_id)
+    {
+        auto& nodes = linked_lists[packet_id];
+        if (nodes.size() < 2)
+        {
+            ErrorHandler("MDMA packet merge requires packets with at least one data node");
+        }
+
+        total_data_nodes += nodes.size() - 1;
+    };
+
+    count_nodes(base_packet_id);
+    (count_nodes(packets_id), ...);
+
+    std::vector<MDMA_LinkNodeTypeDef> merged_nodes;
+    merged_nodes.reserve(total_data_nodes + 1);
 
     uint32_t offset = 0;
-
-    std::vector<MDMA_LinkNodeTypeDef> base_nodes = linked_lists[base_packet_id]; 
-    if (!base_nodes.empty())
+    auto append_packet = [&](uint8_t packet_id)
     {
-        base_nodes.pop_back(); 
-        for (const auto& node : base_nodes)
+        auto& nodes = linked_lists[packet_id];
+        const size_t data_nodes = nodes.size() - 1;
+        for (size_t idx = 0; idx < data_nodes; ++idx)
         {
-            merged_nodes.push_back(node); 
-            offset += node.CBNDTR;
-        }
-    }
-
-    std::array<uint8_t, sizeof...(packets_id)> packet_ids{static_cast<uint8_t>(packets_id)...};
-    for (size_t idx = 0; idx < packet_ids.size(); ++idx)
-    {
-        uint8_t pid = packet_ids[idx];
-        std::vector<MDMA_LinkNodeTypeDef> nodes_to_merge = linked_lists[pid];
-        
-        if (nodes_to_merge.empty()) continue; 
-
-        nodes_to_merge.pop_back(); 
-
-        for (auto& node : nodes_to_merge)
-        {
-            
-            offset += node.CBNDTR;
-            node.CDAR = (uint32_t)instance.data_buffer + offset;
-
+            MDMA_LinkNodeTypeDef node = nodes[idx];
+            node.CDAR = buffer_address + offset;
+            node.CLAR = 0;
             merged_nodes.push_back(node);
+            offset += node.CBNDTR;
         }
-    }
+    };
 
-    if (merged_nodes.empty())
+    append_packet(base_packet_id);
+    (append_packet(packets_id), ...);
+
+    if (offset == 0)
     {
         ErrorHandler("Error merging linked list in MDMA");
     }
 
-    MDMA_LinkNodeTypeDef aux_node = {};
-    MDMA_LinkNodeConfTypeDef nodeConfig{};
-    nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-    nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-    nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-    nodeConfig.Init.BufferTransferLength = 1;
-    nodeConfig.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
-    nodeConfig.Init.SourceBlockAddressOffset = 0;
-    nodeConfig.Init.DestBlockAddressOffset = 0;
-    nodeConfig.BlockCount = 1;
-    nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
-    nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-    nodeConfig.Init.Request = MDMA_REQUEST_SW;
-    nodeConfig.Init.SourceInc = MDMA_SRC_INC_BYTE;
-    nodeConfig.Init.DestinationInc = MDMA_DEST_INC_BYTE;
-    nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_BYTE;
-    nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_BYTE;
-    nodeConfig.BlockDataLength = 1;
-    nodeConfig.SrcAddress = (uint32_t) instance.data_buffer;
-    nodeConfig.DstAddress = (uint32_t) instance.data_buffer + offset; 
-    
-    HAL_MDMA_LinkedList_CreateNode(&aux_node, &nodeConfig);
-    merged_nodes.push_back(aux_node); 
+    MDMA_LinkNodeTypeDef final_node = base_nodes.back();
+    final_node.CSAR = buffer_address;
+    final_node.CDAR = buffer_address + offset;
+    final_node.CBNDTR = offset;
+    final_node.CLAR = 0;
+    merged_nodes.push_back(final_node);
 
-    for (size_t i = 0; i < merged_nodes.size() - 1; ++i)
+    const uint8_t new_packet_id = number_of_packets++;
+    linked_lists[new_packet_id] = std::move(merged_nodes);
+    packet_sizes[new_packet_id] = offset;
+
+    auto& stored_nodes = linked_lists[new_packet_id];
+    for (size_t i = 0; i + 1 < stored_nodes.size(); ++i)
     {
-        merged_nodes[i].CLAR = reinterpret_cast<uint32_t>(&merged_nodes[i + 1]);
+        stored_nodes[i].CLAR = reinterpret_cast<uint32_t>(&stored_nodes[i + 1]);
     }
-    merged_nodes.back().CLAR = 0; 
+    stored_nodes.back().CLAR = 0;
 
-    SCB_CleanDCache_by_Addr((uint32_t*)merged_nodes.data(), sizeof(MDMA_LinkNodeTypeDef) * merged_nodes.size());
-
-    return new_packet_id; 
+    return new_packet_id;
 }
