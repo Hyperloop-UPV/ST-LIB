@@ -182,7 +182,7 @@ void MDMA::transfer_packet(const uint8_t MDMA_id, const uint8_t packet_id,uint8_
     auto it = instances.find(MDMA_id);
     if (it == instances.end())
     {
-        ErrorHandler("MDMA instance ID not found in add_packet");
+        ErrorHandler("MDMA instance ID not found in transfer_packet");
     }
     Instance& instance = instances[MDMA_id];
 
