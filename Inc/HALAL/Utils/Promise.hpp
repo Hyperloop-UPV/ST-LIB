@@ -10,10 +10,20 @@
 
 #include <atomic>
 #include "C++Utilities/Arena.hpp"
-#include "C++Utilities/RingBuffer.hpp"
 
+// Maximum number of concurrent Promises allowed in the arena.
+// Default is 200, which should be sufficient for most use cases. Increase if you expect higher concurrency.
+// You can override this value by defining PROMISE_MAX_CONCURRENT before including this header.
+#ifndef PROMISE_MAX_CONCURRENT
 #define PROMISE_MAX_CONCURRENT 200
+#endif
+
+// Maximum number of Promise updates processed per cycle.
+// Default is 50, which balances throughput and responsiveness. Tune this for your workload.
+// You can override this value by defining PROMISE_MAX_UPDATES_PER_CYCLE before including this header.
+#ifndef PROMISE_MAX_UPDATES_PER_CYCLE
 #define PROMISE_MAX_UPDATES_PER_CYCLE 50
+#endif
 
 /**
  * @brief A simple Promise implementation for asynchronous programming.
@@ -22,6 +32,13 @@
 class Promise {
     using Callback = void(*)(void*);
     using ChainedCallback = Promise*(*)(void*);
+    
+    enum class State : uint8_t {
+        Pending,
+        Resolved,
+        Ready,
+        Completed
+    };
     
    public:
 
@@ -36,7 +53,7 @@ class Promise {
         if (!p) {
             return nullptr;
         }
-        p->isResolved = false;
+        p->state.store(State::Pending, std::memory_order_release);
         p->callback = nullptr;
         p->context = nullptr;
         return p;
@@ -61,16 +78,18 @@ class Promise {
     void then(Callback cb, void* ctx = nullptr) {
         callback = cb;
         context = ctx;
-        if (isResolved.load(std::memory_order_acquire)) {
-            readyList.push(this);
-        }
+        
+        State expected = State::Resolved;
+        state.compare_exchange_strong(expected, State::Ready, std::memory_order_acq_rel); // If already resolved, mark as ready
     }
+    
     /**
-     * @brief Register a Promise-returning chained callback to be called when the Promise is resolved. You can chain multiple Promises together using this method.
+     * @brief Register a Promise-returning chained callback to be called when the Promise is resolved. You can chain multiple Promises together using this method. Be extremely careful with memory management when using chained Promises.
      * @param cb The chained callback function that returns a new Promise.
      * @param ctx The context to be passed to the chained callback, can only be a pointer, you must manage the memory yourself.
      * @return Pointer to the newly created chained Promise.
      * @note If the Promise is already resolved, the chained callback is scheduled to be called in the next update cycle. You can call then whenever you want, but only one chained callback can be registered per Promise.
+     * @note You should not store the returned Promise pointer for long-term use, as it is managed by the Promise system. Call then on the returned Promise to register further callbacks.
      * @example
      * ```cpp
      * Promise* p1 = Promise::inscribe();
@@ -96,11 +115,14 @@ class Promise {
             Promise* p = static_cast<Promise*>(thisPtr);
             Promise* chained = p->chainedCallback(p->chainedContext);
             chained->then(p->next->callback, p->next->context);
-            release(p->next);
+            p->next->state.store(State::Ready, std::memory_order_release);
+            p->next->callback = nullptr;
+            p->next->context = nullptr;
         };
-        if (isResolved.load(std::memory_order_acquire)) {
-            readyList.push(this);
-        }
+        
+        State expected = State::Resolved;
+        state.compare_exchange_strong(expected, State::Ready, std::memory_order_acq_rel);
+        
         return next;
     }
 
@@ -110,14 +132,13 @@ class Promise {
      * @note If the Promise is already resolved and the callback has not been called yet, calling this function has no effect.
      */
     void resolve() {
-        bool expected = false;
-        if (!isResolved.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+        State expected = State::Pending;
+        if (!state.compare_exchange_strong(expected, State::Resolved, std::memory_order_acq_rel)) {
             return;
         }
+        
         if (callback) {
-            __disable_irq();
-            readyList.push(this);
-            __enable_irq();
+            state.store(State::Ready, std::memory_order_release);
         }
     }
 
@@ -127,15 +148,27 @@ class Promise {
      */
     static void update() {
         uint16_t count = 0;
-        while (readyList.size() > 0 && count < PROMISE_MAX_UPDATES_PER_CYCLE) {
-            __disable_irq();
-            Promise *p = readyList.first();
-            readyList.pop();
-            __enable_irq();
-
-            p->callback(p->context);
-            Promise::arena.release(p);
-            count++;
+        Promise* toRelease[PROMISE_MAX_UPDATES_PER_CYCLE];
+        uint16_t releaseCount = 0;
+        
+        for (Promise& p : arena) {
+            if (count >= PROMISE_MAX_UPDATES_PER_CYCLE) {
+                break;
+            }
+            
+            State expected = State::Ready;
+            if (p.state.compare_exchange_strong(expected, State::Completed, std::memory_order_acq_rel)) {
+                if (p.callback) {
+                    p.callback(p.context);
+                }
+                toRelease[releaseCount++] = &p;
+                count++;
+            }
+        }
+        
+        // Release all completed Promises after iteration
+        for (uint16_t i = 0; i < releaseCount; i++) {
+            Promise::arena.release(toRelease[i]);
         }
     }
 
@@ -147,9 +180,6 @@ class Promise {
      */
     template<typename... Promises>
     static Promise* all(Promises*... promises) {
-        auto chained = Promise::inscribe();
-        chained->counter = sizeof...(promises);
-
         // Check if any promise already has a callback registered
         for (Promise* p : {promises...}) {
             if (p->callback != nullptr || p->chainedCallback != nullptr) {
@@ -157,16 +187,19 @@ class Promise {
             }
         }
 
+        auto allPromise = Promise::inscribe();
+        allPromise->counter.store(sizeof...(promises), std::memory_order_release);
+
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
-                Promise* chained = static_cast<Promise*>(ctx);
-                int remaining = chained->counter.fetch_sub(1, std::memory_order_acq_rel) - 1;
+                Promise* allPromise = static_cast<Promise*>(ctx);
+                int remaining = allPromise->counter.fetch_sub(1, std::memory_order_acq_rel) - 1;
                 if (remaining == 0) {
-                    chained->resolve();
+                    allPromise->resolve();
                 }
-            }, chained);
+            }, allPromise);
         }
-        return chained;
+        return allPromise;
     }
 
     /**
@@ -177,13 +210,15 @@ class Promise {
      */
     template<typename... Args>
     static Promise* any(Args*... promises) {
-        auto anyPromise = Promise::inscribe();
         // Check if any promise already has a callback registered
         for (Promise* p : {promises...}) {
             if (p->callback != nullptr || p->chainedCallback != nullptr) {
                 return nullptr;
             }
         }
+
+        auto anyPromise = Promise::inscribe();
+
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* anyPromise = static_cast<Promise*>(ctx);
@@ -205,13 +240,11 @@ class Promise {
     ChainedCallback chainedCallback;
     void* context;
     void* chainedContext;
-    std::atomic<bool> isResolved{false};
+    std::atomic<State> state{State::Pending};
     std::atomic<int> counter{0};
     Promise* next = nullptr;
     static Arena<PROMISE_MAX_CONCURRENT, Promise> arena;
-    static RingBuffer<Promise*, PROMISE_MAX_CONCURRENT> readyList;
 };
 inline Arena<PROMISE_MAX_CONCURRENT, Promise> Promise::arena;
-inline RingBuffer<Promise*, PROMISE_MAX_CONCURRENT> Promise::readyList;
 
 #endif // PROMISE_HPP

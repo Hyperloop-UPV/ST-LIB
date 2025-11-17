@@ -9,7 +9,8 @@
 #define ARENA_HPP
 
 #include "CppImports.hpp"
-#include "RingBuffer.hpp"
+#include "Stack.hpp"
+
 
 /**
  * @brief A simple memory arena for fixed-size allocations.
@@ -26,11 +27,10 @@ class Arena {
      * @return Pointer to the acquired element, or nullptr if the arena is full.
      */
     T* acquire() {
-        if (freeIndexes.size() == 0) {
+        if (freeIndexes.empty()) {
             return nullptr;
         }
-        size_t index = freeIndexes.first();
-        freeIndexes.pop();
+        size_t index = freeIndexes.pop();
         usedIndexesSet[index] = true;
         return &elements[index];
     }
@@ -88,8 +88,80 @@ class Arena {
     size_t available() const { return freeIndexes.size(); }
     size_t used() const { return S - freeIndexes.size(); }
 
+    /**
+     * @brief Iterator for traversing used elements in the arena.
+     */
+    class Iterator {
+    public:
+        Iterator(Arena* arena, size_t index) : arena(arena), index(index) {
+            // Skip to the first used element
+            while (index < S && !arena->usedIndexesSet[index]) {
+                ++index;
+            }
+            this->index = index;
+        }
+
+        T& operator*() { return arena->elements[index]; }
+        T* operator->() { return &arena->elements[index]; }
+
+        Iterator& operator++() {
+            do {
+                ++index;
+            } while (index < S && !arena->usedIndexesSet[index]);
+            return *this;
+        }
+
+        bool operator!=(const Iterator& other) const {
+            return index != other.index;
+        }
+
+    private:
+        Arena* arena;
+        size_t index;
+    };
+
+    /**
+     * @brief Const iterator for traversing used elements in the arena.
+     */
+    class ConstIterator {
+    public:
+        ConstIterator(const Arena* arena, size_t index) : arena(arena), index(index) {
+            // Skip to the first used element
+            while (index < S && !arena->usedIndexesSet[index]) {
+                ++index;
+            }
+            this->index = index;
+        }
+
+        const T& operator*() const { return arena->elements[index]; }
+        const T* operator->() const { return &arena->elements[index]; }
+
+        ConstIterator& operator++() {
+            do {
+                ++index;
+            } while (index < S && !arena->usedIndexesSet[index]);
+            return *this;
+        }
+
+        bool operator!=(const ConstIterator& other) const {
+            return index != other.index;
+        }
+
+    private:
+        const Arena* arena;
+        size_t index;
+    };
+
+    Iterator begin() { return Iterator(this, 0); }
+    Iterator end() { return Iterator(this, S); }
+    ConstIterator begin() const { return ConstIterator(this, 0); }
+    ConstIterator end() const { return ConstIterator(this, S); }
+    ConstIterator cbegin() const { return ConstIterator(this, 0); }
+    ConstIterator cend() const { return ConstIterator(this, S); }
+
     Arena() {
-        for (size_t i = 0; i < S; ++i) {
+        // Push indices in reverse order so index 0 is allocated first
+        for (int i = S - 1; i >= 0; --i) {
             freeIndexes.push(i);
         }
     }
@@ -100,7 +172,7 @@ class Arena {
 
    private:
     T elements[S];
-    RingBuffer<size_t, S> freeIndexes;
+    Stack<S> freeIndexes;
     bool usedIndexesSet[S]{false};
 };
 
