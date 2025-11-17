@@ -90,6 +90,10 @@ void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node
 
 uint8_t MDMA::inscribe(uint8_t* data_buffer, uint8_t* destination_address)
 {
+    if (instances.size() >= instance_to_channel.size())
+    {
+        ErrorHandler("Maximum number of MDMA instances reached");
+    }
     const uint8_t id = static_cast<uint8_t>(instances.size());
     MDMA_HandleTypeDef mdma_handle{};
     mdma_handle.Instance = instance_to_channel[id];
@@ -175,6 +179,11 @@ void MDMA::irq_handler()
 
 void MDMA::transfer_packet(const uint8_t MDMA_id, const uint8_t packet_id,uint8_t* destination_address,Promise* promise)
 {
+    auto it = instances.find(MDMA_id);
+    if (it == instances.end())
+    {
+        ErrorHandler("MDMA instance ID not found in add_packet");
+    }
     Instance& instance = instances[MDMA_id];
 
     if(promise == nullptr)
@@ -221,6 +230,11 @@ void MDMA::transfer_packet(const uint8_t MDMA_id, const uint8_t packet_id,uint8_
 
 void MDMA::transfer_data(const uint8_t MDMA_id,uint8_t* source_address, const uint32_t data_length,uint8_t* destination_address,Promise* promise)
 {
+    auto it = instances.find(MDMA_id);
+    if (it == instances.end())
+    {
+        ErrorHandler("MDMA instance ID not found in add_packet");
+    }
     Instance& instance = instances[MDMA_id];
 
     if(promise == nullptr)

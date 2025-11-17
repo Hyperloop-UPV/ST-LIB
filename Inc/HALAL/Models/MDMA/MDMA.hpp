@@ -115,6 +115,11 @@ class MDMA{
 template<typename... pointers>
 inline uint8_t MDMA::add_packet(const uint8_t MDMA_id, const std::tuple<pointers...>& values)
 {
+    auto it = instances.find(MDMA_id);
+    if (it == instances.end())
+    {
+        ErrorHandler("MDMA instance ID not found in add_packet");
+    }
     Instance& instance = instances[MDMA_id];
     uint32_t offset{0};
     HAL_StatusTypeDef status;
@@ -133,7 +138,7 @@ inline uint8_t MDMA::add_packet(const uint8_t MDMA_id, const std::tuple<pointers
     nodeConfig.Init.SourceBlockAddressOffset = 0;
     nodeConfig.Init.DestBlockAddressOffset = 0;
     nodeConfig.BlockCount = 1;
-    nodeConfig.Init.Priority = MDMA_PRIORITY_HIGH;
+    nodeConfig.Init.Priority = MDMA_PRIORITY_VERY_HIGH;
     nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
     nodeConfig.Init.Request = MDMA_REQUEST_SW;
 
@@ -217,6 +222,11 @@ inline uint8_t MDMA::add_packet(const uint8_t MDMA_id, const std::tuple<pointers
 template<typename... PacketIds>
 inline uint8_t MDMA::merge_packets(const uint8_t MDMA_id, const uint8_t base_packet_id, const PacketIds... packets_id)
 {
+    auto it = instances.find(MDMA_id);
+    if (it == instances.end())
+    {
+        ErrorHandler("MDMA instance ID not found in add_packet");
+    }
     Instance& instance = instances[MDMA_id];
 
     auto& base_nodes = linked_lists[base_packet_id];
