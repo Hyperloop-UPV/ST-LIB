@@ -19,24 +19,51 @@ class MDMA{
 
     private:
     struct Instance{
-        public:
+    public:
         MDMA_HandleTypeDef handle;
         uint8_t id;
-        uint8_t *data_buffer;
+        uint8_t* data_buffer;
         uint8_t* destination_address;
         Promise* promise;
-        bool using_promise{false};
-        MDMA_LinkNodeTypeDef transfer_node{};
-        uint32_t last_destination{0};
-        uint32_t last_size{0};
-        Instance() = default;
-        Instance(MDMA_HandleTypeDef handle, uint8_t id, uint8_t* data_buffer, uint8_t* destination_address,MDMA_LinkNodeTypeDef transfer_node): handle(handle), id(id), data_buffer(data_buffer), destination_address(destination_address), transfer_node(transfer_node) {}
+        bool using_promise;
+        MDMA_LinkNodeTypeDef transfer_node;
+        uint32_t last_destination;
+        uint32_t last_size;
+
+        Instance()
+            : handle{}
+            , id(0U)
+            , data_buffer(nullptr)
+            , destination_address(nullptr)
+            , promise(nullptr)
+            , using_promise(false)
+            , transfer_node{}
+            , last_destination(0U)
+            , last_size(0U)
+        {}
+
+        Instance(MDMA_HandleTypeDef handle_,
+                 uint8_t id_,
+                 uint8_t* data_buffer_,
+                 uint8_t* destination_address_,
+                 MDMA_LinkNodeTypeDef transfer_node_)
+            : handle(handle_)
+            , id(id_)
+            , data_buffer(data_buffer_)
+            , destination_address(destination_address_)
+            , promise(nullptr)
+            , using_promise(false)
+            , transfer_node(transfer_node_)
+            , last_destination(0U)
+            , last_size(0U)
+        {}
 
 
     };
     static void prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node);
+    static Instance& get_instance(uint8_t id);
     inline static std::unordered_map<uint8_t,std::vector<MDMA_LinkNodeTypeDef>> linked_lists{};
-    inline static std::unordered_map<uint8_t, Instance> instances{};
+    inline static std::array<Instance,8> instances{};
     inline static std::unordered_map<uint8_t, uint32_t> packet_sizes{};
     static std::unordered_map<uint8_t, uint32_t> dst_size_to_flags;
     static std::unordered_map<uint8_t, uint32_t> src_size_to_flags;
@@ -115,12 +142,7 @@ class MDMA{
 template<typename... pointers>
 inline uint8_t MDMA::add_packet(const uint8_t MDMA_id, const std::tuple<pointers...>& values)
 {
-    auto it = instances.find(MDMA_id);
-    if (it == instances.end())
-    {
-        ErrorHandler("MDMA instance ID not found in add_packet");
-    }
-    Instance& instance = instances[MDMA_id];
+    Instance& instance = get_instance(MDMA_id);
     uint32_t offset{0};
     HAL_StatusTypeDef status;
     const uint8_t current_packet_id = number_of_packets++;
@@ -222,12 +244,7 @@ inline uint8_t MDMA::add_packet(const uint8_t MDMA_id, const std::tuple<pointers
 template<typename... PacketIds>
 inline uint8_t MDMA::merge_packets(const uint8_t MDMA_id, const uint8_t base_packet_id, const PacketIds... packets_id)
 {
-    auto it = instances.find(MDMA_id);
-    if (it == instances.end())
-    {
-        ErrorHandler("MDMA instance ID not found in add_packet");
-    }
-    Instance& instance = instances[MDMA_id];
+    Instance& instance = get_instance(MDMA_id);
 
     auto& base_nodes = linked_lists[base_packet_id];
     if (base_nodes.size() < 2)

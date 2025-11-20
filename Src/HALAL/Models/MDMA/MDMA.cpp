@@ -1,5 +1,6 @@
 #include "HALAL/Models/MDMA/MDMA.hpp"
 
+#include <algorithm>
 
 
 std::unordered_map<uint8_t, uint32_t> MDMA::src_size_to_flags = {
@@ -88,15 +89,44 @@ void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node
 
 
 
+
+MDMA::Instance& MDMA::get_instance(uint8_t id)
+{
+    if (id >= instances.size())
+    {
+        ErrorHandler("MDMA instance ID not found");
+    }
+
+    Instance& instance = instances[id];
+    if (instance.handle.Instance == nullptr)
+    {
+        ErrorHandler("MDMA instance not initialised");
+    }
+
+    return instance;
+}
+
+
 uint8_t MDMA::inscribe(uint8_t* data_buffer, uint8_t* destination_address)
 {
-    if (instances.size() >= instance_to_channel.size())
+    const auto slot_it = std::find_if(instances.begin(), instances.end(), [](const Instance& instance)
+    {
+        return instance.handle.Instance == nullptr;
+    });
+
+    if (slot_it == instances.end())
     {
         ErrorHandler("Maximum number of MDMA instances reached");
     }
-    const uint8_t id = static_cast<uint8_t>(instances.size());
+
+    const uint8_t id = static_cast<uint8_t>(slot_it - instances.begin());
     MDMA_HandleTypeDef mdma_handle{};
-    mdma_handle.Instance = instance_to_channel[id];
+    const auto channel_it = instance_to_channel.find(id);
+    if (channel_it == instance_to_channel.end())
+    {
+        ErrorHandler("MDMA channel mapping not found");
+    }
+    mdma_handle.Instance = channel_it->second;
     mdma_handle.Init.Request = MDMA_REQUEST_SW;
     mdma_handle.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
     mdma_handle.Init.Priority = MDMA_PRIORITY_VERY_HIGH;
@@ -151,9 +181,12 @@ void MDMA::start()
 {
     __HAL_RCC_MDMA_CLK_ENABLE();
 
-    for (auto& entry : instances)
+    for (auto& instance : instances)
     {
-        Instance& instance = entry.second;
+        if (instance.handle.Instance == nullptr)
+        {
+            continue;
+        }
         const HAL_StatusTypeDef status = HAL_MDMA_Init(&instance.handle);
         if (status != HAL_OK)
         {
@@ -171,20 +204,19 @@ void MDMA::start()
 
 void MDMA::irq_handler()
 {
-    for (auto& entry : instances)
+    for (auto& instance : instances)
     {
-        HAL_MDMA_IRQHandler(&entry.second.handle);
+        if (instance.handle.Instance == nullptr)
+        {
+            continue;
+        }
+        HAL_MDMA_IRQHandler(&instance.handle);
     }
 }
 
 void MDMA::transfer_packet(const uint8_t MDMA_id, const uint8_t packet_id,uint8_t* destination_address,Promise* promise)
 {
-    auto it = instances.find(MDMA_id);
-    if (it == instances.end())
-    {
-        ErrorHandler("MDMA instance ID not found in transfer_packet");
-    }
-    Instance& instance = instances[MDMA_id];
+    Instance& instance = get_instance(MDMA_id);
 
     if(promise == nullptr)
     {
@@ -230,12 +262,7 @@ void MDMA::transfer_packet(const uint8_t MDMA_id, const uint8_t packet_id,uint8_
 
 void MDMA::transfer_data(const uint8_t MDMA_id,uint8_t* source_address, const uint32_t data_length,uint8_t* destination_address,Promise* promise)
 {
-    auto it = instances.find(MDMA_id);
-    if (it == instances.end())
-    {
-        ErrorHandler("MDMA instance ID not found in add_packet");
-    }
-    Instance& instance = instances[MDMA_id];
+    Instance& instance = get_instance(MDMA_id);
 
     if(promise == nullptr)
     {
@@ -270,7 +297,13 @@ void MDMA::transfer_data(const uint8_t MDMA_id,uint8_t* source_address, const ui
 
 void MDMA::TransferCompleteCallback(MDMA_HandleTypeDef *hmdma)
 {
-	Instance& instance = instances[channel_to_instance[hmdma->Instance]];
+    const auto channel_it = channel_to_instance.find(hmdma->Instance);
+    if (channel_it == channel_to_instance.end())
+    {
+        ErrorHandler("MDMA channel not registered");
+    }
+
+    Instance& instance = get_instance(channel_it->second);
     SCB_InvalidateDCache_by_Addr((uint32_t*)instance.last_destination, instance.last_size);
     if(instance.using_promise)
     {
@@ -282,7 +315,13 @@ void MDMA::TransferCompleteCallback(MDMA_HandleTypeDef *hmdma)
 
 void MDMA::TransferErrorCallback(MDMA_HandleTypeDef *hmdma)
 {
-    Instance& instance = instances[channel_to_instance[hmdma->Instance]];
+    const auto channel_it = channel_to_instance.find(hmdma->Instance);
+    if (channel_it == channel_to_instance.end())
+    {
+        ErrorHandler("MDMA channel not registered");
+    }
+
+    Instance& instance = get_instance(channel_it->second);
     if(instance.using_promise)
     {
         instance.using_promise = false;
