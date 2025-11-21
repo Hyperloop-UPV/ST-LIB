@@ -9,9 +9,9 @@
 #define PROMISE_HPP
 
 #include <atomic>
-#include "C++Utilities/Arena.hpp"
+#include "C++Utilities/CppUtils.hpp"
 
-// Maximum number of concurrent Promises allowed in the arena.
+// Maximum number of concurrent Promises allowed in the pool.
 // Default is 200, which should be sufficient for most use cases. Increase if you expect higher concurrency.
 // You can override this value by defining PROMISE_MAX_CONCURRENT before including this header.
 #ifndef PROMISE_MAX_CONCURRENT
@@ -27,7 +27,7 @@
 
 /**
  * @brief A simple Promise implementation for asynchronous programming.
- * @note Promises are allocated from a fixed-size memory arena, so you don't own the memory. Use Promise::release() to release them back to the arena if needed.
+ * @note Promises are allocated from a fixed-size memory pool, so you don't own the memory. Use Promise::release() to release them back to the pool if needed.
  */
 class Promise {
     using Callback = void(*)(void*);
@@ -46,10 +46,10 @@ class Promise {
      * @brief Create a new Promise.
      * @return Pointer to the newly created Promise, or nullptr if allocation failed.
      * @note The returned Promise must be released using Promise::release().
-     * @note The Promise lives in a memory arena with a fixed maximum number of Promises (S), so you don't own the memory.
+     * @note The Promise lives in a memory pool with a fixed maximum number of Promises (S), so you don't own the memory.
      */
     static Promise* inscribe() {
-        Promise* p = Promise::arena.acquire();
+        Promise* p = Promise::pool.acquire();
         if (!p) {
             return nullptr;
         }
@@ -60,13 +60,13 @@ class Promise {
     }
 
     /**
-     * @brief Release a Promise back to the arena.
+     * @brief Release a Promise back to the pool.
      * @param p Pointer to the Promise to release.
      * @return True if the Promise was successfully released, false otherwise.
      * @note After calling this function, the Promise pointer is no longer valid and must not be used.
      */
     static bool release(Promise* p) {
-        return Promise::arena.release(p);
+        return Promise::pool.release(p);
     }
 
     /**
@@ -127,8 +127,8 @@ class Promise {
     }
 
     /**
-     * @brief Resolve the Promise, triggering the registered callback. Works in interruptions.
-     * @note Calling this after the Promise has been handled can be dangerous, as the Promise may have already been released back to the arena. Just remove the reference to the Promise after resolving it.
+     * @brief Resolve the Promise, triggering the registered callback. Works in interrupts.
+     * @note Calling this after the Promise has been handled can be dangerous, as the Promise may have already been released back to the pool. Just remove the reference to the Promise after resolving it.
      * @note If the Promise is already resolved and the callback has not been called yet, calling this function has no effect.
      */
     void resolve() {
@@ -151,7 +151,7 @@ class Promise {
         Promise* toRelease[PROMISE_MAX_UPDATES_PER_CYCLE];
         uint16_t releaseCount = 0;
         
-        for (Promise& p : arena) {
+        for (Promise& p : pool) {
             if (count >= PROMISE_MAX_UPDATES_PER_CYCLE) {
                 break;
             }
@@ -168,7 +168,7 @@ class Promise {
         
         // Release all completed Promises after iteration
         for (uint16_t i = 0; i < releaseCount; i++) {
-            Promise::arena.release(toRelease[i]);
+            Promise::pool.release(toRelease[i]);
         }
     }
 
@@ -243,8 +243,8 @@ class Promise {
     std::atomic<State> state{State::Pending};
     std::atomic<int> counter{0};
     Promise* next = nullptr;
-    static Arena<PROMISE_MAX_CONCURRENT, Promise> arena;
+    static Pool<Promise, PROMISE_MAX_CONCURRENT> pool;
 };
-inline Arena<PROMISE_MAX_CONCURRENT, Promise> Promise::arena;
+inline Pool<Promise, PROMISE_MAX_CONCURRENT> Promise::pool;
 
 #endif // PROMISE_HPP
