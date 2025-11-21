@@ -57,8 +57,11 @@ class Pool {
      * @note Could potentially release an element different than the original one if misused (eg. double free).
      */
     bool release(T* elem) {
+        if (elem - &elements[0] < 0) {
+            return false;
+        }
         size_t index = elem - &elements[0];
-        if (index < 0 || index >= S || !usedIndexesSet[index]) {
+        if (index >= S || !usedIndexesSet[index]) {
             return false;
         }
         freeIndexes.push(index);
@@ -72,8 +75,11 @@ class Pool {
      * @return True if the element was successfully destroyed and released, false otherwise.
      */
     bool destroy(T* elem) {
+        if (elem - &elements[0] < 0) {
+            return false;
+        }
         size_t index = elem - &elements[0];
-        if (index < 0 || index >= S || !usedIndexesSet[index]) {
+        if (index >= S || !usedIndexesSet[index]) {
             return false;
         }
         elem->~T();
