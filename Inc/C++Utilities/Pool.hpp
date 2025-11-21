@@ -15,8 +15,8 @@
 /**
  * @brief A simple memory pool for fixed-size allocations.
  * @note It works like a heap but with a fixed maximum number of elements, and all the items are of the same type.
- * @tparam S The maximum number of elements in the pool.
  * @tparam T The type of elements stored in the pool.
+ * @tparam S The maximum number of elements in the pool.
  */
 template<typename T, size_t S>
 class Pool {
@@ -32,7 +32,7 @@ class Pool {
         }
         size_t index = freeIndexes.top();
         freeIndexes.pop();
-        usedIndexesSet[index] = true;
+        usedBitset.set(index);
         return &elements[index];
     }
 
@@ -61,11 +61,11 @@ class Pool {
             return false;
         }
         size_t index = elem - &elements[0];
-        if (index >= S || !usedIndexesSet[index]) {
+        if (index >= S || !usedBitset.test(index)) {
             return false;
         }
         freeIndexes.push(index);
-        usedIndexesSet[index] = false;
+        usedBitset.reset(index);
         return true;
     }
 
@@ -79,7 +79,7 @@ class Pool {
             return false;
         }
         size_t index = elem - &elements[0];
-        if (index >= S || !usedIndexesSet[index]) {
+        if (index >= S || !usedBitset.test(index)) {
             return false;
         }
         elem->~T();
@@ -95,12 +95,11 @@ class Pool {
      */
     class Iterator {
     public:
-        Iterator(pool* pool, size_t index) : pool(pool), index(index) {
+        Iterator(Pool* pool, size_t index) : pool(pool), index(index) {
             // Skip to the first used element
-            while (index < S && !pool->usedIndexesSet[index]) {
+            while (index < S && !pool->usedBitset.test(index)) {
                 ++index;
             }
-            this->index = index;
         }
 
         T& operator*() { return pool->elements[index]; }
@@ -109,7 +108,7 @@ class Pool {
         Iterator& operator++() {
             do {
                 ++index;
-            } while (index < S && !pool->usedIndexesSet[index]);
+            } while (index < S && !pool->usedBitset.test(index));
             return *this;
         }
 
@@ -118,7 +117,7 @@ class Pool {
         }
 
     private:
-        pool* pool;
+        Pool* pool;
         size_t index;
     };
 
@@ -127,12 +126,11 @@ class Pool {
      */
     class ConstIterator {
     public:
-        ConstIterator(const pool* pool, size_t index) : pool(pool), index(index) {
+        ConstIterator(const Pool* pool, size_t index) : pool(pool), index(index) {
             // Skip to the first used element
-            while (index < S && !pool->usedIndexesSet[index]) {
+            while (index < S && !pool->usedBitset.test(index)) {
                 ++index;
             }
-            this->index = index;
         }
 
         const T& operator*() const { return pool->elements[index]; }
@@ -141,7 +139,7 @@ class Pool {
         ConstIterator& operator++() {
             do {
                 ++index;
-            } while (index < S && !pool->usedIndexesSet[index]);
+            } while (index < S && !pool->usedBitset.test(index));
             return *this;
         }
 
@@ -175,7 +173,7 @@ class Pool {
    private:
     T elements[S];
     Stack<size_t, S> freeIndexes;
-    bool usedIndexesSet[S]{false};
+    std::bitset<S> usedBitset;
 };
 
 #endif // POOL_HPP
