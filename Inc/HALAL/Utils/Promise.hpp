@@ -100,6 +100,7 @@ class Promise {
      * p1->then([](void* ctx) {
      *     std::cout << "Promise 1 resolved!" << std::endl;
      *     auto p2 = Promise::inscribe(); // Return a new Promise
+     *     return p2;
      *     // Simulate some async work
      * })->then([](void* ctx) {
      *     std::cout << "Chained Promise resolved!" << std::endl;
@@ -200,7 +201,7 @@ class Promise {
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* allPromise = static_cast<Promise*>(ctx);
-                int remaining = allPromise->counter.fetch_sub(1, std::memory_order_acq_rel) - 2;
+                int remaining = allPromise->counter.fetch_sub(1, std::memory_order_acq_rel) - 2; // -2 because fetch_sub returns the previous value, and we want to check if it is 1 after decrement (normal value for normal promises)
                 if (remaining == 0) {
                     allPromise->resolve();
                 }
