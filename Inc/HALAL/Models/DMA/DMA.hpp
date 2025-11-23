@@ -17,7 +17,7 @@
 class DMA {
     public:
         template<auto Instance, uint32_t... Streams>
-        static void inscribe_stream();
+        static void inscribe_stream(auto handle);
 
         static void start();
 
@@ -62,20 +62,44 @@ class DMA {
         static std::array<DMA_HandleTypeDef, MAX_STREAMS> inscribed_streams;
         static uint8_t inscribed_index;
 
+        static std::set<uintptr_t> used_peripherials;
+        static std::set<uintptr_t> used_streams;
+
+        static bool is_stream_available(uintptr_t stream);
+        static bool is_peripherial_available(uintptr_t peripherial);
+
 };
 
 inline uint8_t DMA::inscribed_index{0};
+inline std::set<uintptr_t> DMA::used_peripherals{};
+inline std::set<uintptr_t> DMA::used_streams{};
 
 template<auto Instance, uint32_t... Streams>
-void DMA::inscribe_stream() {
+void DMA::inscribe_stream(auto handle) {
     std::size_t N = sizeof...(Streams);
     ErrorHandler(inscribed_index + N <= MAX_STREAMS, "Too many streams inscribed");
+
+    uintptr_t periph_addr = reinterpret_cast<uintptr_t>(Instance);
+    ErrorHandler(is_peripheral_available(periph_addr), 
+                 "Peripheral already in use");
+
     std::array<DMA_Stream_TypeDef*, N> streams = {(DMA_Stream_TypeDef*)Streams... };
+
+    for (uint8_t i = 0; i < N; i++){
+        uintptr_t stream_addr = reinterpret_cast<uintptr_t>(streams[i]);
+        ErrorHandler(is_stream_available(stream_addr), 
+                     "DMA stream already in use");
+    }
 
     // Verificación de cantidad según periférico
     if (is_adc(Instance)) ErrorHandler(N == 1, "ADC DMA must have exactly one stream");
     else if (is_fmac(Instance)) ErrorHandler(N == 3, "FMAC DMA must have exactly three streams");
     else ErrorHandler(N == 2, "Peripheral DMA must have exactly two streams (RX and TX)");
+
+    for (uint8_t i = 0; i < N; i++){
+        used_streams.insert(reinterpret_cast<uintptr_t>(streams[i]));
+    }
+    used_peripherals.insert(periph_addr);
 
     for (uint8_t i = 0; i < N; i++){
         DMA_HandleTypeDef dma_handle;
@@ -96,6 +120,13 @@ void DMA::inscribe_stream() {
     }
 }
 
+bool DMA::is_stream_available(uintptr_t stream) {
+    return used_streams.find(stream) == used_streams.end();
+}
+
+bool DMA::is_peripheral_available(uintptr_t peripheral) {
+    return used_peripherals.find(peripheral) == used_peripherals.end();
+}
 
 bool DMA::is_one_of(auto Instance, auto... Bases) {
     return ((Instance == Bases) || ...);
@@ -185,7 +216,7 @@ uint32_t DMA::get_Direction(auto Instance, uint8_t i) {
 
 uint32_t DMA::get_PeriphInc(auto Instance, uint8_t i) {
     if  (is_fmac(Instance) && i == 0){
-        return DMA_PINC_ENABLE;xº
+        return DMA_PINC_ENABLE;
     }
     return DMA_PINC_DISABLE;
 }
@@ -197,10 +228,10 @@ uint32_t DMA::get_MemInc(auto Instance, uint8_t i) {
 }
 
 uint32_t DMA::get_PeriphDataAlignment(auto Instance, uint8_t i) {
-    if  (is_i2c<Instance>()){
+    if  (is_i2c(Instance)){
         return DMA_PDATAALIGN_WORD;
     }
-    else if  (is_spi<Instance>()){
+    else if  (is_spi(Instance)){
         return DMA_PDATAALIGN_BYTE;
     }
 
@@ -208,17 +239,17 @@ uint32_t DMA::get_PeriphDataAlignment(auto Instance, uint8_t i) {
 }
 
 uint32_t DMA::get_MemDataAlignment(auto Instance, uint8_t i) {
-    if  (is_i2c<Instance>()){
+    if  (is_i2c(Instance)){
         return DMA_MDATAALIGN_WORD;
     }
-    else if  (is_spi<Instance>()){
+    else if  (is_spi(Instance)){
         return DMA_MDATAALIGN_BYTE;
     }
 
     return DMA_MDATAALIGN_HALFWORD;
 }
 uint32_t DMA::get_Mode(auto Instance, uint8_t i) {
-    if  (is_spi<Instance>() || is_fmac(Instance)){
+    if  (is_spi(Instance) || is_fmac(Instance)){
         return DMA_NORMAL;
     }
     
@@ -240,7 +271,7 @@ uint32_t DMA::get_FIFOMode(auto Instance, uint8_t i) {
 }
 
 uint32_t DMA::get_FIFOThreshold(auto Instance, uint8_t i) {
-    if  (is_spi<Instance>()){
+    if  (is_spi(Instance)){
         return DMA_FIFO_THRESHOLD_FULL;
     }
     return DMA_FIFO_THRESHOLD_HALFFULL;
