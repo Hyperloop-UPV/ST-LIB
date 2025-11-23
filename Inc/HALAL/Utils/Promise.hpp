@@ -37,14 +37,15 @@ class Promise {
         Pending,
         Resolved,
         Ready,
-        Completed
+        Completed,
+        ToBeReleased
     };
     
    public:
 
     /**
      * @brief Create a new Promise.
-     * @return Pointer to the newly created Promise, or nullptr if allocation failed.
+     * @return Pointer to the newly created Promise, or nullptr if allocation failed (unlikely).
      * @note The returned Promise must be released using Promise::release().
      * @note The Promise lives in a memory pool with a fixed maximum number of Promises (S), so you don't own the memory.
      */
@@ -56,14 +57,17 @@ class Promise {
         p->state.store(State::Pending, std::memory_order_release);
         p->callback = nullptr;
         p->context = nullptr;
+        p->chainedCallback = nullptr;
+        p->chainedContext = nullptr;
+        p->counter.store(1, std::memory_order_release);
         return p;
     }
 
     /**
-     * @brief Release a Promise back to the pool.
+     * @brief Release a Promise back to the pool. Shouldn't be called manually unless you are sure the Promise is no longer needed.
      * @param p Pointer to the Promise to release.
-     * @return True if the Promise was successfully released, false otherwise.
-     * @note After calling this function, the Promise pointer is no longer valid and must not be used.
+     * @return True if the Promise was successfully released, false otherwise (shouldn't happen with proper management).
+     * @note After calling this function, the Promise pointer is no longer valid and must not be used. Using it after release results in undefined behavior.
      */
     static bool release(Promise* p) {
         return Promise::pool.release(p);
@@ -72,8 +76,8 @@ class Promise {
     /**
      * @brief Register a callback to be called when the Promise is resolved.
      * @param cb The callback function.
-     * @param ctx The context to be passed to the callback, can only be a pointer, you must manage the memory yourself. You could use an Arena for that.
-     * @note If the Promise is already resolved, the callback is scheduled to be called in the next update cycle. You can call then whenever you want, but only one callback can be registered per Promise.
+     * @param ctx The context to be passed to the callback, can only be a pointer, you must manage the memory yourself. You could use a pool for that, or just pass a this pointer.
+     * @note You can call then whenever you want, but only one callback can be registered per Promise.
      */
     void then(Callback cb, void* ctx = nullptr) {
         callback = cb;
@@ -115,9 +119,8 @@ class Promise {
             Promise* p = static_cast<Promise*>(thisPtr);
             Promise* chained = p->chainedCallback(p->chainedContext);
             chained->then(p->next->callback, p->next->context);
-            p->next->state.store(State::Ready, std::memory_order_release);
-            p->next->callback = nullptr;
-            p->next->context = nullptr;
+            p->next->state.store(State::ToBeReleased, std::memory_order_release);
+            p->next->counter.store(0, std::memory_order_release);
         };
         
         State expected = State::Resolved;
@@ -161,14 +164,18 @@ class Promise {
                 if (p.callback) {
                     p.callback(p.context);
                 }
+                p.counter.fetch_sub(1, std::memory_order_acq_rel);
+                p.state.store(State::ToBeReleased, std::memory_order_release);
+            }
+            if (p.state.load(std::memory_order_acquire) == State::ToBeReleased && p.counter.load(std::memory_order_acquire) == 0) {
                 toRelease[releaseCount++] = &p;
                 count++;
             }
         }
         
         // Release all completed Promises after iteration
-        for (uint16_t i = 0; i < releaseCount; i++) {
-            Promise::pool.release(toRelease[i]);
+        for (uint16_t i = releaseCount; i > 0; i--) {
+            Promise::pool.release(toRelease[i-1]);
         }
     }
 
@@ -188,12 +195,12 @@ class Promise {
         }
 
         auto allPromise = Promise::inscribe();
-        allPromise->counter.store(sizeof...(promises), std::memory_order_release);
+        allPromise->counter.store(sizeof...(promises) + 1, std::memory_order_release);
 
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* allPromise = static_cast<Promise*>(ctx);
-                int remaining = allPromise->counter.fetch_sub(1, std::memory_order_acq_rel) - 1;
+                int remaining = allPromise->counter.fetch_sub(1, std::memory_order_acq_rel) - 2;
                 if (remaining == 0) {
                     allPromise->resolve();
                 }
@@ -218,11 +225,18 @@ class Promise {
         }
 
         auto anyPromise = Promise::inscribe();
+        anyPromise->counter.store(sizeof...(promises) + 1, std::memory_order_release);
 
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* anyPromise = static_cast<Promise*>(ctx);
-                anyPromise->resolve();
+                anyPromise->counter.fetch_sub(1, std::memory_order_acq_rel);
+                State expected = State::Pending;
+                if (anyPromise->state.compare_exchange_strong(expected, State::Resolved, std::memory_order_acq_rel)) {
+                    if (anyPromise->callback) {
+                        anyPromise->state.store(State::Ready, std::memory_order_release);
+                    }
+                }
             }, anyPromise);
         }
         return anyPromise;
@@ -236,10 +250,10 @@ class Promise {
     Promise& operator=(const Promise&) = delete;
 
    private:
-    Callback callback;
-    ChainedCallback chainedCallback;
-    void* context;
-    void* chainedContext;
+    Callback callback = nullptr;
+    ChainedCallback chainedCallback = nullptr;
+    void* context = nullptr;
+    void* chainedContext = nullptr;
     std::atomic<State> state{State::Pending};
     std::atomic<int> counter{0};
     Promise* next = nullptr;
