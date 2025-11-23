@@ -20,7 +20,7 @@ class Stack {
 public:
     Stack() : top_idx(0) {}
     
-    bool push(T value) {
+    bool push(const T& value) {
         if (top_idx < S) {
             data[top_idx++] = value;
             return true;
