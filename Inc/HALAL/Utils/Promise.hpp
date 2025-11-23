@@ -119,7 +119,9 @@ class Promise {
         callback = [](void* thisPtr) {
             Promise* p = static_cast<Promise*>(thisPtr);
             Promise* chained = p->chainedCallback(p->chainedContext);
-            chained->then(p->next->callback, p->next->context);
+            if (chained) {
+                chained->then(p->next->callback, p->next->context);
+            }
             p->next->state.store(State::ToBeReleased, std::memory_order_release);
             p->next->counter.store(0, std::memory_order_release);
         };
@@ -196,6 +198,9 @@ class Promise {
         }
 
         auto allPromise = Promise::inscribe();
+        if (!allPromise) {
+            return nullptr;
+        }
         allPromise->counter.store(sizeof...(promises) + 1, std::memory_order_release);
 
         for (Promise* p : {promises...}) {
@@ -226,6 +231,9 @@ class Promise {
         }
 
         auto anyPromise = Promise::inscribe();
+        if (!anyPromise) {
+            return nullptr;
+        }
         anyPromise->counter.store(sizeof...(promises) + 1, std::memory_order_release);
 
         for (Promise* p : {promises...}) {
