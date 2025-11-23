@@ -57,11 +57,11 @@ class Pool {
      * @note Could potentially release an element different than the original one if misused (eg. double free).
      */
     bool release(T* elem) {
-        if (elem - &elements[0] < 0) {
+        if (elem < &elements[0] || elem - &elements[0] >= S) {
             return false;
         }
         size_t index = elem - &elements[0];
-        if (index >= S || !usedBitset.test(index)) {
+        if (!usedBitset.test(index)) {
             return false;
         }
         freeIndexes.push(index);
@@ -75,11 +75,11 @@ class Pool {
      * @return True if the element was successfully destroyed and released, false otherwise.
      */
     bool destroy(T* elem) {
-        if (elem - &elements[0] < 0) {
+        if (elem < &elements[0] || elem - &elements[0] >= S) {
             return false;
         }
         size_t index = elem - &elements[0];
-        if (index >= S || !usedBitset.test(index)) {
+        if (!usedBitset.test(index)) {
             return false;
         }
         elem->~T();
