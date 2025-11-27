@@ -33,5 +33,6 @@ void STLIB::update() {
   Server::update_servers();
 #endif
     ErrorHandlerModel::ErrorHandlerUpdate();
+    Promise::update();
 	
 }
