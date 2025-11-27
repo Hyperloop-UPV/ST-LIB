@@ -41,6 +41,7 @@
 #include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 #include "HALAL/Utils/Promise.hpp"
 #include "HALAL/Models/MDMA/MDMA.hpp"
+#include "HALAL/Models/Packets/MdmaPacket.hpp"
 #else
 #include "HALALMock/Services/DigitalOutputService/DigitalOutputService.hpp"
 #include "HALALMock/Services/DigitalInputService/DigitalInputService.hpp"
@@ -70,6 +71,7 @@
 #include "HALALMock/Models/Concepts/Concepts.hpp"
 #include "HALALMock/Services/Logger/Logger.hpp"
 #include "HALAL/Utils/Promise.hpp"
+#include "HALALMock/Models/Packets/MdmaPacket.hpp"
 #endif
 
 namespace HALAL {
