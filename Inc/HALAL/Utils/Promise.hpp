@@ -251,6 +251,26 @@ class Promise {
         return anyPromise;
     }
 
+    /**
+     * @brief Wait for the Promise to be completed. Busy-waits until the Promise is completed.
+     * @param func Optional function to be called repeatedly while waiting. Can be used to perform other tasks.
+     * @note This function blocks until the Promise is completed. Use with caution to avoid deadlocks.
+     * @note After the Promise is resolved, it executes it's callback (if any) and it is automatically released back to the pool/
+     */
+    void wait(void (*func)() = nullptr) {
+        while (state.load(std::memory_order_acquire) == State::Pending) {
+            if (func) {
+                func();
+            }
+        }
+
+        if (callback) {
+            callback(context);
+        }
+
+        Promise::release(this);
+    }
+
     Promise() = default;
     ~Promise() = default;
     Promise(Promise&&) = delete;
