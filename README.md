@@ -19,6 +19,9 @@ The only needed submodules are:
 - STM32CubeH7/Drivers/BSP/Components/lan8742
 
 ```sh
-git submodule init
-git submodule update STM32CubeH7/Drivers/STM32H7xx_HAL_Driver STM32CubeH7/Drivers/CMSIS STM32CubeH7/Device/ST/STM32H7xx Drivers/BSP/Components/lan8742
+git submodule update --init
+cd STM32CubeH7
+git submodule update --init Drivers/STM32H7xx_HAL_Driver Drivers/CMSIS/Device/ST/STM32H7xx Drivers/BSP/Components/lan8742
 ```
+
+The submodules initialization is also available by executing [this script](tools/init-submodules.sh)

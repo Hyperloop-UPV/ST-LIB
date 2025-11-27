@@ -105,6 +105,9 @@ if (CMAKE_CROSSCOMPILING)
 
       # CORDIC
       ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_cordic.c
+
+      # Watchdog
+      ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_wwdg.c
   )
 
   set(LWIP_DIR ${STM32CUBEH7}/Middlewares/Third_Party/LwIP)
