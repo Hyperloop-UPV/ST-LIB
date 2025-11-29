@@ -40,14 +40,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
+          fetch-depth: 1
 
-      - name: Setup Python environment
-        run: |
-          python3 -m venv virtual
-          source virtual/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Init submodules
+        run: ./tools/init-submodules.sh 
         shell: bash
 
       - name: Build
