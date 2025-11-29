@@ -1,7 +1,5 @@
 #pragma once
 
-// --- Servicios y modelos siempre disponibles (independientemente de SIM_ON / cross) ---
-
 #include "HALAL/Models/HALconfig/HALconfig.hpp"
 #include "HALAL/Models/DMA/DMA.hpp"
 
@@ -42,8 +40,6 @@
 
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"
-
-// --- Parte dependiente de Ethernet / LwIP, solo si STLIB_ETH está definido ---
 
 #ifdef STLIB_ETH
 #include "HALAL/Models/Packets/Packet.hpp"
