@@ -43,8 +43,10 @@ jobs:
           submodules: false
           fetch-depth: 1
 
-      - name: Init submodules
-        run: ./tools/init-submodules.sh 
+      - name: Init submodules\
+        run: |
+          git config --global --add safe.directory '*'
+          ./tools/init-submodules.sh 
         shell: bash
 
       - name: Build
