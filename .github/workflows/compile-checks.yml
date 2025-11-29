@@ -9,8 +9,14 @@ on:
       - '**.c'
       - '**.h'
       - '**.py'
+      - 'CMakeLists.txt'
     branches:
       - development
+
+    workflow_run:
+    workflows: [ "Build Toolchain Image" ]
+    types:
+      - completed
 
 jobs:
   compile-checks:
