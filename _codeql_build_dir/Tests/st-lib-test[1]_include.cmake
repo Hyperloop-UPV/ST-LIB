@@ -1,0 +1,5 @@
+if(EXISTS "/home/runner/work/ST-LIB/ST-LIB/_codeql_build_dir/Tests/st-lib-test[1]_tests.cmake")
+  include("/home/runner/work/ST-LIB/ST-LIB/_codeql_build_dir/Tests/st-lib-test[1]_tests.cmake")
+else()
+  add_test(st-lib-test_NOT_BUILT st-lib-test_NOT_BUILT)
+endif()
