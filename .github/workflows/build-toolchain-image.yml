@@ -1,12 +1,12 @@
 name: Build Toolchain Image
 
 on:
+  workflow_dispatch:
   push:
     branches: [ refactor/cmake ]
     paths:
       - 'ci/Dockerfile'
       - '.github/workflows/build-toolchain-image.yml'
-    workflow_dispatch: {}
 
 jobs:
   build-and-push:
