@@ -32,4 +32,4 @@ jobs:
           context: .
           file: ci/Dockerfile
           push: true
-          tags: ghcr.io/hyperloopupv-h8/st-lib/hyperloop-firmware-toolchain:latest
+          tags: ghcr.io/hyperloopupv-h8/hyperloop-firmware-toolchain:latest
