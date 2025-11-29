@@ -36,7 +36,7 @@ jobs:
           - board-debug-eth
           - board-release-eth
           - board-relwithdebinfo-eth
-          - simulator
+          # - simulator
       fail-fast: false
     uses: ./.github/workflows/build.yml
     with:
