@@ -122,11 +122,11 @@ constexpr bool DMA::is_fmac(auto Instance) {
     return Instance == FMAC_BASE;
 } 
 
-bool DMA::is_stream_available(uintptr_t stream) {
+inline bool DMA::is_stream_available(uintptr_t stream) {
     return used_streams.find(stream) == used_streams.end();
 }
 
-bool DMA::is_peripherial_available(unsigned long peripheral) {
+inline bool DMA::is_peripherial_available(unsigned long peripheral) {
     return used_peripherials.find(peripheral) == used_peripherials.end();
 }
 
