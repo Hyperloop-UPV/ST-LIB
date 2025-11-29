@@ -5,8 +5,6 @@
 #include "Sensors/LinearSensor/LinearSensor.hpp"
 #include "Sensors/LinearSensor/FilteredLinearSensor.hpp"
 #include "StateMachine/StateMachine.hpp"
-#include "StateMachine/HeapStateOrder.hpp"
-#include "StateMachine/StackStateOrder.hpp"
 #include "DigitalOutput/DigitalOutput.hpp"
 #include "HalfBridge/HalfBridge.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
@@ -19,7 +17,12 @@
 #include "Sensors/EncoderSensor/EncoderSensor.hpp"
 #include "Sensors/PWMSensor/PWMSensor.hpp"
 #include "Sensors/NTC/NTC.hpp"
+
+#ifdef STLIB_ETH
 #include "Communication/Server/Server.hpp"
+#include "StateMachine/HeapStateOrder.hpp"
+#include "StateMachine/StackStateOrder.hpp"
+#endif
 
 class STLIB_LOW {
 public:
