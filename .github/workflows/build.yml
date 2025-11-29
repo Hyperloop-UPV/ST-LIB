@@ -51,7 +51,6 @@ jobs:
 
       - name: Build
         run: |
-          source virtual/bin/activate
           cmake --preset ${{ inputs.preset }}
           cmake --build --preset ${{ inputs.preset }}
         shell: bash
