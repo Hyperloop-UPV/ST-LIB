@@ -13,14 +13,18 @@ void State::enter() {
 	for (function<void()>& action : on_enter_actions) {
 		action();
 	}
-	// if(state_orders_ids.size() != 0) StateOrder::add_state_orders(state_orders_ids);
+#ifdef STLIB_ETH
+	if(state_orders_ids.size() != 0) StateOrder::add_state_orders(state_orders_ids);
+#endif
 }
 
 void State::exit() {
 	for (function<void()>& action : on_exit_actions) {
 		action();
 	}
-	// if(state_orders_ids.size() != 0) StateOrder::remove_state_orders(state_orders_ids);
+#ifdef STLIB_ETH
+	if(state_orders_ids.size() != 0) StateOrder::remove_state_orders(state_orders_ids);
+#endif
 }
 
 void State::unregister_timed_action(TimedAction* timed_action){
@@ -361,7 +365,9 @@ unordered_map<StateMachine::state_id, State>& StateMachine::get_states(){
 }
 
 void StateMachine::refresh_state_orders(){
-	// if(states[current_state].state_orders_ids.size() != 0) StateOrder::add_state_orders(states[current_state].state_orders_ids);
+#ifdef STLIB_ETH
+	if(states[current_state].state_orders_ids.size() != 0) StateOrder::add_state_orders(states[current_state].state_orders_ids);
+#endif
 }
 
 #ifdef SIM_ON
