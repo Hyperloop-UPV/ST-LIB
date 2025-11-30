@@ -250,7 +250,7 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-specs=nosys.specs>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-ffunction-sections>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fdata-sections>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fno-exceptions>
+  # $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fno-exceptions>
 
   -Wno-psabi
 
@@ -259,8 +259,8 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<COMPILE_LANGUAGE:CXX>:-Wall>
   $<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>
   $<$<COMPILE_LANGUAGE:CXX>:-Werror>
-  $<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-zero-variadic-macro-arguments>
-  $<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>
+  # $<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-zero-variadic-macro-arguments>
+  # $<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
   $<$<COMPILE_LANGUAGE:CXX>:-Wno-address-of-packed-member>
