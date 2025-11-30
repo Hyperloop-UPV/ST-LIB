@@ -43,7 +43,7 @@ uint8_t ADC::inscribe(Pin pin) {
 
 	InitData& init_data = active_instances[id_counter].peripheral->init_data;
     
-	// DMA::inscribe_stream<ADC1_BASE, DMA1_Stream0_BASE>(); 
+	DMA::inscribe_stream<ADC1_BASE, DMA1_Stream0_BASE>(active_instances[id_counter].peripheral->handle); 
 	active_instances[id_counter].rank = init_data.channels.size();
 	init_data.channels.push_back(active_instances[id_counter].channel);
 	return id_counter++;
