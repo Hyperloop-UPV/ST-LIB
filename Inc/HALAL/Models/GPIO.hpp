@@ -90,7 +90,6 @@ struct GPIODomain {
   };
 
   struct Entry {
-    size_t id;
     Port port;
     uint32_t pin;
     OperationMode mode;
@@ -101,8 +100,7 @@ struct GPIODomain {
 
     Entry e;
 
-    consteval GPIO(std::size_t id, Pin2 pin, OperationMode mode)
-        : e(id, pin.port, pin.pin, mode) {}
+    consteval GPIO(Pin2 pin, OperationMode mode) : e(pin.port, pin.pin, mode) {}
 
     template <class Ctx> consteval void inscribe(Ctx &ctx) const {
       ctx.template add<GPIODomain>(e);
@@ -114,7 +112,6 @@ struct GPIODomain {
                 "The number of instances must be greater than 0");
 
   struct Config {
-    size_t id;
     std::tuple<Port, GPIO_InitTypeDef> init_data{};
   };
 
@@ -126,7 +123,7 @@ struct GPIODomain {
 
       for (std::size_t j = 0; j < i; ++j) {
         const auto &prev = pins[j];
-        if (prev.pin == e.pin) {
+        if (prev.pin == e.pin && prev.port == e.port) {
           struct gpio_already_inscribed {};
           throw gpio_already_inscribed{};
         }
@@ -174,7 +171,6 @@ struct GPIODomain {
         break;
       }
 
-      cfgs[i].id = e.id;
       cfgs[i].init_data = std::make_tuple(e.port, GPIO_InitStruct);
     }
 
@@ -211,7 +207,7 @@ public:
         enable_gpio_clock(port);
         HAL_GPIO_Init(port_to_reg(port), &gpio_init);
 
-        auto &inst = instances[e.id];
+        auto &inst = instances[i];
         inst.port = port_to_reg(port);
         inst.pin = gpio_init.Pin;
       }

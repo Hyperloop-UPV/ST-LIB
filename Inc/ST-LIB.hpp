@@ -62,50 +62,102 @@ template <typename... Domains> struct BuildCtx {
   }
 };
 
-template <typename Domain, auto... devs> consteval std::size_t domain_count() {
+template <typename Domain, auto &...devs> consteval std::size_t domain_count() {
   return (... +
-          (std::is_same_v<typename decltype(devs)::domain, Domain> ? 1u : 0u));
+          (std::is_same_v<typename std::remove_cvref_t<decltype(devs)>::domain,
+                          Domain>
+               ? 1u
+               : 0u));
 }
 
 using DomainsCtx = BuildCtx<GPIODomain /*, ADCDomain, PWMDomain, ...*/>;
 
-// Configure HW (compile-time)
-template <auto... devs> consteval auto build() {
-  DomainsCtx ctx{};
+template <auto &...devs> struct Board {
+  // ========== build compile-time ==========
+  static consteval auto build() {
+    DomainsCtx ctx{};
 
-  (devs.inscribe(ctx), ...);
+    (devs.inscribe(ctx), ...);
 
-  constexpr std::size_t gpioN = domain_count<GPIODomain, devs...>();
-  // constexpr std::size_t adcN = domain_count<ADCDomain, devs...>();
-  // constexpr std::size_t pwmN = domain_count<PWMDomain, devs...>();
+    constexpr std::size_t gpioN = domain_count<GPIODomain, devs...>();
+    // constexpr std::size_t adcN = domain_count<ADCDomain, devs...>();
+    // constexpr std::size_t pwmN = domain_count<PWMDomain, devs...>();
 
-  struct ConfigBundle {
-    array<GPIODomain::Config, gpioN> gpio_cfgs;
-    // array<ADCDomain::Config, adcN> adc_cgfs;
-    // array<PWMDomain::Config, pwmN> pwm_cgfs;
-  };
+    struct ConfigBundle {
+      std::array<GPIODomain::Config, gpioN> gpio_cfgs;
+      // std::array<ADCDomain::Config, adcN> adc_cgfs;
+      // std::array<PWMDomain::Config, pwmN> pwm_cgfs;
+    };
 
-  return ConfigBundle{
-      .gpio_cfgs =
-          GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
-      // .adc_cgfs =
-      //     ADCDomain::template build<adcN>(ctx.template span<ADCDomain>()),
-      // .pwm_cgfs =
-      //     PWMDomain::template build<pwmN>(ctx.template span<PWMDomain>()),
-  };
-}
+    return ConfigBundle{
+        .gpio_cfgs =
+            GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
+        // .adc_cgfs =
+        //     ADCDomain::template build<adcN>(ctx.template span<ADCDomain>()),
+        // .pwm_cgfs =
+        //     PWMDomain::template build<pwmN>(ctx.template span<PWMDomain>()),
+    };
+  }
 
-// Init real HW (runtime)
-template <auto... devs> void init() {
-  static constexpr auto cfg = build<devs...>();
+  // ========== init runtime ==========
+  static void init() {
+    static constexpr auto cfg = build();
 
-  constexpr std::size_t gpioN = domain_count<GPIODomain, devs...>();
-  // constexpr std::size_t adcN = domain_count<ADCDomain, devs...>();
-  // constexpr std::size_t pwmN = domain_count<PWMDomain, devs...>();
+    constexpr std::size_t gpioN = domain_count<GPIODomain, devs...>();
+    // constexpr std::size_t adcN = domain_count<ADCDomain, devs...>();
+    // constexpr std::size_t pwmN = domain_count<PWMDomain, devs...>();
 
-  GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
-  // ADCDomain::Init<adcN>::init(cfg.adc_cfgs);
-  // PWMDomain::Init<pwmN>::init(cfg.pwm_cfgs);
-}
+    GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
+    // ADCDomain::Init<adcN>::init(cfg.adc_cfgs);
+    // PWMDomain::Init<pwmN>::init(cfg.pwm_cfgs);
+  }
+
+  template <typename Domain> static consteval std::size_t domain_size() {
+    return domain_count<Domain, devs...>();
+  }
+
+  template <typename Domain, auto &Target, std::size_t I = 0>
+  static consteval std::size_t domain_index_of_impl() {
+    std::size_t idx = 0;
+    bool found = false;
+
+    (
+        [&] {
+          using DevT = std::remove_cvref_t<decltype(devs)>;
+          if constexpr (std::is_same_v<typename DevT::domain, Domain>) {
+            if (!found) {
+              if (&devs == &Target) {
+                found = true;
+              } else {
+                ++idx;
+              }
+            }
+          }
+        }(),
+        ...);
+
+    if (!found) {
+      struct device_not_found_for_domain {};
+      throw device_not_found_for_domain{};
+    }
+
+    return idx;
+  }
+
+  template <typename Domain, auto &Target>
+  static consteval std::size_t domain_index_of() {
+    return domain_index_of_impl<Domain, Target>();
+  }
+
+  template <auto &Target> static auto &instance_of() {
+    using DevT = std::remove_cvref_t<decltype(Target)>;
+    using Domain = typename DevT::domain;
+
+    constexpr std::size_t idx = domain_index_of<Domain, Target>();
+    constexpr std::size_t N = domain_size<Domain>();
+
+    return Domain::template Init<N>::instances[idx];
+  }
+};
 
 } // namespace ST_LIB
