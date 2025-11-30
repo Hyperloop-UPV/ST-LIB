@@ -1,5 +1,8 @@
 #pragma once
 
+#include "HALAL/Models/GPIO.hpp"
+#include "HALAL/Models/Pin.hpp"
+
 #include "HALAL/Models/HALconfig/HALconfig.hpp"
 #include "HALAL/Models/DMA/DMA.hpp"
 
