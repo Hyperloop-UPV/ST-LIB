@@ -11,6 +11,7 @@
 #include "CppImports.hpp"
 #include "Stack.hpp"
 #include <bit>
+#include <type_traits>
 
 
 /**
@@ -19,8 +20,9 @@
  * @note Will use a optimized version for pools with small sizes (S <= 32) using bitmap and CTZ for O(used) iteration.
  * @tparam T The type of elements stored in the pool.
  * @tparam S The maximum number of elements in the pool.
+ * @tparam ExternalMemory If true, the pool uses an external buffer provided in the constructor.
  */
-template<typename T, size_t S>
+template<typename T, size_t S, bool ExternalMemory = false>
 class Pool {
    public:
 
@@ -161,19 +163,34 @@ class Pool {
     ConstIterator cbegin() const { return ConstIterator(this, 0); }
     ConstIterator cend() const { return ConstIterator(this, S); }
 
-    Pool() {
-        // Push indices in reverse order so index 0 is allocated first
-        for (int i = S - 1; i >= 0; --i) {
-            freeIndexes.push(i);
-        }
+    Pool() requires (!ExternalMemory) {
+        if constexpr (!ExternalMemory) elements = storage.data;
+        init();
     }
+
+    Pool(T* buffer) requires (ExternalMemory) : elements(buffer) {
+        init();
+    }
+
     Pool(const Pool&) = delete;
     Pool& operator=(const Pool&) = delete;
     Pool(Pool&& other) noexcept = delete;
     Pool& operator=(Pool&& other) = delete;
 
    private:
-    T elements[S];
+    void init() {
+        // Push indices in reverse order so index 0 is allocated first
+        for (int i = S - 1; i >= 0; --i) {
+            freeIndexes.push(i);
+        }
+    }
+
+    struct InternalStorage { T data[S]; };
+    struct ExternalStorage {};
+    
+    [[no_unique_address]] std::conditional_t<ExternalMemory, ExternalStorage, InternalStorage> storage;
+    T* elements;
+
     Stack<size_t, S> freeIndexes;
     std::bitset<S> usedBitset;
 };
@@ -188,10 +205,11 @@ class Pool {
  * @note Optimized for 32-bit systems.
  * @tparam T The type of elements stored in the pool.
  * @tparam S The maximum number of elements in the pool (must be <= 32).
+ * @tparam ExternalMemory If true, the pool uses an external buffer provided in the constructor.
  */
-template<typename T, size_t S>
+template<typename T, size_t S, bool ExternalMemory>
     requires (S <= 32)
-class Pool<T, S> {
+class Pool<T, S, ExternalMemory> {
    public:
 
     /**
@@ -330,19 +348,34 @@ class Pool<T, S> {
     ConstIterator cbegin() const { return ConstIterator(this, usedBitmap); }
     ConstIterator cend() const { return ConstIterator(this, 0); }
 
-    Pool() : usedBitmap(0) {
-        // Push indices in reverse order so index 0 is allocated first
-        for (int i = S - 1; i >= 0; --i) {
-            freeIndexes.push(i);
-        }
+    Pool() requires (!ExternalMemory) : usedBitmap(0) {
+        if constexpr (!ExternalMemory) elements = storage.data;
+        init();
     }
+
+    Pool(T* buffer) requires (ExternalMemory) : elements(buffer), usedBitmap(0) {
+        init();
+    }
+
     Pool(const Pool&) = delete;
     Pool& operator=(const Pool&) = delete;
     Pool(Pool&& other) noexcept = delete;
     Pool& operator=(Pool&& other) = delete;
 
    private:
-    T elements[S];
+    void init() {
+        // Push indices in reverse order so index 0 is allocated first
+        for (int i = S - 1; i >= 0; --i) {
+            freeIndexes.push(i);
+        }
+    }
+
+    struct InternalStorage { T data[S]; };
+    struct ExternalStorage {};
+    
+    [[no_unique_address]] std::conditional_t<ExternalMemory, ExternalStorage, InternalStorage> storage;
+    T* elements;
+
     Stack<size_t, S> freeIndexes;
     uint32_t usedBitmap;  // Bitmap for fast iteration (1 = used, 0 = free)
 };
