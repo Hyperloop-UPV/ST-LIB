@@ -9,9 +9,9 @@
 #define PROMISE_HPP
 
 #include <atomic>
-#include "C++Utilities/Arena.hpp"
+#include "C++Utilities/CppUtils.hpp"
 
-// Maximum number of concurrent Promises allowed in the arena.
+// Maximum number of concurrent Promises allowed in the pool.
 // Default is 200, which should be sufficient for most use cases. Increase if you expect higher concurrency.
 // You can override this value by defining PROMISE_MAX_CONCURRENT before including this header.
 #ifndef PROMISE_MAX_CONCURRENT
@@ -27,7 +27,7 @@
 
 /**
  * @brief A simple Promise implementation for asynchronous programming.
- * @note Promises are allocated from a fixed-size memory arena, so you don't own the memory. Use Promise::release() to release them back to the arena if needed.
+ * @note Promises are allocated from a fixed-size memory pool, so you don't own the memory. Use Promise::release() to release them back to the pool if needed.
  */
 class Promise {
     using Callback = void(*)(void*);
@@ -37,43 +37,47 @@ class Promise {
         Pending,
         Resolved,
         Ready,
-        Completed
+        Completed,
+        ToBeReleased
     };
     
    public:
 
     /**
      * @brief Create a new Promise.
-     * @return Pointer to the newly created Promise, or nullptr if allocation failed.
+     * @return Pointer to the newly created Promise, or nullptr if allocation failed (unlikely).
      * @note The returned Promise must be released using Promise::release().
-     * @note The Promise lives in a memory arena with a fixed maximum number of Promises (S), so you don't own the memory.
+     * @note The Promise lives in a memory pool with a fixed maximum number of Promises (S), so you don't own the memory.
      */
     static Promise* inscribe() {
-        Promise* p = Promise::arena.acquire();
+        Promise* p = Promise::pool.acquire();
         if (!p) {
             return nullptr;
         }
         p->state.store(State::Pending, std::memory_order_release);
         p->callback = nullptr;
         p->context = nullptr;
+        p->chainedCallback = nullptr;
+        p->chainedContext = nullptr;
+        p->counter.store(1, std::memory_order_release);
         return p;
     }
 
     /**
-     * @brief Release a Promise back to the arena.
+     * @brief Release a Promise back to the pool. Shouldn't be called manually unless you are sure the Promise is no longer needed.
      * @param p Pointer to the Promise to release.
-     * @return True if the Promise was successfully released, false otherwise.
-     * @note After calling this function, the Promise pointer is no longer valid and must not be used.
+     * @return True if the Promise was successfully released, false otherwise (shouldn't happen with proper management).
+     * @note After calling this function, the Promise pointer is no longer valid and must not be used. Using it after release results in undefined behavior.
      */
     static bool release(Promise* p) {
-        return Promise::arena.release(p);
+        return Promise::pool.release(p);
     }
 
     /**
      * @brief Register a callback to be called when the Promise is resolved.
      * @param cb The callback function.
-     * @param ctx The context to be passed to the callback, can only be a pointer, you must manage the memory yourself. You could use an Arena for that.
-     * @note If the Promise is already resolved, the callback is scheduled to be called in the next update cycle. You can call then whenever you want, but only one callback can be registered per Promise.
+     * @param ctx The context to be passed to the callback, can only be a pointer, you must manage the memory yourself. You could use a pool for that, or just pass a this pointer.
+     * @note You can call then whenever you want, but only one callback can be registered per Promise.
      */
     void then(Callback cb, void* ctx = nullptr) {
         callback = cb;
@@ -96,6 +100,7 @@ class Promise {
      * p1->then([](void* ctx) {
      *     std::cout << "Promise 1 resolved!" << std::endl;
      *     auto p2 = Promise::inscribe(); // Return a new Promise
+     *     return p2;
      *     // Simulate some async work
      * })->then([](void* ctx) {
      *     std::cout << "Chained Promise resolved!" << std::endl;
@@ -114,10 +119,11 @@ class Promise {
         callback = [](void* thisPtr) {
             Promise* p = static_cast<Promise*>(thisPtr);
             Promise* chained = p->chainedCallback(p->chainedContext);
-            chained->then(p->next->callback, p->next->context);
-            p->next->state.store(State::Ready, std::memory_order_release);
-            p->next->callback = nullptr;
-            p->next->context = nullptr;
+            if (chained) {
+                chained->then(p->next->callback, p->next->context);
+            }
+            p->next->state.store(State::ToBeReleased, std::memory_order_release);
+            p->next->counter.store(0, std::memory_order_release);
         };
         
         State expected = State::Resolved;
@@ -127,8 +133,8 @@ class Promise {
     }
 
     /**
-     * @brief Resolve the Promise, triggering the registered callback. Works in interruptions.
-     * @note Calling this after the Promise has been handled can be dangerous, as the Promise may have already been released back to the arena. Just remove the reference to the Promise after resolving it.
+     * @brief Resolve the Promise, triggering the registered callback. Works in interrupts.
+     * @note Calling this after the Promise has been handled can be dangerous, as the Promise may have already been released back to the pool. Just remove the reference to the Promise after resolving it.
      * @note If the Promise is already resolved and the callback has not been called yet, calling this function has no effect.
      */
     void resolve() {
@@ -151,7 +157,7 @@ class Promise {
         Promise* toRelease[PROMISE_MAX_UPDATES_PER_CYCLE];
         uint16_t releaseCount = 0;
         
-        for (Promise& p : arena) {
+        for (Promise& p : pool) {
             if (count >= PROMISE_MAX_UPDATES_PER_CYCLE) {
                 break;
             }
@@ -161,14 +167,18 @@ class Promise {
                 if (p.callback) {
                     p.callback(p.context);
                 }
+                p.counter.fetch_sub(1, std::memory_order_acq_rel);
+                p.state.store(State::ToBeReleased, std::memory_order_release);
+            }
+            if (p.state.load(std::memory_order_acquire) == State::ToBeReleased && p.counter.load(std::memory_order_acquire) == 0) {
                 toRelease[releaseCount++] = &p;
                 count++;
             }
         }
         
         // Release all completed Promises after iteration
-        for (uint16_t i = 0; i < releaseCount; i++) {
-            Promise::arena.release(toRelease[i]);
+        for (uint16_t i = releaseCount; i > 0; i--) {
+            Promise::pool.release(toRelease[i-1]);
         }
     }
 
@@ -188,12 +198,15 @@ class Promise {
         }
 
         auto allPromise = Promise::inscribe();
-        allPromise->counter.store(sizeof...(promises), std::memory_order_release);
+        if (!allPromise) {
+            return nullptr;
+        }
+        allPromise->counter.store(sizeof...(promises) + 1, std::memory_order_release);
 
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* allPromise = static_cast<Promise*>(ctx);
-                int remaining = allPromise->counter.fetch_sub(1, std::memory_order_acq_rel) - 1;
+                int remaining = allPromise->counter.fetch_sub(1, std::memory_order_acq_rel) - 2; // -2 because fetch_sub returns the previous value, and we want to check if it is 1 after decrement (normal value for normal promises)
                 if (remaining == 0) {
                     allPromise->resolve();
                 }
@@ -218,14 +231,44 @@ class Promise {
         }
 
         auto anyPromise = Promise::inscribe();
+        if (!anyPromise) {
+            return nullptr;
+        }
+        anyPromise->counter.store(sizeof...(promises) + 1, std::memory_order_release);
 
         for (Promise* p : {promises...}) {
             p->then([](void* ctx) {
                 Promise* anyPromise = static_cast<Promise*>(ctx);
-                anyPromise->resolve();
+                anyPromise->counter.fetch_sub(1, std::memory_order_acq_rel);
+                State expected = State::Pending;
+                if (anyPromise->state.compare_exchange_strong(expected, State::Resolved, std::memory_order_acq_rel)) {
+                    if (anyPromise->callback) {
+                        anyPromise->state.store(State::Ready, std::memory_order_release);
+                    }
+                }
             }, anyPromise);
         }
         return anyPromise;
+    }
+
+    /**
+     * @brief Wait for the Promise to be completed. Busy-waits until the Promise is completed.
+     * @param func Optional function to be called repeatedly while waiting. Can be used to perform other tasks.
+     * @note This function blocks until the Promise is completed. Use with caution to avoid deadlocks.
+     * @note After the Promise is resolved, it executes it's callback (if any) and it is automatically released back to the pool/
+     */
+    void wait(void (*func)() = nullptr) {
+        while (state.load(std::memory_order_acquire) == State::Pending) {
+            if (func) {
+                func();
+            }
+        }
+
+        if (callback) {
+            callback(context);
+        }
+
+        Promise::release(this);
     }
 
     Promise() = default;
@@ -236,15 +279,15 @@ class Promise {
     Promise& operator=(const Promise&) = delete;
 
    private:
-    Callback callback;
-    ChainedCallback chainedCallback;
-    void* context;
-    void* chainedContext;
+    Callback callback = nullptr;
+    ChainedCallback chainedCallback = nullptr;
+    void* context = nullptr;
+    void* chainedContext = nullptr;
     std::atomic<State> state{State::Pending};
     std::atomic<int> counter{0};
     Promise* next = nullptr;
-    static Arena<PROMISE_MAX_CONCURRENT, Promise> arena;
+    static Pool<Promise, PROMISE_MAX_CONCURRENT> pool;
 };
-inline Arena<PROMISE_MAX_CONCURRENT, Promise> Promise::arena;
+inline Pool<Promise, PROMISE_MAX_CONCURRENT> Promise::pool;
 
 #endif // PROMISE_HPP

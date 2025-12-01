@@ -11,30 +11,46 @@
 #include "CppImports.hpp"
 
 /**
- * @brief A simple fixed-size stack for arena free list management.
+ * @brief A simple fixed-size stack.
+ * @tparam T The type of elements stored in the stack.
  * @tparam S The maximum number of elements.
  */
-template<size_t S>
+template<typename T, size_t S>
 class Stack {
 public:
-    Stack() : top(0) {}
+    Stack() : top_idx(0) {}
     
-    void push(size_t value) {
-        if (top < S) {
-            data[top++] = value;
+    bool push(const T& value) {
+        if (top_idx < S) {
+            data[top_idx++] = value;
+            return true;
         }
+        return false;
     }
     
-    size_t pop() {
-        return data[--top];
+    bool pop() {
+        if (top_idx == 0) {
+            return false;
+        }
+        top_idx--;
+        return true;
+    }
+
+    // Returns the top element without removing it. Returns default T{} if stack is empty.
+    T top() const {
+        if (top_idx == 0) {
+            return T{};
+        }
+        return data[top_idx - 1];
     }
     
-    size_t size() const { return top; }
-    bool empty() const { return top == 0; }
+    size_t size() const { return top_idx; }
+    size_t capacity() const { return S; }
+    bool empty() const { return top_idx == 0; }
     
 private:
-    size_t data[S];
-    size_t top;
+    T data[S];
+    size_t top_idx;
 };
 
 #endif // STACK_HPP
