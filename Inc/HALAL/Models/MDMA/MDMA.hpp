@@ -22,57 +22,6 @@
 
 class MDMA{
     public:
-    struct LinkedListNode;
-
-    private:
-    struct Instance{
-    public:
-        MDMA_HandleTypeDef handle;
-        uint8_t id;
-        uint8_t* data_buffer;
-        uint8_t* destination_address;
-        Promise* promise;
-        bool using_promise;
-        MDMA::LinkedListNode transfer_node;
-
-        Instance()
-            : handle{}
-            , id(0U)
-            , data_buffer(nullptr)
-            , destination_address(nullptr)
-            , promise(nullptr)
-            , using_promise(false)
-            , transfer_node{}
-        {}
-
-        Instance(MDMA_HandleTypeDef handle_,
-                 uint8_t id_,
-                 uint8_t* data_buffer_,
-                 uint8_t* destination_address_,
-                 MDMA_LinkNodeTypeDef transfer_node_)
-            : handle(handle_)
-            , id(id_)
-            , data_buffer(data_buffer_)
-            , destination_address(destination_address_)
-            , promise(nullptr)
-            , using_promise(false)
-            , transfer_node(transfer_node_)
-        {}
-
-
-    };
-    static void prepare_transfer(Instance& instance, MDMA::LinkedListNode& first_node);
-    static Instance& get_instance(uint8_t id);
-    inline static std::array<Instance,8> instances{};
-    static std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> instance_to_channel;
-    static std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> channel_to_instance;
-
-    static void TransferCompleteCallback(MDMA_HandleTypeDef *hmdma);
-    static void TransferErrorCallback(MDMA_HandleTypeDef *hmdma);
-
-    public:
-
-    
     /**
      * @brief A helper struct to create and manage MDMA linked list nodes.
      */
@@ -126,6 +75,58 @@ class MDMA{
     private:
         MDMA_LinkNodeTypeDef node;
     };
+
+    private:
+    struct Instance{
+    public:
+        MDMA_HandleTypeDef handle;
+        uint8_t id;
+        uint8_t* data_buffer;
+        uint8_t* destination_address;
+        Promise* promise;
+        bool using_promise;
+        MDMA_LinkNodeTypeDef transfer_node;
+
+        Instance()
+            : handle{}
+            , id(0U)
+            , data_buffer(nullptr)
+            , destination_address(nullptr)
+            , promise(nullptr)
+            , using_promise(false)
+            , transfer_node{}
+        {}
+
+        Instance(MDMA_HandleTypeDef handle_,
+                 uint8_t id_,
+                 uint8_t* data_buffer_,
+                 uint8_t* destination_address_,
+                 MDMA_LinkNodeTypeDef transfer_node_)
+            : handle(handle_)
+            , id(id_)
+            , data_buffer(data_buffer_)
+            , destination_address(destination_address_)
+            , promise(nullptr)
+            , using_promise(false)
+            , transfer_node(transfer_node_)
+        {}
+
+
+    };
+    static void prepare_transfer(Instance& instance, MDMA::LinkedListNode& first_node);
+    static void prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node);
+    static Instance& get_instance(uint8_t id);
+    inline static std::array<Instance,8> instances{};
+    static std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> instance_to_channel;
+    static std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> channel_to_instance;
+
+    static void TransferCompleteCallback(MDMA_HandleTypeDef *hmdma);
+    static void TransferErrorCallback(MDMA_HandleTypeDef *hmdma);
+
+    public:
+
+    
+    
 
     // Pool for MDMA_LinkNodeTypeDef, uses external non-cached memory
     static Pool<LinkedListNode, NODES_MAX, true> link_node_pool;

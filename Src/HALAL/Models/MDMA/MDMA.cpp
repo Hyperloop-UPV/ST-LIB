@@ -30,9 +30,8 @@ std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> MDMA::channel_to_instance = {
 };
 
 
-void MDMA::prepare_transfer(Instance& instance, LinkedListNode& first_node)
+void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node)
 {
-    auto node = first_node.get_node();
     if (instance.handle.State == HAL_MDMA_STATE_BUSY || instance.handle.Lock == HAL_LOCKED)
     {
         ErrorHandler("MDMA transfer already in progress");
@@ -43,7 +42,7 @@ void MDMA::prepare_transfer(Instance& instance, LinkedListNode& first_node)
 
     instance.handle.State = HAL_MDMA_STATE_BUSY;
     instance.handle.ErrorCode = HAL_MDMA_ERROR_NONE;
-    instance.handle.FirstLinkedListNodeAddress = node;
+    instance.handle.FirstLinkedListNodeAddress = first_node;
     __HAL_MDMA_DISABLE(&instance.handle);
     while ((instance.handle.Instance->CCR & MDMA_CCR_EN) != 0U)
     {
@@ -52,15 +51,15 @@ void MDMA::prepare_transfer(Instance& instance, LinkedListNode& first_node)
 
     MDMA_Channel_TypeDef* channel = instance.handle.Instance;
 
-    channel->CTCR = node->CTCR;
-    channel->CBNDTR = node->CBNDTR;
-    channel->CSAR = node->CSAR;
-    channel->CDAR = node->CDAR;
-    channel->CBRUR = node->CBRUR;
-    channel->CTBR = node->CTBR;
-    channel->CMAR = node->CMAR;
-    channel->CMDR = node->CMDR;
-    channel->CLAR = node->CLAR;
+    channel->CTCR = first_node->CTCR;
+    channel->CBNDTR = first_node->CBNDTR;
+    channel->CSAR = first_node->CSAR;
+    channel->CDAR = first_node->CDAR;
+    channel->CBRUR = first_node->CBRUR;
+    channel->CTBR = first_node->CTBR;
+    channel->CMAR = first_node->CMAR;
+    channel->CMDR = first_node->CMDR;
+    channel->CLAR = first_node->CLAR;
 
     const uint32_t clear_flags = MDMA_FLAG_TE | MDMA_FLAG_CTC | MDMA_FLAG_BT | MDMA_FLAG_BFTC | MDMA_FLAG_BRT;
     __HAL_MDMA_CLEAR_FLAG(&instance.handle, clear_flags);
@@ -79,6 +78,9 @@ void MDMA::prepare_transfer(Instance& instance, LinkedListNode& first_node)
 
     instance.handle.Lock = HAL_UNLOCKED;
 }
+
+void MDMA::prepare_transfer(Instance& instance, LinkedListNode& first_node) { MDMA::prepare_transfer(instance, first_node.get_node()); }
+
 
 
 MDMA::Instance& MDMA::get_instance(uint8_t id)
