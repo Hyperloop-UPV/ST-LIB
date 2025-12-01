@@ -17,7 +17,7 @@
 #endif
 
 #ifndef NODES_MAX
-#define NODES_MAX 500
+#define NODES_MAX 20
 #endif
 
 class MDMA{
@@ -113,7 +113,7 @@ class MDMA{
 
 
     };
-    static void prepare_transfer(Instance& instance, MDMA::LinkedListNode& first_node);
+    static void prepare_transfer(Instance& instance, MDMA::LinkedListNode* first_node);
     static void prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node);
     static Instance& get_instance(uint8_t id);
     inline static std::array<Instance,8> instances{};
@@ -165,6 +165,6 @@ class MDMA{
      * @param first_node The linked list node representing the first node in the linked list.
      * @param promise An optional promise to be fulfilled upon transfer completion.
      */
-    static void transfer_list(const uint8_t MDMA_id, MDMA::LinkedListNode& first_node, Promise* promise=nullptr);
+    static void transfer_list(const uint8_t MDMA_id, MDMA::LinkedListNode* first_node, Promise* promise=nullptr);
 
 };

@@ -79,7 +79,7 @@ void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node
     instance.handle.Lock = HAL_UNLOCKED;
 }
 
-void MDMA::prepare_transfer(Instance& instance, LinkedListNode& first_node) { MDMA::prepare_transfer(instance, first_node.get_node()); }
+void MDMA::prepare_transfer(Instance& instance, LinkedListNode* first_node) { MDMA::prepare_transfer(instance, first_node->get_node()); }
 
 
 
@@ -210,7 +210,7 @@ void MDMA::irq_handler()
 }
 
 
-void MDMA::transfer_list(const uint8_t MDMA_id, MDMA::LinkedListNode& first_node, Promise* promise)
+void MDMA::transfer_list(const uint8_t MDMA_id, MDMA::LinkedListNode* first_node, Promise* promise)
 {
     Instance& instance = get_instance(MDMA_id);
 
