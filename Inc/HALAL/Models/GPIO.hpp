@@ -189,12 +189,6 @@ struct GPIODomain {
     void toggle() { HAL_GPIO_TogglePin(port, pin); }
   };
 
-private:
-  inline static Instance *instances_ptr = nullptr;
-
-public:
-  static Instance &instance(std::size_t id) { return instances_ptr[id]; }
-
   template <std::size_t N> struct Init {
     static inline std::array<Instance, N> instances{};
 
@@ -211,8 +205,6 @@ public:
         inst.port = port_to_reg(port);
         inst.pin = gpio_init.Pin;
       }
-
-      instances_ptr = instances.data();
     }
   };
 };
