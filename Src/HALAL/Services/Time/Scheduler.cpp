@@ -76,16 +76,18 @@ inline void Scheduler::global_timer_enable() {
 }
 
 // ----------------------------
-FakeTimer* Scheduler_global_timer;
-void TimerCallback();
-void Scheduler::simulate_ticking(){
-    Scheduler_global_timer->CNT++;
-    if(Scheduler_global_timer->CNT == Scheduler_global_timer->ARR)[[unlikely]]{
-            TimerCallback();
-            std::cout<<"overflow\n";
-            Scheduler_global_timer->CNT = -1;
+#ifdef TESTING_ENV
+    FakeTimer* Scheduler_global_timer;
+    void TimerCallback();
+    void Scheduler::simulate_ticking(){
+        Scheduler_global_timer->CNT++;
+        if(Scheduler_global_timer->CNT == Scheduler_global_timer->ARR)[[unlikely]]{
+                TimerCallback();
+                std::cout<<"overflow\n";
+                Scheduler_global_timer->CNT = -1;
+        }
     }
-}
+#endif
 void Scheduler::start() {
     static_assert(kBaseClockHz % 1'000'000u == 0u, "Base clock must be a multiple of 1MHz");
 
