@@ -30,11 +30,12 @@
     #define SCHEDULER_HAL_TIM glue(htim, SCHEDULER_TIMER_IDX)
     extern TIM_HandleTypeDef SCHEDULER_HAL_TIM;
 #else
-struct FakeTimer{
-    int64_t CNT;
-    int64_t ARR;
-};
-extern FakeTimer* Scheduler_global_timer;
+   
+    struct FakeTimer{
+        int64_t CNT;
+        int64_t ARR;
+    };
+    extern FakeTimer* Scheduler_global_timer;
 #endif
 struct Scheduler {
     using callback_t = void (*)();
@@ -61,6 +62,8 @@ struct Scheduler {
     // Have to be public because SCHEDULER_GLOBAL_TIMER_CALLBACK won't work otherwise
     #ifndef TESTING_ENV
         static constexpr uint32_t global_timer_base = SCHEDULER_TIMER_BASE;
+    #else
+        static void simulate_ticking();
     #endif
     static void on_timer_update();
 
