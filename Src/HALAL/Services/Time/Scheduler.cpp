@@ -6,22 +6,26 @@
  */
 #include "HALAL/Services/Time/Scheduler.hpp"
 
-// This is needed to register a TimerPeripheral
-#include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
-
+#ifndef TESTING_ENV
+    // This is needed to register a TimerPeripheral
+    #include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
+#else
+    #include<iostream>
+#endif
 #include <algorithm>
 #include <limits>
 
-/* NOTE(vic): Pido perdón a Boris pero es la mejor manera que se me ha ocurrido hacer esto */
-#define SCHEDULER_RCC_TIMER_ENABLE \
-    glue(glue(RCC_APB1LENR_TIM, SCHEDULER_TIMER_IDX), EN)
-#define SCHEDULER_GLOBAL_TIMER_IRQn \
-    glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQn))
-#define SCHEDULER_GLOBAL_TIMER_CALLBACK() \
-    extern "C" void glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQHandler))(void)
+#ifndef TESTING_ENV
+    /* NOTE(vic): Pido perdón a Boris pero es la mejor manera que se me ha ocurrido hacer esto */
+    #define SCHEDULER_RCC_TIMER_ENABLE \
+        glue(glue(RCC_APB1LENR_TIM, SCHEDULER_TIMER_IDX), EN)
+    #define SCHEDULER_GLOBAL_TIMER_IRQn \
+        glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQn))
+    #define SCHEDULER_GLOBAL_TIMER_CALLBACK() \
+        extern "C" void glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQHandler))(void)
 
-#define Scheduler_global_timer ((TIM_TypeDef*)Scheduler::global_timer_base)
-
+    #define Scheduler_global_timer ((TIM_TypeDef*)Scheduler::global_timer_base)
+#endif
 namespace {
 constexpr uint64_t kMaxIntervalUs =
     static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()) + 1ULL;
@@ -59,21 +63,35 @@ inline void Scheduler::pop_front() {
 // ----------------------------
 
 inline void Scheduler::global_timer_disable() {
+#ifndef TESTING_ENV
     LL_TIM_DisableCounter(Scheduler_global_timer);
     //Scheduler_global_timer->CR1 &= ~TIM_CR1_CEN;
+#endif
 }
 inline void Scheduler::global_timer_enable() {
+#ifndef TESTING_ENV
     LL_TIM_EnableCounter(Scheduler_global_timer);
     //Scheduler_global_timer->CR1 |= TIM_CR1_CEN;
+#endif
 }
 
 // ----------------------------
-
+FakeTimer* Scheduler_global_timer;
+void TimerCallback();
+void simulate_ticking(){
+    Scheduler_global_timer->CNT++;
+    if(Scheduler_global_timer->CNT == Scheduler_global_timer->ARR)[[unlikely]]{
+            TimerCallback();
+            std::cout<<"overflow\n";
+            Scheduler_global_timer->CNT = -1;
+    }
+}
 void Scheduler::start() {
     static_assert(kBaseClockHz % 1'000'000u == 0u, "Base clock must be a multiple of 1MHz");
 
     const uint32_t prescaler = (kBaseClockHz / 1'000'000u) - 1u;
     static_assert(prescaler < 0xFFFF'FFFF, "Prescaler is 16 bit, so it must be in that range");
+#ifndef TESTING_ENV
 
     // Register a TimerPeripheral so it's not used anywhere else
     // hopefully we can move to something better than TimerPeripheral
@@ -95,15 +113,24 @@ void Scheduler::start() {
     Scheduler_global_timer->SR &= ~LL_TIM_SR_UIF; /* clear update interrupt flag */
     // NOTE(vic): We don't need to set the flag since there won't be any tasks at the start/it will get set in schedule_next_interval()
     // Scheduler::global_timer_enable();
-
+#else
+    active_task_count_ = 0;
+    Scheduler_global_timer = new FakeTimer();
+    Scheduler_global_timer->CNT = 0;
+    Scheduler_global_timer->ARR = 0;
+#endif
     Scheduler::schedule_next_interval();
 }
 
-SCHEDULER_GLOBAL_TIMER_CALLBACK() {
-    Scheduler_global_timer->SR &= ~TIM_SR_UIF;
-    Scheduler::on_timer_update();
-}
-
+#ifndef TESTING_ENV
+    SCHEDULER_GLOBAL_TIMER_CALLBACK() { 
+        Scheduler_global_timer->SR &= ~TIM_SR_UIF;
+#else
+    void TimerCallback(){
+#endif
+    
+        Scheduler::on_timer_update();
+    }
 void Scheduler::update() {
     while(ready_bitmap_ != 0u) {
         uint32_t bit_index = static_cast<uint32_t>(__builtin_ctz(ready_bitmap_));
