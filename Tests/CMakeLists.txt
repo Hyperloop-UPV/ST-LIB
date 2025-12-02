@@ -1,9 +1,11 @@
+cmake_minimum_required(VERSION 3.14)
 if(DEFINED STLIB_NAME_SUFFIX)
     set(STLIB_TEST_EXECUTABLE st-lib-${STLIB_NAME_SUFFIX}-test)
 else()
     set(STLIB_TEST_EXECUTABLE st-lib-test)
 endif()
 
+project( ${STLIB_TEST_EXECUTABLE})
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -14,7 +16,7 @@ FetchContent_MakeAvailable(googletest)
 message(STATUS "Generating test executable for ST-LIB")
 
 add_executable(${STLIB_TEST_EXECUTABLE}
-    # ${CMAKE_CURRENT_LIST_DIR}/Time/scheduler_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Time/scheduler_test.cpp
 )
 
 set_target_properties(${STLIB_TEST_EXECUTABLE} PROPERTIES
@@ -29,6 +31,10 @@ target_link_libraries(
     GTest::gtest_main
     ${STLIB_LIBRARY}
 )
+if(MINGW OR CYGWIN)
+    # Force static linking of libgcc and libstdc++ to avoid DLL version mismatches
+    target_link_options(${STLIB_TEST_EXECUTABLE} PRIVATE -static)
+endif()
 
 if(MINGW OR CYGWIN)
     target_link_options(${STLIB_TEST_EXECUTABLE} PRIVATE -static)
