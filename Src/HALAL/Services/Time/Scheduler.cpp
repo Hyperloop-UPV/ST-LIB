@@ -89,7 +89,6 @@ void Scheduler::start() {
     // LL_TIM_DisableExternalClock(Scheduler_global_timer);
     //  |-> does this: Scheduler_global_timer->SMCR &= ~TIM_SMCR_ECE; /* Disable external clock */
 
-    active_task_count_ = 0;
     Scheduler_global_timer->CNT = 0; /* Clear counter value */
 
     NVIC_EnableIRQ(SCHEDULER_GLOBAL_TIMER_IRQn);
@@ -129,6 +128,7 @@ inline uint8_t Scheduler::allocate_slot() {
     uint32_t idx = 32 - __builtin_clz(~Scheduler::used_bitmap_);
     if(idx > static_cast<int>(Scheduler::kMaxTasks)) [[unlikely]]
         return static_cast<uint8_t>(Scheduler::INVALID_ID);
+    Scheduler::active_task_count_++;
     return static_cast<uint8_t>(idx);
 }
 
@@ -138,6 +138,7 @@ inline void Scheduler::release_slot(uint8_t id) {
     uint32_t clearmask = ~(1u << id);
     ready_bitmap_ &= clearmask;
     used_bitmap_ &= clearmask;
+    Scheduler::active_task_count_--;
 }
 
 void Scheduler::insert_sorted(uint8_t id) {
@@ -181,7 +182,6 @@ void Scheduler::insert_sorted(uint8_t id) {
     }
 
     sorted_task_ids_ = ((uint64_t)hi << 32) | lo;
-    ++active_task_count_;
 }
 
 void Scheduler::remove_sorted(uint8_t id) {
@@ -214,7 +214,6 @@ void Scheduler::remove_sorted(uint8_t id) {
 
     // Remove element (lower part | higher pushing nibble out of mask)
     Scheduler::sorted_task_ids_ = (Scheduler::sorted_task_ids_ & mask) | ((Scheduler::sorted_task_ids_ >> 4) & ~mask);
-    Scheduler::active_task_count_--;
 }
 
 void Scheduler::schedule_next_interval() {
