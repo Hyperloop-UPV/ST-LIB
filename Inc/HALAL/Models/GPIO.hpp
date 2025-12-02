@@ -13,14 +13,80 @@ using std::tuple;
 namespace ST_LIB {
 struct GPIODomain {
   enum class OperationMode : uint8_t {
-    INPUT,
-    OUTPUT,
-    ANALOG,
-    EXTERNAL_INTERRUPT_RISING,
-    EXTERNAL_INTERRUPT_FALLING,
-    EXTERNAL_INTERRUPT_RISING_FALLING,
-    TIMER_ALTERNATE_FUNCTION,
-    ALTERNATIVE,
+    INPUT,               // GPIO_MODE_INPUT
+    OUTPUT_PUSHPULL,     // GPIO_MODE_OUTPUT_PP
+    OUTPUT_OPENDRAIN,    // GPIO_MODE_OUTPUT_OD
+    ANALOG,              // GPIO_MODE_ANALOG
+    ALT_PP,              // GPIO_MODE_AF_PP
+    ALT_OD,              // GPIO_MODE_AF_OD
+    EXTI_RISING,         // GPIO_MODE_IT_RISING
+    EXTI_FALLING,        // GPIO_MODE_IT_FALLING
+    EXTI_RISING_FALLING, // GPIO_MODE_IT_RISING_FALLING
+  };
+  static constexpr uint32_t to_hal_mode(OperationMode m) {
+    switch (m) {
+    case OperationMode::INPUT:
+      return GPIO_MODE_INPUT;
+    case OperationMode::OUTPUT_PUSHPULL:
+      return GPIO_MODE_OUTPUT_PP;
+    case OperationMode::OUTPUT_OPENDRAIN:
+      return GPIO_MODE_OUTPUT_OD;
+    case OperationMode::ANALOG:
+      return GPIO_MODE_ANALOG;
+    case OperationMode::ALT_PP:
+      return GPIO_MODE_AF_PP;
+    case OperationMode::ALT_OD:
+      return GPIO_MODE_AF_OD;
+    case OperationMode::EXTI_RISING:
+      return GPIO_MODE_IT_RISING;
+    case OperationMode::EXTI_FALLING:
+      return GPIO_MODE_IT_FALLING;
+    case OperationMode::EXTI_RISING_FALLING:
+      return GPIO_MODE_IT_RISING_FALLING;
+    }
+  }
+  enum class Pull : uint8_t { None, Up, Down };
+  static constexpr uint32_t to_hal_pull(Pull p) {
+    switch (p) {
+    case Pull::None:
+      return GPIO_NOPULL;
+    case Pull::Up:
+      return GPIO_PULLUP;
+    case Pull::Down:
+      return GPIO_PULLDOWN;
+    }
+  }
+  enum class Speed : uint8_t { Low, Medium, High, VeryHigh };
+  static constexpr uint32_t to_hal_speed(Speed s) {
+    switch (s) {
+    case Speed::Low:
+      return GPIO_SPEED_FREQ_LOW;
+    case Speed::Medium:
+      return GPIO_SPEED_FREQ_MEDIUM;
+    case Speed::High:
+      return GPIO_SPEED_FREQ_HIGH;
+    case Speed::VeryHigh:
+      return GPIO_SPEED_FREQ_VERY_HIGH;
+    }
+  }
+  enum class AlternateFunction : uint8_t {
+    NO_AF = 20,
+    AF0 = 15,
+    AF1 = 14,
+    AF2 = 13,
+    AF3 = 12,
+    AF4 = 11,
+    AF5 = 10,
+    AF6 = 9,
+    AF7 = 8,
+    AF8 = 7,
+    AF9 = 6,
+    AF10 = 5,
+    AF11 = 4,
+    AF12 = 3,
+    AF13 = 2,
+    AF14 = 1,
+    AF15 = 0
   };
   enum class Port : uint8_t { A, B, C, D, E, F, G, H };
   static inline GPIO_TypeDef *port_to_reg(Port p) {
@@ -81,18 +147,25 @@ struct GPIODomain {
     }
   }
 
-  struct Pin2 {
+  struct Pin {
     GPIODomain::Port port;
     uint32_t pin;
+    uint16_t afs;
 
-    consteval Pin2(GPIODomain::Port port, uint32_t pin)
-        : port(port), pin(pin) {}
+    inline constexpr bool valid_af(const AlternateFunction af) const {
+      if (af == AlternateFunction::NO_AF)
+        return true;
+      return ((1 << static_cast<uint8_t>(af)) & afs) != 0;
+    }
   };
 
   struct Entry {
     Port port;
     uint32_t pin;
     OperationMode mode;
+    Pull pull;
+    Speed speed;
+    AlternateFunction af;
   };
 
   struct GPIO {
@@ -100,7 +173,13 @@ struct GPIODomain {
 
     Entry e;
 
-    consteval GPIO(Pin2 pin, OperationMode mode) : e(pin.port, pin.pin, mode) {}
+    consteval GPIO(const Pin &pin, OperationMode mode, Pull pull, Speed speed,
+                   AlternateFunction af = AlternateFunction::NO_AF)
+        : e{pin.port, pin.pin, mode, pull, speed, af} {
+      if (!pin.valid_af(af)) {
+        throw "Alternate function not valid for this pin";
+      }
+    }
 
     template <class Ctx> consteval void inscribe(Ctx &ctx) const {
       ctx.template add<GPIODomain>(e);
@@ -108,8 +187,6 @@ struct GPIODomain {
   };
 
   static constexpr std::size_t max_instances{110};
-  static_assert(max_instances > 0,
-                "The number of instances must be greater than 0");
 
   struct Config {
     std::tuple<Port, GPIO_InitTypeDef> init_data{};
@@ -124,51 +201,17 @@ struct GPIODomain {
       for (std::size_t j = 0; j < i; ++j) {
         const auto &prev = pins[j];
         if (prev.pin == e.pin && prev.port == e.port) {
-          struct gpio_already_inscribed {};
-          throw gpio_already_inscribed{};
+          throw "GPIO already inscribed";
         }
       }
 
-      GPIO_InitTypeDef GPIO_InitStruct;
+      GPIO_InitTypeDef GPIO_InitStruct{};
       GPIO_InitStruct.Pin = e.pin;
-      switch (e.mode) {
-
-      case OperationMode::OUTPUT:
-        GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-        break;
-
-      case OperationMode::INPUT:
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        break;
-
-      case OperationMode::ANALOG:
-        GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        break;
-      case OperationMode::EXTERNAL_INTERRUPT_RISING:
-        GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-        break;
-      case OperationMode::EXTERNAL_INTERRUPT_FALLING:
-        GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-        break;
-      case OperationMode::EXTERNAL_INTERRUPT_RISING_FALLING:
-        GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-        GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-        break;
-        //   case OperationMode::TIMER_ALTERNATE_FUNCTION:
-        //     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        //     GPIO_InitStruct.Pull = GPIO_NOPULL;
-        //     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-        //     GPIO_InitStruct.Alternate = pin.alternative_function;
-        //     break;
-
-      default:
-        break;
+      GPIO_InitStruct.Mode = to_hal_mode(e.mode);
+      GPIO_InitStruct.Pull = to_hal_pull(e.pull);
+      GPIO_InitStruct.Speed = to_hal_speed(e.speed);
+      if (e.mode == OperationMode::ALT_PP || e.mode == OperationMode::ALT_OD) {
+        GPIO_InitStruct.Alternate = static_cast<uint32_t>(e.af);
       }
 
       cfgs[i].init_data = std::make_tuple(e.port, GPIO_InitStruct);
@@ -179,14 +222,22 @@ struct GPIODomain {
 
   // Runtime object
   struct Instance {
+  private:
     GPIO_TypeDef *port;
-    uint16_t pin;
+    uint32_t pin;
+
+  public:
+    constexpr Instance() : port{nullptr}, pin{0} {}
+    Instance(GPIO_TypeDef *p, uint32_t pin)
+        : port{p}, pin{static_cast<uint16_t>(pin)} {}
 
     void turn_on() { HAL_GPIO_WritePin(port, pin, GPIO_PIN_SET); }
 
     void turn_off() { HAL_GPIO_WritePin(port, pin, GPIO_PIN_RESET); }
 
     void toggle() { HAL_GPIO_TogglePin(port, pin); }
+
+    GPIO_PinState read() { return HAL_GPIO_ReadPin(port, pin); }
   };
 
   template <std::size_t N> struct Init {
@@ -201,9 +252,7 @@ struct GPIODomain {
         enable_gpio_clock(port);
         HAL_GPIO_Init(port_to_reg(port), &gpio_init);
 
-        auto &inst = instances[i];
-        inst.port = port_to_reg(port);
-        inst.pin = gpio_init.Pin;
+        instances[i] = Instance{port_to_reg(port), gpio_init.Pin};
       }
     }
   };
