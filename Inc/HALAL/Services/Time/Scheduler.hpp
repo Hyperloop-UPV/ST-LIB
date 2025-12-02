@@ -87,8 +87,8 @@ private:
     static uint8_t register_task(uint32_t period_us, callback_t func, bool repeating);
 
     // helpers
-    static inline uint8_t get_at(std::size_t logical);
-    static inline void set_at(std::size_t logical, uint8_t id);
+    static inline uint8_t get_at(uint8_t idx);
+    static inline void set_at(uint8_t idx, uint8_t id);
     static inline void pop_front();
     static inline uint8_t front_id();
 

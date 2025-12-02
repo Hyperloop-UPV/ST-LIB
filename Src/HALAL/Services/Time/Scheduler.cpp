@@ -49,11 +49,12 @@ uint32_t Scheduler::used_bitmap_{0};
 uint64_t Scheduler::global_tick_us_{0};
 uint64_t Scheduler::current_interval_us_{0};
 
-inline uint8_t Scheduler::get_at(std::size_t idx) {
-    uint32_t shift = idx*4;
-    return (sorted_task_ids_ & (0x0F << shift)) >> shift;
+inline uint8_t Scheduler::get_at(uint8_t idx) {
+    int word_idx = idx > 7;
+    uint32_t shift = (idx & 7) << 2;
+    return (((uint32_t*)sorted_task_ids_)[word_idx] & (0x0F << shift)) >> shift;
 }
-inline void Scheduler::set_at(std::size_t idx, uint8_t id) {
+inline void Scheduler::set_at(uint8_t idx, uint8_t id) {
     uint32_t shift = idx*4;
     uint64_t clearmask = ~(0xFF << shift);
     Scheduler::sorted_task_ids_ = (sorted_task_ids_ & clearmask) | (id << shift);
