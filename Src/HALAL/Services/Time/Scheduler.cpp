@@ -129,6 +129,7 @@ inline uint8_t Scheduler::allocate_slot() {
     if(idx > static_cast<int>(Scheduler::kMaxTasks)) [[unlikely]]
         return static_cast<uint8_t>(Scheduler::INVALID_ID);
     Scheduler::active_task_count_++;
+    Scheduler::used_bitmap_ |= (1UL << idx);
     return static_cast<uint8_t>(idx);
 }
 
