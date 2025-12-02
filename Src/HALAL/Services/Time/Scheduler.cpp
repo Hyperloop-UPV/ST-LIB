@@ -47,7 +47,6 @@ std::size_t Scheduler::active_task_count_{0};
 uint32_t Scheduler::ready_bitmap_{0};
 uint32_t Scheduler::used_bitmap_{0};
 uint64_t Scheduler::global_tick_us_{0};
-uint64_t Scheduler::long_wait_remaining_us_{0};
 uint64_t Scheduler::current_interval_us_{0};
 
 inline uint8_t Scheduler::get_at(std::size_t idx) {
@@ -237,7 +236,6 @@ void Scheduler::schedule_next_interval() {
     if (active_task_count_ == 0) [[unlikely]] {
         Scheduler::global_timer_disable();
         current_interval_us_ = 0;
-        long_wait_remaining_us_ = 0;
         return;
     }
 
@@ -251,10 +249,8 @@ void Scheduler::schedule_next_interval() {
 
     if (delta > kMaxIntervalUs) [[unlikely]] {
         current_interval_us_ = kMaxIntervalUs;
-        long_wait_remaining_us_ = delta - kMaxIntervalUs;
     } else {
         current_interval_us_ = delta;
-        long_wait_remaining_us_ = 0;
     }
 
     configure_timer_for_interval(current_interval_us_);
@@ -270,14 +266,6 @@ inline void Scheduler::configure_timer_for_interval(uint64_t microseconds) {
 
 void Scheduler::on_timer_update() {
     global_tick_us_ += current_interval_us_;
-
-    if (long_wait_remaining_us_ > 0) [[unlikely]] {
-        uint64_t next_chunk = std::min(long_wait_remaining_us_, kMaxIntervalUs);
-        long_wait_remaining_us_ -= next_chunk;
-        current_interval_us_ = next_chunk;
-        configure_timer_for_interval(current_interval_us_);
-        return;
-    }
 
     uint8_t candidate_id = Scheduler::front_id();
     Task& task = tasks_[candidate_id];
