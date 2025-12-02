@@ -193,12 +193,17 @@ void Scheduler::insert_sorted(uint8_t id) {
 void Scheduler::remove_sorted(uint8_t id) {
     uint64_t nibble_lsb = 0x1111'1111'1111'1111ULL;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
+
     // pattern = nibble_lsb * id   (para obtener id en cada nibble)
     uint32_t pattern_32 = id + (id << 4);
     pattern_32 = pattern_32 + (pattern_32 << 8);
     pattern_32 = pattern_32 + (pattern_32 << 16);
     uint64_t pattern = pattern_32;
     BFI(((uint32_t*)&pattern)[1], pattern_32, 0, 32);
+
+#pragma GCC diagnostic pop
 
     // diff becomes 0xid..id_0_id..id where 0 is the nibble where id is in sorted_task_ids
     uint64_t diff = Scheduler::sorted_task_ids_ ^ pattern;
