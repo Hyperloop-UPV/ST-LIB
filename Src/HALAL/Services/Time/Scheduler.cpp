@@ -78,7 +78,7 @@ inline void Scheduler::global_timer_enable() {
 // ----------------------------
 FakeTimer* Scheduler_global_timer;
 void TimerCallback();
-void simulate_ticking(){
+void Scheduler::simulate_ticking(){
     Scheduler_global_timer->CNT++;
     if(Scheduler_global_timer->CNT == Scheduler_global_timer->ARR)[[unlikely]]{
             TimerCallback();
