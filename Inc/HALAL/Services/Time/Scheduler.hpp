@@ -68,9 +68,11 @@ private:
 
     static std::array<Task, kMaxTasks> tasks_;
     static_assert(kMaxTasks == 16, "kMaxTasks must be 16, if more is needed, sorted_task_ids_ must change");
+    /* sorted_task_ids_ is a sorted queue with 4bits for each id in the scheduler's current ids */
     static uint64_t sorted_task_ids_;
 
     static std::size_t active_task_count_;
+    static_assert(kMaxTasks <= 32, "kMaxTasks must be <= 32, if more is needed, the bitmaps must change");
     static uint32_t ready_bitmap_;
     static uint32_t used_bitmap_;
     static uint64_t global_tick_us_;
