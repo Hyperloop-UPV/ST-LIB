@@ -222,10 +222,12 @@ void Scheduler::remove_sorted(uint8_t id) {
 
     if(matches == 0) [[unlikely]] return; // not found
 
+    /* split the bm in two 0x0000...FFFFFF where removal index is placed 
+     * then invert to keep both sides that surround the discarded index
+     */ 
     uint32_t pos_msb = __builtin_ctzll(matches);
     uint32_t pos_lsb = pos_msb - 3;
 
-    // convert pos_lsb to 0x0..0_FFF_0..0
     uint64_t mask = (1ULL << pos_lsb) - 1;
 
     // Remove element (lower part | higher pushing nibble out of mask)
