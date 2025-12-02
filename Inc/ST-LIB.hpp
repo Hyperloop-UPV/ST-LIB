@@ -46,11 +46,13 @@ template <typename... Domains> struct BuildCtx {
     }
   }
 
-  template <typename D> consteval void add(typename D::Entry e) {
+  template <typename D> consteval std::size_t add(typename D::Entry e) {
     constexpr std::size_t I = domain_index<D>();
     auto &arr = std::get<I>(storage);
     auto &size = sizes[I];
+    const auto idx = size;
     arr[size++] = e;
+    return idx;
   }
 
   template <typename D> consteval auto span() const {
@@ -60,60 +62,72 @@ template <typename... Domains> struct BuildCtx {
     using E = typename D::Entry;
     return std::span<const E>{arr.data(), size};
   }
+
+  template <typename D> consteval std::size_t size() const {
+    constexpr std::size_t I = domain_index<D>();
+    return sizes[I];
+  }
 };
 
-template <typename Domain, auto &...devs> consteval std::size_t domain_count() {
-  return (... +
-          (std::is_same_v<typename std::remove_cvref_t<decltype(devs)>::domain,
-                          Domain>
-               ? 1u
-               : 0u));
-}
-
-using DomainsCtx = BuildCtx<GPIODomain /*, ADCDomain, PWMDomain, ...*/>;
+using DomainsCtx = BuildCtx<GPIODomain, DigitalOutputDomain,
+                            DigitalInputDomain /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
-  // ========== build compile-time ==========
-  static consteval auto build() {
+  static consteval auto build_ctx() {
     DomainsCtx ctx{};
-
     (devs.inscribe(ctx), ...);
+    return ctx;
+  }
 
-    constexpr std::size_t gpioN = domain_count<GPIODomain, devs...>();
-    // constexpr std::size_t adcN = domain_count<ADCDomain, devs...>();
-    // constexpr std::size_t pwmN = domain_count<PWMDomain, devs...>();
+  static constexpr auto ctx = build_ctx();
+
+  template <typename D> static consteval std::size_t domain_size() {
+    return ctx.template span<D>().size();
+  }
+
+  static consteval auto build() {
+    constexpr std::size_t gpioN = domain_size<GPIODomain>();
+    constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
+    constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
+    // ...
 
     struct ConfigBundle {
       std::array<GPIODomain::Config, gpioN> gpio_cfgs;
-      // std::array<ADCDomain::Config, adcN> adc_cgfs;
-      // std::array<PWMDomain::Config, pwmN> pwm_cgfs;
+      std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
+      std::array<DigitalInputDomain::Config, dinN> din_cfgs;
+      // ...
     };
 
     return ConfigBundle{
         .gpio_cfgs =
             GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
-        // .adc_cgfs =
-        //     ADCDomain::template build<adcN>(ctx.template span<ADCDomain>()),
-        // .pwm_cgfs =
-        //     PWMDomain::template build<pwmN>(ctx.template span<PWMDomain>()),
+        .dout_cfgs = DigitalOutputDomain::template build<doutN>(
+            ctx.template span<DigitalOutputDomain>()),
+        .din_cfgs = DigitalInputDomain::template build<dinN>(
+            ctx.template span<DigitalInputDomain>()),
+        // ...
     };
   }
 
-  // ========== init runtime ==========
-  static void init() {
-    static constexpr auto cfg = build();
+  static constexpr auto cfg = build();
 
-    constexpr std::size_t gpioN = domain_count<GPIODomain, devs...>();
-    // constexpr std::size_t adcN = domain_count<ADCDomain, devs...>();
-    // constexpr std::size_t pwmN = domain_count<PWMDomain, devs...>();
+  static void init() {
+    constexpr std::size_t gpioN = domain_size<GPIODomain>();
+    constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
+    constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
+    // ...
 
     GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
-    // ADCDomain::Init<adcN>::init(cfg.adc_cfgs);
-    // PWMDomain::Init<pwmN>::init(cfg.pwm_cfgs);
+    DigitalOutputDomain::Init<doutN>::init(cfg.dout_cfgs,
+                                           GPIODomain::Init<gpioN>::instances);
+    DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
+                                         GPIODomain::Init<gpioN>::instances);
+    // ...
   }
 
-  template <typename Domain> static consteval std::size_t domain_size() {
-    return domain_count<Domain, devs...>();
+  template <typename Domain>
+  static consteval std::size_t domain_size_for_instance() {
+    return domain_size<Domain>();
   }
 
   template <typename Domain, auto &Target, std::size_t I = 0>
@@ -154,7 +168,7 @@ template <auto &...devs> struct Board {
     using Domain = typename DevT::domain;
 
     constexpr std::size_t idx = domain_index_of<Domain, Target>();
-    constexpr std::size_t N = domain_size<Domain>();
+    constexpr std::size_t N = domain_size_for_instance<Domain>();
 
     return Domain::template Init<N>::instances[idx];
   }
