@@ -1,0 +1,96 @@
+/*
+ * Scheduler.hpp
+ *
+ * Created on: 17 nov. 2025
+ *     Author: Victor (coauthor Stephan)
+ */
+#pragma once
+
+#include "stm32h7xx_ll_tim.h"
+
+#include <array>
+#include <cstdint>
+#include <functional>
+
+/* NOTE(vic): Pido perdón a Boris pero es la mejor manera que se me ha ocurrido hacer esto
+ *  Cambiar el SCHEDULER_TIMER_IDX si es mejor usar otro timer que no sea TIM2
+ */
+#ifndef SCHEDULER_TIMER_IDX
+# define SCHEDULER_TIMER_IDX 2
+#endif
+
+#define glue_(a,b) a ## b
+#define glue(a,b) glue_(a,b)
+#define SCHEDULER_TIMER_BASE glue(TIM, glue(SCHEDULER_TIMER_IDX, _BASE))
+
+// Used to reserve a TimerPeripheral
+#include "stm32h7xx_hal_tim.h"
+#define SCHEDULER_HAL_TIM glue(htim, SCHEDULER_TIMER_IDX)
+extern TIM_HandleTypeDef SCHEDULER_HAL_TIM;
+
+struct Scheduler {
+    using callback_t = void (*)();
+    static constexpr uint32_t INVALID_ID = 0xFFu;
+
+    static void start();
+    static void update();
+    static inline uint64_t get_global_tick();
+
+    static inline uint8_t register_task(uint32_t period_us, callback_t func) {
+        if(period_us == 0) [[unlikely]] period_us = 1;
+        return register_task(period_us, func, true);
+    }
+    static bool unregister_task(uint8_t id);
+
+    static inline uint8_t set_timeout(uint32_t microseconds, callback_t func) {
+        if(microseconds == 0) [[unlikely]] microseconds = 1;
+        return register_task(microseconds, func, false);
+    }
+    static inline void cancel_timeout(uint8_t id) { unregister_task(id); }
+
+    // static void global_timer_callback();
+
+    // Have to be public because SCHEDULER_GLOBAL_TIMER_CALLBACK won't work otherwise
+    static constexpr uint32_t global_timer_base = SCHEDULER_TIMER_BASE;
+    static void on_timer_update();
+
+private:
+    struct Task {
+        uint64_t next_fire_us{0};
+        callback_t callback{};
+        uint32_t period_us{0};
+        bool repeating{false};
+    };
+
+    static constexpr std::size_t kMaxTasks = 16;
+    static_assert((kMaxTasks & (kMaxTasks - 1)) == 0, "kMaxTasks must be a power of two");
+    static constexpr uint32_t kBaseClockHz = 1'000'000u;
+
+    static std::array<Task, kMaxTasks> tasks_;
+    static_assert(kMaxTasks == 16, "kMaxTasks must be 16, if more is needed, sorted_task_ids_ must change");
+    static uint64_t sorted_task_ids_;
+
+    static std::size_t active_task_count_;
+    static uint32_t ready_bitmap_;
+    static uint32_t used_bitmap_;
+    static uint64_t global_tick_us_;
+    static uint64_t long_wait_remaining_us_;
+    static uint64_t current_interval_us_;
+
+    static inline uint8_t allocate_slot();
+    static inline void release_slot(uint8_t id);
+    static void insert_sorted(uint8_t id);
+    static void remove_sorted(uint8_t id);
+    static void schedule_next_interval();
+    static inline void configure_timer_for_interval(uint64_t microseconds);
+    static uint8_t register_task(uint32_t period_us, callback_t func, bool repeating);
+
+    // helpers
+    static inline uint8_t get_at(std::size_t logical);
+    static inline void set_at(std::size_t logical, uint8_t id);
+    static inline void pop_front();
+    static inline uint8_t front_id();
+
+    static inline void global_timer_disable();
+    static inline void global_timer_enable();
+};
