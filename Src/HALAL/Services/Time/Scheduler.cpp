@@ -139,7 +139,7 @@ inline uint8_t Scheduler::allocate_slot() {
      * clz(0) = 32          -> 32 - clz(0) = 0
      * clz(0xFFFF'FFFF) = 0 -> 32 - clz(0xFFFF'FFFF) > kMaxTasks
      */
-    uint32_t idx = 32 - __builtin_clz(Scheduler::used_bitmap_);
+    uint32_t idx = 32 - __builtin_clz(~Scheduler::used_bitmap_);
     if(idx > static_cast<int>(Scheduler::kMaxTasks)) [[unlikely]]
         return static_cast<uint8_t>(Scheduler::INVALID_ID);
     return static_cast<uint8_t>(idx);
