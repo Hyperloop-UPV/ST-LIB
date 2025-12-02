@@ -198,7 +198,7 @@ void Scheduler::remove_sorted(uint8_t id) {
     pattern_32 = pattern_32 + (pattern_32 << 8);
     pattern_32 = pattern_32 + (pattern_32 << 16);
     uint64_t pattern = pattern_32;
-    BFI(((uint32_t*)&pattern)[1], pattern, 0, 32);
+    BFI(((uint32_t*)&pattern)[1], pattern_32, 0, 32);
 
     // diff becomes 0xid..id_0_id..id where 0 is the nibble where id is in sorted_task_ids
     uint64_t diff = Scheduler::sorted_task_ids_ ^ pattern;
