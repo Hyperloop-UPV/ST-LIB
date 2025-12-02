@@ -22,19 +22,6 @@
 
 #define Scheduler_global_timer ((TIM_TypeDef*)Scheduler::global_timer_base)
 
-/* bit field insert
- * (internally) mask = ((1UL << width) - 1) << pos
- * dest = (dest & ~mask) | (source & mask)
- * With the condition that pos and width are immediate values
- * ref: https://developer.arm.com/documentation/dui0646/c/The-Cortex-M7-Instruction-Set/Bit-field-instructions/BFC-and-BFI
- */
-#define BFI(dest, source, pos, width) \
-    __asm__( \
-        "bfi %0, %1, %2, %3" \
-        : "+r" (dest) \
-        : "r" (source), "i" (pos), "i" (width) \
-    )
-
 namespace {
 constexpr uint64_t kMaxIntervalUs =
     static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()) + 1ULL;
@@ -208,7 +195,7 @@ void Scheduler::remove_sorted(uint8_t id) {
     pattern_32 = pattern_32 + (pattern_32 << 8);
     pattern_32 = pattern_32 + (pattern_32 << 16);
     uint64_t pattern = pattern_32;
-    BFI(((uint32_t*)&pattern)[1], pattern_32, 0, 32);
+    ((uint32_t*)&pattern)[1] = pattern_32;
 
 #pragma GCC diagnostic pop
 
