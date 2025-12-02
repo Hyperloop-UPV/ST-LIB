@@ -13,9 +13,13 @@
 #include <limits>
 
 /* NOTE(vic): Pido perdón a Boris pero es la mejor manera que se me ha ocurrido hacer esto */
-#define SCHEDULER_RCC_TIMER_ENABLE glue(glue(RCC_APB1LENR_TIM, SCHEDULER_TIMER_IDX), EN)
-#define SCHEDULER_GLOBAL_TIMER_IRQn glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQn))
-#define SCHEDULER_GLOBAL_TIMER_CALLBACK() extern "C" void glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQHandler))(void)
+#define SCHEDULER_RCC_TIMER_ENABLE \
+    glue(glue(RCC_APB1LENR_TIM, SCHEDULER_TIMER_IDX), EN)
+#define SCHEDULER_GLOBAL_TIMER_IRQn \
+    glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQn))
+#define SCHEDULER_GLOBAL_TIMER_CALLBACK() \
+    extern "C" void glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQHandler))(void)
+
 #define Scheduler_global_timer ((TIM_TypeDef*)Scheduler::global_timer_base)
 
 /* bit field insert
@@ -254,8 +258,7 @@ void Scheduler::schedule_next_interval() {
 
 inline void Scheduler::configure_timer_for_interval(uint64_t microseconds) {
     // NOTE(vic): disabling the timer _might_ be necessary to prevent the timer from firing in the middle of configuring it, highly unlikely since it has a period of at least 1 microsecond
-    const uint32_t prescaler = (kBaseClockHz / 1'000'000u) - 1u;
-    Scheduler_global_timer->PSC = prescaler;
+    // TODO(vic): Validation: check arr is set correctly here: https://github.com/HyperloopUPV-H8/ST-LIB/pull/534#pullrequestreview-3529132356
     Scheduler_global_timer->ARR = static_cast<uint32_t>(microseconds - 1u);
     Scheduler_global_timer->CNT = 0;
     Scheduler::global_timer_enable();
