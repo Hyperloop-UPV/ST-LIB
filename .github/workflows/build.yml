@@ -4,21 +4,24 @@ on:
   workflow_call:
     inputs:
       preset:
-        description: |
-          'CMake preset to build the project, run `cmake --build --list-presets' to see a complete list of options'
-        required: true
+        description: >
+          CMake preset to build the project, run
+          `cmake --build --list-presets` to see options
+        required: false
         type: string
         default: 'nucleo-debug'
     outputs:
       build-artifact:
         description: 'Build result artifact id for later use'
         value: ${{ jobs.build.outputs.build-artifact }}
+
   workflow_dispatch:
     inputs:
       preset:
-        description: |
-          'CMake preset to build the project, run `cmake --build --list-presets' to see a complete list of options'
-        required: true
+        description: >
+          CMake preset to build the project, run
+          `cmake --build --list-presets` to see options
+        required: false
         type: string
         default: 'nucleo-debug'
 
@@ -26,26 +29,38 @@ jobs:
   build:
     name: Build Project
     runs-on: ubuntu-24.04
+
+    container:
+      image: ghcr.io/hyperloopupv-h8/hyperloop-firmware-toolchain:latest
+
     outputs:
       build-artifact: ${{ steps.upload-build-artifact.outputs.artifact-id }}
-    container:
-      image: jmaralo/hyperloop-upv-firmware:0.3.0
+
     steps:
-      - name: Clone Project
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
+          fetch-depth: 1
+
+      - name: Init submodules\
+        run: |
+          git config --global --add safe.directory '*'
+          ./tools/init-submodules.sh 
+        shell: bash
+
       - name: Build
         run: |
-          cmake --preset ${{ inputs.preset }} .
+          cmake --preset ${{ inputs.preset }}
           cmake --build --preset ${{ inputs.preset }}
+        shell: bash
+
       - name: Upload Build
         id: upload-build-artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.preset }}
-          path: out/build/test.elf
+          path: out/build/${{ inputs.preset }}/libst-lib.a
           retention-days: 7
           compression-level: 0
-          if-no-files-found: ignore
-
+          if-no-files-found: error
