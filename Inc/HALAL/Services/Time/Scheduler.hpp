@@ -6,8 +6,9 @@
  */
 #pragma once
 
-#include "stm32h7xx_ll_tim.h"
-
+#ifndef TESTING_ENV
+    #include "stm32h7xx_ll_tim.h"
+#endif
 #include <array>
 #include <cstdint>
 #include <functional>
@@ -19,15 +20,22 @@
 # define SCHEDULER_TIMER_IDX 2
 #endif
 
-#define glue_(a,b) a ## b
-#define glue(a,b) glue_(a,b)
-#define SCHEDULER_TIMER_BASE glue(TIM, glue(SCHEDULER_TIMER_IDX, _BASE))
+#ifndef TESTING_ENV
+    #define glue_(a,b) a ## b
+    #define glue(a,b) glue_(a,b)
+    #define SCHEDULER_TIMER_BASE glue(TIM, glue(SCHEDULER_TIMER_IDX, _BASE))
 
-// Used to reserve a TimerPeripheral
-#include "stm32h7xx_hal_tim.h"
-#define SCHEDULER_HAL_TIM glue(htim, SCHEDULER_TIMER_IDX)
-extern TIM_HandleTypeDef SCHEDULER_HAL_TIM;
-
+    // Used to reserve a TimerPeripheral
+    #include "stm32h7xx_hal_tim.h"
+    #define SCHEDULER_HAL_TIM glue(htim, SCHEDULER_TIMER_IDX)
+    extern TIM_HandleTypeDef SCHEDULER_HAL_TIM;
+#else
+struct FakeTimer{
+    int64_t CNT;
+    int64_t ARR;
+};
+extern FakeTimer* Scheduler_global_timer;
+#endif
 struct Scheduler {
     using callback_t = void (*)();
     static constexpr uint32_t INVALID_ID = 0xFFu;
@@ -51,10 +59,14 @@ struct Scheduler {
     // static void global_timer_callback();
 
     // Have to be public because SCHEDULER_GLOBAL_TIMER_CALLBACK won't work otherwise
-    static constexpr uint32_t global_timer_base = SCHEDULER_TIMER_BASE;
+    #ifndef TESTING_ENV
+        static constexpr uint32_t global_timer_base = SCHEDULER_TIMER_BASE;
+    #endif
     static void on_timer_update();
 
-private:
+#ifndef TESTING_ENV
+    private:
+#endif
     struct Task {
         uint64_t next_fire_us{0};
         callback_t callback{};
