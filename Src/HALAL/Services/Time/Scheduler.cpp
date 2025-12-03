@@ -22,7 +22,7 @@
 #define SCHEDULER_GLOBAL_TIMER_CALLBACK() \
     extern "C" void glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQHandler))(void)
 
-#define Scheduler_global_timer (SCHEDULER_TIMER_BASE)
+#define Scheduler_global_timer ((TIM_TypeDef*)SCHEDULER_TIMER_BASE)
 namespace {
 constexpr uint64_t kMaxIntervalUs =
     static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()) + 1ULL;
