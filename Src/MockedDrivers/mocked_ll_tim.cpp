@@ -71,7 +71,9 @@ void TIM_TypeDef::simulate_ticking() {
             // Only if UDIS (Update Disable) is NOT set
             if (!(CR1 & CR1_UDIS)) {
                 SR |= SR_UIF;
-                callback();
+                if(NVIC_GetEnableIRQ(irq_n)){
+                    callback();
+                }
             }
 
             // C. Reload Repetition Counter with new value
