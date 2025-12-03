@@ -9,8 +9,6 @@
 #ifndef TESTING_ENV
     // This is needed to register a TimerPeripheral
     #include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
-#else
-    #include<iostream>
 #endif
 #include <algorithm>
 #include <limits>
