@@ -21,8 +21,10 @@ TEST(SchedulerTests, TaskExecution) {
     Scheduler::register_task(10,&fake_workload);
     Scheduler::start();
     constexpr int NUM_TICKS = 1'000'000;
+    TIM2_BASE->ARR = 500;
+    TIM2_BASE->generate_update();
     for(int i = 0; i <= NUM_TICKS; i++){
-        Scheduler::simulate_ticking();
+        TIM2_BASE->simulate_ticking();
         Scheduler::update();
     }
     // one tick is 1us, and we register a task that executes every 10us
