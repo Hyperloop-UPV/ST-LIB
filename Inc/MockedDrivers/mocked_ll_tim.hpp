@@ -1,11 +1,14 @@
 #pragma once
 #include <cstdint>
 #include "MockedDrivers/common.hpp"
+#include "MockedDrivers/NVIC.hpp"
 #include "MockedDrivers/tim_register_definitions.hpp"
+
+
 class TIM_TypeDef{
 public:
-    TIM_TypeDef(void(* irq_handler)(void)):
-    callback{irq_handler}
+    TIM_TypeDef(void(* irq_handler)(void),IRQn_Type irq_n):
+    callback{irq_handler},irq_n{irq_n}
     {}
     void simulate_ticking();
     void generate_update();
@@ -53,6 +56,7 @@ private:
     uint32_t active_ARR = 0;
     uint32_t active_RCR = 0;
     void(*callback)();
+    IRQn_Type irq_n;
 };
 
 #define DECLARE_TIMER(TIM_IDX) \
@@ -61,7 +65,7 @@ private:
     void  TIM_IDX##_IRQHandler(void); \
     } 
 #define INSTANTIATE_TIMER(TIM_IDX) \
-    TIM_TypeDef __htim##TIM_IDX{TIM_IDX##_IRQHandler}; \
+    TIM_TypeDef __htim##TIM_IDX{TIM_IDX##_IRQHandler,TIM_IDX##_IRQn}; \
     TIM_TypeDef*  TIM_IDX##_BASE = &__htim##TIM_IDX;
 
 DECLARE_TIMER(TIM1)
