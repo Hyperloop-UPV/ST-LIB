@@ -66,6 +66,8 @@ class MDMA{
          * @brief Set the next node in the linked list.
          */
         void set_next(MDMA_LinkNodeTypeDef* next_node) { node.CLAR = reinterpret_cast<uint32_t>(next_node); }
+        void set_destination(void* destination) { node.CDAR = reinterpret_cast<uint32_t>(destination); }
+        void set_source(void* source) { node.CSAR = reinterpret_cast<uint32_t>(source); }
         auto get_node() -> MDMA_LinkNodeTypeDef* { return &node; }
         auto get_size() -> uint32_t { return node.CBNDTR; }
         auto get_destination() -> uint32_t { return node.CDAR; }

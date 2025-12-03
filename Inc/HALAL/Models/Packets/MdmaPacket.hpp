@@ -38,6 +38,39 @@ class MdmaPacket : public Packet {
         packets[id] = this;
         // Allocate non-cached buffer for MDMA
         buffer = MPUManager::allocate_non_cached_memory(size);
+
+        MDMA::LinkedListNode* prev_node = nullptr;
+        uint32_t offset = 0;
+        uint32_t idx = 0;
+        std::apply([&](auto&&... args) {
+            (([&]() {
+                using T = std::remove_pointer_t<decltype(args)>;
+                MDMA::LinkedListNode* node = MDMA::link_node_pool.construct(args, buffer + offset);
+                build_nodes[idx++] = node;
+                offset += sizeof(T);
+                if (prev_node != nullptr) {
+                    prev_node->set_next(node->get_node());
+                }
+                prev_node = node;
+            }()), ...);
+        }, value_pointers);
+
+        prev_node = nullptr;
+        offset = 0;
+        idx = 0;
+        std::apply([&](auto&&... args) {
+            (([&]() {
+                MDMA::LinkedListNode* node = MDMA::link_node_pool.construct(buffer + offset, args);
+                parse_nodes[idx++] = node;
+                offset += sizeof(args);
+                if (prev_node != nullptr) {
+                    prev_node->set_next(node->get_node());
+                }
+                prev_node = node;
+            }()), ...);
+        }, value_pointers);
+
+        transfer_node = MDMA::link_node_pool.construct(buffer, nullptr); // Used when needed for dynamic destination / origin
     }
 
     /**
@@ -46,8 +79,9 @@ class MdmaPacket : public Packet {
      * @return Pointer to the built packet data (internal buffer or destination address)
      */
     uint8_t* build(uint8_t* destination_address = nullptr) {
+        set_external_buffer(destination_address, build_nodes[sizeof...(Types)+1]);
         Promise* promise = Promise::inscribe();
-        // (TODO) Call MDMA to transfer data
+        MDMA::transfer_list(0, build_nodes[0], promise);
         promise->wait();
         return destination_address ? destination_address : buffer;
     }
@@ -59,7 +93,8 @@ class MdmaPacket : public Packet {
      * @return Pointer to the built packet data (internal buffer or destination address)
      */
     uint8_t* build(Promise* promise, uint8_t* destination_address = nullptr) {
-        // (TODO) Call MDMA to transfer data
+        set_external_buffer(destination_address, build_nodes[sizeof...(Types)+1]);
+        MDMA::transfer_list(0, build_nodes[0], promise);
         return destination_address ? destination_address : buffer;
     }
 
@@ -70,12 +105,20 @@ class MdmaPacket : public Packet {
 
     void parse(uint8_t* data = nullptr) override {
         Promise* promise = Promise::inscribe();
-        // (TODO) Call MDMA to transfer data
+        if (set_external_buffer(data, parse_nodes[0])) {
+            MDMA::transfer_list(0, transfer_node, promise);
+        } else {
+            MDMA::transfer_list(0, parse_nodes[0], promise);
+        }
         promise->wait();
     }
 
     void parse(Promise* promise, uint8_t* data = nullptr) {
-        // (TODO) Call MDMA to transfer data
+        if (set_external_buffer(data, parse_nodes[0])) {
+            MDMA::transfer_list(0, transfer_node, promise);
+        } else {
+            MDMA::transfer_list(0, parse_nodes[0], promise);
+        }
     }
 
     size_t get_size() override {
@@ -98,6 +141,21 @@ class MdmaPacket : public Packet {
         }, value_pointers);
     }
 
+   private:
+    MDMA::LinkedListNode* transfer_node; // Node used for destination address
+    MDMA::LinkedListNode* build_nodes[sizeof...(Types) + 1];
+    MDMA::LinkedListNode* parse_nodes[sizeof...(Types) + 1];
+
+    bool set_external_buffer(uint8_t* external_buffer, MDMA::LinkedListNode* node) {
+        if (external_buffer != nullptr) {
+            transfer_node->set_destination(external_buffer);
+            node->set_next(transfer_node->get_node());
+            return true;
+        } else {
+            node->set_next(nullptr);
+            return false;
+        }
+    }
 };
 
 #endif // MDMA_PACKET_HPP
