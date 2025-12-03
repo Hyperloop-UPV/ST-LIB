@@ -20,12 +20,13 @@
 #ifndef __STM32H7xx_LL_TIM_H
 #define __STM32H7xx_LL_TIM_H
 
+#include "mocked_ll_tim.hpp"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <stdint.h>
-#include "mocked_ll_tim.hpp"
 
 #define TIM1
 
