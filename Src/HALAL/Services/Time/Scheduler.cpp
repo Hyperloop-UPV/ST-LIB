@@ -32,7 +32,7 @@ uint64_t Scheduler::sorted_task_ids_ = 0;
 std::size_t Scheduler::active_task_count_{0};
 
 uint32_t Scheduler::ready_bitmap_{0};
-uint32_t Scheduler::used_bitmap_{0};
+uint32_t Scheduler::free_bitmap_{0xFFFF'FFFF};
 uint64_t Scheduler::global_tick_us_{0};
 uint64_t Scheduler::current_interval_us_{0};
 
@@ -125,20 +125,19 @@ inline uint8_t Scheduler::allocate_slot() {
      * clz(0) = 32          -> 32 - clz(0) = 0
      * clz(0xFFFF'FFFF) = 0 -> 32 - clz(0xFFFF'FFFF) > kMaxTasks
      */
-    uint32_t idx = 32 - __builtin_clz(~Scheduler::used_bitmap_);
+    uint32_t idx = __builtin_ffs(~Scheduler::free_bitmap_) - 1;
     if(idx > static_cast<int>(Scheduler::kMaxTasks)) [[unlikely]]
         return static_cast<uint8_t>(Scheduler::INVALID_ID);
     Scheduler::active_task_count_++;
-    Scheduler::used_bitmap_ |= (1UL << idx);
+    Scheduler::free_bitmap_ &= ~(1UL << idx);
     return static_cast<uint8_t>(idx);
 }
 
 inline void Scheduler::release_slot(uint8_t id) {
     // NOTE: This condition shouldn't be here since it's an internal function but it could be an assert
     if(id >= kMaxTasks) [[unlikely]] return;
-    uint32_t clearmask = ~(1u << id);
-    ready_bitmap_ &= clearmask;
-    used_bitmap_ &= clearmask;
+    ready_bitmap_ &= ~(1u << id);
+    free_bitmap_ |= (1u << id);
     Scheduler::active_task_count_--;
 }
 
@@ -282,7 +281,7 @@ uint8_t Scheduler::register_task(uint32_t period_us, callback_t func, bool repea
 
 bool Scheduler::unregister_task(uint8_t id) {
     if (id >= kMaxTasks) return false;
-    if (!(used_bitmap_ & (1UL << id))) return false;
+    if (free_bitmap_ & (1UL << id)) return false;
 
     remove_sorted(id);
     release_slot(id);
