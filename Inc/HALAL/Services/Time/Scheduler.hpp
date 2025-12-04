@@ -74,7 +74,7 @@ private:
     static std::size_t active_task_count_;
     static_assert(kMaxTasks <= 32, "kMaxTasks must be <= 32, if more is needed, the bitmaps must change");
     static uint32_t ready_bitmap_;
-    static uint32_t used_bitmap_;
+    static uint32_t free_bitmap_;
     static uint64_t global_tick_us_;
     static uint64_t current_interval_us_;
 
