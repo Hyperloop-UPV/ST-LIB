@@ -94,17 +94,17 @@ void Scheduler::start() {
     Scheduler_global_timer->CNT = 0; /* Clear counter value */
 
     NVIC_EnableIRQ(SCHEDULER_GLOBAL_TIMER_IRQn);
-    LL_TIM_ClearFlag_UPDATE(Scheduler_global_timer);
+    CLEAR_BIT(Scheduler_global_timer->SR, LL_TIM_SR_UIF); /* clear update interrupt flag */
     // NOTE(vic): We don't need to set the flag since there won't be any tasks at the start/it will get set in schedule_next_interval()
     Scheduler::global_timer_enable();
     //Scheduler::schedule_next_interval();
 }
 
-SCHEDULER_GLOBAL_TIMER_CALLBACK() { 
-    /* clear update interrupt flag */
-    LL_TIM_ClearFlag_UPDATE(Scheduler_global_timer);
+SCHEDULER_GLOBAL_TIMER_CALLBACK() {
+    CLEAR_BIT(Scheduler_global_timer->SR, TIM_SR_UIF);
     Scheduler::on_timer_update();
 }
+
 void Scheduler::update() {
     while(ready_bitmap_ != 0u) {
         uint32_t bit_index = static_cast<uint32_t>(__builtin_ctz(ready_bitmap_));
@@ -183,6 +183,7 @@ void Scheduler::insert_sorted(uint8_t id) {
     }
 
     sorted_task_ids_ = ((uint64_t)hi << 32) | lo;
+    active_task_count_++;
 }
 
 void Scheduler::remove_sorted(uint8_t id) {
@@ -215,6 +216,7 @@ void Scheduler::remove_sorted(uint8_t id) {
 
     // Remove element (lower part | higher pushing nibble out of mask)
     Scheduler::sorted_task_ids_ = (Scheduler::sorted_task_ids_ & mask) | ((Scheduler::sorted_task_ids_ >> 4) & ~mask);
+    active_task_count_--;
 }
 
 void Scheduler::schedule_next_interval() {
