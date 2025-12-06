@@ -45,7 +45,7 @@ typedef enum
 
 #define READ_REG(REG)         ((REG))
 
-#define MODIFY_REG(REG, CLEARMASK, SETMASK)  WRITE_REG((REG), (((READ_REG(REG)) & (~(CLEARMASK))) | (SETMASK)))
+#define MODIFY_REG(REG, CLEARMASK, SETMASK)  WRITE_REG((REG), (((READ_REG(REG)) & (~(uint32_t)(CLEARMASK))) | (SETMASK)))
 
 #define POSITION_VAL(VAL)     (__CLZ(__RBIT(VAL)))
 
@@ -65,7 +65,7 @@ typedef enum
   do {                                                       \
     uint32_t val;                                            \
     do {                                                     \
-      val = __LDREXW((__IO uint32_t *)&(REG)) & ~(BIT);      \
+      val = __LDREXW((__IO uint32_t *)&(REG)) & ~(uint32_t)(BIT);      \
     } while ((__STREXW(val,(__IO uint32_t *)&(REG))) != 0U); \
   } while(0)
 
@@ -74,7 +74,7 @@ typedef enum
   do {                                                                     \
     uint32_t val;                                                          \
     do {                                                                   \
-      val = (__LDREXW((__IO uint32_t *)&(REG)) & ~(CLEARMSK)) | (SETMASK); \
+      val = (__LDREXW((__IO uint32_t *)&(REG)) & ~(uint32_t)(CLEARMSK)) | (SETMASK); \
     } while ((__STREXW(val,(__IO uint32_t *)&(REG))) != 0U);               \
   } while(0)
 
@@ -92,7 +92,7 @@ typedef enum
   do {                                                       \
     uint16_t val;                                            \
     do {                                                     \
-      val = __LDREXH((__IO uint16_t *)&(REG)) & ~(BIT);      \
+      val = __LDREXH((__IO uint16_t *)&(REG)) & ~(uint16_t)(BIT);      \
     } while ((__STREXH(val,(__IO uint16_t *)&(REG))) != 0U); \
   } while(0)
 
@@ -101,6 +101,6 @@ typedef enum
   do {                                                                     \
     uint16_t val;                                                          \
     do {                                                                   \
-      val = (__LDREXH((__IO uint16_t *)&(REG)) & ~(CLEARMSK)) | (SETMASK); \
+      val = (__LDREXH((__IO uint16_t *)&(REG)) & ~(uint16_t)(CLEARMSK)) | (SETMASK); \
     } while ((__STREXH(val,(__IO uint16_t *)&(REG))) != 0U);               \
   } while(0)
