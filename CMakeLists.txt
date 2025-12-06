@@ -221,7 +221,8 @@ add_library(${STLIB_LIBRARY} STATIC
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB.cpp>
 
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/Scheduler.cpp>
-
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_ll_tim.cpp>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/NVIC.cpp>
 )
 
 set_target_properties(${STLIB_LIBRARY} PROPERTIES

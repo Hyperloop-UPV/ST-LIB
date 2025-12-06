@@ -9,7 +9,27 @@
     "files.associations": {
       "mem.h": "c",
       "tinydir.h": "c",
-      "dirent.h": "c"
-    }
+      "dirent.h": "c",
+      "compare": "cpp",
+      "cstdint": "cpp",
+      "iostream": "cpp"
+    },
+    "testMate.cpp.debug.configTemplate": {
+    "type": "cppdbg",
+    "MIMode": "gdb",
+    "program": "${exec}",
+    "args": "${args}",
+    "cwd": "${cwd}",
+
+    "externalConsole": false,
+    // This setupCommands block often fixes generic "pause" issues in GDB
+    "setupCommands": [
+        {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+        }
+    ]
+}
   }
   
