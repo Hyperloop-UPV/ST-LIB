@@ -9,7 +9,6 @@ enum class TimRegs {
     CR1, CR2, SMCR, DIER, SR, EGR, CCMR1, CCMR2, CCER, CNT, PSC, ARR, RCR,
     CCR1, CCR2, CCR3, CCR4, BDTR, DCR, DMAR, CCMR3, CCR5, CCR6, AF1, AF2, TISEL
 };
-using enum TimRegs;
 
 
 
@@ -29,33 +28,33 @@ public:
     callback{irq_handler},irq_n{irq_n}
     {}
     void generate_update();
-    TimerRegister<CR1> CR1;         /*!< TIM control register 1,                   Address offset: 0x00 */
-    TimerRegister<CR2> CR2;         /*!< TIM control register 2,                   Address offset: 0x04 */
-    TimerRegister<SMCR> SMCR;        /*!< TIM slave mode control register,          Address offset: 0x08 */
-    TimerRegister<DIER> DIER;        /*!< TIM DMA/interrupt enable register,        Address offset: 0x0C */
-    TimerRegister<SR> SR;          /*!< TIM status register,                      Address offset: 0x10 */
-    TimerRegister<EGR> EGR;         /*!< TIM event generation register,            Address offset: 0x14 */
-    TimerRegister<CCMR1> CCMR1;       /*!< TIM capture/compare mode register 1,      Address offset: 0x18 */
-    TimerRegister<CCMR2> CCMR2;       /*!< TIM capture/compare mode register 2,      Address offset: 0x1C */
-    TimerRegister<CCER> CCER;        /*!< TIM capture/compare enable register,      Address offset: 0x20 */
-    TimerRegister<CNT> CNT;         /*!< TIM counter register,                     Address offset: 0x24 */
-    TimerRegister<PSC> PSC;         /*!< TIM prescaler,                            Address offset: 0x28 */
-    TimerRegister<ARR> ARR;         /*!< TIM auto-reload register,                 Address offset: 0x2C */
-    TimerRegister<RCR> RCR;         /*!< TIM repetition counter register,          Address offset: 0x30 */
-    TimerRegister<CCR1> CCR1;        /*!< TIM capture/compare register 1,           Address offset: 0x34 */
-    TimerRegister<CCR2> CCR2;        /*!< TIM capture/compare register 2,           Address offset: 0x38 */
-    TimerRegister<CCR3> CCR3;        /*!< TIM capture/compare register 3,           Address offset: 0x3C */
-    TimerRegister<CCR4> CCR4;        /*!< TIM capture/compare register 4,           Address offset: 0x40 */
-    TimerRegister<BDTR> BDTR;        /*!< TIM break and dead-time register,         Address offset: 0x44 */
-    TimerRegister<DCR> DCR;         /*!< TIM DMA control register,                 Address offset: 0x48 */
-    TimerRegister<DMAR> DMAR;        /*!< TIM DMA address for full transfer,        Address offset: 0x4C */
+    TimerRegister<TimRegs::CR1> CR1;         /*!< TIM control register 1,                   Address offset: 0x00 */
+    TimerRegister<TimRegs::CR2> CR2;         /*!< TIM control register 2,                   Address offset: 0x04 */
+    TimerRegister<TimRegs::SMCR> SMCR;        /*!< TIM slave mode control register,          Address offset: 0x08 */
+    TimerRegister<TimRegs::DIER> DIER;        /*!< TIM DMA/interrupt enable register,        Address offset: 0x0C */
+    TimerRegister<TimRegs::SR> SR;          /*!< TIM status register,                      Address offset: 0x10 */
+    TimerRegister<TimRegs::EGR> EGR;         /*!< TIM event generation register,            Address offset: 0x14 */
+    TimerRegister<TimRegs::CCMR1> CCMR1;       /*!< TIM capture/compare mode register 1,      Address offset: 0x18 */
+    TimerRegister<TimRegs::CCMR2> CCMR2;       /*!< TIM capture/compare mode register 2,      Address offset: 0x1C */
+    TimerRegister<TimRegs::CCER> CCER;        /*!< TIM capture/compare enable register,      Address offset: 0x20 */
+    TimerRegister<TimRegs::CNT> CNT;         /*!< TIM counter register,                     Address offset: 0x24 */
+    TimerRegister<TimRegs::PSC> PSC;         /*!< TIM prescaler,                            Address offset: 0x28 */
+    TimerRegister<TimRegs::ARR> ARR;         /*!< TIM auto-reload register,                 Address offset: 0x2C */
+    TimerRegister<TimRegs::RCR> RCR;         /*!< TIM repetition counter register,          Address offset: 0x30 */
+    TimerRegister<TimRegs::CCR1> CCR1;        /*!< TIM capture/compare register 1,           Address offset: 0x34 */
+    TimerRegister<TimRegs::CCR2> CCR2;        /*!< TIM capture/compare register 2,           Address offset: 0x38 */
+    TimerRegister<TimRegs::CCR3> CCR3;        /*!< TIM capture/compare register 3,           Address offset: 0x3C */
+    TimerRegister<TimRegs::CCR4> CCR4;        /*!< TIM capture/compare register 4,           Address offset: 0x40 */
+    TimerRegister<TimRegs::BDTR> BDTR;        /*!< TIM break and dead-time register,         Address offset: 0x44 */
+    TimerRegister<TimRegs::DCR> DCR;         /*!< TIM DMA control register,                 Address offset: 0x48 */
+    TimerRegister<TimRegs::DMAR> DMAR;        /*!< TIM DMA address for full transfer,        Address offset: 0x4C */
     uint32_t      RESERVED1;   /*!< Reserved, 0x50                                                 */
-    TimerRegister<CCMR3> CCMR3;       /*!< TIM capture/compare mode register 3,      Address offset: 0x54 */
-    TimerRegister<CCR5> CCR5;        /*!< TIM capture/compare register5,            Address offset: 0x58 */
-    TimerRegister<CCR6> CCR6;        /*!< TIM capture/compare register6,            Address offset: 0x5C */
-    TimerRegister<AF1> AF1;         /*!< TIM alternate function option register 1, Address offset: 0x60 */
-    TimerRegister<AF2> AF2;         /*!< TIM alternate function option register 2, Address offset: 0x64 */
-    TimerRegister<TISEL> TISEL;       /*!< TIM Input Selection register,             Address offset: 0x68 */
+    TimerRegister<TimRegs::CCMR3> CCMR3;       /*!< TIM capture/compare mode register 3,      Address offset: 0x54 */
+    TimerRegister<TimRegs::CCR5> CCR5;        /*!< TIM capture/compare register5,            Address offset: 0x58 */
+    TimerRegister<TimRegs::CCR6> CCR6;        /*!< TIM capture/compare register6,            Address offset: 0x5C */
+    TimerRegister<TimRegs::AF1> AF1;         /*!< TIM alternate function option register 1, Address offset: 0x60 */
+    TimerRegister<TimRegs::AF2> AF2;         /*!< TIM alternate function option register 2, Address offset: 0x64 */
+    TimerRegister<TimRegs::TISEL> TISEL;       /*!< TIM Input Selection register,             Address offset: 0x68 */
     // ========================================================================
     //  Internal Hardware State (Shadow Registers & Hidden Counters)
     // ========================================================================
@@ -103,7 +102,7 @@ public:
         return true;
     }
 };
-static_assert(sizeof(TimerRegister<CNT>) == sizeof(uint32_t));
+static_assert(sizeof(TimerRegister<TimRegs::CNT>) == sizeof(uint32_t));
 void simulate_ticks(TIM_TypeDef* tim);
 
 template<>

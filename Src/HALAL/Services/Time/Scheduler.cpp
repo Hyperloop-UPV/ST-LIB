@@ -40,7 +40,7 @@ uint64_t Scheduler::current_interval_us_{0};
 inline uint8_t Scheduler::get_at(uint8_t idx) {
     int word_idx = idx > 7;
     uint32_t shift = (idx & 7) << 2;
-    return (((uint32_t*)sorted_task_ids_)[word_idx] & (0x0F << shift)) >> shift;
+    return (((uint32_t*)&sorted_task_ids_)[word_idx] & (0x0F << shift)) >> shift;
 }
 inline void Scheduler::set_at(uint8_t idx, uint8_t id) {
     uint32_t shift = idx*4;
@@ -49,7 +49,7 @@ inline void Scheduler::set_at(uint8_t idx, uint8_t id) {
     // sorted_task_ids_ |= ((id & 0x0F) << shift); // This is also an option in case id is incorrect, I don't think it's necessary though
 }
 inline uint8_t Scheduler::front_id() {
-    return ((uint32_t*)sorted_task_ids_)[0] & 0xF;
+    return ((uint32_t*)&sorted_task_ids_)[0] & 0xF;
 }
 inline void Scheduler::pop_front() {
     // O(1) remove of logical index 0
@@ -94,16 +94,17 @@ void Scheduler::start() {
     Scheduler_global_timer->CNT = 0; /* Clear counter value */
 
     NVIC_EnableIRQ(SCHEDULER_GLOBAL_TIMER_IRQn);
-    Scheduler_global_timer->SR &= ~LL_TIM_SR_UIF; /* clear update interrupt flag */
+    CLEAR_BIT(Scheduler_global_timer->SR, LL_TIM_SR_UIF); /* clear update interrupt flag */
     // NOTE(vic): We don't need to set the flag since there won't be any tasks at the start/it will get set in schedule_next_interval()
     Scheduler::global_timer_enable();
     //Scheduler::schedule_next_interval();
 }
 
-SCHEDULER_GLOBAL_TIMER_CALLBACK() { 
-    Scheduler_global_timer->SR &= ~TIM_SR_UIF;
+SCHEDULER_GLOBAL_TIMER_CALLBACK() {
+    CLEAR_BIT(Scheduler_global_timer->SR, TIM_SR_UIF);
     Scheduler::on_timer_update();
 }
+
 void Scheduler::update() {
     while(ready_bitmap_ != 0u) {
         uint32_t bit_index = static_cast<uint32_t>(__builtin_ctz(ready_bitmap_));
@@ -125,10 +126,9 @@ inline uint8_t Scheduler::allocate_slot() {
      * clz(0) = 32          -> 32 - clz(0) = 0
      * clz(0xFFFF'FFFF) = 0 -> 32 - clz(0xFFFF'FFFF) > kMaxTasks
      */
-    uint32_t idx = 32 - __builtin_clz(~Scheduler::used_bitmap_);
+    uint32_t idx = __builtin_ctz(~Scheduler::used_bitmap_);
     if(idx > static_cast<int>(Scheduler::kMaxTasks)) [[unlikely]]
         return static_cast<uint8_t>(Scheduler::INVALID_ID);
-    Scheduler::active_task_count_++;
     Scheduler::used_bitmap_ |= (1UL << idx);
     return static_cast<uint8_t>(idx);
 }
@@ -139,7 +139,6 @@ inline void Scheduler::release_slot(uint8_t id) {
     uint32_t clearmask = ~(1u << id);
     ready_bitmap_ &= clearmask;
     used_bitmap_ &= clearmask;
-    Scheduler::active_task_count_--;
 }
 
 void Scheduler::insert_sorted(uint8_t id) {
@@ -183,6 +182,7 @@ void Scheduler::insert_sorted(uint8_t id) {
     }
 
     sorted_task_ids_ = ((uint64_t)hi << 32) | lo;
+    active_task_count_++;
 }
 
 void Scheduler::remove_sorted(uint8_t id) {
@@ -215,6 +215,7 @@ void Scheduler::remove_sorted(uint8_t id) {
 
     // Remove element (lower part | higher pushing nibble out of mask)
     Scheduler::sorted_task_ids_ = (Scheduler::sorted_task_ids_ & mask) | ((Scheduler::sorted_task_ids_ >> 4) & ~mask);
+    active_task_count_--;
 }
 
 void Scheduler::schedule_next_interval() {
