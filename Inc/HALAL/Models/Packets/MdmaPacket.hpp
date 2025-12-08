@@ -36,9 +36,8 @@ class MdmaPacket : public Packet {
     MdmaPacket(uint16_t id, Types*... values) 
     : id(id), size((sizeof(Types) + ...) + sizeof(uint16_t)) , value_pointers(&this->id, values...) {
         packets[id] = this;
-        // Allocate non-cached buffer for MDMA
         buffer = reinterpret_cast<uint8_t*>(MPUManager::allocate_non_cached_memory(size));
-        // buffer = new uint8_t[size];
+        
         if (buffer == nullptr) {
             ErrorHandler("Failed to allocate MDMA buffer for packet");
         }
@@ -46,12 +45,15 @@ class MdmaPacket : public Packet {
         MDMA::LinkedListNode* prev_node = nullptr;
         uint32_t offset = 0;
         uint32_t idx = 0;
+
         std::apply([&](auto&&... args) {
             (([&]() {
-                using T = std::remove_pointer_t<decltype(args)>;
-                MDMA::LinkedListNode* node = MDMA::link_node_pool.construct(args, buffer + offset);
+                using PointerType = std::decay_t<decltype(args)>;
+                using UnderlyingType = std::remove_pointer_t<PointerType>;
+                constexpr size_t type_size = sizeof(UnderlyingType);
+                MDMA::LinkedListNode* node = MDMA::link_node_pool.construct(args, buffer + offset,type_size);
                 build_nodes[idx++] = node;
-                offset += sizeof(T);
+                offset += type_size;
                 if (prev_node != nullptr) {
                     prev_node->set_next(node->get_node());
                 }
@@ -62,11 +64,15 @@ class MdmaPacket : public Packet {
         prev_node = nullptr;
         offset = 0;
         idx = 0;
+
         std::apply([&](auto&&... args) {
             (([&]() {
-                MDMA::LinkedListNode* node = MDMA::link_node_pool.construct(buffer + offset, args);
+                using PointerType = std::decay_t<decltype(args)>;
+                using UnderlyingType = std::remove_pointer_t<PointerType>;
+                constexpr size_t type_size = sizeof(UnderlyingType);
+                MDMA::LinkedListNode* node = MDMA::link_node_pool.construct(buffer + offset, args, type_size);
                 parse_nodes[idx++] = node;
-                offset += sizeof(args);
+                offset += type_size;
                 if (prev_node != nullptr) {
                     prev_node->set_next(node->get_node());
                 }
@@ -74,8 +80,8 @@ class MdmaPacket : public Packet {
             }()), ...);
         }, value_pointers);
 
-        build_transfer_node = MDMA::link_node_pool.construct(buffer, nullptr,size); // Used when needed for dynamic destination 
-        parse_transfer_node = MDMA::link_node_pool.construct(buffer, buffer,size); // Used when needed for dynamic origin
+        build_transfer_node = MDMA::link_node_pool.construct(buffer, nullptr, size); 
+        parse_transfer_node = MDMA::link_node_pool.construct(buffer, buffer, size); 
     }
 
     /**

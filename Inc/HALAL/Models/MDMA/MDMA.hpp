@@ -26,86 +26,56 @@ class MDMA{
      * @brief A helper struct to create and manage MDMA linked list nodes.
      */
     struct LinkedListNode {
-        /**
-         * @brief Constructor to create an MDMA linked list node.
-         * @tparam T The type of the data to be transferred.
-         * @param source_ptr Pointer to the source data.
-         * @param dest_ptr Pointer to the destination data.
-         */
-        template<typename T>
-        LinkedListNode(T* source_ptr, void* dest_ptr) {
-            MDMA_LinkNodeConfTypeDef nodeConfig{};
-            nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-            nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-            nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-            nodeConfig.Init.BufferTransferLength = 1;
-            nodeConfig.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
-            nodeConfig.Init.SourceBlockAddressOffset = 0;
-            nodeConfig.Init.DestBlockAddressOffset = 0;
-            nodeConfig.BlockCount = 1;
-            nodeConfig.Init.Priority = MDMA_PRIORITY_VERY_HIGH;
-            nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-            nodeConfig.Init.Request = MDMA_REQUEST_SW;
+    template<typename T>
+    LinkedListNode(T* source_ptr, void* dest_ptr) {
+        init_node(source_ptr, dest_ptr, sizeof(T));
+    }
 
-            this->node = {};
-            nodeConfig.SrcAddress = reinterpret_cast<uint32_t>(source_ptr);
-            nodeConfig.DstAddress = reinterpret_cast<uint32_t>(dest_ptr);
-            nodeConfig.BlockDataLength = static_cast<uint32_t>(sizeof(T));
-            nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_BYTE;
-            nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_BYTE;
-            nodeConfig.Init.SourceInc = MDMA_SRC_INC_BYTE;
-            nodeConfig.Init.DestinationInc = MDMA_DEST_INC_BYTE;
+    template<typename T>
+    LinkedListNode(T* source_ptr, void* dest_ptr, size_t size) {
+        init_node(source_ptr, dest_ptr, size);
+    }
 
-            auto status = HAL_MDMA_LinkedList_CreateNode(&node, &nodeConfig);
-            if (status != HAL_OK) {
-                ErrorHandler("Error creating linked list in MDMA");
-            }
+    void set_next(MDMA_LinkNodeTypeDef* next_node) { node.CLAR = reinterpret_cast<uint32_t>(next_node); }
+    void set_destination(void* destination) { node.CDAR = reinterpret_cast<uint32_t>(destination); }
+    void set_source(void* source) { node.CSAR = reinterpret_cast<uint32_t>(source); }
+    auto get_node() -> MDMA_LinkNodeTypeDef* { return &node; }
+    auto get_size() -> uint32_t { return node.CBNDTR; }
+    auto get_destination() -> uint32_t { return node.CDAR; }
+    auto get_source() -> uint32_t { return node.CSAR; }
+    auto get_next() -> MDMA_LinkNodeTypeDef* { return reinterpret_cast<MDMA_LinkNodeTypeDef*>(node.CLAR); }
+
+private:
+    MDMA_LinkNodeTypeDef node;
+
+    void init_node(void* src, void* dst, size_t size) {
+        MDMA_LinkNodeConfTypeDef nodeConfig{};
+        nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_RIGHT; 
+        nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
+        nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
+        nodeConfig.Init.BufferTransferLength = 1;
+        nodeConfig.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
+        nodeConfig.Init.SourceBlockAddressOffset = 0;
+        nodeConfig.Init.DestBlockAddressOffset = 0;
+        nodeConfig.BlockCount = 1;
+        nodeConfig.Init.Priority = MDMA_PRIORITY_VERY_HIGH;
+        nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
+        nodeConfig.Init.Request = MDMA_REQUEST_SW;
+
+        this->node = {};
+        nodeConfig.SrcAddress = reinterpret_cast<uint32_t>(src);
+        nodeConfig.DstAddress = reinterpret_cast<uint32_t>(dst);
+        nodeConfig.BlockDataLength = static_cast<uint32_t>(size);
+        nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_BYTE;
+        nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_BYTE;
+        nodeConfig.Init.SourceInc = MDMA_SRC_INC_BYTE;
+        nodeConfig.Init.DestinationInc = MDMA_DEST_INC_BYTE;
+
+        if (HAL_MDMA_LinkedList_CreateNode(&node, &nodeConfig) != HAL_OK) {
+            ErrorHandler("Error creating linked list in MDMA");
         }
-        template<typename T>
-        LinkedListNode(T* source_ptr, void* dest_ptr,size_t size) {
-            MDMA_LinkNodeConfTypeDef nodeConfig{};
-            nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-            nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
-            nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-            nodeConfig.Init.BufferTransferLength = 1;
-            nodeConfig.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
-            nodeConfig.Init.SourceBlockAddressOffset = 0;
-            nodeConfig.Init.DestBlockAddressOffset = 0;
-            nodeConfig.BlockCount = 1;
-            nodeConfig.Init.Priority = MDMA_PRIORITY_VERY_HIGH;
-            nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
-            nodeConfig.Init.Request = MDMA_REQUEST_SW;
-
-            this->node = {};
-            nodeConfig.SrcAddress = reinterpret_cast<uint32_t>(source_ptr);
-            nodeConfig.DstAddress = reinterpret_cast<uint32_t>(dest_ptr);
-            nodeConfig.BlockDataLength = static_cast<uint32_t>(size);
-            nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_BYTE;
-            nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_BYTE;
-            nodeConfig.Init.SourceInc = MDMA_SRC_INC_BYTE;
-            nodeConfig.Init.DestinationInc = MDMA_DEST_INC_BYTE;
-
-            auto status = HAL_MDMA_LinkedList_CreateNode(&node, &nodeConfig);
-            if (status != HAL_OK) {
-                ErrorHandler("Error creating linked list in MDMA");
-            }
-        }
-
-        /**
-         * @brief Set the next node in the linked list.
-         */
-        void set_next(MDMA_LinkNodeTypeDef* next_node) { node.CLAR = reinterpret_cast<uint32_t>(next_node); }
-        void set_destination(void* destination) { node.CDAR = reinterpret_cast<uint32_t>(destination); }
-        void set_source(void* source) { node.CSAR = reinterpret_cast<uint32_t>(source); }
-        auto get_node() -> MDMA_LinkNodeTypeDef* { return &node; }
-        auto get_size() -> uint32_t { return node.CBNDTR; }
-        auto get_destination() -> uint32_t { return node.CDAR; }
-        auto get_source() -> uint32_t { return node.CSAR; }
-        auto get_next() -> MDMA_LinkNodeTypeDef* { return reinterpret_cast<MDMA_LinkNodeTypeDef*>(node.CLAR); }
-
-    private:
-        MDMA_LinkNodeTypeDef node;
-    };
+    }
+};
 
     private:
     struct Instance{
