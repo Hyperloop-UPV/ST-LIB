@@ -160,7 +160,8 @@ class MdmaPacket : public Packet {
         } else {
             build_nodes[sizeof...(Types)]->set_next(nullptr);
         }
-        // SCB_CleanDCache_by_Addr((uint32_t*)build_nodes[sizeof...(Types)], sizeof(MDMA::LinkedListNode) * 2);
+        SCB_CleanDCache_by_Addr((uint32_t*)build_nodes[sizeof...(Types)], sizeof(MDMA::LinkedListNode) );
+        SCB_CleanDCache_by_Addr((uint32_t*)build_nodes[sizeof...(Types)+1], sizeof(MDMA::LinkedListNode) );
     }
 
     MDMA::LinkedListNode* set_parse_source(uint8_t* external_buffer) {
