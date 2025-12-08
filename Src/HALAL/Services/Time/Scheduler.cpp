@@ -94,14 +94,15 @@ void Scheduler::start() {
     Scheduler_global_timer->CNT = 0; /* Clear counter value */
 
     NVIC_EnableIRQ(SCHEDULER_GLOBAL_TIMER_IRQn);
-    Scheduler_global_timer->SR &= ~LL_TIM_SR_UIF; /* clear update interrupt flag */
+    LL_TIM_ClearFlag_UPDATE(Scheduler_global_timer);
     // NOTE(vic): We don't need to set the flag since there won't be any tasks at the start/it will get set in schedule_next_interval()
     Scheduler::global_timer_enable();
     //Scheduler::schedule_next_interval();
 }
 
 SCHEDULER_GLOBAL_TIMER_CALLBACK() { 
-    Scheduler_global_timer->SR &= ~TIM_SR_UIF;
+    /* clear update interrupt flag */
+    LL_TIM_ClearFlag_UPDATE(Scheduler_global_timer);
     Scheduler::on_timer_update();
 }
 void Scheduler::update() {
