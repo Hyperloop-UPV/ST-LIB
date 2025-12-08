@@ -14,6 +14,9 @@
 #define DWT_LAR_KEY 0xC5ACCE55
 #define DEMCR_TRCENA 0x01000000
 #define DWT_CTRL_CYCCNTENA 0x00000001
+
+extern void increment_overflow();
+
 /*
     This class is designed to study the efficiency of an algorithm 
     by counting the number of clock cycles required for execution. 

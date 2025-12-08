@@ -88,11 +88,6 @@ static void common_start(UART::Peripheral &printf_peripheral) {
     DataWatchpointTrace::enable();
     BENCHMARKING_SETUP();
 }
-#else
-
-#endif
-}
-
 #ifdef STLIB_ETH
 
 void start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
@@ -108,12 +103,10 @@ void start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
 #endif
 }
 
-#else // !STLIB_ETH
-
-void start(UART::Peripheral &printf_peripheral) {
+#else
+void start(UART::Peripheral &printf_peripheral){
   common_start(printf_peripheral);
-}
-
+  }
 #endif // STLIB_ETH
 
 } // namespace HALAL

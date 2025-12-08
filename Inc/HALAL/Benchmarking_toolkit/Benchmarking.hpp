@@ -3,6 +3,7 @@
 #include <iostream>
 #include <bitset>
 #include <algorithm>
+#include "HALAL/Benchmarking_toolkit/DataWatchpointTrace/DataWatchpointTrace.hpp"
 #include "SEGGER_RTT.h"
 template<size_t N>
 struct StringLiteral {
@@ -93,7 +94,6 @@ struct Frequency_Packet{
     uint32_t event_id;
     uint32_t padding;
 };
-void increment_overflow();
 extern Frequency_Packet freq_packet;
 
 template<uint32_t Configuration,EVENTS E = SIMPLE_MARK,uint32_t ID,StringLiteral name>
