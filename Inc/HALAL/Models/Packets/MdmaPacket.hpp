@@ -74,8 +74,8 @@ class MdmaPacket : public Packet {
             }()), ...);
         }, value_pointers);
 
-        build_transfer_node = MDMA::link_node_pool.construct(buffer, nullptr,offset); // Used when needed for dynamic destination 
-        parse_transfer_node = MDMA::link_node_pool.construct(buffer, buffer,offset); // Used when needed for dynamic origin
+        build_transfer_node = MDMA::link_node_pool.construct(buffer, nullptr,size); // Used when needed for dynamic destination 
+        parse_transfer_node = MDMA::link_node_pool.construct(buffer, buffer,size); // Used when needed for dynamic origin
     }
 
     /**
