@@ -109,7 +109,7 @@ static_assert(sizeof(TimerRegister<Reg_CNT>) == sizeof(uint32_t));
 void simulate_ticks(TIM_TypeDef* tim);
 
 template<>
-struct RegisterTraits<TimRegs,TimRegs::CNT> {
+struct RegisterTraits<TimReg,TimReg::Reg_CNT> {
     static void write(uint32_t& target, uint32_t val) {
         TIM_TypeDef* timer = (TIM_TypeDef*)(((uint8_t*)&target)-offsetof(TIM_TypeDef, CNT));
         target = val;
