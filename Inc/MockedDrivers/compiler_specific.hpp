@@ -1,11 +1,11 @@
 #pragma once
 #include <cstdint>
+
 /*
+ * This file contains implementations or alternate names for
+ * ARM GCC intrinsics that don't work on x86_64 / host platforms.
+ */
 
-This file contains implementatios or altername names for
-ARM GCC compiler that don't work in x86_64
-
-*/
 static inline uint32_t __RBIT(uint32_t val) {
     // 1. Hardware Byte Swap (Optimization: handles the large movements)
     // MSVC uses _byteswap_ulong, GCC/Clang uses __builtin_bswap32
@@ -17,19 +17,39 @@ static inline uint32_t __RBIT(uint32_t val) {
 
     // 2. Swap Nibbles (within bytes)
     // 0xF0 = 1111 0000 -> shifts to 0000 1111
-    val = ((val & 0xF0F0F0F0) >> 4) | ((val & 0x0F0F0F0F) << 4);
+    val = ((val & 0xF0F0F0F0u) >> 4) | ((val & 0x0F0F0F0Fu) << 4);
 
     // 3. Swap Bit-Pairs (within nibbles)
     // 0xCC = 1100 1100 -> shifts to 0011 0011
-    val = ((val & 0xCCCCCCCC) >> 2) | ((val & 0x33333333) << 2);
+    val = ((val & 0xCCCCCCCCu) >> 2) | ((val & 0x33333333u) << 2);
 
     // 4. Swap Single Bits (within pairs)
     // 0xAA = 1010 1010 -> shifts to 0101 0101
-    val = ((val & 0xAAAAAAAA) >> 1) | ((val & 0x55555555) << 1);
+    val = ((val & 0xAAAAAAAAu) >> 1) | ((val & 0x55555555u) << 1);
 
     return val;
-}                         
-#define __CLZ                             __builtin_clz
-#define __COMPILER_BARRIER()                asm volatile("" ::: "memory")
-#define __DSB()                         __asm__ volatile ("mfence" ::: "memory");
-#define __ISB()                         __asm__ volatile ("lfence" ::: "memory");
+}
+
+#define __CLZ                  __builtin_clz
+#define __COMPILER_BARRIER()   asm volatile("" ::: "memory")
+
+// Architecture-specific definitions for barrier intrinsics used in mocks
+#if defined(__x86_64__) || defined(_M_X64)
+
+// Host x86_64
+#  define __DSB()  __asm__ volatile("mfence" ::: "memory")
+#  define __ISB()  __asm__ volatile("lfence" ::: "memory")
+
+#elif defined(__aarch64__) || defined(_M_ARM64)
+
+// Host ARM64
+#  define __DSB()  __asm__ volatile("dmb ish" ::: "memory")
+#  define __ISB()  __asm__ volatile("isb" ::: "memory")
+
+#else
+
+// Any other host architecture: compiler barrier only
+#  define __DSB()  __COMPILER_BARRIER()
+#  define __ISB()  __COMPILER_BARRIER()
+
+#endif
