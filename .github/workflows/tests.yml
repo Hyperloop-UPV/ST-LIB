@@ -24,9 +24,9 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build build/tests
+          cmake --build out/build/simulator
 
       - name: Run tests (ctest)
-        working-directory: build/tests
+        working-directory: out/build/simulator
         run: |
           ctest --output-on-failure
