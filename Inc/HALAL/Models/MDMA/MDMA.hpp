@@ -50,7 +50,7 @@ private:
 
     void init_node(void* src, void* dst, size_t size) {
         MDMA_LinkNodeConfTypeDef nodeConfig{};
-        nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_RIGHT; 
+        nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE; 
         nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
         nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
         nodeConfig.Init.BufferTransferLength = 1;
