@@ -32,13 +32,11 @@ std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> MDMA::channel_to_instance = {
 
 void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node)
 {
-    if (instance.handle.State == HAL_MDMA_STATE_BUSY || instance.handle.Lock == HAL_LOCKED)
+    if (instance.handle.State == HAL_MDMA_STATE_BUSY )
     {
         ErrorHandler("MDMA transfer already in progress");
         return;
     }
-
-    instance.handle.Lock = HAL_LOCKED;
 
     instance.handle.State = HAL_MDMA_STATE_BUSY;
     instance.handle.ErrorCode = HAL_MDMA_ERROR_NONE;
@@ -71,12 +69,10 @@ void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node
     if (HAL_MDMA_GenerateSWRequest(&instance.handle) != HAL_OK)
     {
         instance.handle.State = HAL_MDMA_STATE_READY;
-        instance.handle.Lock = HAL_UNLOCKED;
         ErrorHandler("Error generating MDMA SW request");
         return;
     }
 
-    instance.handle.Lock = HAL_UNLOCKED;
 }
 
 void MDMA::prepare_transfer(Instance& instance, LinkedListNode* first_node) { MDMA::prepare_transfer(instance, first_node->get_node()); }
@@ -272,6 +268,7 @@ void MDMA::TransferCompleteCallback(MDMA_HandleTypeDef *hmdma)
     }
 
     Instance& instance = get_instance(channel_it->second);
+    instance.handle.State = HAL_MDMA_STATE_READY;
     if(instance.using_promise)
     {
         instance.promise->resolve();

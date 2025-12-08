@@ -34,7 +34,7 @@ class MDMA{
          */
         template<typename T>
         LinkedListNode(T* source_ptr, void* dest_ptr) {
-            MDMA_LinkNodeConfTypeDef nodeConfig;
+            MDMA_LinkNodeConfTypeDef nodeConfig{};
             nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
             nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
             nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
@@ -51,6 +51,35 @@ class MDMA{
             nodeConfig.SrcAddress = reinterpret_cast<uint32_t>(source_ptr);
             nodeConfig.DstAddress = reinterpret_cast<uint32_t>(dest_ptr);
             nodeConfig.BlockDataLength = static_cast<uint32_t>(sizeof(T));
+            nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_BYTE;
+            nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_BYTE;
+            nodeConfig.Init.SourceInc = MDMA_SRC_INC_BYTE;
+            nodeConfig.Init.DestinationInc = MDMA_DEST_INC_BYTE;
+
+            auto status = HAL_MDMA_LinkedList_CreateNode(&node, &nodeConfig);
+            if (status != HAL_OK) {
+                ErrorHandler("Error creating linked list in MDMA");
+            }
+        }
+        template<typename T>
+        LinkedListNode(T* source_ptr, void* dest_ptr,size_t size) {
+            MDMA_LinkNodeConfTypeDef nodeConfig{};
+            nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
+            nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
+            nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
+            nodeConfig.Init.BufferTransferLength = 1;
+            nodeConfig.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
+            nodeConfig.Init.SourceBlockAddressOffset = 0;
+            nodeConfig.Init.DestBlockAddressOffset = 0;
+            nodeConfig.BlockCount = 1;
+            nodeConfig.Init.Priority = MDMA_PRIORITY_VERY_HIGH;
+            nodeConfig.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
+            nodeConfig.Init.Request = MDMA_REQUEST_SW;
+
+            this->node = {};
+            nodeConfig.SrcAddress = reinterpret_cast<uint32_t>(source_ptr);
+            nodeConfig.DstAddress = reinterpret_cast<uint32_t>(dest_ptr);
+            nodeConfig.BlockDataLength = static_cast<uint32_t>(size);
             nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_BYTE;
             nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_BYTE;
             nodeConfig.Init.SourceInc = MDMA_SRC_INC_BYTE;

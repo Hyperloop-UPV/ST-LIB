@@ -38,6 +38,10 @@ class MdmaPacket : public Packet {
         packets[id] = this;
         // Allocate non-cached buffer for MDMA
         buffer = reinterpret_cast<uint8_t*>(MPUManager::allocate_non_cached_memory(size));
+        // buffer = new uint8_t[size];
+        if (buffer == nullptr) {
+            ErrorHandler("Failed to allocate MDMA buffer for packet");
+        }
 
         MDMA::LinkedListNode* prev_node = nullptr;
         uint32_t offset = 0;
@@ -70,8 +74,8 @@ class MdmaPacket : public Packet {
             }()), ...);
         }, value_pointers);
 
-        build_transfer_node = MDMA::link_node_pool.construct(buffer, nullptr); // Used when needed for dynamic destination 
-        parse_transfer_node = MDMA::link_node_pool.construct(buffer, buffer); // Used when needed for dynamic origin
+        build_transfer_node = MDMA::link_node_pool.construct(buffer, nullptr,offset); // Used when needed for dynamic destination 
+        parse_transfer_node = MDMA::link_node_pool.construct(buffer, buffer,offset); // Used when needed for dynamic origin
     }
 
     /**
