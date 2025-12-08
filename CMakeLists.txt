@@ -314,6 +314,22 @@ target_include_directories(${STLIB_LIBRARY} PUBLIC
 )
 
 if(PROJECT_IS_TOP_LEVEL)
+  configure_file(
+    ${CMAKE_CURRENT_LIST_DIR}/Inc/stm32h7xx_hal_conf_template.h
+    ${CMAKE_CURRENT_BINARY_DIR}/stm32h7xx_hal_conf.h
+    COPYONLY
+  )
+
+  target_include_directories(${STLIB_LIBRARY} PUBLIC
+    ${CMAKE_CURRENT_BINARY_DIR}
+  )
+else()
+  target_include_directories(${STLIB_LIBRARY} PUBLIC
+    ${CMAKE_SOURCE_DIR}/Core/Inc
+  )
+endif()
+
+if(PROJECT_IS_TOP_LEVEL)
   execute_process(
     COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_BINARY_DIR}/compile_commands.json
