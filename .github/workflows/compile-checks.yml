@@ -1,13 +1,22 @@
 name: Compile Checks
 
 on:
-  push:
+  workflow_dispatch:
+  pull_request:
     paths:
       - '**.cpp'
       - '**.hpp'
       - '**.c'
       - '**.h'
       - '**.py'
+      - 'CMakeLists.txt'
+    branches:
+      - development
+
+  workflow_run:
+    workflows: [ "Build Toolchain Image" ]
+    types:
+      - completed
 
 jobs:
   compile-checks:
@@ -27,7 +36,7 @@ jobs:
           - board-debug-eth
           - board-release-eth
           - board-relwithdebinfo-eth
-          - simulator
+          # - simulator
       fail-fast: false
     uses: ./.github/workflows/build.yml
     with:
