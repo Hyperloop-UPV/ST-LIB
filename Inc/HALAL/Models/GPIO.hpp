@@ -11,6 +11,8 @@ using std::span;
 using std::tuple;
 
 namespace ST_LIB {
+extern void compile_error(const char *msg);
+
 struct GPIODomain {
   enum class OperationMode : uint8_t {
     INPUT,               // GPIO_MODE_INPUT
@@ -177,7 +179,7 @@ struct GPIODomain {
                    AlternateFunction af = AlternateFunction::NO_AF)
         : e{pin.port, pin.pin, mode, pull, speed, af} {
       if (!pin.valid_af(af)) {
-        throw "Alternate function not valid for this pin";
+        compile_error("Alternate function not valid for this pin");
       }
     }
 
@@ -201,7 +203,7 @@ struct GPIODomain {
       for (std::size_t j = 0; j < i; ++j) {
         const auto &prev = pins[j];
         if (prev.pin == e.pin && prev.port == e.port) {
-          throw "GPIO already inscribed";
+          compile_error("GPIO already inscribed");
         }
       }
 
