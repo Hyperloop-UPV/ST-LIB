@@ -69,8 +69,19 @@ template <typename... Domains> struct BuildCtx {
   }
 };
 
-using DomainsCtx = BuildCtx<GPIODomain, DigitalOutputDomain,
-                            DigitalInputDomain /*, ADCDomain, PWMDomain, ...*/>;
+#define DomainXList \
+    X(GPIODomain, gpio) \
+    X(DigitalOutputDomain, dout, GPIODomain::Init<gpioN>::instances) \
+    X(DigitalInputDomain, din, GPIODomain::Init<gpioN>::instances)
+
+// Do not use this class
+struct Dummy {
+    static const std::size_t max_instances{1};
+    struct Entry { uint32_t dummy; };
+};
+
+#define X(x, y, ...) x,
+using DomainsCtx = BuildCtx<DomainXList Dummy>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {
@@ -85,44 +96,36 @@ template <auto &...devs> struct Board {
     return ctx.template span<D>().size();
   }
 
-  static consteval auto build() {
-    constexpr std::size_t gpioN = domain_size<GPIODomain>();
-    constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
-    constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
-    // ...
+#undef X
+#define X(x, y, ...) constexpr std::size_t y##N = domain_size<x>();
 
+  static consteval auto build() {
+    DomainXList;
+
+#undef X
+#define X(x, y, ...) std::array<x::Config, y##N> y##_cfgs;
     struct ConfigBundle {
-      std::array<GPIODomain::Config, gpioN> gpio_cfgs;
-      std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
-      std::array<DigitalInputDomain::Config, dinN> din_cfgs;
-      // ...
+        DomainXList
     };
 
+#undef X
+#define X(x, y, ...) .y##_cfgs = x::template build<y##N>(ctx.template span<x>()),
     return ConfigBundle{
-        .gpio_cfgs =
-            GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
-        .dout_cfgs = DigitalOutputDomain::template build<doutN>(
-            ctx.template span<DigitalOutputDomain>()),
-        .din_cfgs = DigitalInputDomain::template build<dinN>(
-            ctx.template span<DigitalInputDomain>()),
-        // ...
+        DomainXList
     };
   }
 
   static constexpr auto cfg = build();
 
+#undef X
+#define X(x, y, ...) constexpr std::size_t y##N = domain_size<x>();
   static void init() {
-    constexpr std::size_t gpioN = domain_size<GPIODomain>();
-    constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
-    constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
-    // ...
+    DomainXList;
 
-    GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
-    DigitalOutputDomain::Init<doutN>::init(cfg.dout_cfgs,
-                                           GPIODomain::Init<gpioN>::instances);
-    DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
-                                         GPIODomain::Init<gpioN>::instances);
-    // ...
+#undef X
+#define X(x, y, ...) x::Init<y##N>::init(cfg.y##_cfgs, ##__VA_ARGS__);
+
+    DomainXList;
   }
 
   template <typename Domain>
