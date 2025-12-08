@@ -35,7 +35,7 @@ typedef enum
 
 #define SET_BIT(REG, BIT)     ((REG) |= (BIT))
 
-#define CLEAR_BIT(REG, BIT)   ((REG) = static_cast<uint32_t>(static_cast<uint32_t>(REG) & ~static_cast<uint32_t>(BIT))
+#define CLEAR_BIT(REG, BIT)   ((REG) = static_cast<uint32_t>(static_cast<uint32_t>(REG) & ~static_cast<uint32_t>(BIT)))
 
 #define READ_BIT(REG, BIT)    ((REG) & (BIT))
 
