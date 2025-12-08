@@ -41,7 +41,7 @@ typedef enum
 
 #define CLEAR_REG(REG)        ((REG) = (0x0))
 
-#define WRITE_REG(REG, VAL)   ((REG) = (VAL))
+#define WRITE_REG(REG, VAL)   ((REG) = static_cast<uint32_t>(VAL))
 
 #define READ_REG(REG)         ((REG))
 
