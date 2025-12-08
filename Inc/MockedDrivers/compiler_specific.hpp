@@ -31,6 +31,15 @@ static inline uint32_t __RBIT(uint32_t val) {
 }
 
 #define __CLZ                  __builtin_clz
+
+#if defined(_MSC_VER) && (_MSC_VER > 1200) && !defined(__clang__)
+void _ReadWriteBarrier(void);
+#pragma intrinsic(_ReadWriteBarrier)
+#define __COMPILER_BARRIER()   _ReadWriteBarrier()
+#define __DSB()  __COMPILER_BARRIER()
+#define __ISB()  __COMPILER_BARRIER()
+#else
+
 #define __COMPILER_BARRIER()   asm volatile("" ::: "memory")
 
 // Architecture-specific definitions for barrier intrinsics used in mocks
@@ -52,4 +61,5 @@ static inline uint32_t __RBIT(uint32_t val) {
 #  define __DSB()  __COMPILER_BARRIER()
 #  define __ISB()  __COMPILER_BARRIER()
 
+#endif
 #endif
