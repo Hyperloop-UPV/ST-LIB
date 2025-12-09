@@ -12,7 +12,7 @@ class SchedulerTests : public ::testing::Test {
 protected:
     void SetUp() override {
         Scheduler::active_task_count_ = 0;
-        Scheduler::used_bitmap_ = 0;
+        Scheduler::free_bitmap_ = 0xFFFF'FFFF;
         Scheduler::ready_bitmap_ = 0;
         Scheduler::sorted_task_ids_ = 0;
         Scheduler::global_tick_us_ = 0;
