@@ -53,7 +53,6 @@ inline uint8_t Scheduler::front_id() {
 }
 inline void Scheduler::pop_front() {
     // O(1) remove of logical index 0
-    Scheduler::active_task_count_--;
     Scheduler::sorted_task_ids_ >>= 4;
 }
 
