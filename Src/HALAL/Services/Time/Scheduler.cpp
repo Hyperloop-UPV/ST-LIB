@@ -121,11 +121,7 @@ inline uint64_t Scheduler::get_global_tick() { return global_tick_us_; }
 // void Scheduler::global_timer_callback() { on_timer_update(); }
 
 inline uint8_t Scheduler::allocate_slot() {
-    /* https://developer.arm.com/documentation/dui0204/j/arm-and-thumb-instructions/general-data-processing-instructions/clz
-     * clz(0) = 32          -> 32 - clz(0) = 0
-     * clz(0xFFFF'FFFF) = 0 -> 32 - clz(0xFFFF'FFFF) > kMaxTasks
-     */
-    uint32_t idx = __builtin_ffs(~Scheduler::free_bitmap_) - 1;
+    uint32_t idx = __builtin_ffs(Scheduler::free_bitmap_) - 1;
     if(idx > static_cast<int>(Scheduler::kMaxTasks)) [[unlikely]]
         return static_cast<uint8_t>(Scheduler::INVALID_ID);
     Scheduler::active_task_count_++;
