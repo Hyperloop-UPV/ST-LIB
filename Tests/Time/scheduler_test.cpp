@@ -30,9 +30,9 @@ protected:
     }
 };
 
-TEST_F(SchedulerTests, UsedBitmap) {
+TEST_F(SchedulerTests, FreeBitmap) {
     Scheduler::register_task(10,&fake_workload);
-    EXPECT_EQ(Scheduler::used_bitmap_,1);
+    EXPECT_EQ(Scheduler::free_bitmap_, 0xFFFF'FFFE);
 }
 
 TEST_F(SchedulerTests, TaskRegistration) {
