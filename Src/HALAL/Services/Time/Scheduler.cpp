@@ -49,7 +49,7 @@ inline void Scheduler::set_at(uint8_t idx, uint8_t id) {
     // sorted_task_ids_ |= ((id & 0x0F) << shift); // This is also an option in case id is incorrect, I don't think it's necessary though
 }
 inline uint8_t Scheduler::front_id() {
-    return ((uint32_t*)(void*)&sorted_task_ids_)[0] & 0xF;
+    return *((uint8_t*)&sorted_task_ids_) & 0xF;
 }
 inline void Scheduler::pop_front() {
     // O(1) remove of logical index 0
