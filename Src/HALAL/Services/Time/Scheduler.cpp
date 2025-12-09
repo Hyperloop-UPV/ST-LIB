@@ -40,7 +40,7 @@ uint64_t Scheduler::current_interval_us_{0};
 inline uint8_t Scheduler::get_at(uint8_t idx) {
     int word_idx = idx > 7;
     uint32_t shift = (idx & 7) << 2;
-    return (((uint32_t*)sorted_task_ids_)[word_idx] & (0x0F << shift)) >> shift;
+    return (((uint32_t*)&sorted_task_ids_)[word_idx] & (0x0F << shift)) >> shift;
 }
 inline void Scheduler::set_at(uint8_t idx, uint8_t id) {
     uint32_t shift = idx*4;
@@ -49,7 +49,7 @@ inline void Scheduler::set_at(uint8_t idx, uint8_t id) {
     // sorted_task_ids_ |= ((id & 0x0F) << shift); // This is also an option in case id is incorrect, I don't think it's necessary though
 }
 inline uint8_t Scheduler::front_id() {
-    return ((uint32_t*)sorted_task_ids_)[0] & 0xF;
+    return ((uint32_t*)&sorted_task_ids_)[0] & 0xF;
 }
 inline void Scheduler::pop_front() {
     // O(1) remove of logical index 0
