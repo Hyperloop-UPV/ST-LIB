@@ -1,6 +1,10 @@
 #pragma once
 
+#ifndef TESTING_ENV
 #include "stm32h7xx_hal.h"
+#else
+#include "MockedDrivers/hal_gpio_interface.h"
+#endif
 #include <array>
 #include <span>
 #include <tuple>
