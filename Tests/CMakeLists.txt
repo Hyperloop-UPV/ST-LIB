@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
 if(DEFINED STLIB_NAME_SUFFIX)
     set(STLIB_TEST_EXECUTABLE st-lib-${STLIB_NAME_SUFFIX}-test)
 else()
@@ -31,8 +30,8 @@ target_link_libraries(
     GTest::gtest_main
     ${STLIB_LIBRARY}
 )
+
 if(MINGW OR CYGWIN)
-    # Force static linking of libgcc and libstdc++ to avoid DLL version mismatches
     target_link_options(${STLIB_TEST_EXECUTABLE} PRIVATE -static)
 endif()
 
