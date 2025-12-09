@@ -53,6 +53,7 @@ inline uint8_t Scheduler::front_id() {
 }
 inline void Scheduler::pop_front() {
     // O(1) remove of logical index 0
+    Scheduler::active_task_count_--;
     Scheduler::sorted_task_ids_ >>= 4;
 }
 
@@ -124,7 +125,6 @@ inline uint8_t Scheduler::allocate_slot() {
     uint32_t idx = __builtin_ffs(Scheduler::free_bitmap_) - 1;
     if(idx > static_cast<int>(Scheduler::kMaxTasks)) [[unlikely]]
         return static_cast<uint8_t>(Scheduler::INVALID_ID);
-    Scheduler::active_task_count_++;
     Scheduler::free_bitmap_ &= ~(1UL << idx);
     return static_cast<uint8_t>(idx);
 }
@@ -134,7 +134,6 @@ inline void Scheduler::release_slot(uint8_t id) {
     if(id >= kMaxTasks) [[unlikely]] return;
     ready_bitmap_ &= ~(1u << id);
     free_bitmap_ |= (1u << id);
-    Scheduler::active_task_count_--;
 }
 
 void Scheduler::insert_sorted(uint8_t id) {
