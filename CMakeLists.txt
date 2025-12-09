@@ -11,6 +11,9 @@ if(NOT PROJECT_IS_TOP_LEVEL)
   set(STLIB_LIBRARY ${STLIB_LIBRARY} PARENT_SCOPE)
 endif()
 
+include(CTest)
+enable_testing()
+
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
 
