@@ -200,10 +200,10 @@ struct MPUDomain {
 
     static consteval std::pair<std::size_t, std::uint8_t> get_size_needed(std::size_t size) {
         // Get next power of two
-        if (popcount(size) == 1) {
+        if (std::popcount(size) == 1) {
             return {size, 0};
         } else {
-            size_t power = 1 + countl_zero(size);
+            size_t power = 1 + std::countl_zero(size);
 
             if (power < 5) {
                 power = 5; // Minimum MPU region size is 32 bytes
@@ -212,7 +212,7 @@ struct MPUDomain {
             // MPU can divide to 8 subregions, so try to get a closer size
             size_t subregion_size = 1U << (power - 3);
             size_t num_subregions = (size + subregion_size - 1) / subregion_size; // Round up division
-            uint8_t subregion_disable = static_cast<uint8_t>(~((0xFFU << num_subregions) - 1));
+            uint8_t subregion_disable = static_cast<uint8_t>(~((1U << num_subregions) - 1));
             static_assert(subregion_disable != 0xFF, "Something isn't working on the MPU region size calculation.");
 
             return {subregion_size * num_subregions, subregion_disable};
