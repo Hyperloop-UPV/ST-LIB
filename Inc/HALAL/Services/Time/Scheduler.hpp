@@ -57,7 +57,7 @@ struct Scheduler {
           3. id_2 = set_timeout(y, func_2) // id will be equal to id_2
           4. clear_timeout(id) -> will remove the second timeout
          */
-        if(!tasks_[id].repeating) return;
+        if(tasks_[id].repeating) return;
         unregister_task(id);
     }
 
