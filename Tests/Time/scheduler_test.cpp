@@ -59,7 +59,7 @@ TEST_F(SchedulerTests, TaskExecutionLong) {
     Scheduler::register_task(10,&fake_workload);
     Scheduler::start();
     // TIM2_BASE->ARR = 500;
-    // TIM2_BASE->generate_update();
+    TIM2_BASE->generate_update();
     
     constexpr int NUM_TICKS = 1'000'000;
     for(int i = 0; i < NUM_TICKS; i++){

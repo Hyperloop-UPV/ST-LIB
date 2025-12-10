@@ -95,9 +95,8 @@ void Scheduler::start() {
 
     NVIC_EnableIRQ(SCHEDULER_GLOBAL_TIMER_IRQn);
     CLEAR_BIT(Scheduler_global_timer->SR, LL_TIM_SR_UIF); /* clear update interrupt flag */
-    // NOTE(vic): We don't need to set the flag since there won't be any tasks at the start/it will get set in schedule_next_interval()
-    Scheduler::global_timer_enable();
-    //Scheduler::schedule_next_interval();
+
+    Scheduler::schedule_next_interval();
 }
 
 SCHEDULER_GLOBAL_TIMER_CALLBACK() {
