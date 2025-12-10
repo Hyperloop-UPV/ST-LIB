@@ -223,7 +223,7 @@ void Scheduler::schedule_next_interval() {
     Scheduler::global_timer_enable();
     uint8_t next_id = Scheduler::front_id();  // sorted_task_ids_[0]
     Task& next_task = tasks_[next_id];
-    uint64_t delta = (next_task.next_fire_us > (global_tick_us_ - 1ULL)) 
+    uint64_t delta = ((next_task.next_fire_us + 1ULL) > global_tick_us_) 
         ? (next_task.next_fire_us - global_tick_us_) : 1ULL;
 
     if (delta > kMaxIntervalUs) [[unlikely]] {
