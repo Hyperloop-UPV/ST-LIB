@@ -146,8 +146,11 @@ struct MPUDomain {
         void is_valid_type() {
             static_assert(std::is_standard_layout_v<T> && std::is_trivial_v<T>,
                           "MPU Buffer can only store POD types (standard layout and trivial).");
-            if (alignof(T) > alignment) {
-                ErrorHandler("Type alignment (%d) exceeds MPU buffer alignment (%d).", alignof(T), alignment);
+            if (sizeof(T) > size) {
+                ErrorHandler("Requested type size exceeds allocated MPU buffer size.");
+            }
+            if (reinterpret_cast<uint32_t>(ptr) % alignof(T) != 0) {
+                ErrorHandler("Requested type alignment is not satisfied by allocated MPU buffer.");
             }
         }
         
@@ -186,8 +189,7 @@ struct MPUDomain {
             case MemoryDomain::D3:
                 return 0x38000000 + static_cast<uint32_t>(offset);
             default:
-                ErrorHandler("Invalid Memory Domain");
-                return 0;
+                throw "Invalid Memory Domain";
         }
     }
 
@@ -210,7 +212,8 @@ struct MPUDomain {
             // MPU can divide to 8 subregions, so try to get a closer size
             size_t subregion_size = 1U << (power - 3);
             size_t num_subregions = (size + subregion_size - 1) / subregion_size; // Round up division
-            uint8_t subregion_disable = static_cast<uint8_t>(~(0xFFU << num_subregions));
+            uint8_t subregion_disable = static_cast<uint8_t>(~((0xFFU << num_subregions) - 1));
+            static_assert(subregion_disable != 0xFF, "Something isn't working on the MPU region size calculation.");
 
             return {subregion_size * num_subregions, subregion_disable};
         }
