@@ -94,3 +94,22 @@ TEST_F(SchedulerTests, GlobalTickOverflow) {
     // 100 ticks /20 ticks/task = 5 executions.
     EXPECT_EQ(count, 5);
 }
+
+TEST_F(SchedulerTests, TimeoutClearAddTask) {
+    uint8_t timeout_id = Scheduler::set_timeout(10, &fake_workload);
+    Scheduler::start();
+
+    constexpr int NUM_TICKS = 100;
+    for(int i = 0; i < NUM_TICKS; i++) {
+        TIM2_BASE->CNT++;
+        Scheduler::update();
+    }
+
+    // timeout is already done here
+    uint8_t task_id = Scheduler::register_task(20, &fake_workload);
+    
+    // after timeout, cancel task
+    Scheduler::cancel_timeout(timeout_id);
+
+    EXPECT_EQ(Scheduler::active_task_count_, 1);
+}
