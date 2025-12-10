@@ -125,8 +125,6 @@ namespace ST_LIB {
         // NO se para que quiero esto
         static constexpr std::size_t max_instances {MAX_STREAMS};
         static_assert(max_instances > 0, "The number of instances must be greater than 0");
-        
-
 
         static inline IRQn_Type get_irqn(Stream stream) {
             if (stream == Stream::dma1_stream0) return DMA1_Stream0_IRQn;
@@ -206,7 +204,6 @@ namespace ST_LIB {
             return 0;
         }
 
-
         static consteval inline uint32_t get_Direction(Instance instance, uint8_t i) {
             if (is_fmac(instance) && i == 0){
                     return DMA_MEMORY_TO_MEMORY;
@@ -225,6 +222,7 @@ namespace ST_LIB {
             }
             return DMA_PINC_DISABLE;
         }
+
         static consteval inline uint32_t get_MemInc(Instance instance, uint8_t i) {
             if  (is_fmac(instance) && i == 0){
                 return DMA_MINC_DISABLE;
@@ -446,7 +444,7 @@ namespace ST_LIB {
                     instances[i].id = id;
 
                     // No estoy seguro de que esto tenga que ir aqui
-                    if (HAL_DMA_Init(instances[i].dma) != HAL_OK) {
+                    if (HAL_DMA_Init(&instances[i].dma) != HAL_OK) {
                         ErrorHandler("DMA Init failed");
                     }
                 }
