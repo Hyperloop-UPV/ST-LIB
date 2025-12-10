@@ -50,7 +50,16 @@ struct Scheduler {
         if(microseconds == 0) [[unlikely]] microseconds = 1;
         return register_task(microseconds, func, false);
     }
-    static inline void cancel_timeout(uint8_t id) { unregister_task(id); }
+    static inline void cancel_timeout(uint8_t id) {
+        /* NOTE: This does not fix this case:
+          1. id = set_timeout(x, func)
+          2. timeout ends, func gets called and removed internally
+          3. id_2 = set_timeout(y, func_2) // id will be equal to id_2
+          4. clear_timeout(id) -> will remove the second timeout
+         */
+        if(!tasks_[id].repeating) return;
+        unregister_task(id);
+    }
 
     // static void global_timer_callback();
 
