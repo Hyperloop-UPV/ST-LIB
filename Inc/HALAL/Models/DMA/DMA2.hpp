@@ -87,29 +87,38 @@ namespace ST_LIB {
         
         struct Entry {
             Instance instance;
-            std::array<Stream, 3> streams{};
-            std::array<IRQn_Type ,3> irqn {};
-            uint8_t count = 0;
+            Stream stream;
+            IRQn_Type irqn;
+            uint8_t id;
         };
-            
-        struct DMA{
+
+        struct DMA {
             using domain = DMA_Domain;
 
-            Entry e;
+            std::array<Entry, 3> e{};
 
             template<Stream... Ss>
-            consteval DMA(Instance instance) : e(instance) {
+            consteval DMA(Instance instance) {
                 static_assert(sizeof...(Ss) <= 3, "Máximo 3 streams");
-                size_t i = 0;
-                ((e.streams[i++] = Ss), ...);
-                e.count = i;
-                for (size_t j = 0; j < i; j++){
-                    e.irqn[j] = get_irqn(e.streams[j]);
+
+                Stream streams[] = { Ss... };
+                constexpr uint8_t n = sizeof...(Ss);
+
+                for (uint8_t j = 0; j < n; j++) {
+                    e[j].instance = instance;
+                    e[j].stream   = streams[j];
+                    e[j].irqn     = get_irqn(streams[j]);
+                    e[j].id       = j;
                 }
+                
             }
 
-            template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-                ctx.template add<DMA_Domain>(e);
+            template <class Ctx>
+            consteval void inscribe(Ctx &ctx) const {
+                for (const auto& entry : e) {
+                    if (entry.stream != Stream{}) 
+                        ctx.template add<DMA_Domain>(entry);
+                }
             }
         };
 
@@ -142,25 +151,25 @@ namespace ST_LIB {
         }
 
         // Si quitas el auto peta todo
-        static consteval inline bool is_one_of(Instance instance, auto... bases) {
+        static constexpr inline bool is_one_of(Instance instance, auto... bases) {
             return ((instance == bases) || ...);
         }
 
-        static consteval inline bool is_spi(Instance instance) {
+        static constexpr inline bool is_spi(Instance instance) {
             return is_one_of(instance, Instance::spi1, Instance::spi2,
                             Instance::spi3, Instance::spi4, Instance::spi5);
         }
 
-        static consteval inline bool is_i2c(Instance instance) {
+        static constexpr inline bool is_i2c(Instance instance) {
             return is_one_of(instance, Instance::i2c1, Instance::i2c2,
                             Instance::i2c3, Instance::i2c5);
         }
 
-        static consteval inline bool is_adc(Instance instance) {
+        static constexpr inline bool is_adc(Instance instance) {
             return is_one_of(instance, Instance::adc1, Instance::adc2, Instance::adc3);
         }
 
-        static consteval inline bool is_fmac(Instance instance) {
+        static constexpr inline bool is_fmac(Instance instance) {
             return instance == Instance::fmac;
         }
 
@@ -283,9 +292,10 @@ namespace ST_LIB {
 
         struct Config {
             std::tuple<Instance, 
-                    std::array<DMA_InitTypeDef, 3>, 
-                    std::array<DMA_Stream_TypeDef*,3>, 
-                    std::array<IRQn_Type, 3>> 
+                    DMA_InitTypeDef, 
+                    Stream, 
+                    IRQn_Type,
+                    uint8_t> 
             init_data{};
         };
 
@@ -296,41 +306,130 @@ namespace ST_LIB {
             for (std::size_t i = 0; i < N; ++i){
                 const auto &e = instances[i];
 
+                // No entiendo como funciona esto, pero esta copiado tal cual
+                // Yo creo que a mi no me sirve porque mis instancias si que estan repetidas
                 for (std::size_t j = 0; j < i; ++j){
                     const auto &prev = instances[j];
-                    if (prev.instance == e.instance && prev.streams == e.streams){
+                    if (prev.instance == e.instance && prev.stream == e.stream){
                         struct peripherial_already_inscribed {};
                         throw peripherial_already_inscribed{};
                     }
                 }
-                
-                std::array<DMA_InitTypeDef, 3> dma_handles;
-                for (std::size_t j = 0; j < e.count; j++){
-                    DMA_InitTypeDef DMA_InitStruct;
-                    //DMA_InitStruct.Instance = e.streams[j];
-                    DMA_InitStruct.Request             = get_Request(e.instance, j);
-                    DMA_InitStruct.Direction           = get_Direction(e.instance, j);
-                    DMA_InitStruct.PeriphInc           = get_PeriphInc(e.instance, j);
-                    DMA_InitStruct.MemInc              = get_MemInc(e.instance, j);
-                    DMA_InitStruct.PeriphDataAlignment = get_PeriphDataAlignment(e.instance, j);
-                    DMA_InitStruct.MemDataAlignment    = get_MemDataAlignment(e.instance, j);
-                    DMA_InitStruct.Mode                = get_Mode(e.instance, j);
-                    DMA_InitStruct.Priority            = get_Priority(e.instance, j);
-                    DMA_InitStruct.FIFOMode            = get_FIFOMode(e.instance, j);
-                    DMA_InitStruct.FIFOThreshold       = get_FIFOThreshold(e.instance, j);
-                    DMA_InitStruct.MemBurst            = get_MemBurst(e.instance, j);
-                    DMA_InitStruct.PeriphBurst         = get_PeriphBurst(e.instance, j);
+        
+                DMA_InitTypeDef DMA_InitStruct;
+                DMA_InitStruct.Request             = get_Request(e.instance, e.id);
+                DMA_InitStruct.Direction           = get_Direction(e.instance, e.id);
+                DMA_InitStruct.PeriphInc           = get_PeriphInc(e.instance, e.id);
+                DMA_InitStruct.MemInc              = get_MemInc(e.instance, e.id);
+                DMA_InitStruct.PeriphDataAlignment = get_PeriphDataAlignment(e.instance, e.id);
+                DMA_InitStruct.MemDataAlignment    = get_MemDataAlignment(e.instance, e.id);
+                DMA_InitStruct.Mode                = get_Mode(e.instance, e.id);
+                DMA_InitStruct.Priority            = get_Priority(e.instance, e.id);
+                DMA_InitStruct.FIFOMode            = get_FIFOMode(e.instance, e.id);
+                DMA_InitStruct.FIFOThreshold       = get_FIFOThreshold(e.instance, e.id);
+                DMA_InitStruct.MemBurst            = get_MemBurst(e.instance, e.id);
+                DMA_InitStruct.PeriphBurst         = get_PeriphBurst(e.instance, e.id);
 
-                    dma_handles[j] = DMA_InitStruct;
-                }
 
-                cfgs[i].init_data = std::make_tuple(e.instance, dma_handles, e.streams, e.irqn);
+                cfgs[i].init_data = std::make_tuple(e.instance,
+                                                    DMA_InitStruct,
+                                                    e.stream,
+                                                    e.irqn,
+                                                    e.id);
             }
             return cfgs;
         }
+
+        struct Instances_ {
+            xTypeDef instance;
+            DMA_HandleTypeDef dma;
+            IRQn_Type irqn;
+            uint8_t id;
+
+            void setDMAHandle(xHandleDef handle) {
+                std::visit([&](auto* real_instance){
+                    std::visit([&](auto* real_handle){
+                        using T = std::remove_pointer_t<decltype(real_handle)>;
+                        // ---------------------------
+                        // ADC
+                        // ---------------------------
+                        if constexpr (std::is_same_v<T, ADC_HandleTypeDef>)
+                        {
+                            // ADC solo tiene un stream
+                            __HAL_LINKDMA(real_handle, DMA_Handle, dma);
+
+                            HAL_NVIC_SetPriority(irqn, 0, 0);
+                            HAL_NVIC_EnableIRQ(irqn);
+                            return;
+                        }
+
+                        // ---------------------------
+                        // I2C
+                        // id = 0 → RX
+                        // id = 1 → TX
+                        // ---------------------------
+                        else if constexpr (std::is_same_v<T, I2C_HandleTypeDef>)
+                        {
+                            if (id == 0)
+                                __HAL_LINKDMA(real_handle, hdmarx, dma);
+                            else
+                                __HAL_LINKDMA(real_handle, hdmatx, dma);
+
+                            HAL_NVIC_SetPriority(irqn, 0, 0);
+                            HAL_NVIC_EnableIRQ(irqn);
+                            return;
+                        }
+
+                        // ---------------------------
+                        // SPI
+                        // id = 0 → RX
+                        // id = 1 → TX
+                        // ---------------------------
+                        else if constexpr (std::is_same_v<T, SPI_HandleTypeDef>)
+                        {
+                            if (id == 0)
+                                __HAL_LINKDMA(real_handle, hdmarx, dma);
+                            else
+                                __HAL_LINKDMA(real_handle, hdmatx, dma);
+
+                            HAL_NVIC_SetPriority(irqn, 0, 0);
+                            HAL_NVIC_EnableIRQ(irqn);
+                            return;
+                        }
+
+                        // ---------------------------
+                        // FMAC
+                        // id = 0 → Preload
+                        // id = 1 → In
+                        // id = 2 → Out
+                        // ---------------------------
+                        else if constexpr (std::is_same_v<T, FMAC_HandleTypeDef>)
+                        {
+                            if (id == 0)
+                                __HAL_LINKDMA(real_handle, hdmaPreload, dma);
+                            else if (id == 1)
+                                __HAL_LINKDMA(real_handle, hdmaIn, dma);
+                            else
+                                __HAL_LINKDMA(real_handle, hdmaOut, dma);
+
+                            HAL_NVIC_SetPriority(irqn, 0, 0);
+                            HAL_NVIC_EnableIRQ(irqn);
+                            return;
+                        }
+
+                        else {
+                            ErrorHandler("Unsupported peripheral type in setDMAHandle");
+                        }
+
+                    }, handle);
+
+                }, instance);
+            }
+        };
+
         
         template <std::size_t N> struct Init {
-            static inline std::array<DMA_HandleTypeDef, N> dma{};
+            static inline std::array<Instances_, N> instances{};
 
             static void init(std::span<const Config, N> cfgs) {
                 static_assert(N > 0);
@@ -338,34 +437,17 @@ namespace ST_LIB {
 	            __HAL_RCC_DMA2_CLK_ENABLE();
                 for (std::size_t i = 0; i < N; ++i) {
                     const auto &e = cfgs[i];
-                    auto [instance, dma_handles, streams, irqn] = e.init_data;
+                    auto [instance, dma_init, stream, irqn, id] = e.init_data;           
                     
-                    for (std::size_t j = 0; j < 3; j++){
-                        // Con la instancia necesito que me de el Handle del periferico
-                        
-                        dma[i].Instance = streams[j];
-                        dma[i].Init = dma_handles[j];
-                        if (HAL_DMA_Init(dma[i]) != HAL_OK) {
-                            ErrorHandler("DMA Init failed");
-                        }
-                        if (is_spi(instance)) {
-                            auto member = (i == 0) ? &SPI_HandleTypeDef::hdmarx : &SPI_HandleTypeDef::hdmatx;
-                        }
-                        else if (is_i2c(instance)) {
-                            auto member = (i == 0) ? &I2C_HandleTypeDef::hdmarx : &I2C_HandleTypeDef::hdmatx;
-                        }
-                        else if (is_adc(instance)) {
-                            auto member = &ADC_HandleTypeDef::DMA_Handle;
-                        }
-                        else if (is_fmac(instance)) {
-                            auto member = (i == 0) ? &FMAC_HandleTypeDef::hdmaPreload :
-                                        (i == 1) ? &FMAC_HandleTypeDef::hdmaIn :
-                                                    &FMAC_HandleTypeDef::hdmaOut;
-                        }
-                        //Linker
-                        __HAL_LINKDMA(handle, member, dma[i]);
-                        HAL_NVIC_SetPriority(irqn, 0, 0);
-                        HAL_NVIC_EnableIRQ(irqn);
+                    instances[i].instance = instance_to_xTypeDef(instance);
+                    instances[i].dma.Instance = stream_to_DMA_StreamTypeDef(stream);
+                    instances[i].dma.Init = dma_init;
+                    instances[i].irqn = irqn;
+                    instances[i].id = id;
+
+                    // No estoy seguro de que esto tenga que ir aqui
+                    if (HAL_DMA_Init(instances[i].dma) != HAL_OK) {
+                        ErrorHandler("DMA Init failed");
                     }
                 }
             }
