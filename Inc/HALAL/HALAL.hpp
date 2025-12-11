@@ -41,6 +41,8 @@
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"
 
+#include "HALAL/Benchmarking_toolkit/HardfaultTrace.h"
+#include "HALAL/Benchmarking_toolkit/DataWatchpointTrace/DataWatchpointTrace.hpp"
 #ifdef STLIB_ETH
 #include "HALAL/Models/Packets/Packet.hpp"
 #include "HALAL/Models/Packets/Order.hpp"
