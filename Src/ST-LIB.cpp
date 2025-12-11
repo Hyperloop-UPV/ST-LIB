@@ -40,6 +40,7 @@ void STLIB::update() {
   Server::update_servers();
 #endif
     ErrorHandlerModel::ErrorHandlerUpdate();
+    MDMA::update();
     Promise::update();
 	
 }

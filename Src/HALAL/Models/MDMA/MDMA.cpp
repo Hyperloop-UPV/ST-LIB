@@ -5,6 +5,7 @@
 uint32_t buffer_size = sizeof(MDMA::LinkedListNode) * NODES_MAX;
 MDMA::LinkedListNode* buffer = static_cast<MDMA::LinkedListNode*>(MPUManager::allocate_non_cached_memory(buffer_size));
 inline Pool<MDMA::LinkedListNode, NODES_MAX, true> MDMA::link_node_pool{buffer};
+std::bitset<8> MDMA::instance_free_map{};
 
 std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> MDMA::instance_to_channel = {
     {0, MDMA_Channel0},
@@ -37,15 +38,12 @@ void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node
         ErrorHandler("MDMA transfer already in progress");
         return;
     }
+    instance_free_map[instance.id] = false;
 
     instance.handle.State = HAL_MDMA_STATE_BUSY;
     instance.handle.ErrorCode = HAL_MDMA_ERROR_NONE;
     instance.handle.FirstLinkedListNodeAddress = first_node;
     __HAL_MDMA_DISABLE(&instance.handle);
-    while ((instance.handle.Instance->CCR & MDMA_CCR_EN) != 0U)
-    {
-        __NOP();
-    }
 
     MDMA_Channel_TypeDef* channel = instance.handle.Instance;
 
@@ -81,34 +79,15 @@ void MDMA::prepare_transfer(Instance& instance, LinkedListNode* first_node) { MD
 
 MDMA::Instance& MDMA::get_instance(uint8_t id)
 {
-    if (id >= instances.size())
-    {
-        ErrorHandler("MDMA instance ID not found");
-    }
 
     Instance& instance = instances[id];
-    if (instance.handle.Instance == nullptr)
-    {
-        ErrorHandler("MDMA instance not initialised");
-    }
 
     return instance;
 }
 
 
-uint8_t MDMA::inscribe(uint8_t* data_buffer, uint8_t* destination_address)
+void MDMA::inscribe(Instance& instance,uint8_t id)
 {
-    const auto slot_it = std::find_if(instances.begin(), instances.end(), [](const Instance& instance)
-    {
-        return instance.handle.Instance == nullptr;
-    });
-
-    if (slot_it == instances.end())
-    {
-        ErrorHandler("Maximum number of MDMA instances reached");
-    }
-
-    const uint8_t id = static_cast<uint8_t>(slot_it - instances.begin());
     MDMA_HandleTypeDef mdma_handle{};
     const auto channel_it = instance_to_channel.find(id);
     if (channel_it == instance_to_channel.end())
@@ -150,20 +129,18 @@ uint8_t MDMA::inscribe(uint8_t* data_buffer, uint8_t* destination_address)
     nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_BYTE;
     nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_BYTE;
     nodeConfig.BlockDataLength = 1;
-    nodeConfig.SrcAddress = reinterpret_cast<uint32_t>(data_buffer);
-    uint8_t* dst_ptr = (destination_address == nullptr) ? data_buffer : destination_address;
-    nodeConfig.DstAddress = reinterpret_cast<uint32_t>(dst_ptr);
+    nodeConfig.SrcAddress = reinterpret_cast<uint32_t>(nullptr);
+    nodeConfig.DstAddress = reinterpret_cast<uint32_t>(nullptr);
 
     const HAL_StatusTypeDef status = HAL_MDMA_LinkedList_CreateNode(&transfer_node, &nodeConfig);
     if (status != HAL_OK)
     {
         ErrorHandler("Error creating linked list in MDMA");
     }
+    instance_free_map[id] = false;
 
-    Instance instance(mdma_handle, id, data_buffer, destination_address, transfer_node);
-    instances[id] = instance;
+    instance = Instance(mdma_handle, id, nullptr, nullptr, transfer_node);
 
-    return id;
 }
 
 
@@ -171,11 +148,15 @@ void MDMA::start()
 {
     __HAL_RCC_MDMA_CLK_ENABLE();
 
+    uint8_t id = 0;
     for (auto& instance : instances)
     {
+        inscribe(instance,id);
+        id++;
+        
         if (instance.handle.Instance == nullptr)
         {
-            continue;
+            ErrorHandler("MDMA instance not initialised");
         }
         const HAL_StatusTypeDef status = HAL_MDMA_Init(&instance.handle);
         if (status != HAL_OK)
@@ -192,6 +173,38 @@ void MDMA::start()
     HAL_NVIC_EnableIRQ(MDMA_IRQn);
 }
 
+void MDMA::update()
+{
+    if(transfer_queue.empty())
+    {
+        return;
+    }
+
+    for(size_t i = 0; i < instances.size(); i++)
+    {
+        if(transfer_queue.empty())
+        {
+            return;
+        }
+        if(instance_free_map[i])
+        {
+            Instance& instance = get_instance(i);
+            auto transfer = transfer_queue.top();
+            if(transfer.second == nullptr)
+            {
+                instance.using_promise = false;
+            }
+            else
+            {
+                instance.promise = transfer.second;
+                instance.using_promise = true;
+            }
+            prepare_transfer(instance, transfer.first);
+            transfer_queue.pop();
+        }
+    }
+}
+
 
 void MDMA::irq_handler()
 {
@@ -206,56 +219,46 @@ void MDMA::irq_handler()
 }
 
 
-void MDMA::transfer_list(const uint8_t MDMA_id, MDMA::LinkedListNode* first_node, Promise* promise)
+void MDMA::transfer_list(MDMA::LinkedListNode* first_node, Promise* promise)
 {
-    Instance& instance = get_instance(MDMA_id);
-
-    if(promise == nullptr)
+    if(transfer_queue.size() >= TRANSFER_QUEUE_MAX_SIZE)
     {
-        instance.using_promise = false;
+        ErrorHandler("MDMA transfer queue full");
+        return;
     }
-    else
-    {
-        instance.promise = promise;
-        instance.using_promise = true;
-    }
-    
-    prepare_transfer(instance, first_node);
+    transfer_queue.push({first_node, promise});
 }
 
 
-void MDMA::transfer_data(const uint8_t MDMA_id,uint8_t* source_address, const uint32_t data_length,uint8_t* destination_address,Promise* promise)
+
+bool MDMA::transfer_data(uint8_t* source_address, const uint32_t data_length,uint8_t* destination_address,Promise* promise)
 {
-    Instance& instance = get_instance(MDMA_id);
-
-    if(promise == nullptr)
+    for(size_t i = 0; i < instances.size(); i++)
     {
-        instance.using_promise = false;
-    }
-    else
-    {
-        instance.promise = promise;
-        instance.using_promise = true;
-    }
-
-    instance.transfer_node.CSAR = reinterpret_cast<uint32_t>(source_address);
-    instance.transfer_node.CBNDTR = data_length;
-    if(destination_address == nullptr)
-    {
-        if(instance.destination_address ==nullptr)
+        if(instance_free_map[i])
         {
-            ErrorHandler("No destination address provided for MDMA transfer");
+            Instance& instance = get_instance(i);
+            if(promise == nullptr)
+            {
+                instance.using_promise = false;
+            }
+            else
+            {
+                instance.promise = promise;
+                instance.using_promise = true;
+            }
+
+            instance.transfer_node.CSAR = reinterpret_cast<uint32_t>(source_address);
+            instance.transfer_node.CBNDTR = data_length;
+            instance.transfer_node.CDAR = reinterpret_cast<uint32_t>(destination_address);
+
+            SCB_CleanDCache_by_Addr((uint32_t*)&instance.transfer_node, sizeof(MDMA_LinkNodeTypeDef)); //To be removed when MPU fixed
+
+            prepare_transfer(instance, &instance.transfer_node);
+            return true;
         }
-        instance.transfer_node.CDAR = reinterpret_cast<uint32_t>(instance.destination_address);
     }
-    else
-    {
-        instance.transfer_node.CDAR = reinterpret_cast<uint32_t>(destination_address);
-    }
-
-    SCB_CleanDCache_by_Addr((uint32_t*)&instance.transfer_node, sizeof(MDMA_LinkNodeTypeDef));
-
-    prepare_transfer(instance, &instance.transfer_node);
+    return false;
 }
 
 
@@ -269,6 +272,7 @@ void MDMA::TransferCompleteCallback(MDMA_HandleTypeDef *hmdma)
 
     Instance& instance = get_instance(channel_it->second);
     instance.handle.State = HAL_MDMA_STATE_READY;
+    instance_free_map[instance.id] = true;
     if(instance.using_promise)
     {
         instance.promise->resolve();

@@ -17,9 +17,12 @@
 #endif
 
 #ifndef NODES_MAX
-#define NODES_MAX 20
+#define NODES_MAX 100
 #endif
 
+#ifndef TRANSFER_QUEUE_MAX_SIZE
+#define TRANSFER_QUEUE_MAX_SIZE 50
+#endif
 class MDMA{
     public:
     /**
@@ -120,9 +123,21 @@ private:
     inline static std::array<Instance,8> instances{};
     static std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> instance_to_channel;
     static std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> channel_to_instance;
+    static std::bitset<8> instance_free_map;
+    static Stack<std::pair<MDMA::LinkedListNode*,Promise*>,50> transfer_queue;
 
     static void TransferCompleteCallback(MDMA_HandleTypeDef *hmdma);
     static void TransferErrorCallback(MDMA_HandleTypeDef *hmdma);
+
+    /**
+	 * @brief A method to add MDMA channels in linked list mode.
+
+	 * This method will be called internally for each channel during the MDMA::start() process.
+	 *
+     * @param instance	The reference to the MDMA instance to be initialised	 
+	 */
+
+    static void inscribe(Instance& instance,uint8_t id);
 
     public:
 
@@ -134,38 +149,28 @@ private:
 
     static void start();
     static void irq_handler();
+    static void update();
 
 
-    /**
-	 * @brief A method to add MDMA channels in linked list mode.
-
-	 * This method has to be invoked before the ST-LIB::start()
-	 *
-	 * @param data_buffer	the buffer where the MDMA will write the data, very important to be a non-cached buffer
-     * @param destination_address  the address where the MDMA will read the data from, if nullptr it will make it so that the destination varies dinamically
-	 *
-	 * @return the id that represents the MDMA channel with its designated buffer inside this utility class, used in all its functions.
-	 */
-
-    static uint8_t inscribe(uint8_t* data_buffer, uint8_t* destination_address=nullptr);
+    
 
     /**
      * @brief A method to start a transfer from source to destination using MDMA linked list
      *  
-     * @param MDMA_id The ID of the MDMA channel instance.
-     * @param packet_id The ID of the linked list packet to be transferred.
-     * @param destination_address The destination address for the transfer. If nullptr, the default destination associated with the instance will be used.
+     * @param source_address The source address for the transfer.
+     * @param data_length The length of data to be transferred.
+     * @param destination_address The destination address for the transfer.
      * @param promise An optional promise to be fulfilled upon transfer completion.
+     * @return True if the transfer was successfully started, false otherwise.
      */
-    static void transfer_data(const uint8_t MDMA_id,uint8_t* source_address, const uint32_t data_length,uint8_t* destination_address=nullptr, Promise* promise=nullptr);
+    static bool transfer_data(uint8_t* source_address, const uint32_t data_length,uint8_t* destination_address, Promise* promise=nullptr);
 
     /**
      * @brief A method to transfer using MDMA linked 
      *  
-     * @param MDMA_id The ID of the MDMA channel instance.
      * @param first_node The linked list node representing the first node in the linked list.
      * @param promise An optional promise to be fulfilled upon transfer completion.
      */
-    static void transfer_list(const uint8_t MDMA_id, MDMA::LinkedListNode* first_node, Promise* promise=nullptr);
+    static void transfer_list(MDMA::LinkedListNode* first_node, Promise* promise=nullptr);
 
 };
