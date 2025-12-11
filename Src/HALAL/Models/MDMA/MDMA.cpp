@@ -66,7 +66,7 @@ void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node
 
     if (HAL_MDMA_GenerateSWRequest(&instance.handle) != HAL_OK)
     {
-        instance.handle.State = HAL_MDMA_STATE_READY;
+        instance.handle.State = HAL_MDMA_STATE_BUSY;
         ErrorHandler("Error generating MDMA SW request");
         return;
     }
@@ -137,7 +137,7 @@ void MDMA::inscribe(Instance& instance,uint8_t id)
     {
         ErrorHandler("Error creating linked list in MDMA");
     }
-    instance_free_map[id] = false;
+    instance_free_map[id] = true;
 
     instance = Instance(mdma_handle, id, nullptr, nullptr, transfer_node);
 
