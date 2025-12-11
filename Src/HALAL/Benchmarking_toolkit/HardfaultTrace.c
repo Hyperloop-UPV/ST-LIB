@@ -1,29 +1,25 @@
 #include "HALAL/Benchmarking_toolkit/HardfaultTrace.h"
-
+#define REPS 100000
 extern GPIO_TypeDef* ports_hard_fault[];
 extern uint16_t pins_hard_fault[];
 extern uint8_t hard_fault_leds_count;
 
-static void LED_Blink(uint32_t delay);
+static void LED_Blink();
 static void LED_init(void);
 static void EnableGPIOClock(GPIO_TypeDef* port);
 static void InitGPIO_Output(GPIO_TypeDef* port,uint16_t pin);
-static void TIM_init(void);
-static void delay_ms(uint32_t);
+static void delay();
 
-static void delay_ms(uint32_t ms){
-    uint32_t start = LL_TIM_GetCounter(TIM2);
-    uint64_t us = ms*10000;
-    while((LL_TIM_GetCounter(TIM2) - start) < us){
+static void delay(){
+    for(uint64_t i = 0; i < REPS; i++){
        __NOP();
     }
 }
-static void LED_Blink(uint32_t delay){
-    //PB0 blink
+static void LED_Blink(){
     for(int i = 0; i < hard_fault_leds_count;i++){
         LL_GPIO_TogglePin(ports_hard_fault[i],pins_hard_fault[i]);
     }
-    delay_ms(delay);
+    delay();
 }
 static void LED_init(void){
       for(int i = 0; i < hard_fault_leds_count;i++){
@@ -36,9 +32,8 @@ void Hard_fault_check(void){
         HardFaultLog log;
         memcpy(&log,(void*)HF_FLASH_ADDR,sizeof(HardFaultLog));
         LED_init();
-        TIM_init();
         while(1){
-           LED_Blink(200);
+           LED_Blink();
         }
         
     }
@@ -61,16 +56,3 @@ static void InitGPIO_Output(GPIO_TypeDef* port,uint16_t pin){
     LL_GPIO_SetPinPull(port, pin, LL_GPIO_PULL_NO);
 }
 
-static void TIM_init(void){
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
-
-    LL_TIM_DisableCounter(TIM2);
-
-    uint32_t psc = (SystemCoreClock / 1000000) - 1;//freq = 1000 hz
-    LL_TIM_SetPrescaler(TIM2, psc);
-    LL_TIM_SetAutoReload(TIM2, 0xFFFFFFFF);   
-    LL_TIM_SetCounterMode(TIM2, LL_TIM_COUNTERMODE_UP);
-    LL_TIM_SetCounter(TIM2, 0);
-
-    LL_TIM_EnableCounter(TIM2);
-}
