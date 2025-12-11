@@ -70,7 +70,7 @@ template <typename... Domains> struct BuildCtx {
 };
 
 using DomainsCtx = BuildCtx<GPIODomain, DigitalOutputDomain,
-                            DigitalInputDomain /*, ADCDomain, PWMDomain, ...*/>;
+                            DigitalInputDomain, DMA_Domain /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {
@@ -89,12 +89,14 @@ template <auto &...devs> struct Board {
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
+    constexpr std::size_t dmaN = domain_size<DMA_Domain>();
     // ...
 
     struct ConfigBundle {
       std::array<GPIODomain::Config, gpioN> gpio_cfgs;
       std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
       std::array<DigitalInputDomain::Config, dinN> din_cfgs;
+      std::array<DMA_Domain::Config, dmaN> dma_cfgs;
       // ...
     };
 
@@ -105,6 +107,8 @@ template <auto &...devs> struct Board {
             ctx.template span<DigitalOutputDomain>()),
         .din_cfgs = DigitalInputDomain::template build<dinN>(
             ctx.template span<DigitalInputDomain>()),
+        .dma_cfgs = DMA_Domain::template build<dmaN>(
+            ctx.template span<DMA_Domain>()),
         // ...
     };
   }
@@ -115,6 +119,7 @@ template <auto &...devs> struct Board {
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
+    constexpr std::size_t dmaN = domain_size<DMA_Domain>();
     // ...
 
     GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
@@ -122,6 +127,7 @@ template <auto &...devs> struct Board {
                                            GPIODomain::Init<gpioN>::instances);
     DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
                                          GPIODomain::Init<gpioN>::instances);
+    DMA_Domain::Init<dmaN>::init(cfg.dma_cfgs);
     // ...
   }
 
