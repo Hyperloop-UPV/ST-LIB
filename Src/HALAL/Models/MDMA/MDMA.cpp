@@ -43,7 +43,6 @@ void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node
     instance.handle.State = HAL_MDMA_STATE_BUSY;
     instance.handle.ErrorCode = HAL_MDMA_ERROR_NONE;
     instance.handle.FirstLinkedListNodeAddress = first_node;
-    __HAL_MDMA_DISABLE(&instance.handle);
 
     MDMA_Channel_TypeDef* channel = instance.handle.Instance;
 
