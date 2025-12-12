@@ -119,6 +119,13 @@ SECTIONS
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >RAM_EXEC
 
+  .mpu_ram_d1_nc :
+  {
+    . = ALIGN(32);
+    *(.mpu_ram_d1_nc)
+    . = ALIGN(32);
+  } >RAM_EXEC
+
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
 
@@ -160,6 +167,20 @@ SECTIONS
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >DTCMRAM
+
+  .mpu_ram_d2_nc :
+  {
+    . = ALIGN(32);
+    *(.mpu_ram_d2_nc)
+    . = ALIGN(32);
+  } >RAM_D2
+
+  .mpu_ram_d3_nc :
+  {
+    . = ALIGN(32);
+    *(.mpu_ram_d3_nc)
+    . = ALIGN(32);
+  } >RAM_D3
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
