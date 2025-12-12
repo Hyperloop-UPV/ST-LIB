@@ -147,7 +147,9 @@ template <auto &...devs> struct Board {
           using DevT = std::remove_cvref_t<decltype(devs)>;
           if constexpr (std::is_same_v<typename DevT::domain, Domain>) {
             if (!found) {
-              if (&devs == &Target) {
+              auto dev_ptr = reinterpret_cast<const void*>(&devs);
+              auto target_ptr = reinterpret_cast<const void*>(&Target);
+              if (dev_ptr == target_ptr) {
                 found = true;
               } else {
                 ++idx;
@@ -176,7 +178,11 @@ template <auto &...devs> struct Board {
     constexpr std::size_t idx = domain_index_of<Domain, Target>();
     constexpr std::size_t N = domain_size_for_instance<Domain>();
 
-    return Domain::template Init<N>::instances[idx];
+    if constexpr (std::is_same_v<Domain, MPUDomain>) {
+      return Domain::template Init<N, cfg.mpu_cfgs>::instances[idx];
+    } else {
+      return Domain::template Init<N>::instances[idx];
+    }
   }
 };
 
