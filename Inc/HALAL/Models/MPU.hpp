@@ -126,80 +126,84 @@ struct MPUDomain {
 
     template <std::size_t N>
     static consteval std::array<Config, N> build(std::span<const Entry> entries) {
-        std::array<Config, N> cfgs{};
-        
-        uint32_t offsets[3] = {}; // D1, D2, D3
-        uint32_t assigned_offsets[N]; 
+        if constexpr (N == 0) {
+            return {};
+        } else {
+            std::array<Config, N> cfgs{};
+            
+            uint32_t offsets[3] = {}; // D1, D2, D3
+            uint32_t assigned_offsets[N]; 
 
-        size_t alignments[] = {32, 16, 8, 4, 2, 1};
-        
-        /* Non-Cached Offsets */
-        for (size_t align : alignments) {
-            for (size_t i = 0; i < N; i++) {
-                if (entries[i].memory_type == MemoryType::NonCached && entries[i].alignment == align) {
+            size_t alignments[] = {32, 16, 8, 4, 2, 1};
+            
+            /* Non-Cached Offsets */
+            for (size_t align : alignments) {
+                for (size_t i = 0; i < N; i++) {
+                    if (entries[i].memory_type == MemoryType::NonCached && entries[i].alignment == align) {
+                        size_t d_idx = static_cast<size_t>(entries[i].memory_domain) - 1;
+                        offsets[d_idx] = align_up(offsets[d_idx], align);
+                        assigned_offsets[i] = offsets[d_idx];
+                        offsets[d_idx] += entries[i].size_in_bytes;
+                    }
+                }
+            }
+
+            // Capture Non-Cached Sizes for MPU and adjust offsets for Cached data
+            size_t nc_sizes[3];
+            for(int i=0; i<3; i++) {
+                if (offsets[i] > 0) {
+                    auto [r_size, r_sub] = get_size_needed(offsets[i]);
+                    nc_sizes[i] = offsets[i];
+                    
+                    // Move the offset pointer to the end of the MPU region block to have Cached data start after it
+                    offsets[i] = r_size / 8 * (8 - std::popcount(r_sub)); // Effective used size considering subregions disabled
+                    offsets[i] = align_up(offsets[i], 32); // Align to 32 bytes just in case
+                } else {
+                    nc_sizes[i] = 0;
+                }
+            }
+
+            /* Cached Offsets */
+            for (size_t align : alignments) {
+                for (size_t i = 0; i < N; i++) {
+                    if (entries[i].memory_type == MemoryType::Cached && entries[i].alignment == align) {
+                        size_t d_idx = static_cast<size_t>(entries[i].memory_domain) - 1;
+                        offsets[d_idx] = align_up(offsets[d_idx], align);
+                        assigned_offsets[i] = offsets[d_idx];
+                        offsets[d_idx] += entries[i].size_in_bytes;
+                    }
+                }
+            }
+
+            /* Build Configs */
+            bool domain_configured[3] = {false, false, false};
+
+            for (std::size_t i = 0; i < N; i++) {
+                cfgs[i].size = entries[i].size_in_bytes;
+                cfgs[i].domain = entries[i].memory_domain;
+                cfgs[i].offset = assigned_offsets[i];
+                cfgs[i].is_mpu_leader = false;
+                cfgs[i].mpu_region_size = 0;
+
+                if (entries[i].memory_type == MemoryType::NonCached) {
                     size_t d_idx = static_cast<size_t>(entries[i].memory_domain) - 1;
-                    offsets[d_idx] = align_up(offsets[d_idx], align);
-                    assigned_offsets[i] = offsets[d_idx];
-                    offsets[d_idx] += entries[i].size_in_bytes;
+                    if (!domain_configured[d_idx]) {
+                        // This entry is the "Leader" responsible for configuring the MPU region for the whole domain
+                        cfgs[i].is_mpu_leader = true;
+                        domain_configured[d_idx] = true;
+
+                        auto [r_size, r_sub] = get_size_needed(nc_sizes[d_idx]);
+                        cfgs[i].mpu_size = get_region_size_encoding(r_size);
+                        cfgs[i].mpu_subregion = r_sub;
+                        cfgs[i].mpu_region_size = r_size; // Store for Init alignment
+                        cfgs[i].mpu_number = (d_idx == 0) ? MPU_REGION_NUMBER3 : 
+                                             (d_idx == 1) ? MPU_REGION_NUMBER5 : MPU_REGION_NUMBER7;
+                    }
                 }
             }
+
+            return cfgs;
         }
-
-        // Capture Non-Cached Sizes for MPU and adjust offsets for Cached data
-        size_t nc_sizes[3];
-        for(int i=0; i<3; i++) {
-            if (offsets[i] > 0) {
-                auto [r_size, r_sub] = get_size_needed(offsets[i]);
-                nc_sizes[i] = offsets[i];
-                
-                // Move the offset pointer to the end of the MPU region block to have Cached data start after it
-                offsets[i] = r_size / 8 * (8 - std::popcount(r_sub)); // Effective used size considering subregions disabled
-                offsets[i] = align_up(offsets[i], 32); // Align to 32 bytes just in case
-            } else {
-                nc_sizes[i] = 0;
-            }
-        }
-
-        /* Cached Offsets */
-        for (size_t align : alignments) {
-            for (size_t i = 0; i < N; i++) {
-                if (entries[i].memory_type == MemoryType::Cached && entries[i].alignment == align) {
-                    size_t d_idx = static_cast<size_t>(entries[i].memory_domain) - 1;
-                    offsets[d_idx] = align_up(offsets[d_idx], align);
-                    assigned_offsets[i] = offsets[d_idx];
-                    offsets[d_idx] += entries[i].size_in_bytes;
-                }
-            }
-        }
-
-        /* Build Configs */
-        bool domain_configured[3] = {false, false, false};
-
-        for (std::size_t i = 0; i < N; i++) {
-            cfgs[i].size = entries[i].size_in_bytes;
-            cfgs[i].domain = entries[i].memory_domain;
-            cfgs[i].offset = assigned_offsets[i];
-            cfgs[i].is_mpu_leader = false;
-            cfgs[i].mpu_region_size = 0;
-
-            if (entries[i].memory_type == MemoryType::NonCached) {
-                size_t d_idx = static_cast<size_t>(entries[i].memory_domain) - 1;
-                if (!domain_configured[d_idx]) {
-                    // This entry is the "Leader" responsible for configuring the MPU region for the whole domain
-                    cfgs[i].is_mpu_leader = true;
-                    domain_configured[d_idx] = true;
-
-                    auto [r_size, r_sub] = get_size_needed(nc_sizes[d_idx]);
-                    cfgs[i].mpu_size = get_region_size_encoding(r_size);
-                    cfgs[i].mpu_subregion = r_sub;
-                    cfgs[i].mpu_region_size = r_size; // Store for Init alignment
-                    cfgs[i].mpu_number = (d_idx == 0) ? MPU_REGION_NUMBER3 : 
-                                         (d_idx == 1) ? MPU_REGION_NUMBER5 : MPU_REGION_NUMBER7;
-                }
-            }
-        }
-
-        return cfgs;
     }
 
     struct Instance {
