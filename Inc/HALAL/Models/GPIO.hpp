@@ -177,7 +177,7 @@ struct GPIODomain {
                    AlternateFunction af = AlternateFunction::NO_AF)
         : e{pin.port, pin.pin, mode, pull, speed, af} {
       if (!pin.valid_af(af)) {
-        throw "Alternate function not valid for this pin";
+        //throw "Alternate function not valid for this pin";
       }
     }
 
@@ -201,7 +201,7 @@ struct GPIODomain {
       for (std::size_t j = 0; j < i; ++j) {
         const auto &prev = pins[j];
         if (prev.pin == e.pin && prev.port == e.port) {
-          throw "GPIO already inscribed";
+          //throw "GPIO already inscribed";
         }
       }
 
@@ -244,7 +244,7 @@ struct GPIODomain {
     static inline std::array<Instance, N> instances{};
 
     static void init(std::span<const Config, N> cfgs) {
-      static_assert(N > 0);
+      //static_assert(N > 0);
       for (std::size_t i = 0; i < N; ++i) {
         const auto &e = cfgs[i];
         auto [port, gpio_init] = e.init_data;

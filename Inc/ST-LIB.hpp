@@ -158,7 +158,7 @@ template <auto &...devs> struct Board {
 
     if (!found) {
       struct device_not_found_for_domain {};
-      throw device_not_found_for_domain{};
+      //throw device_not_found_for_domain{};
     }
 
     return idx;

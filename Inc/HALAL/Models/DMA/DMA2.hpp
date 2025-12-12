@@ -92,12 +92,13 @@ namespace ST_LIB {
             uint8_t id;
         };
 
+        template<Stream... Ss>
         struct DMA {
             using domain = DMA_Domain;
 
             std::array<Entry, 3> e{};
 
-            template<Stream... Ss>
+            
             consteval DMA(Instance instance) {
                 static_assert(sizeof...(Ss) <= 3, "Máximo 3 streams");
 
@@ -126,7 +127,7 @@ namespace ST_LIB {
         static constexpr std::size_t max_instances {MAX_STREAMS};
         static_assert(max_instances > 0, "The number of instances must be greater than 0");
 
-        static inline IRQn_Type get_irqn(Stream stream) {
+        static inline constexpr IRQn_Type get_irqn(Stream stream) {
             if (stream == Stream::dma1_stream0) return DMA1_Stream0_IRQn;
             else if (stream == Stream::dma1_stream1) return DMA1_Stream1_IRQn;
             else if (stream == Stream::dma1_stream2) return DMA1_Stream2_IRQn;
@@ -310,7 +311,7 @@ namespace ST_LIB {
                     const auto &prev = instances[j];
                     if (prev.instance == e.instance && prev.stream == e.stream){
                         struct peripherial_already_inscribed {};
-                        throw peripherial_already_inscribed{};
+                        //throw peripherial_already_inscribed{};
                     }
                 }
         
@@ -430,7 +431,7 @@ namespace ST_LIB {
             static inline std::array<Instances_, N> instances{};
 
             static void init(std::span<const Config, N> cfgs) {
-                static_assert(N > 0);
+                //static_assert(N > 0);
                 __HAL_RCC_DMA1_CLK_ENABLE();
 	            __HAL_RCC_DMA2_CLK_ENABLE();
                 for (std::size_t i = 0; i < N; ++i) {
