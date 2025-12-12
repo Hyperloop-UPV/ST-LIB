@@ -82,6 +82,7 @@ struct MPUDomain {
         bool is_mpu_leader;     // If true, this entry triggers an MPU region config with the below params
         uint8_t mpu_number;     // MPU Region Number
         uint8_t mpu_size;       // Encoded Size (e.g. MPU_REGION_SIZE_256B)
+        std::size_t mpu_region_size; // Actual size in bytes of the MPU region
         uint8_t mpu_subregion;  // Subregion Disable Mask
     };
 
@@ -100,54 +101,25 @@ struct MPUDomain {
         return (val + align - 1) & ~(align - 1); // Align up to 'align' leaving the minimum padding
     }
 
-    static consteval DomainSizes calculate_total_sizes(std::span<const Entry> entries) {
+
+    static consteval DomainSizes calculate_total_sizes(std::span<const Config> configs) {
         DomainSizes sizes;
-        size_t counters[3] = {}; 
+        for (const auto& cfg : configs) {
+            size_t end = cfg.offset + cfg.size;
+            if (cfg.domain == MemoryDomain::D1) sizes.d1_total = std::max(sizes.d1_total, end);
+            else if (cfg.domain == MemoryDomain::D2) sizes.d2_total = std::max(sizes.d2_total, end);
+            else if (cfg.domain == MemoryDomain::D3) sizes.d3_total = std::max(sizes.d3_total, end);
 
-        size_t alignments[] = {32, 16, 8, 4, 2, 1};
-        
-        /* Non-Cached Pass */
-        for (size_t align : alignments) {
-            for (const auto& entry : entries) {
-                if (entry.memory_type == MemoryType::NonCached && entry.alignment == align) {
-                    size_t idx = static_cast<size_t>(entry.memory_domain) - 1;
-                    counters[idx].val = align_up(counters[idx].val, align);
-                    counters[idx].val += entry.size_in_bytes;
-                }
+            if (cfg.is_mpu_leader) {
+                if (cfg.domain == MemoryDomain::D1) sizes.d1_nc_size = cfg.mpu_region_size;
+                else if (cfg.domain == MemoryDomain::D2) sizes.d2_nc_size = cfg.mpu_region_size;
+                else if (cfg.domain == MemoryDomain::D3) sizes.d3_nc_size = cfg.mpu_region_size;
             }
         }
-
-        // Align Non-Cached section end to the actual MPU Region boundary
-        // This ensures the Cached section starts exactly where the Non-Cached MPU region ends (or effectively ends via subregions)
-        for(int i=0; i<3; i++) {
-            if (counters[i] > 0) {
-                auto [r_size, r_sub] = get_size_needed(counters[i]);
-                
-                // Store the raw MPU region size for alignment purposes
-                if(i==0) sizes.d1_nc_size = r_size;
-                if(i==1) sizes.d2_nc_size = r_size;
-                if(i==2) sizes.d3_nc_size = r_size;
-
-                counters[i] = r_size / 8 * (8 - std::popcount(r_sub)); // Effective used size considering subregions disabled
-                counters[i] = align_up(counters[i], 32); // Align to 32 bytes just in case
-            }
-        }
-
-        /* Cached Pass */
-        for (size_t align : alignments) {
-            for (const auto& entry : entries) { // Inneficient but consteval is fine, easier to read
-                if (entry.memory_type == MemoryType::Cached && entry.alignment == align) {
-                    size_t idx = static_cast<size_t>(entry.memory_domain) - 1;
-                    counters[idx].val = align_up(counters[idx].val, align);
-                    counters[idx].val += entry.size_in_bytes;
-                }
-            }
-        }
-
-        // Align final total to 32 bytes just in case
-        sizes.d1_total = align_up(counters[0].val, 32);
-        sizes.d2_total = align_up(counters[1].val, 32);
-        sizes.d3_total = align_up(counters[2].val, 32);
+        // Align totals to 32 bytes
+        sizes.d1_total = align_up(sizes.d1_total, 32);
+        sizes.d2_total = align_up(sizes.d2_total, 32);
+        sizes.d3_total = align_up(sizes.d3_total, 32);
         return sizes;
     }
 
@@ -207,6 +179,7 @@ struct MPUDomain {
             cfgs[i].domain = entries[i].memory_domain;
             cfgs[i].offset = assigned_offsets[i];
             cfgs[i].is_mpu_leader = false;
+            cfgs[i].mpu_region_size = 0;
 
             if (entries[i].memory_type == MemoryType::NonCached) {
                 size_t d_idx = static_cast<size_t>(entries[i].memory_domain) - 1;
@@ -218,6 +191,7 @@ struct MPUDomain {
                     auto [r_size, r_sub] = get_size_needed(nc_sizes[d_idx]);
                     cfgs[i].mpu_size = get_region_size_encoding(r_size);
                     cfgs[i].mpu_subregion = r_sub;
+                    cfgs[i].mpu_region_size = r_size; // Store for Init alignment
                     cfgs[i].mpu_number = (d_idx == 0) ? MPU_REGION_NUMBER3 : 
                                          (d_idx == 1) ? MPU_REGION_NUMBER5 : MPU_REGION_NUMBER7;
                 }
@@ -251,11 +225,13 @@ struct MPUDomain {
         }
     };
 
-
-    template <std::size_t N>
+    
+    template <std::size_t N, std::array<Config, N> cfgs>
     struct Init {
         static inline std::array<Instance, N> instances{};
-        static constexpr auto Sizes = calculate_total_sizes(Entries);
+        
+        // Calculate sizes at compile time from the template parameter
+        static constexpr auto Sizes = calculate_total_sizes(cfgs);
 
         // --- Actual Storage (Placed by Linker) ---
         // These sections must be defined in the Linker Script.
@@ -265,11 +241,14 @@ struct MPUDomain {
         static constexpr size_t d2_align = Sizes.d2_nc_size > 0 ? Sizes.d2_nc_size : 32;
         static constexpr size_t d3_align = Sizes.d3_nc_size > 0 ? Sizes.d3_nc_size : 32;
 
-        static inline alignas(d1_align) uint8_t d1_nc_buffer[Sizes.d1_total > 0 ? Sizes.d1_total : 1] __attribute__((section(".mpu_ram_d1_nc")));
-        static inline alignas(d2_align) uint8_t d2_nc_buffer[Sizes.d2_total > 0 ? Sizes.d2_total : 1] __attribute__((section(".mpu_ram_d2_nc")));
-        static inline alignas(d3_align) uint8_t d3_nc_buffer[Sizes.d3_total > 0 ? Sizes.d3_total : 1] __attribute__((section(".mpu_ram_d3_nc")));
+        __attribute__((section(".mpu_ram_d1_nc"))) alignas(d1_align)
+        static inline uint8_t d1_nc_buffer[Sizes.d1_total > 0 ? Sizes.d1_total : 1];
+        __attribute__((section(".mpu_ram_d2_nc"))) alignas(d2_align) 
+        static inline uint8_t d2_nc_buffer[Sizes.d2_total > 0 ? Sizes.d2_total : 1];
+        __attribute__((section(".mpu_ram_d3_nc"))) alignas(d3_align)
+        static inline uint8_t d3_nc_buffer[Sizes.d3_total > 0 ? Sizes.d3_total : 1];
 
-        static void init(std::span<const Config, N> cfgs) {
+        static void init() {
             HAL_MPU_Disable();
             configure_static_regions();
 
