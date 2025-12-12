@@ -113,3 +113,43 @@ TEST_F(SchedulerTests, TimeoutClearAddTask) {
 
     EXPECT_EQ(Scheduler::active_task_count_, 1);
 }
+
+static volatile int connecting_execs{0};
+static volatile int operational_execs{0};
+static volatile int fault_execs{0}; 
+void connecting_cyclic(){
+    connecting_execs++;
+}
+void operational_cyclic(){
+    operational_execs++;
+}
+void fault_cyclic(){
+    fault_execs++;
+}
+TEST_F(SchedulerTests, TaskDe_ReRegistration) {
+    uint8_t connecting_task = Scheduler::register_task(10, &connecting_cyclic);
+    uint8_t operational_task = 0;
+    uint8_t fault_task = 0;
+    Scheduler::start();
+
+    constexpr int NUM_TICKS = 100;
+    for(int i = 0; i < NUM_TICKS; i++) {
+        TIM2_BASE->CNT++;
+        if(i == 21){
+            Scheduler::unregister_task(connecting_task);
+            operational_task = Scheduler::register_task(10,operational_cyclic);
+        }
+        if(i == 45){
+            Scheduler::unregister_task(operational_task);
+            fault_task = Scheduler::register_task(10,fault_cyclic);
+        }
+        if( i == 70){
+            Scheduler::unregister_task(fault_task);
+             i = 100; // finish test
+        }
+        Scheduler::update();
+    }
+    EXPECT_EQ(connecting_execs, 2);
+    EXPECT_EQ(operational_execs, 2);
+    EXPECT_EQ(fault_execs, 2);
+}
