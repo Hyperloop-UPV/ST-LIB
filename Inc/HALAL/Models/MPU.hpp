@@ -40,8 +40,10 @@ struct MPUDomain {
     };
 
     // Buffer Request Wrapper
+    template <typename T>
     struct Buffer {
         using domain = MPUDomain;
+        using buffer_type = T;
         Entry e;
 
         /**
@@ -51,13 +53,12 @@ struct MPUDomain {
          * @param domain The memory domain where the buffer should be allocated.
          * @param force_cache_alignment If true, forces the buffer to be cache line aligned (32 bytes, takes the rest as padding).
          */
-        template <typename T>
         consteval Buffer(MemoryType type = MemoryType::NonCached, MemoryDomain domain = MemoryDomain::D2, bool force_cache_alignment = false)
             requires(std::is_standard_layout_v<T> && std::is_trivial_v<T>)
         : e{
             domain,
             type,
-            force_cache_alignment ? std::max(std::size_t(32), alignof(T)) : alignof(T),
+            force_cache_alignment ? 32 : alignof(T),
             sizeof(T)}
         {
             static_assert(alignof(T) <= 32, "Requested type has alignment greater than cache line size (32 bytes).");
@@ -69,154 +70,364 @@ struct MPUDomain {
         }
     };
 
+
     static constexpr std::size_t max_instances = HALAL_MPUBUFFERS_MAX_INSTANCES;
 
     struct Config {
-        uint32_t base_address; 
-        
+        uint32_t offset;        // Offset relative to the start of the domain buffer
         std::size_t size;
+        MemoryDomain domain;
         
-        // MPU Config Data
-        bool is_mpu_leader;
-        MPU_Region_InitTypeDef mpu_init;
+        // MPU Configuration Data
+        bool is_mpu_leader;     // If true, this entry triggers an MPU region config with the below params
+        uint8_t mpu_number;     // MPU Region Number
+        uint8_t mpu_size;       // Encoded Size (e.g. MPU_REGION_SIZE_256B)
+        uint8_t mpu_subregion;  // Subregion Disable Mask
     };
 
-    // 5. Build compile-time: Entry[] → Config[]
-    //
-    // IMPORTANTE:
-    // - Esta función es consteval: se ejecuta en tiempo de compilación.
-    // - Aquí es donde se hacen TODAS las validaciones estáticas sobre los Entry.
-    //
+    // Helper to calculate sizes needed for static arrays
+    struct DomainSizes {
+        size_t d1_total = 0;
+        size_t d2_total = 0;
+        size_t d3_total = 0;
+        
+        size_t d1_nc_size = 0;
+        size_t d2_nc_size = 0;
+        size_t d3_nc_size = 0;
+    };
+
+    static consteval uint32_t align_up(uint32_t val, size_t align) {
+        return (val + align - 1) & ~(align - 1); // Align up to 'align' leaving the minimum padding
+    }
+
+    static consteval DomainSizes calculate_total_sizes(std::span<const Entry> entries) {
+        DomainSizes sizes;
+        size_t counters[3] = {}; 
+
+        size_t alignments[] = {32, 16, 8, 4, 2, 1};
+        
+        /* Non-Cached Pass */
+        for (size_t align : alignments) {
+            for (const auto& entry : entries) {
+                if (entry.memory_type == MemoryType::NonCached && entry.alignment == align) {
+                    size_t idx = static_cast<size_t>(entry.memory_domain) - 1;
+                    counters[idx].val = align_up(counters[idx].val, align);
+                    counters[idx].val += entry.size_in_bytes;
+                }
+            }
+        }
+
+        // Align Non-Cached section end to the actual MPU Region boundary
+        // This ensures the Cached section starts exactly where the Non-Cached MPU region ends (or effectively ends via subregions)
+        for(int i=0; i<3; i++) {
+            if (counters[i] > 0) {
+                auto [r_size, r_sub] = get_size_needed(counters[i]);
+                
+                // Store the raw MPU region size for alignment purposes
+                if(i==0) sizes.d1_nc_size = r_size;
+                if(i==1) sizes.d2_nc_size = r_size;
+                if(i==2) sizes.d3_nc_size = r_size;
+
+                counters[i] = r_size / 8 * (8 - std::popcount(r_sub)); // Effective used size considering subregions disabled
+                counters[i] = align_up(counters[i], 32); // Align to 32 bytes just in case
+            }
+        }
+
+        /* Cached Pass */
+        for (size_t align : alignments) {
+            for (const auto& entry : entries) { // Inneficient but consteval is fine, easier to read
+                if (entry.memory_type == MemoryType::Cached && entry.alignment == align) {
+                    size_t idx = static_cast<size_t>(entry.memory_domain) - 1;
+                    counters[idx].val = align_up(counters[idx].val, align);
+                    counters[idx].val += entry.size_in_bytes;
+                }
+            }
+        }
+
+        // Align final total to 32 bytes just in case
+        sizes.d1_total = align_up(counters[0].val, 32);
+        sizes.d2_total = align_up(counters[1].val, 32);
+        sizes.d3_total = align_up(counters[2].val, 32);
+        return sizes;
+    }
+
     template <std::size_t N>
     static consteval std::array<Config, N> build(std::span<const Entry> entries) {
         std::array<Config, N> cfgs{};
+        
+        uint32_t offsets[3] = {}; // D1, D2, D3
+        uint32_t assigned_offsets[N]; 
+
+        size_t alignments[] = {32, 16, 8, 4, 2, 1};
+        
+        /* Non-Cached Offsets */
+        for (size_t align : alignments) {
+            for (size_t i = 0; i < N; i++) {
+                if (entries[i].memory_type == MemoryType::NonCached && entries[i].alignment == align) {
+                    size_t d_idx = static_cast<size_t>(entries[i].memory_domain) - 1;
+                    offsets[d_idx] = align_up(offsets[d_idx], align);
+                    assigned_offsets[i] = offsets[d_idx];
+                    offsets[d_idx] += entries[i].size_in_bytes;
+                }
+            }
+        }
+
+        // Capture Non-Cached Sizes for MPU and adjust offsets for Cached data
+        size_t nc_sizes[3];
+        for(int i=0; i<3; i++) {
+            if (offsets[i] > 0) {
+                auto [r_size, r_sub] = get_size_needed(offsets[i]);
+                nc_sizes[i] = offsets[i];
+                
+                // Move the offset pointer to the end of the MPU region block to have Cached data start after it
+                offsets[i] = r_size / 8 * (8 - std::popcount(r_sub)); // Effective used size considering subregions disabled
+                offsets[i] = align_up(offsets[i], 32); // Align to 32 bytes just in case
+            } else {
+                nc_sizes[i] = 0;
+            }
+        }
+
+        /* Cached Offsets */
+        for (size_t align : alignments) {
+            for (size_t i = 0; i < N; i++) {
+                if (entries[i].memory_type == MemoryType::Cached && entries[i].alignment == align) {
+                    size_t d_idx = static_cast<size_t>(entries[i].memory_domain) - 1;
+                    offsets[d_idx] = align_up(offsets[d_idx], align);
+                    assigned_offsets[i] = offsets[d_idx];
+                    offsets[d_idx] += entries[i].size_in_bytes;
+                }
+            }
+        }
+
+        /* Build Configs */
+        bool domain_configured[3] = {false, false, false};
 
         for (std::size_t i = 0; i < N; i++) {
-            const Entry &e = entries[i];
+            cfgs[i].size = entries[i].size_in_bytes;
+            cfgs[i].domain = entries[i].memory_domain;
+            cfgs[i].offset = assigned_offsets[i];
+            cfgs[i].is_mpu_leader = false;
 
-            // Aquí se pueden hacer checks globales y locales:
-            //  - Comprobar que no se repite el mismo recurso.
-            //  - Verificar que el recurso es válido para este dominio.
-            //  - Validar que la combinación de parámetros tiene sentido.
+            if (entries[i].memory_type == MemoryType::NonCached) {
+                size_t d_idx = static_cast<size_t>(entries[i].memory_domain) - 1;
+                if (!domain_configured[d_idx]) {
+                    // This entry is the "Leader" responsible for configuring the MPU region for the whole domain
+                    cfgs[i].is_mpu_leader = true;
+                    domain_configured[d_idx] = true;
 
-            // Ejemplo de patrón (pseudo-código):
-            // for (std::size_t j = 0; j < i; ++j) {
-            //   if (entries[j].pin == e.pin && entries[j].port == e.port) {
-            //     struct duplicate_resource {};
-            //     throw duplicate_resource{};
-            //   }
-            // }
-
-            // A partir de 'e' se construye cfgs[i] con los datos necesarios
-            // para configurar el hardware en tiempo de ejecución.
-            // cfgs[i] = ...;
+                    auto [r_size, r_sub] = get_size_needed(nc_sizes[d_idx]);
+                    cfgs[i].mpu_size = get_region_size_encoding(r_size);
+                    cfgs[i].mpu_subregion = r_sub;
+                    cfgs[i].mpu_number = (d_idx == 0) ? MPU_REGION_NUMBER3 : 
+                                         (d_idx == 1) ? MPU_REGION_NUMBER5 : MPU_REGION_NUMBER7;
+                }
+            }
         }
 
         return cfgs;
     }
 
     struct Instance {
+        void* ptr;
+        std::size_t size;
 
-        /**
-         * @brief Constructs the object of type T in the allocated MPU memory.
-         * @param args Arguments to forward to T's constructor.
-         * @return Pointer to the constructed object of type T.
-         */
         template <typename T, typename... Args>
         T* construct(Args&&... args) {
-            is_valid_type<T>();
-            return new (ptr) T(std::forward<Args>(args)...); // Placement new
+            validate<T>();
+            return new (ptr) T(std::forward<Args>(args)...);
         }
 
-        /**
-         * @brief Casts the stored pointer to the desired type T.
-         * @tparam T The type to cast the pointer to.
-         * @return Pointer of type T.
-         */
         template <typename T = void>
         T* as() {
-            is_valid_type<T>();
+            validate<T>();
             return static_cast<T*>(ptr);
         }
 
        private:
-        template<std::size_t N> friend struct Init;
-
         template <typename T>
-        void is_valid_type() {
-            static_assert(std::is_standard_layout_v<T> && std::is_trivial_v<T>,
-                          "MPU Buffer can only store POD types (standard layout and trivial).");
-            if (sizeof(T) > size) {
-                ErrorHandler("Requested type size exceeds allocated MPU buffer size.");
-            }
-            if (reinterpret_cast<uint32_t>(ptr) % alignof(T) != 0) {
-                ErrorHandler("Requested type alignment is not satisfied by allocated MPU buffer.");
-            }
+        void validate() {
+            if (sizeof(T) != size) ErrorHandler("MPU: Buffer size mismatch.");
+            if (reinterpret_cast<uintptr_t>(ptr) % alignof(T) != 0) ErrorHandler("MPU: Buffer alignment mismatch.");
         }
-        
-        void* ptr;
-        std::size_t size;
-        Instance() : ptr{nullptr}, size{0} {}
     };
 
-    // 7. Inicialización runtime: aplica Config → crea Instance[]
+
     template <std::size_t N>
     struct Init {
         static inline std::array<Instance, N> instances{};
+        static constexpr auto Sizes = calculate_total_sizes(Entries);
 
-        // Esta función se llama desde Board::init() en TIEMPO DE EJECUCIÓN.
-        // Aquí ya no se hacen checks de diseño: solo se aplica la configuración
-        // generada en compile-time y se llama a HAL/LL.
+        // --- Actual Storage (Placed by Linker) ---
+        // These sections must be defined in the Linker Script.
+        // They will be placed automatically, avoiding conflicts with other data.
+        // Alignment must match the MPU region size for Non-Cached areas.
+        static constexpr size_t d1_align = Sizes.d1_nc_size > 0 ? Sizes.d1_nc_size : 32;
+        static constexpr size_t d2_align = Sizes.d2_nc_size > 0 ? Sizes.d2_nc_size : 32;
+        static constexpr size_t d3_align = Sizes.d3_nc_size > 0 ? Sizes.d3_nc_size : 32;
+
+        static inline alignas(d1_align) uint8_t d1_nc_buffer[Sizes.d1_total > 0 ? Sizes.d1_total : 1] __attribute__((section(".mpu_ram_d1_nc")));
+        static inline alignas(d2_align) uint8_t d2_nc_buffer[Sizes.d2_total > 0 ? Sizes.d2_total : 1] __attribute__((section(".mpu_ram_d2_nc")));
+        static inline alignas(d3_align) uint8_t d3_nc_buffer[Sizes.d3_total > 0 ? Sizes.d3_total : 1] __attribute__((section(".mpu_ram_d3_nc")));
+
         static void init(std::span<const Config, N> cfgs) {
+            HAL_MPU_Disable();
+            configure_static_regions();
+
+            uint8_t* bases[3] = { &d1_nc_buffer[0], &d2_nc_buffer[0], &d3_nc_buffer[0] };
+
             for (std::size_t i = 0; i < N; i++) {
                 const auto &cfg = cfgs[i];
                 auto &inst = instances[i];
 
-                // Inicializar 'inst' a partir de 'cfg':
-                //  - llamadas a HAL/LL
-                //  - set de registros, punteros a periféricos, etc.
+                if (cfg.domain == MemoryDomain::D1 || cfg.domain == MemoryDomain::D2 || cfg.domain == MemoryDomain::D3) {
+                    size_t d_idx = static_cast<size_t>(cfg.domain) - 1;
+                    // Calculate absolute address: Base + Offset
+                    inst.ptr = bases[d_idx] + cfg.offset;
+                    inst.size = cfg.size;
+
+                    if (cfg.is_mpu_leader) {
+                        MPU_Region_InitTypeDef init = {0};
+                        init.Enable = MPU_REGION_ENABLE;
+                        init.Number = cfg.mpu_number;
+                        init.BaseAddress = (uint32_t)bases[d_idx]; // Base of the whole buffer
+                        init.Size = cfg.mpu_size;
+                        init.SubRegionDisable = cfg.mpu_subregion;
+                        init.TypeExtField = MPU_TEX_LEVEL1; // Normal, Non-Cached
+                        init.AccessPermission = MPU_REGION_FULL_ACCESS;
+                        init.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
+                        init.IsShareable = MPU_ACCESS_SHAREABLE;
+                        init.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+                        init.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
+                        HAL_MPU_ConfigRegion(&init);
+                    }
+                }
             }
+
+            HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
+            SCB_EnableICache();
+            SCB_EnableDCache();
         }
     };
 
    private:
-    static consteval uint32_t get_address(MemoryDomain domain, std::size_t offset) {
-        switch (domain) {
-            case MemoryDomain::D1:
-                return 0x24000000 + static_cast<uint32_t>(offset);
-            case MemoryDomain::D2:
-                return 0x30000000 + static_cast<uint32_t>(offset);
-            case MemoryDomain::D3:
-                return 0x38000000 + static_cast<uint32_t>(offset);
-            default:
-                throw "Invalid Memory Domain";
-        }
-    }
-
-    static consteval uint32_t align_up(uint32_t address, std::size_t alignment) {
-        uint32_t mask = static_cast<uint32_t>(alignment - 1);
-        return (address + mask) & ~mask;
-    }
-
     static consteval std::pair<std::size_t, std::uint8_t> get_size_needed(std::size_t size) {
-        // Get next power of two
-        if (std::popcount(size) == 1) {
-            return {size, 0};
-        } else {
-            size_t power = 1 + std::countl_zero(size);
+        if (size == 0) return {32, 0xFF};
+        size_t power = std::bit_width(size);
+        if (power < 5) power = 5; // Min 32B
+        size_t subregion_size = 1U << (power - 3);
+        size_t num_subregions = (size + subregion_size - 1) / subregion_size;
+        uint8_t subregion_disable = static_cast<uint8_t>(~((1U << num_subregions) - 1));
+        return {(1U << power), subregion_disable};
+    }
 
-            if (power < 5) {
-                power = 5; // Minimum MPU region size is 32 bytes
-            }
+    static consteval uint8_t get_region_size_encoding(std::size_t size) {
+        if (size <= 32) return MPU_REGION_SIZE_32B;
+        if (size <= 64) return MPU_REGION_SIZE_64B;
+        if (size <= 128) return MPU_REGION_SIZE_128B;
+        if (size <= 256) return MPU_REGION_SIZE_256B;
+        if (size <= 512) return MPU_REGION_SIZE_512B;
+        if (size <= 1024) return MPU_REGION_SIZE_1KB;
+        if (size <= 2048) return MPU_REGION_SIZE_2KB;
+        if (size <= 4096) return MPU_REGION_SIZE_4KB;
+        if (size <= 8192) return MPU_REGION_SIZE_8KB;
+        if (size <= 16384) return MPU_REGION_SIZE_16KB;
+        if (size <= 32768) return MPU_REGION_SIZE_32KB;
+        if (size <= 65536) return MPU_REGION_SIZE_64KB;
+        if (size <= 131072) return MPU_REGION_SIZE_128KB;
+        if (size <= 262144) return MPU_REGION_SIZE_256KB;
+        if (size <= 524288) return MPU_REGION_SIZE_512KB;
+        if (size <= 1048576) return MPU_REGION_SIZE_1MB;
+        if (size <= 2097152) return MPU_REGION_SIZE_2MB;
+        if (size <= 4194304) return MPU_REGION_SIZE_4MB;
+        return MPU_REGION_SIZE_4GB;
+    }
 
-            // MPU can divide to 8 subregions, so try to get a closer size
-            size_t subregion_size = 1U << (power - 3);
-            size_t num_subregions = (size + subregion_size - 1) / subregion_size; // Round up division
-            uint8_t subregion_disable = static_cast<uint8_t>(~((1U << num_subregions) - 1));
-            static_assert(subregion_disable != 0xFF, "Something isn't working on the MPU region size calculation.");
+    static void configure_static_regions() {
+        MPU_Region_InitTypeDef MPU_InitStruct = {0};
+        
+        // Background (No Access)
+        MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+        MPU_InitStruct.Number = MPU_REGION_NUMBER0;
+        MPU_InitStruct.BaseAddress = 0x0;
+        MPU_InitStruct.Size = MPU_REGION_SIZE_4GB;
+        MPU_InitStruct.SubRegionDisable = 0x87;
+        MPU_InitStruct.AccessPermission = MPU_REGION_NO_ACCESS;
+        MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
+        MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+        MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
+        HAL_MPU_ConfigRegion(&MPU_InitStruct);
 
-            return {subregion_size * num_subregions, subregion_disable};
-        }
+        // Flash (Non-cached, Executable)
+        MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+        MPU_InitStruct.Number = MPU_REGION_NUMBER1;
+        MPU_InitStruct.BaseAddress = 0x08000000;
+        MPU_InitStruct.Size = MPU_REGION_SIZE_1MB;
+        MPU_InitStruct.SubRegionDisable = 0x0;
+        MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+        MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
+        MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE; // This should be scrutinized to see why it was non-cacheable before changing to cacheable
+        MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
+        HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
+        // D1 RAM (Cached)
+        MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+        MPU_InitStruct.Number = MPU_REGION_NUMBER2;
+        MPU_InitStruct.BaseAddress = 0x24000000;
+        MPU_InitStruct.Size = MPU_REGION_SIZE_512KB;
+        MPU_InitStruct.SubRegionDisable = 0xE0; // Only 320KB available
+        MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+        MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
+        MPU_InitStruct.IsCacheable = MPU_ACCESS_CACHEABLE;
+        MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
+        HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
+        // D2 RAM (Cached)
+        MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+        MPU_InitStruct.Number = MPU_REGION_NUMBER4;
+        MPU_InitStruct.BaseAddress = 0x30000000;
+        MPU_InitStruct.Size = MPU_REGION_SIZE_32KB;
+        MPU_InitStruct.SubRegionDisable = 0x0;
+        MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+        MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
+        MPU_InitStruct.IsCacheable = MPU_ACCESS_CACHEABLE;
+        MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
+        HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
+        // Ethernet Descriptors (D2 Base) - Legacy, should change Ethernet driver to use MPU buffers
+        MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+        MPU_InitStruct.Number = MPU_REGION_NUMBER8;
+        MPU_InitStruct.BaseAddress = 0x30000000;
+        MPU_InitStruct.Size = MPU_REGION_SIZE_512B;
+        MPU_InitStruct.SubRegionDisable = 0x0;
+        MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+        MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
+        MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+        MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE; // Device
+        HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
+        // D3 RAM (Cached)
+        MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+        MPU_InitStruct.Number = MPU_REGION_NUMBER6; // FIX: Changed from 5 to 6 to avoid collision with D2 NC
+        MPU_InitStruct.BaseAddress = 0x38000000;
+        MPU_InitStruct.Size = MPU_REGION_SIZE_16KB;
+        MPU_InitStruct.SubRegionDisable = 0x0;
+        MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+        MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
+        MPU_InitStruct.IsCacheable = MPU_ACCESS_CACHEABLE;
+        MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
+        HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
+        /**
+         * Other regions are:
+         * 3. D1 RAM (Non-Cached) - Configured dynamically
+         * 5. D2 RAM (Non-Cached) - Configured dynamically
+         * 7. D3 RAM (Non-Cached) - Configured dynamically
+         */
+
+        /**
+         * Other memory areas (not configured explicitly):
+         * - Peripheral space (0x40000000 - 0x5FFFFFFF): Defaults to device memory
+         */
     }
 };
 
