@@ -221,9 +221,9 @@ struct MPUDomain {
         std::size_t size;
 
         template <mpu_buffer_request auto &Target, typename... Args>
-        auto* construct(Args&&... args) {
+        auto& construct(Args&&... args) {
             using T = typename std::remove_cvref_t<decltype(Target)>::buffer_type;
-            return new (ptr) T(std::forward<Args>(args)...);
+            return *new (ptr) T(std::forward<Args>(args)...);
         }
 
         template <mpu_buffer_request auto &Target>
