@@ -250,23 +250,24 @@ struct MPUDomain {
         static constexpr size_t d3_align = Sizes.d3_nc_size > 0 ? Sizes.d3_nc_size : 32;
         static constexpr size_t legacy_size = NO_CACHED_RAM_MAXIMUM_SPACE;
 
+        // Always reserves at least 1 byte to avoid zero-length arrays, could possibly be optimized further, but this is only 3B overhead...
         __attribute__((section(".mpu_ram_d1_nc"))) alignas(d1_align)
-        static inline uint8_t d1_nc_buffer[Sizes.d1_total > 0 ? Sizes.d1_total : 1];
+        static inline uint8_t d1_buffer[Sizes.d1_total > 0 ? Sizes.d1_total : 1];
         __attribute__((section(".mpu_ram_d2_nc"))) alignas(d2_align) 
-        static inline uint8_t d2_nc_buffer[Sizes.d2_total > 0 ? Sizes.d2_total : 1];
+        static inline uint8_t d2_buffer[Sizes.d2_total > 0 ? Sizes.d2_total : 1];
         __attribute__((section(".mpu_ram_d3_nc"))) alignas(std::max(d3_align, legacy_size))
-        static inline uint8_t d3_nc_buffer[(Sizes.d3_total > 0 ? Sizes.d3_total : 0) + legacy_size];
+        static inline uint8_t d3_buffer[(Sizes.d3_total > 0 ? Sizes.d3_total : 0) + legacy_size];
 
         static void init() {
             HAL_MPU_Disable();
             configure_static_regions();
 
             // Configure Legacy MPUManager Region (D3 Non-Cached)
-            // We place it at the beginning of d3_nc_buffer
+            // We place it at the beginning of d3_buffer
             MPU_Region_InitTypeDef Legacy_InitStruct = {0};
             Legacy_InitStruct.Enable = MPU_REGION_ENABLE;
             Legacy_InitStruct.Number = MPU_REGION_NUMBER9; // Use a high region number to override D3 Cached
-            Legacy_InitStruct.BaseAddress = (uint32_t)&d3_nc_buffer[0];
+            Legacy_InitStruct.BaseAddress = (uint32_t)&d3_buffer[0];
             Legacy_InitStruct.Size = get_region_size_encoding(legacy_size);
             Legacy_InitStruct.SubRegionDisable = 0x0;
             Legacy_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
@@ -278,10 +279,10 @@ struct MPUDomain {
             HAL_MPU_ConfigRegion(&Legacy_InitStruct);
 
             // Set the legacy pointer
-            MPUManager::no_cached_ram_start = &d3_nc_buffer[0];
+            MPUManager::no_cached_ram_start = &d3_buffer[0];
 
             // Adjust bases for new buffers (they start after legacy_size)
-            uint8_t* bases[3] = { &d1_nc_buffer[0], &d2_nc_buffer[0], &d3_nc_buffer[legacy_size] };
+            uint8_t* bases[3] = { &d1_buffer[0], &d2_buffer[0], &d3_buffer[legacy_size] };
 
             for (std::size_t i = 0; i < N; i++) {
                 const auto &cfg = cfgs[i];
