@@ -22,16 +22,17 @@
 # define SCHEDULER_TIMER_IDX 2
 #endif
 
-    #define glue_(a,b) a ## b
-    #define glue(a,b) glue_(a,b)
-    #define SCHEDULER_TIMER_BASE glue(TIM, glue(SCHEDULER_TIMER_IDX, _BASE))
+#define glue_(a,b) a ## b
+#define glue(a,b) glue_(a,b)
+#define SCHEDULER_TIMER_BASE glue(TIM, glue(SCHEDULER_TIMER_IDX, _BASE))
 
     // Used to reserve a TimerPeripheral
 #ifndef TESTING_ENV
-    #include "stm32h7xx_hal_tim.h"
-    #define SCHEDULER_HAL_TIM glue(htim, SCHEDULER_TIMER_IDX)
-    extern TIM_HandleTypeDef SCHEDULER_HAL_TIM;
+#include "stm32h7xx_hal_tim.h"
+#define SCHEDULER_HAL_TIM glue(htim, SCHEDULER_TIMER_IDX)
+extern TIM_HandleTypeDef SCHEDULER_HAL_TIM;
 #endif
+
 struct Scheduler {
     using callback_t = void (*)();
     static constexpr uint32_t INVALID_ID = 0xFFu;
@@ -79,14 +80,14 @@ struct Scheduler {
 
     static constexpr std::size_t kMaxTasks = 16;
     static_assert((kMaxTasks & (kMaxTasks - 1)) == 0, "kMaxTasks must be a power of two");
-    static constexpr uint32_t kBaseClockHz = 1'000'000u;
+    static constexpr uint32_t FREQUENCY = 1'000'000u; // 1 MHz -> 1us precision
 
     static std::array<Task, kMaxTasks> tasks_;
     static_assert(kMaxTasks == 16, "kMaxTasks must be 16, if more is needed, sorted_task_ids_ must change");
     /* sorted_task_ids_ is a sorted queue with 4bits for each id in the scheduler's current ids */
     static uint64_t sorted_task_ids_;
 
-    static std::size_t active_task_count_;
+    static uint32_t active_task_count_;
     static_assert(kMaxTasks <= 32, "kMaxTasks must be <= 32, if more is needed, the bitmaps must change");
     static uint32_t ready_bitmap_;
     static uint32_t free_bitmap_;
