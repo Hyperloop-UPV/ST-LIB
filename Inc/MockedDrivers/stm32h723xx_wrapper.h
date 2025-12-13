@@ -5,7 +5,6 @@
 
 #undef RCC
 
-RCC_TypeDef RCC_struct;
-RCC_TypeDef *RCC = &RCC_struct;
+extern RCC_TypeDef *RCC;
 
 #endif // STM32H723xx_WRAPPER_H
