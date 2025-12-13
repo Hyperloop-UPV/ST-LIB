@@ -1,5 +1,12 @@
 #include "HALAL/Benchmarking_toolkit/HardfaultTrace.h"
-#define REPS 100000
+#ifdef NUCLEO
+#define REPS 200000
+#endif
+
+#ifdef BOARD
+#define REPS 600000 // Three times faster because the board frequency
+#endif
+ 
 extern GPIO_TypeDef* ports_hard_fault[];
 extern uint16_t pins_hard_fault[];
 extern uint8_t hard_fault_leds_count;
