@@ -10,13 +10,14 @@ static void EnableGPIOClock(GPIO_TypeDef* port);
 static void InitGPIO_Output(GPIO_TypeDef* port,uint16_t pin);
 static void delay();
 
+__attribute__((optimize("O0")))
 static void delay(){
-    for(uint64_t i = 0; i < REPS; i++){
+    for(volatile uint64_t i = 0; i < REPS; i++){
        __NOP();
     }
 }
 static void LED_Blink(){
-    for(int i = 0; i < hard_fault_leds_count;i++){
+    for(volatile int i = 0; i < hard_fault_leds_count;i++){
         LL_GPIO_TogglePin(ports_hard_fault[i],pins_hard_fault[i]);
     }
     delay();
@@ -29,7 +30,7 @@ static void LED_init(void){
 }
 void Hard_fault_check(void){
     if(*(volatile uint32_t*)HF_FLASH_ADDR == HF_FLAG_VALUE){
-        HardFaultLog log;
+        volatile HardFaultLog log;
         memcpy(&log,(void*)HF_FLASH_ADDR,sizeof(HardFaultLog));
         #ifdef DEBUG
             __asm("bkpt 1");
