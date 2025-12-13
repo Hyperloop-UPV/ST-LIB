@@ -25,10 +25,10 @@ concept mpu_buffer_request = requires(typename T::domain d) {
     { T{ } } -> std::same_as<T>;
 };
 
-// POD types only
+// POD-like buffers that can safely live in static storage without custom destruction.
 template <typename T>
 concept mpu_buffer_payload =
-    std::is_standard_layout_v<T> && std::is_trivial_v<T>;
+    std::is_standard_layout_v<T> && std::is_trivially_destructible_v<T>;
 
 struct MPUDomain {
 
