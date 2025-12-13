@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 #include <thread>
 #include<chrono>
+
+#include "stm32h723xx_wrapper.h"
+
 #include "HALAL/Services/Time/Scheduler.hpp"
 
 int count = 0;
