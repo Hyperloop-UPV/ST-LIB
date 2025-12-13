@@ -30,7 +30,7 @@ constexpr uint64_t kMaxIntervalUs =
 
 std::array<Scheduler::Task, Scheduler::kMaxTasks> Scheduler::tasks_{};
 uint64_t Scheduler::sorted_task_ids_ = 0;
-std::size_t Scheduler::active_task_count_{0};
+uint32_t Scheduler::active_task_count_{0};
 
 uint32_t Scheduler::ready_bitmap_{0};
 uint32_t Scheduler::free_bitmap_{0xFFFF'FFFF};
@@ -70,10 +70,54 @@ inline void Scheduler::global_timer_enable() {
 
 // ----------------------------
 void Scheduler::start() {
-    static_assert(kBaseClockHz % 1'000'000u == 0u, "Base clock must be a multiple of 1MHz");
+    static_assert((Scheduler::FREQUENCY % 1'000'000) == 0u, "frequenct must be a multiple of 1MHz");
 
-    const uint32_t prescaler = (kBaseClockHz / 1'000'000u) - 1u;
-    static_assert(prescaler < 0xFFFF'FFFF, "Prescaler is 16 bit, so it must be in that range");
+
+    uint32_t prescaler = (SystemCoreClock / Scheduler::FREQUENCY);
+    // setup prescaler
+    {
+        // ref manual: section 8.7.7 RCC domain 1 clock configuration register
+        uint32_t ahb_prescaler = RCC->D1CFGR & RCC_D1CFGR_HPRE_Msk;
+        if((ahb_prescaler & 0b1000) != 0) {
+            switch(ahb_prescaler) {
+                case 0b1000: prescaler /= 2; break;
+                case 0b1001: prescaler /= 4; break;
+                case 0b1010: prescaler /= 8; break;
+                case 0b1011: prescaler /= 16; break;
+                case 0b1100: prescaler /= 64; break;
+                case 0b1101: prescaler /= 128; break;
+                case 0b1110: prescaler /= 256; break;
+                case 0b1111: prescaler /= 512; break;
+            }
+        }
+
+        // ref manual: section 8.7.8: RCC domain 2 clock configuration register
+        uint32_t apb1_prescaler = (RCC->D2CFGR & RCC_D2CFGR_D2PPRE1_Msk) >> RCC_D2CFGR_D2PPRE1_Pos;
+        if((apb1_prescaler & 0b100) != 0) {
+            switch(apb1_prescaler) {
+                case 0b100: prescaler /= 2; break;
+                case 0b101: prescaler /= 4; break;
+                case 0b110: prescaler /= 8; break;
+                case 0b111: prescaler /= 16; break;
+            }
+        }
+        // tim2clk = 2 x pclk1 when apb1_prescaler != 1
+        if(apb1_prescaler != 1) {
+            prescaler *= 2;
+        }
+
+        if(prescaler > 1) {
+            prescaler--;
+        }
+    }
+
+    // TODO: Fault when any of the next 2 static asserts happen (needs to be runtime bcos of SystemCoreClock)
+    if(prescaler == 0 || prescaler > 0xFFFF) {
+        // error here
+    }
+
+    //static_assert(prescaler < 0xFFFF, "Prescaler is 16 bit, so it must be in that range");
+    //static_assert(prescaler != 0, "Prescaler must be in the range [1, 65535]");
 #ifndef TESTING_ENV
 
     // Register a TimerPeripheral so it's not used anywhere else
@@ -140,7 +184,7 @@ void Scheduler::insert_sorted(uint8_t id) {
 
     // binary search on logical range [0, active_task_count_)
     std::size_t left = 0;
-    std::size_t right = active_task_count_;
+    std::size_t right = Scheduler::active_task_count_;
     while (left < right) {
         std::size_t mid = left + ((right - left) / 2);
         const Task& mid_task = tasks_[Scheduler::get_at(mid)];
@@ -155,6 +199,7 @@ void Scheduler::insert_sorted(uint8_t id) {
     uint32_t lo = (uint32_t)sorted_task_ids_;
     uint32_t hi = (uint32_t)(sorted_task_ids_ >> 32);
     
+    // take the shift for only high or low 32 bits
     uint32_t shift = (pos & 7) << 2;
     uint32_t id_shifted = id << shift;
     
@@ -167,7 +212,7 @@ void Scheduler::insert_sorted(uint8_t id) {
     
     uint32_t hi_spilled  = (hi << 4) | (lo >> 28);
     
-    if (pos >= 8) { //this can be done without branching 
+    if (pos >= 8) {
         hi = hi_modified;
         // lo remains unchanged
     } else {
@@ -176,7 +221,7 @@ void Scheduler::insert_sorted(uint8_t id) {
     }
 
     sorted_task_ids_ = ((uint64_t)hi << 32) | lo;
-    active_task_count_++;
+    Scheduler::active_task_count_++;
 }
 
 void Scheduler::remove_sorted(uint8_t id) {
@@ -209,7 +254,7 @@ void Scheduler::remove_sorted(uint8_t id) {
 
     // Remove element (lower part | higher pushing nibble out of mask)
     Scheduler::sorted_task_ids_ = (Scheduler::sorted_task_ids_ & mask) | ((Scheduler::sorted_task_ids_ >> 4) & ~mask);
-    active_task_count_--;
+    Scheduler::active_task_count_--;
 }
 
 void Scheduler::schedule_next_interval() {
