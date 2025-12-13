@@ -19,6 +19,17 @@
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
 
 
+template <typename T>
+concept mpu_buffer_request = requires(typename T::domain d) {
+    typename T::buffer_type;
+    { T{ } } -> std::same_as<T>;
+};
+
+// POD types only
+template <typename T>
+concept mpu_buffer_payload =
+    std::is_standard_layout_v<T> && std::is_trivial_v<T>;
+
 struct MPUDomain {
 
     enum class MemoryDomain : uint8_t {
@@ -41,7 +52,7 @@ struct MPUDomain {
     };
 
     // Buffer Request Wrapper
-    template <typename T>
+    template <mpu_buffer_payload T>
     struct Buffer {
         using domain = MPUDomain;
         using buffer_type = T;
@@ -55,7 +66,6 @@ struct MPUDomain {
          * @param force_cache_alignment If true, forces the buffer to be cache line aligned (32 bytes, takes the rest as padding).
          */
         consteval Buffer(MemoryType type = MemoryType::NonCached, MemoryDomain domain = MemoryDomain::D2, bool force_cache_alignment = false)
-            requires(std::is_standard_layout_v<T> && std::is_trivial_v<T>)
         : e{
             domain,
             type,
@@ -210,23 +220,16 @@ struct MPUDomain {
         void* ptr;
         std::size_t size;
 
-        template <typename T, typename... Args>
-        T* construct(Args&&... args) {
-            validate<T>();
+        template <mpu_buffer_request auto &Target, typename... Args>
+        auto* construct(Args&&... args) {
+            using T = typename std::remove_cvref_t<decltype(Target)>::buffer_type;
             return new (ptr) T(std::forward<Args>(args)...);
         }
 
-        template <typename T = void>
-        T* as() {
-            validate<T>();
+        template <mpu_buffer_request auto &Target>
+        auto* as() {
+            using T = typename std::remove_cvref_t<decltype(Target)>::buffer_type;
             return static_cast<T*>(ptr);
-        }
-
-       private:
-        template <typename T>
-        void validate() {
-            if (sizeof(T) != size) ErrorHandler("MPU: Buffer size mismatch.");
-            if (reinterpret_cast<uintptr_t>(ptr) % alignof(T) != 0) ErrorHandler("MPU: Buffer alignment mismatch.");
         }
     };
 
