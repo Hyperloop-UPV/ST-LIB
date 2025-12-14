@@ -19,18 +19,6 @@ using std::tuple;
 
 namespace ST_LIB {
     struct DMA_Domain {
-        using xTypeDef = std::variant<
-            ADC_TypeDef*,
-            I2C_TypeDef*,        
-            SPI_TypeDef*,
-            FMAC_TypeDef*
-        >;
-        using xHandleDef = std::variant<
-            ADC_HandleTypeDef*,
-            I2C_HandleTypeDef*,        
-            SPI_HandleTypeDef*,
-            FMAC_HandleTypeDef*
-        >;
         
         enum class Instance : uint8_t {adc1, adc2, adc3, 
                                         i2c1, i2c2, i2c3, i2c5,  
@@ -42,26 +30,6 @@ namespace ST_LIB {
                                         dma2_stream0, dma2_stream1, dma2_stream2, dma2_stream3, 
                                         dma2_stream4, dma2_stream5, dma2_stream6, dma2_stream7};
 
-        static inline xTypeDef instance_to_xTypeDef(Instance i) {
-            switch (i) {
-                case Instance::adc1: return ADC1;
-                case Instance::adc2: return ADC2;
-                case Instance::adc3: return ADC3;
-
-                case Instance::i2c1: return I2C1;
-                case Instance::i2c2: return I2C2;
-                case Instance::i2c3: return I2C3;
-                case Instance::i2c5: return I2C5;
-
-                case Instance::spi1: return SPI1;
-                case Instance::spi2: return SPI2;
-                case Instance::spi3: return SPI3;
-                case Instance::spi4: return SPI4;
-                case Instance::spi5: return SPI5;
-
-                case Instance::fmac: return FMAC;
-            }
-        }
                 
         static inline DMA_Stream_TypeDef* stream_to_DMA_StreamTypeDef(Stream s) {
             switch (s) {
@@ -340,7 +308,6 @@ namespace ST_LIB {
 
         struct Instances_ {
             DMA_HandleTypeDef dma;
-            uint8_t id;
 
             void start(uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength){
                 HAL_DMA_Start_IT(&dma, SrcAddress, DstAddress, DataLength);
@@ -440,9 +407,7 @@ namespace ST_LIB {
                     
                     instances[i].dma.Instance = stream_to_DMA_StreamTypeDef(stream);
                     instances[i].dma.Init = dma_init;
-                    instances[i].id = id;
 
-                    // No estoy seguro de que esto tenga que ir aqui
                     if (HAL_DMA_Init(&instances[i].dma) != HAL_OK) {
                         ErrorHandler("DMA Init failed");
                     }
