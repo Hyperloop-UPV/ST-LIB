@@ -218,6 +218,10 @@ struct SdDomain {
 
             if (status != HAL_OK) { return false; }
 
+            if (HAL_SD_ConfigSpeedBusOperation(&hsd, SDMMC_SPEED_MODE_AUTO) != HAL_OK) {
+                ErrorHandler("SD Card speed/bus configuration failed");
+            }
+
             card_initialized = true;
             return true;
         }
