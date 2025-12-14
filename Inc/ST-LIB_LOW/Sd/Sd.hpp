@@ -233,7 +233,7 @@ struct SdDomain {
             if (status != HAL_OK) { return false; }
 
             card_initialized = false;
-            return true; // Placeholder
+            return true;
         }
 
         void switch_buffer() {
@@ -292,8 +292,6 @@ struct SdDomain {
             instance.operation_flag = &operation_complete_flag;
             operation_complete_flag = false;
 
-            auto& buffer = get_current_buffer();
-
             // Won't use HAL_SDEx_ReadBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
             HAL_StatusTypeDef status = Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(start_block, num_blocks);
 
@@ -315,8 +313,6 @@ struct SdDomain {
 
             instance.operation_flag = &operation_complete_flag;
             operation_complete_flag = false;
-
-            auto& buffer = get_current_buffer();
 
             // Won't use HAL_SDEx_WriteBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
             HAL_StatusTypeDef status = Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(start_block, num_blocks);
