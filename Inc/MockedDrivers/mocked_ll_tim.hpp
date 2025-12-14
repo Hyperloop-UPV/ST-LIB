@@ -34,7 +34,6 @@ public:
         callback{irq_handler}, irq_n{irq_n}
     {}
 
-    // NOTE: This ruins the address offsets but I couldn't get it to work any other way
     template<TimReg Reg>
     struct PrescalerRegister : public RegisterBase<TimReg, Reg> {
         PrescalerRegister& operator=(uint32_t val) {
