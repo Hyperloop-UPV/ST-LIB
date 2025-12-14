@@ -289,15 +289,15 @@ struct SdDomain {
                 return false; // Busy
             }
 
-            instance.operation_flag = &operation_complete_flag;
-            operation_complete_flag = false;
-
             // Won't use HAL_SDEx_ReadBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
             HAL_StatusTypeDef status = Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(start_block, num_blocks);
 
             if (status != HAL_OK) {
                 ErrorHandler("SD Card read operation failed");
             }
+
+            instance.operation_flag = &operation_complete_flag;
+            operation_complete_flag = false;
 
             return true;
         }
@@ -311,15 +311,15 @@ struct SdDomain {
                 return false; // Busy
             }
 
-            instance.operation_flag = &operation_complete_flag;
-            operation_complete_flag = false;
-
             // Won't use HAL_SDEx_WriteBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
             HAL_StatusTypeDef status = Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(start_block, num_blocks);
 
             if (status != HAL_OK) {
                 ErrorHandler("SD Card write operation failed");
             }
+
+            instance.operation_flag = &operation_complete_flag;
+            operation_complete_flag = false;
 
             return true;
         }
@@ -516,13 +516,18 @@ struct SdDomain {
         static void init(std::span<const Config, N> cfgs,
                          std::span<MPUDomain::Instance> mpu_buffer_instances,
                          std::span<DigitalInputDomain::Instance> digital_input_instances) {
+            
+            // Initialize HAL SD
+            RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct;
+            RCC_PeriphCLKInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SDMMC;
+            RCC_PeriphCLKInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL;
+            if (HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct) != HAL_OK) {
+                ErrorHandler("SDMMC clock configuration failed");
+            }
 
             for (std::size_t i = 0; i < N; i++) {
                 const auto &cfg = cfgs[i];
                 auto &inst = instances[i];
-
-                inst.cd_instance = {&digital_input_instances[cfg.cd_pin_idx.value().first], cfg.cd_pin_idx.value().second};
-                inst.wp_instance = {&digital_input_instances[cfg.wp_pin_idx.value().first], cfg.wp_pin_idx.value().second};
 
                 inst.mpu_buffer0_instance = &mpu_buffer_instances[cfg.mpu_buffer0_idx];
                 inst.mpu_buffer1_instance = &mpu_buffer_instances[cfg.mpu_buffer1_idx];
@@ -560,14 +565,6 @@ struct SdDomain {
 
                 inst.card_initialized = false;
                 inst.current_buffer = BufferSelect::Buffer0;
-
-                // Initialize HAL SD
-                RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct;
-                RCC_PeriphCLKInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SDMMC;
-                RCC_PeriphCLKInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL;
-                if (HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct) != HAL_OK) {
-                    ErrorHandler("SDMMC clock configuration failed");
-                }
 
                 if (cfg.peripheral == Peripheral::sdmmc1) {
                     g_sdmmc1_handle = &inst.hsd;
