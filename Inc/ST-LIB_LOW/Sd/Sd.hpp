@@ -19,6 +19,9 @@ using ST_LIB::GPIODomain;
 static SD_HandleTypeDef* g_sdmmc1_handle = nullptr;
 static SD_HandleTypeDef* g_sdmmc2_handle = nullptr;
 
+static void* g_sdmmc1_instance_ptr = nullptr;
+static void* g_sdmmc2_instance_ptr = nullptr;
+
 struct SdDomain {
 
     enum class Peripheral : uint32_t {
@@ -186,6 +189,8 @@ struct SdDomain {
         friend struct SdCardWrapper;
         friend struct Init;
 
+        bool* operation_flag = nullptr; // External flag to indicate that an operation has finished
+
        private:
         SD_HandleTypeDef hsd;
 
@@ -197,25 +202,313 @@ struct SdDomain {
 
         bool card_initialized;
         BufferSelect current_buffer; // The one that is currently available for CPU access and not used by IDMA
-    };
 
-    struct SdCardWrapperI {
+        // Functions
+        bool is_card_present() { return cd_instance->first->read() == cd_instance->second; }
+        bool is_write_protected() { return wp_instance->first->read() == wp_instance->second; }
 
+        bool is_busy() {
+            return (hsd.State != HAL_SD_STATE_TRANSFER);
+        }
+
+        bool initialize_card() {
+            if (card_initialized) { return true; } // Already initialized
+
+            HAL_StatusTypeDef status = HAL_SD_Init(&hsd);
+
+            if (status != HAL_OK) { return false; }
+
+            card_initialized = true;
+            return true;
+        }
+
+        bool deinitialize_card() {
+            if (!card_initialized) { return true; } // Already deinitialized
+
+            HAL_StatusTypeDef status = HAL_SD_DeInit(&hsd);
+            if (status != HAL_OK) { return false; }
+
+            card_initialized = false;
+            return true; // Placeholder
+        }
+
+        void switch_buffer() {
+            current_buffer = (current_buffer == BufferSelect::Buffer0) ? BufferSelect::Buffer1 : BufferSelect::Buffer0;
+        }
+
+        bool configure_idma() {
+            HAL_StatusTypeDef status = HAL_SDEx_ConfigDMAMultiBuffer(&hsd,
+                reinterpret_cast<uint32_t*>(mpu_buffer0_instance->ptr),
+                reinterpret_cast<uint32_t*>(mpu_buffer1_instance->ptr),
+                mpu_buffer0_instance->size / 512); // Number of 512B-blocks
+
+            if (status != HAL_OK) { return false; }
+            return true;
+        }
     };
 
     template <SdCard &card_request>
-    struct SdCardWrapper : public SdCardWrapperI {
-        using peripheral = decltype(card_request)::peripheral;
-        using buffer_type = typename decltype(card_request.buffer0)::buffer_type;
+    struct SdCardWrapper{
         static constexpr bool has_cd = decltype(card_request)::cd.has_value();
         static constexpr bool has_wp = decltype(card_request)::wp.has_value();
         
-        SdCardWrapper(Instance& instance) : instance(instance) {};
+        SdCardWrapper(Instance& instance) : instance(instance) {
+            check_cd_wp();
+        };
 
-        // Methods to operate the SD card
+        void init_card() {
+            check_cd_wp();
+            bool success = instance.initialize_card();
+            if (!success) {
+                ErrorHandler("SD Card initialization failed");
+            }
+        }
+
+        void deinit_card() {
+            check_cd_wp();
+            bool success = instance.deinitialize_card();
+            if (!success) {
+                ErrorHandler("SD Card deinitialization failed");
+            }
+        }
+
+        bool is_card_initialized() {
+            return instance.card_initialized;
+        }
+
+        bool read_blocks(uint32_t start_block, uint32_t num_blocks, bool& operation_complete_flag) {
+            check_cd_wp();
+            if (!instance.card_initialized) {
+                ErrorHandler("SD Card not initialized");
+            }
+            if (instance.is_busy()) {
+                return false; // Busy
+            }
+
+            instance.operation_flag = &operation_complete_flag;
+            operation_complete_flag = false;
+
+            auto& buffer = get_current_buffer();
+
+            // Won't use HAL_SDEx_ReadBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
+            HAL_StatusTypeDef status = Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(start_block, num_blocks);
+
+            if (status != HAL_OK) {
+                ErrorHandler("SD Card read operation failed");
+            }
+
+            return true;
+        }
+
+        bool write_blocks(uint32_t start_block, uint32_t num_blocks, bool& operation_complete_flag) {
+            check_cd_wp();
+            if (!instance.card_initialized) {
+                ErrorHandler("SD Card not initialized");
+            }
+            if (instance.is_busy()) {
+                return false; // Busy
+            }
+
+            instance.operation_flag = &operation_complete_flag;
+            operation_complete_flag = false;
+
+            auto& buffer = get_current_buffer();
+
+            // Won't use HAL_SDEx_WriteBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
+            HAL_StatusTypeDef status = Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(start_block, num_blocks);
+
+            if (status != HAL_OK) {
+                ErrorHandler("SD Card write operation failed");
+            }
+
+            return true;
+        }
+
 
        private:
         Instance& instance; // Actual State
+
+
+        void check_cd_wp() {
+            if constexpr (has_cd) {
+                if (!instance.is_card_present()) { ErrorHandler("SD Card not present"); }
+            }
+            if constexpr (has_wp) {
+                if (instance.is_write_protected()) { ErrorHandler("SD Card is write-protected"); }
+            }
+        }
+
+        auto& get_current_buffer() {
+            if (instance.current_buffer == BufferSelect::Buffer0) {
+                return instance.mpu_buffer0_instance->template as<card_request.buffer0>();
+            } else {
+                return instance.mpu_buffer1_instance->template as<card_request.buffer1>();
+            }
+        }
+
+        // Variation of HAL_SDEx_ReadBlocksDMAMultiBuffer to fit our needs
+        HAL_StatusTypeDef Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(uint32_t BlockAdd, uint32_t NumberOfBlocks) {
+            auto* hsd = instance.hsd;
+            SDMMC_DataInitTypeDef config;
+            uint32_t errorstate;
+            uint32_t DmaBase0_reg;
+            uint32_t DmaBase1_reg;
+            uint32_t add = BlockAdd;
+
+            if (hsd->State == HAL_SD_STATE_READY)
+            {
+                if ((add + NumberOfBlocks) > (hsd->SdCard.LogBlockNbr))
+                {
+                hsd->ErrorCode |= HAL_SD_ERROR_ADDR_OUT_OF_RANGE;
+                return HAL_ERROR;
+                }
+
+                DmaBase0_reg = hsd->Instance->IDMABASE0;
+                DmaBase1_reg = hsd->Instance->IDMABASE1;
+
+                if ((hsd->Instance->IDMABSIZE == 0U) || (DmaBase0_reg == 0U) || (DmaBase1_reg == 0U))
+                {
+                hsd->ErrorCode = HAL_SD_ERROR_ADDR_OUT_OF_RANGE;
+                return HAL_ERROR;
+                }
+
+                /* Initialize data control register */
+                hsd->Instance->DCTRL = 0;
+                /* Clear old Flags*/
+                __HAL_SD_CLEAR_FLAG(hsd, SDMMC_STATIC_DATA_FLAGS);
+
+                hsd->ErrorCode = HAL_SD_ERROR_NONE;
+                hsd->State = HAL_SD_STATE_BUSY;
+
+                if (hsd->SdCard.CardType != CARD_SDHC_SDXC)
+                {
+                add *= 512U;
+                }
+
+                /* Configure the SD DPSM (Data Path State Machine) */
+                config.DataTimeOut   = SDMMC_DATATIMEOUT;
+                config.DataLength    = BLOCKSIZE * NumberOfBlocks;
+                config.DataBlockSize = SDMMC_DATABLOCK_SIZE_512B;
+                config.TransferDir   = SDMMC_TRANSFER_DIR_TO_SDMMC;
+                config.TransferMode  = SDMMC_TRANSFER_MODE_BLOCK;
+                config.DPSM          = SDMMC_DPSM_DISABLE;
+                (void)SDMMC_ConfigData(hsd->Instance, &config);
+
+                hsd->Instance->DCTRL |= SDMMC_DCTRL_FIFORST;
+
+                __SDMMC_CMDTRANS_ENABLE(hsd->Instance);
+
+                if (instance.current_buffer == BufferSelect::Buffer1) {
+                hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF1;
+                } else {
+                hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF0;
+                }
+                instance.switch_buffer();
+
+                /* Read Blocks in DMA mode */
+                hsd->Context = (SD_CONTEXT_READ_MULTIPLE_BLOCK | SD_CONTEXT_DMA);
+
+                /* Read Multi Block command */
+                errorstate = SDMMC_CmdReadMultiBlock(hsd->Instance, add);
+                if (errorstate != HAL_SD_ERROR_NONE)
+                {
+                hsd->State = HAL_SD_STATE_READY;
+                hsd->ErrorCode |= errorstate;
+                return HAL_ERROR;
+                }
+
+                __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_RXOVERR | SDMMC_IT_DATAEND |
+                                        SDMMC_IT_IDMABTC));
+
+                return HAL_OK;
+            }
+            else
+            {
+                return HAL_BUSY;
+            }
+
+        }
+
+        // Variation of HAL_SDEx_WriteBlocksDMAMultiBuffer to fit our needs
+        HAL_StatusTypeDef Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(uint32_t BlockAdd, uint32_t NumberOfBlocks) {
+            auto* hsd = instance.hsd;
+            SDMMC_DataInitTypeDef config;
+            uint32_t errorstate;
+            uint32_t DmaBase0_reg;
+            uint32_t DmaBase1_reg;
+            uint32_t add = BlockAdd;
+
+            if (hsd->State == HAL_SD_STATE_READY)
+            {
+                if ((add + NumberOfBlocks) > (hsd->SdCard.LogBlockNbr))
+                {
+                hsd->ErrorCode |= HAL_SD_ERROR_ADDR_OUT_OF_RANGE;
+                return HAL_ERROR;
+                }
+
+                DmaBase0_reg = hsd->Instance->IDMABASE0;
+                DmaBase1_reg = hsd->Instance->IDMABASE1;
+                if ((hsd->Instance->IDMABSIZE == 0U) || (DmaBase0_reg == 0U) || (DmaBase1_reg == 0U))
+                {
+                hsd->ErrorCode = HAL_SD_ERROR_ADDR_OUT_OF_RANGE;
+                return HAL_ERROR;
+                }
+
+                /* Initialize data control register */
+                hsd->Instance->DCTRL = 0;
+
+                hsd->ErrorCode = HAL_SD_ERROR_NONE;
+
+                hsd->State = HAL_SD_STATE_BUSY;
+
+                if (hsd->SdCard.CardType != CARD_SDHC_SDXC)
+                {
+                add *= 512U;
+                }
+
+                /* Configure the SD DPSM (Data Path State Machine) */
+                config.DataTimeOut   = SDMMC_DATATIMEOUT;
+                config.DataLength    = BLOCKSIZE * NumberOfBlocks;
+                config.DataBlockSize = SDMMC_DATABLOCK_SIZE_512B;
+                config.TransferDir   = SDMMC_TRANSFER_DIR_TO_CARD;
+                config.TransferMode  = SDMMC_TRANSFER_MODE_BLOCK;
+                config.DPSM          = SDMMC_DPSM_DISABLE;
+                (void)SDMMC_ConfigData(hsd->Instance, &config);
+
+                //hsd->Instance->DCTRL |= SDMMC_DCTRL_FIFORST; // I am manually flushing the FIFO here, hal did not do it
+
+                __SDMMC_CMDTRANS_ENABLE(hsd->Instance);
+
+                //hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF1;
+                if (instance.current_buffer == BufferSelect::Buffer1) {
+                hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF1;
+                } else {
+                hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF0;
+                }
+                instance.switch_buffer();
+
+                /* Write Blocks in DMA mode */
+                hsd->Context = (SD_CONTEXT_WRITE_MULTIPLE_BLOCK | SD_CONTEXT_DMA);
+
+                /* Write Multi Block command */
+                errorstate = SDMMC_CmdWriteMultiBlock(hsd->Instance, add);
+                if (errorstate != HAL_SD_ERROR_NONE)
+                {
+                hsd->State = HAL_SD_STATE_READY;
+                hsd->ErrorCode |= errorstate;
+                return HAL_ERROR;
+                }
+
+                __HAL_SD_ENABLE_IT(hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_TXUNDERR | SDMMC_IT_DATAEND |
+                                        SDMMC_IT_IDMABTC));
+
+                return HAL_OK;
+            }
+            else
+            {
+                return HAL_BUSY;
+            }
+            }
     };
 
 
@@ -230,8 +523,12 @@ struct SdDomain {
             for (std::size_t i = 0; i < N; i++) {
                 const auto &cfg = cfgs[i];
                 auto &inst = instances[i];
-                inst.mpu_buffer0_instance = mpu_buffer_instances[cfg.mpu_buffer0_idx];
-                inst.mpu_buffer1_instance = mpu_buffer_instances[cfg.mpu_buffer1_idx];
+                inst.mpu_buffer0_instance = &mpu_buffer_instances[cfg.mpu_buffer0_idx];
+                inst.mpu_buffer1_instance = &mpu_buffer_instances[cfg.mpu_buffer1_idx];
+                if (!inst.configure_idma()) {
+                    ErrorHandler("SD Card IDMA configuration failed");
+                }
+
                 if (cfg.cd_pin_idx.has_value()) {
                     inst.cd_instance = {&digital_input_instances[cfg.cd_pin_idx.value().first], cfg.cd_pin_idx.value().second};
                 }
@@ -240,6 +537,12 @@ struct SdDomain {
                 }
 
                 inst.hsd.Instance = reinterpret_cast<SDMMC_TypeDef*>(static_cast<uintptr_t>(cfg.peripheral));
+                inst.hsd.Init.ClockEdge = SDMMC_CLOCK_EDGE_FALLING;
+                inst.hsd.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
+                inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_4B;
+                inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
+                inst.hsd.Init.ClockDiv = 0;
+
 
                 inst.card_initialized = false;
                 inst.current_buffer = BufferSelect::Buffer0;
@@ -254,11 +557,13 @@ struct SdDomain {
 
                 if (cfg.peripheral == Peripheral::sdmmc1) {
                     g_sdmmc1_handle = &inst.hsd;
+                    g_sdmmc1_instance_ptr = &inst;
                     __HAL_RCC_SDMMC1_CLK_ENABLE();
                     HAL_NVIC_SetPriority(SDMMC1_IRQn, 5, 0);
                     HAL_NVIC_EnableIRQ(SDMMC1_IRQn);
                 } else if (cfg.peripheral == Peripheral::sdmmc2) {
                     g_sdmmc2_handle = &inst.hsd;
+                    g_sdmmc2_instance_ptr = &inst;
                     __HAL_RCC_SDMMC2_CLK_ENABLE();
                     HAL_NVIC_SetPriority(SDMMC2_IRQn, 5, 0);
                     HAL_NVIC_EnableIRQ(SDMMC2_IRQn);
@@ -268,6 +573,11 @@ struct SdDomain {
     };
 };
 
+static inline SdDomain::Instance* get_sd_instance(SD_HandleTypeDef* hsd) {
+    if (hsd == g_sdmmc1_handle) return static_cast<SdDomain::Instance*>(g_sdmmc1_instance_ptr);
+    if (hsd == g_sdmmc2_handle) return static_cast<SdDomain::Instance*>(g_sdmmc2_instance_ptr);
+    return nullptr;
+}
 
 extern "C" void SDMMC1_IRQHandler(void) {
     if (g_sdmmc1_handle != nullptr) {
@@ -281,31 +591,52 @@ extern "C" void SDMMC2_IRQHandler(void) {
     }
 }
 
+extern "C" {
+
 void HAL_SDEx_Read_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
-    //auto sd_instance = reinterpret_cast<SdDomain::SdCardWrapperI*>(hsd->Context);
-    //SDMMC_CmdStopTransfer(hsd->Instance);
+    auto sd_instance = get_sd_instance(hsd);
+    if (sd_instance && sd_instance->operation_flag) {
+        *sd_instance->operation_flag = true;
+        sd_instance->operation_flag = nullptr;
+    }
+    SDMMC_CmdStopTransfer(hsd->Instance);
 }
 void HAL_SDEx_Read_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
-    //auto sd_instance = reinterpret_cast<SdDomain::SdCardWrapperI*>(hsd->Context);
-    //SDMMC_CmdStopTransfer(hsd->Instance);
+    auto sd_instance = get_sd_instance(hsd);
+    if (sd_instance && sd_instance->operation_flag) {
+        *sd_instance->operation_flag = true;
+        sd_instance->operation_flag = nullptr;
+    }
+    SDMMC_CmdStopTransfer(hsd->Instance);
 }
 
 void HAL_SDEx_Write_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
-    //auto sd_instance = reinterpret_cast<SdDomain::SdCardWrapperI*>(hsd->Context);
-    //SDMMC_CmdStopTransfer(hsd->Instance);
+    auto sd_instance = get_sd_instance(hsd);
+    if (sd_instance && sd_instance->operation_flag) {
+        *sd_instance->operation_flag = true;
+        sd_instance->operation_flag = nullptr;
+    }
+    SDMMC_CmdStopTransfer(hsd->Instance);
 }
 void HAL_SDEx_Write_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
-    //auto sd_instance = reinterpret_cast<SdDomain::SdCardWrapperI*>(hsd->Context);
-    //SDMMC_CmdStopTransfer(hsd->Instance);
+    auto sd_instance = get_sd_instance(hsd);
+    if (sd_instance && sd_instance->operation_flag) {
+        *sd_instance->operation_flag = true;
+        sd_instance->operation_flag = nullptr;
+    }
+    SDMMC_CmdStopTransfer(hsd->Instance);
 }
 
 void HAL_SD_AbortCallback(SD_HandleTypeDef* hsd) {
-    //auto sd_instance = reinterpret_cast<SdDomain::SdCardWrapperI*>(hsd->Context);
+    // auto sd_instance = get_sd_instance(hsd);
+    ErrorHandler("SD Card operation aborted");
 }
 
 void HAL_SD_ErrorCallback(SD_HandleTypeDef* hsd) {
-    //auto sd_instance = reinterpret_cast<SdDomain::SdCardWrapperI*>(hsd->Context);
+    //auto sd_instance = get_sd_instance(hsd);
     ErrorHandler("SD Card error occurred");
 }
+
+} // extern "C"
 
 #endif // SD_HPP
