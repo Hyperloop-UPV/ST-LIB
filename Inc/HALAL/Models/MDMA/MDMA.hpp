@@ -3,7 +3,6 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "stm32h7xx_hal.h"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "HALAL/Utils/Promise.hpp"
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
 #include <array>
 #include <tuple>
@@ -30,12 +29,14 @@ class MDMA{
      */
     struct LinkedListNode {
     template<typename T>
-    LinkedListNode(T* source_ptr, void* dest_ptr) {
+    LinkedListNode(T* source_ptr, void* dest_ptr) 
+    {
         init_node(source_ptr, dest_ptr, sizeof(T));
     }
 
     template<typename T>
-    LinkedListNode(T* source_ptr, void* dest_ptr, size_t size) {
+    LinkedListNode(T* source_ptr, void* dest_ptr, size_t size) 
+    {
         init_node(source_ptr, dest_ptr, size);
     }
 
@@ -51,7 +52,8 @@ class MDMA{
 private:
     MDMA_LinkNodeTypeDef node;
 
-    void init_node(void* src, void* dst, size_t size) {
+    void init_node(void* src, void* dst, size_t size) 
+    {
         MDMA_LinkNodeConfTypeDef nodeConfig{};
         nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE; 
         nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;

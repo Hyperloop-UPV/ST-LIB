@@ -40,7 +40,6 @@
 
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"
-#include "HALAL/Utils/Promise.hpp"
 #include "HALAL/Models/MDMA/MDMA.hpp"
 
 #ifdef STLIB_ETH
@@ -57,7 +56,6 @@
 #include "HALAL/Services/Communication/Ethernet/TCP/Socket.hpp"
 #include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALAL/Services/Communication/SNTP/SNTP.hpp"
-// #include "HALAL/Utils/Promise.hpp"
 #endif
 
 namespace HALAL {

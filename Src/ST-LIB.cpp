@@ -41,6 +41,5 @@ void STLIB::update() {
 #endif
     ErrorHandlerModel::ErrorHandlerUpdate();
     MDMA::update();
-    Promise::update();
 	
 }
