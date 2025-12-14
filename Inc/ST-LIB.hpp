@@ -71,7 +71,8 @@ template <typename... Domains> struct BuildCtx {
 };
 
 using DomainsCtx = BuildCtx<GPIODomain, DigitalOutputDomain,
-                            DigitalInputDomain, MPUDomain /*, ADCDomain, PWMDomain, ...*/>;
+                            DigitalInputDomain, MPUDomain, SdDomain 
+                            /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {
@@ -91,6 +92,7 @@ template <auto &...devs> struct Board {
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mpuN = domain_size<MPUDomain>();
+    constexpr std::size_t sdN = domain_size<SdDomain>();
     // ...
 
     struct ConfigBundle {
@@ -98,6 +100,7 @@ template <auto &...devs> struct Board {
       std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
       std::array<DigitalInputDomain::Config, dinN> din_cfgs;
       std::array<MPUDomain::Config, mpuN> mpu_cfgs;
+      std::array<SdDomain::Config, sdN> sd_cfgs;
       // ...
     };
 
@@ -109,7 +112,9 @@ template <auto &...devs> struct Board {
         .din_cfgs = DigitalInputDomain::template build<dinN>(
             ctx.template span<DigitalInputDomain>()),
         .mpu_cfgs = MPUDomain::template build<mpuN>(
-            ctx.template span<MPUDomain>())
+            ctx.template span<MPUDomain>()),
+        .sd_cfgs = SdDomain::template build<sdN>(
+            ctx.template span<SdDomain>()),
         // ...
     };
   }
@@ -121,6 +126,7 @@ template <auto &...devs> struct Board {
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mpuN = domain_size<MPUDomain>();
+    constexpr std::size_t sdN = domain_size<SdDomain>();
     // ...
 
     GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
@@ -129,6 +135,9 @@ template <auto &...devs> struct Board {
     DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
                                          GPIODomain::Init<gpioN>::instances);
     MPUDomain::Init<mpuN, cfg.mpu_cfgs>::init();
+    SdDomain::Init<sdN>::init(cfg.sd_cfgs,
+                              MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances,
+                              DigitalInputDomain::Init<dinN>::instances);
     // ...
   }
 
