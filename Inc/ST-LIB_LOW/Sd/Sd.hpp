@@ -548,6 +548,18 @@ struct SdDomain {
                 inst.hsd.Init.ClockDiv = 0;
 
 
+                #ifdef SD_DEBUG_ENABLE
+                inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_1B;
+                // Get a 400 kHz clock for debugging
+                uint32_t pll1_freq = HAL_RCCEx_GetPLL1ClockFreq(); // SDMMC clock source is PLL1
+                uint32_t sdmmc_clk = pll1_freq / 2; // SDMMC clock before divider
+                uint32_t target_div = sdmmc_clk / 400000; // Target divider
+                if (target_div < 2) target_div = 2; // Minimum divider is 2
+                if (target_div > 256) target_div = 256; // Maximum divider is 256
+                inst.hsd.Init.ClockDiv = target_div - 2; // ClockDiv is (divider - 2)
+                #endif // SD_DEBUG_ENABLE
+
+
                 inst.card_initialized = false;
                 inst.current_buffer = BufferSelect::Buffer0;
 
