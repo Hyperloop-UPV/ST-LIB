@@ -92,6 +92,7 @@ void MDMA::inscribe(Instance& instance,uint8_t id)
     if (channel_it == instance_to_channel.end())
     {
         ErrorHandler("MDMA channel mapping not found");
+        return;
     }
     mdma_handle.Instance = channel_it->second;
     mdma_handle.Init.Request = MDMA_REQUEST_SW;
