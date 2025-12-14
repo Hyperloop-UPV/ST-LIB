@@ -31,8 +31,8 @@ struct SdDomain {
         Peripheral peripheral;
         std::size_t mpu_buffer0_idx;
         std::size_t mpu_buffer1_idx;
-        std::optional<size_t> cd_pin_idx; // Card Detect pin index in GPIO domain, if any
-        std::optional<size_t> wp_pin_idx; // Write Protect pin index in GPIO domain, if any
+        std::optional<std::pair<size_t, GPIO_PinState>> cd_pin_idx; // Card Detect pin index in GPIO domain, if any
+        std::optional<std::pair<size_t, GPIO_PinState>> wp_pin_idx; // Write Protect pin index in GPIO domain, if any
         std::size_t cmd_pin_idx;
         std::size_t ck_pin_idx;
         std::size_t d0_pin_idx; // Hardcoded unless SDMMC1
@@ -52,8 +52,8 @@ struct SdDomain {
         MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>> buffer0; // Alignment of 32-bit for SDMMC DMA
         MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>> buffer1; // Alignment of 32-bit for SDMMC DMA
 
-        std::optional<DigitalInputDomain::DigitalInput> cd; // Card Detect, if any
-        std::optional<DigitalInputDomain::DigitalInput> wp; // Write Protect, if any
+        std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> cd; // Card Detect, if any, and its active state
+        std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> wp; // Write Protect, if any, and its active state
 
         GPIODomain::GPIO cmd;
         GPIODomain::GPIO ck;
@@ -66,14 +66,14 @@ struct SdDomain {
          * @brief Construct a new SdCard
          * @tparam buffer_blocks Number of 512-byte blocks for the MPU buffer
          * @param sdmmc_peripheral The SDMMC peripheral to use (Peripheral::sdmmc1 or Peripheral::sdmmc2)
-         * @param card_detect Optional Card Detect pin (DigitalInputDomain::DigitalInput), or null for none
-         * @param write_protect Optional Write Protect pin (DigitalInputDomain::DigitalInput), or null for none
+         * @param card_detect_config Optional Card Detect pin (DigitalInputDomain::DigitalInput) and its active state, or null for none
+         * @param write_protect_config Optional Write Protect pin (DigitalInputDomain::DigitalInput) and its active state, or null for none
          * @param d0_pin_for_sdmmc1 D0 pin to use if using SDMMC1 (default PC8)
          * @param d1_pin_for_sdmmc1 D1 pin to use if using SDMMC1 (default PC9)
          * @note The other pins (CMD, CK, D2, D3) are fixed for each peripheral.
          */
         consteval SdCard(Peripheral sdmmc_peripheral,
-                    std::optional<DigitalInputDomain::DigitalInput> card_detect, std::optional<DigitalInputDomain::DigitalInput> write_protect,
+                    std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> card_detect_config, std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> write_protect_config,
                     GPIODomain::Pin d0_pin_for_sdmmc1 = PC8, GPIODomain::Pin d1_pin_for_sdmmc1 = PC9) {
 
             e.peripheral = sdmmc_peripheral;
@@ -81,8 +81,8 @@ struct SdDomain {
             buffer0 = MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>();
             buffer1 = MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>();
 
-            cd = card_detect;
-            wp = write_protect;
+            cd = card_detect_config;
+            wp = write_protect_config;
 
             if (sdmmc_peripheral == Peripheral::sdmmc1) {
                 cmd = GPIODomain::GPIO(PC6, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
@@ -110,10 +110,10 @@ struct SdDomain {
             e.mpu_buffer1_idx = ctx.template add<MPUDomain>(buffer1);
 
             if (cd.has_value()) {
-                e.cd_pin_idx = ctx.template add<DigitalInputDomain>(cd.value());
+                e.cd_pin_idx = {ctx.template add<DigitalInputDomain>(cd.value().first), cd.value().second};
             }
             if (wp.has_value()) {
-                e.wp_pin_idx = ctx.template add<DigitalInputDomain>(wp.value());
+                e.wp_pin_idx = {ctx.template add<DigitalInputDomain>(wp.value().first), wp.value().second};
             }
 
             e.cmd_pin_idx = ctx.template add<GPIODomain>(cmd);
@@ -176,10 +176,14 @@ struct SdDomain {
         return cfgs;
     }
 
+    enum class BufferSelect : bool {
+        Buffer0 = false,
+        Buffer1 = true
+    };
 
     // State holder, logic is in SdCardWrapper
     struct Instance {
-        friend class SdCardWrapper;
+        friend struct SdCardWrapper;
         friend struct Init;
 
        private:
@@ -188,10 +192,11 @@ struct SdDomain {
         MPUDomain::Instance* mpu_buffer0_instance;
         MPUDomain::Instance* mpu_buffer1_instance;
 
-        std::optional<DigitalInputDomain::Instance*> cd_instance;
-        std::optional<DigitalInputDomain::Instance*> wp_instance;
+        std::optional<std::pair<DigitalInputDomain::Instance*, GPIO_PinState>> cd_instance;
+        std::optional<std::pair<DigitalInputDomain::Instance*, GPIO_PinState>> wp_instance;
 
         bool card_initialized;
+        BufferSelect current_buffer; // The one that is currently available for CPU access and not used by IDMA
     };
 
     struct SdCardWrapperI {
@@ -201,6 +206,7 @@ struct SdDomain {
     template <SdCard &card_request>
     struct SdCardWrapper : public SdCardWrapperI {
         using peripheral = decltype(card_request)::peripheral;
+        using buffer_type = typename decltype(card_request.buffer0)::buffer_type;
         static constexpr bool has_cd = decltype(card_request)::cd.has_value();
         static constexpr bool has_wp = decltype(card_request)::wp.has_value();
         
@@ -227,14 +233,16 @@ struct SdDomain {
                 inst.mpu_buffer0_instance = mpu_buffer_instances[cfg.mpu_buffer0_idx];
                 inst.mpu_buffer1_instance = mpu_buffer_instances[cfg.mpu_buffer1_idx];
                 if (cfg.cd_pin_idx.has_value()) {
-                    inst.cd_instance = &digital_input_instances[cfg.cd_pin_idx.value()];
+                    inst.cd_instance = {&digital_input_instances[cfg.cd_pin_idx.value().first], cfg.cd_pin_idx.value().second};
                 }
                 if (cfg.wp_pin_idx.has_value()) {
-                    inst.wp_instance = &digital_input_instances[cfg.wp_pin_idx.value()];
+                    inst.wp_instance = {&digital_input_instances[cfg.wp_pin_idx.value().first], cfg.wp_pin_idx.value().second};
                 }
 
                 inst.hsd.Instance = reinterpret_cast<SDMMC_TypeDef*>(static_cast<uintptr_t>(cfg.peripheral));
+
                 inst.card_initialized = false;
+                inst.current_buffer = BufferSelect::Buffer0;
 
                 // Initialize HAL SD
                 RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct;
