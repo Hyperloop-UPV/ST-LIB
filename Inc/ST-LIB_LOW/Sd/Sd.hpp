@@ -138,8 +138,8 @@ struct SdDomain {
         Peripheral peripheral;
         std::size_t mpu_buffer0_idx;
         std::size_t mpu_buffer1_idx;
-        std::optional<size_t> cd_pin_idx;
-        std::optional<size_t> wp_pin_idx;
+        std::optional<std::pair<std::size_t, GPIO_PinState>> cd_pin_idx;
+        std::optional<std::pair<std::size_t, GPIO_PinState>> wp_pin_idx;
         std::size_t cmd_pin_idx;
         std::size_t ck_pin_idx;
         std::size_t d0_pin_idx;
@@ -527,6 +527,10 @@ struct SdDomain {
             for (std::size_t i = 0; i < N; i++) {
                 const auto &cfg = cfgs[i];
                 auto &inst = instances[i];
+
+                inst.cd_instance = {&digital_input_instances[cfg.cd_pin_idx.value().first], cfg.cd_pin_idx.value().second};
+                inst.wp_instance = {&digital_input_instances[cfg.wp_pin_idx.value().first], cfg.wp_pin_idx.value().second};
+
                 inst.mpu_buffer0_instance = &mpu_buffer_instances[cfg.mpu_buffer0_idx];
                 inst.mpu_buffer1_instance = &mpu_buffer_instances[cfg.mpu_buffer1_idx];
                 if (!inst.configure_idma()) {
