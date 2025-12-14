@@ -85,33 +85,23 @@ private:
     public:
         MDMA_HandleTypeDef handle;
         uint8_t id;
-        uint8_t* data_buffer;
-        uint8_t* destination_address;
-        Promise* promise;
-        bool using_promise;
+        bool* done;
         MDMA_LinkNodeTypeDef transfer_node;
 
         Instance()
             : handle{}
             , id(0U)
-            , data_buffer(nullptr)
-            , destination_address(nullptr)
-            , promise(nullptr)
-            , using_promise(false)
+            , done(nullptr)
             , transfer_node{}
         {}
 
         Instance(MDMA_HandleTypeDef handle_,
                  uint8_t id_,
-                 uint8_t* data_buffer_,
-                 uint8_t* destination_address_,
+                 bool* done_,
                  MDMA_LinkNodeTypeDef transfer_node_)
             : handle(handle_)
             , id(id_)
-            , data_buffer(data_buffer_)
-            , destination_address(destination_address_)
-            , promise(nullptr)
-            , using_promise(false)
+            , done(done_)
             , transfer_node(transfer_node_)
         {}
 
@@ -124,7 +114,7 @@ private:
     static std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> instance_to_channel;
     static std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> channel_to_instance;
     static std::bitset<8> instance_free_map;
-    inline static Stack<std::pair<MDMA::LinkedListNode*,Promise*>,50> transfer_queue{};
+    inline static Stack<std::pair<MDMA::LinkedListNode*,bool*>,50> transfer_queue{};
 
     static void TransferCompleteCallback(MDMA_HandleTypeDef *hmdma);
     static void TransferErrorCallback(MDMA_HandleTypeDef *hmdma);
@@ -146,6 +136,7 @@ private:
 
     // Pool for MDMA_LinkNodeTypeDef, uses external non-cached memory
     static Pool<LinkedListNode, NODES_MAX, true> link_node_pool;
+    //To be reviewed when we make mdma in compile time
 
     static void start();
     static void irq_handler();
@@ -158,19 +149,18 @@ private:
      * @brief A method to start a transfer from source to destination using MDMA linked list
      *  
      * @param source_address The source address for the transfer.
-     * @param data_length The length of data to be transferred.
      * @param destination_address The destination address for the transfer.
-     * @param promise An optional promise to be fulfilled upon transfer completion.
-     * @return True if the transfer was successfully started, false otherwise.
+     * @param data_length The length of data to be transferred.
+     * @param check A reference boolean that will be set to true if the transfer was successfully started, false otherwise.
      */
-    static bool transfer_data(uint8_t* source_address, const uint32_t data_length,uint8_t* destination_address, Promise* promise=nullptr);
+    static void transfer_data(uint8_t* source_address, uint8_t* destination_address, const uint32_t data_length, bool* done=nullptr);
 
     /**
      * @brief A method to transfer using MDMA linked 
      *  
      * @param first_node The linked list node representing the first node in the linked list.
-     * @param promise An optional promise to be fulfilled upon transfer completion.
+     * @param check A reference boolean that will be set to true if the transfer was successfully queued, false otherwise.
      */
-    static void transfer_list(MDMA::LinkedListNode* first_node, Promise* promise=nullptr);
+    static void transfer_list(MDMA::LinkedListNode* first_node,bool* check=nullptr);
 
 };
