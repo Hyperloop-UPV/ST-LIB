@@ -119,10 +119,13 @@ public:
         }
         return true;
     }
+
+    void inc_cnt_and_check(uint32_t val);
 };
 static_assert(sizeof(TimerRegister<Reg_CNT>) == sizeof(uint32_t));
 void simulate_ticks(TIM_TypeDef* tim);
 
+/*
 template<>
 struct RegisterTraits<TimReg,TimReg::Reg_CNT> {
     static void write(uint32_t& target, uint32_t val) {
@@ -133,7 +136,7 @@ struct RegisterTraits<TimReg,TimReg::Reg_CNT> {
         }
     }
 };
-
+*/
 
 #define DECLARE_TIMER(TIM_IDX) \
     extern TIM_TypeDef*  TIM_IDX##_BASE; \
