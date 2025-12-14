@@ -20,6 +20,7 @@
 #ifndef __STM32H7xx_LL_TIM_H
 #define __STM32H7xx_LL_TIM_H
 
+#include "stm32h723xx_wrapper.h"
 #include "mocked_ll_tim.hpp"
 
 #ifdef __cplusplus
@@ -28,7 +29,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#define TIM1
+//#define TIM1
 
 /** @addtogroup STM32H7xx_LL_Driver
   * @{

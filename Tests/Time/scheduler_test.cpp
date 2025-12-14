@@ -2,8 +2,6 @@
 #include <thread>
 #include<chrono>
 
-#include "Inc/MockedDrivers/stm32h723xx_wrapper.h"
-
 #include "HALAL/Services/Time/Scheduler.hpp"
 
 int count = 0;
