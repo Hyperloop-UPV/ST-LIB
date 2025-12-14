@@ -23,14 +23,29 @@ public:
     using RegisterBase<TimReg, Reg>::operator=;
 };
 
+
 static_assert(sizeof(TimerRegister<Reg_CR1>) == sizeof(uint32_t) );
 
 
 class TIM_TypeDef{
 public:
     TIM_TypeDef(void(* irq_handler)(void),IRQn_Type irq_n):
-    callback{irq_handler},irq_n{irq_n}
+//        PSC(*this), callback{irq_handler}, irq_n{irq_n}
+        callback{irq_handler}, irq_n{irq_n}
     {}
+
+    // NOTE: This ruins the address offsets but I couldn't get it to work any other way
+    template<TimReg Reg>
+    struct PrescalerRegister : public RegisterBase<TimReg, Reg> {
+        PrescalerRegister& operator=(uint32_t val) {
+            this->set(val);
+            // esto es lo más feo que he hecho en mucho tiempo pero no he conseguido otra cosa
+            TIM_TypeDef *parent = (TIM_TypeDef*)((uint8_t*)&this->reg - offsetof(TIM_TypeDef, PSC));
+            parent->active_PSC = val;
+            return *this;
+        }
+    };
+
     void generate_update();
     TimerRegister<Reg_CR1> CR1;         /*!< TIM control register 1,                   Address offset: 0x00 */
     TimerRegister<Reg_CR2> CR2;         /*!< TIM control register 2,                   Address offset: 0x04 */
@@ -42,7 +57,7 @@ public:
     TimerRegister<Reg_CCMR2> CCMR2;       /*!< TIM capture/compare mode register 2,      Address offset: 0x1C */
     TimerRegister<Reg_CCER> CCER;        /*!< TIM capture/compare enable register,      Address offset: 0x20 */
     TimerRegister<Reg_CNT> CNT;         /*!< TIM counter register,                     Address offset: 0x24 */
-    TimerRegister<Reg_PSC> PSC;         /*!< TIM prescaler,                            Address offset: 0x28 */
+    PrescalerRegister<Reg_PSC> PSC;         /*!< TIM prescaler,                            Address offset: 0x28 */
     TimerRegister<Reg_ARR> ARR;         /*!< TIM auto-reload register,                 Address offset: 0x2C */
     TimerRegister<Reg_RCR> RCR;         /*!< TIM repetition counter register,          Address offset: 0x30 */
     TimerRegister<Reg_CCR1> CCR1;        /*!< TIM capture/compare register 1,           Address offset: 0x34 */
