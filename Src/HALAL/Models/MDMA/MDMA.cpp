@@ -244,6 +244,10 @@ void MDMA::transfer_data(uint8_t* source_address, uint8_t* destination_address, 
             prepare_transfer(instance, &instance.transfer_node);
             return;
         }
+        if(done)
+    {
+        *done = false;
+    }
     }
     return;
 }
