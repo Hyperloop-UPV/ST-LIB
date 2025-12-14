@@ -44,12 +44,11 @@ TEST_F(SchedulerTests, TaskRegistration) {
 TEST_F(SchedulerTests, TaskExecutionShort) {
     Scheduler::register_task(10,&fake_workload);
     Scheduler::start();
-    // TIM2_BASE->ARR = 500; 
-    // TIM2_BASE->generate_update();
+    TIM2_BASE->PSC = 2; // quicker test
     
     constexpr int NUM_TICKS = 1'000;
     for(int i = 0; i < NUM_TICKS; i++){
-        TIM2_BASE->CNT++;
+        for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
         Scheduler::update();
     }
     // 1000 ticks / 10 ticks/task = 100 executions.
@@ -61,10 +60,11 @@ TEST_F(SchedulerTests, TaskExecutionLong) {
     Scheduler::start();
     // TIM2_BASE->ARR = 500;
     TIM2_BASE->generate_update();
+    TIM2_BASE->PSC = 2; // quicker test
     
     constexpr int NUM_TICKS = 1'000'000;
     for(int i = 0; i < NUM_TICKS; i++){
-        TIM2_BASE->CNT++;
+        for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
         Scheduler::update();
     }
     EXPECT_EQ(count, 100'000);
@@ -73,10 +73,11 @@ TEST_F(SchedulerTests, TaskExecutionLong) {
 TEST_F(SchedulerTests, SetTimeout) {
     Scheduler::set_timeout(10, &fake_workload);
     Scheduler::start();
-    
+    TIM2_BASE->PSC = 2; // quicker test
+
     constexpr int NUM_TICKS = 100;
     for(int i = 0; i < NUM_TICKS; i++){
-        TIM2_BASE->CNT++;
+        for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
         Scheduler::update();
     }
     EXPECT_EQ(count, 1);
@@ -86,10 +87,12 @@ TEST_F(SchedulerTests, GlobalTickOverflow) {
     Scheduler::global_tick_us_ = 0xFFFFFFF0ULL; // Near 32-bit max
     Scheduler::register_task(20, &fake_workload);
     Scheduler::start();
-    
+    TIM2_BASE->PSC = 2; // quicker test
+
     constexpr int NUM_TICKS = 100;
     for(int i = 0; i < NUM_TICKS; i++){
-        TIM2_BASE->CNT++;
+        for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
+
         Scheduler::update();
     }
     // 100 ticks /20 ticks/task = 5 executions.
@@ -99,10 +102,11 @@ TEST_F(SchedulerTests, GlobalTickOverflow) {
 TEST_F(SchedulerTests, TimeoutClearAddTask) {
     uint8_t timeout_id = Scheduler::set_timeout(10, &fake_workload);
     Scheduler::start();
+    TIM2_BASE->PSC = 2; // quicker test
 
     constexpr int NUM_TICKS = 100;
     for(int i = 0; i < NUM_TICKS; i++) {
-        TIM2_BASE->CNT++;
+        for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
         Scheduler::update();
     }
 
@@ -135,10 +139,11 @@ TEST_F(SchedulerTests, TaskDe_ReRegistration) {
     uint8_t operational_task = 0;
     uint8_t fault_task = 0;
     Scheduler::start();
+    TIM2_BASE->PSC = 2; // quicker test
 
     constexpr int NUM_TICKS = 100;
     for(int i = 0; i < NUM_TICKS; i++) {
-        TIM2_BASE->CNT++;
+        for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
         if(i == 21){
             Scheduler::unregister_task(connecting_task);
             operational_task = Scheduler::register_task(10,operational_cyclic);

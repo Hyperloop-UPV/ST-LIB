@@ -10,7 +10,7 @@ void TIM_TypeDef::generate_update() {
         active_RCR = RCR;
         internal_rcr_cnt = active_RCR;
         internal_psc_cnt = 0;
-        CNT = 0; // Usually UEV also resets CNT unless configured otherwise
+        *((uint32_t*)&CNT) = 0; // Usually UEV also resets CNT unless configured otherwise
         SR &= ~(1U << 0); // Clear UIF if needed, or set it depending on CR1
 }
 void simulate_ticks(TIM_TypeDef* tim){
@@ -57,5 +57,12 @@ void simulate_ticks(TIM_TypeDef* tim){
             // No UEV yet, just decrement Repetition Counter
             tim->internal_rcr_cnt--;
         }
+    }
+}
+
+void TIM_TypeDef::inc_cnt_and_check(uint32_t val) {
+    if(val != 0 && this->check_CNT_increase_preconditions()){
+        this->CNT += val;
+        simulate_ticks(this);
     }
 }
