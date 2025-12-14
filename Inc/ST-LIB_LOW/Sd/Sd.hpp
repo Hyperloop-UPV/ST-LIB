@@ -69,8 +69,8 @@ struct SdDomain {
          * @brief Construct a new SdCard
          * @tparam buffer_blocks Number of 512-byte blocks for the MPU buffer
          * @param sdmmc_peripheral The SDMMC peripheral to use (Peripheral::sdmmc1 or Peripheral::sdmmc2)
-         * @param card_detect_config Optional Card Detect pin (DigitalInputDomain::DigitalInput) and its active state, or null for none
-         * @param write_protect_config Optional Write Protect pin (DigitalInputDomain::DigitalInput) and its active state, or null for none
+         * @param card_detect_config Optional Card Detect pin (DigitalInputDomain::DigitalInput) and its active state, or nullopt for none
+         * @param write_protect_config Optional Write Protect pin (DigitalInputDomain::DigitalInput) and its active state, or nullopt for none
          * @param d0_pin_for_sdmmc1 D0 pin to use if using SDMMC1 (default PC8)
          * @param d1_pin_for_sdmmc1 D1 pin to use if using SDMMC1 (default PC9)
          * @note The other pins (CMD, CK, D2, D3) are fixed for each peripheral.
@@ -186,7 +186,7 @@ struct SdDomain {
 
     // State holder, logic is in SdCardWrapper
     struct Instance {
-        friend struct SdCardWrapper;
+        template <auto &> friend struct SdCardWrapper;
         friend struct Init;
 
         bool* operation_flag = nullptr; // External flag to indicate that an operation has finished
@@ -251,7 +251,7 @@ struct SdDomain {
         }
     };
 
-    template <SdCard &card_request>
+    template <auto &card_request>
     struct SdCardWrapper{
         static constexpr bool has_cd = decltype(card_request)::cd.has_value();
         static constexpr bool has_wp = decltype(card_request)::wp.has_value();
@@ -431,7 +431,7 @@ struct SdDomain {
 
         // Variation of HAL_SDEx_WriteBlocksDMAMultiBuffer to fit our needs
         HAL_StatusTypeDef Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(uint32_t BlockAdd, uint32_t NumberOfBlocks) {
-            auto* hsd = instance.hsd;
+            auto* hsd = &instance.hsd;
             SDMMC_DataInitTypeDef config;
             uint32_t errorstate;
             uint32_t DmaBase0_reg;
@@ -475,11 +475,8 @@ struct SdDomain {
                 config.DPSM          = SDMMC_DPSM_DISABLE;
                 (void)SDMMC_ConfigData(hsd->Instance, &config);
 
-                //hsd->Instance->DCTRL |= SDMMC_DCTRL_FIFORST; // I am manually flushing the FIFO here, hal did not do it
-
                 __SDMMC_CMDTRANS_ENABLE(hsd->Instance);
 
-                //hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF1;
                 if (instance.current_buffer == BufferSelect::Buffer1) {
                 hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF1;
                 } else {
@@ -529,9 +526,6 @@ struct SdDomain {
 
                 inst.mpu_buffer0_instance = &mpu_buffer_instances[cfg.mpu_buffer0_idx];
                 inst.mpu_buffer1_instance = &mpu_buffer_instances[cfg.mpu_buffer1_idx];
-                if (!inst.configure_idma()) {
-                    ErrorHandler("SD Card IDMA configuration failed");
-                }
 
                 if (cfg.cd_pin_idx.has_value()) {
                     inst.cd_instance = {&digital_input_instances[cfg.cd_pin_idx.value().first], cfg.cd_pin_idx.value().second};
@@ -546,6 +540,10 @@ struct SdDomain {
                 inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_4B;
                 inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
                 inst.hsd.Init.ClockDiv = 0;
+
+                if (!inst.configure_idma()) {
+                    ErrorHandler("SD Card IDMA configuration failed");
+                }
 
 
                 #ifdef SD_DEBUG_ENABLE
@@ -568,7 +566,7 @@ struct SdDomain {
                 RCC_PeriphCLKInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SDMMC;
                 RCC_PeriphCLKInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL;
                 if (HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct) != HAL_OK) {
-                    ErrorHandler("SDMMC1 clock configuration failed");
+                    ErrorHandler("SDMMC clock configuration failed");
                 }
 
                 if (cfg.peripheral == Peripheral::sdmmc1) {
