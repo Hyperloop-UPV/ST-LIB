@@ -109,7 +109,8 @@ public:
     operator uint32_t() const {
         return reg;
     }
-private:
+    
+protected:
     void set(uint32_t val) {
         RegisterTraits<EnumType, Reg>::write(this->reg, val);
     }
