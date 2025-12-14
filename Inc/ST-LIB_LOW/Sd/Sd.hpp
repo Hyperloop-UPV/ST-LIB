@@ -192,7 +192,7 @@ struct SdDomain {
         bool* operation_flag = nullptr; // External flag to indicate that an operation has finished
 
        private:
-        SD_HandleTypeDef hsd;
+        SD_HandleTypeDef* hsd;
 
         MPUDomain::Instance* mpu_buffer0_instance;
         MPUDomain::Instance* mpu_buffer1_instance;
