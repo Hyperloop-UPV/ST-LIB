@@ -60,12 +60,13 @@ namespace ST_LIB {
             uint8_t id;
         };
 
+        template<Stream... Ss>
         struct DMA {
             using domain = DMA_Domain;
 
             std::array<Entry, 3> e{};
 
-            template<Stream... Ss>
+            
             consteval DMA(Instance instance) {
                 static_assert(sizeof...(Ss) <= 3, "Máximo 3 streams");
 
@@ -312,85 +313,6 @@ namespace ST_LIB {
             void start(uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength){
                 HAL_DMA_Start_IT(&dma, SrcAddress, DstAddress, DataLength);
             }
-            // void setDMAHandle(xHandleDef handle) {
-            //     std::visit([&](auto* real_instance){
-            //         std::visit([&](auto* real_handle){
-            //             using T = std::remove_pointer_t<decltype(real_handle)>;
-            //             // ---------------------------
-            //             // ADC
-            //             // ---------------------------
-            //             if constexpr (std::is_same_v<T, ADC_HandleTypeDef>)
-            //             {
-            //                 // ADC solo tiene un stream
-            //                 __HAL_LINKDMA(real_handle, DMA_Handle, dma);
-
-            //                 HAL_NVIC_SetPriority(irqn, 0, 0);
-            //                 HAL_NVIC_EnableIRQ(irqn);
-            //                 return;
-            //             }
-
-            //             // ---------------------------
-            //             // I2C
-            //             // id = 0 → RX
-            //             // id = 1 → TX
-            //             // ---------------------------
-            //             else if constexpr (std::is_same_v<T, I2C_HandleTypeDef>)
-            //             {
-            //                 if (id == 0)
-            //                     __HAL_LINKDMA(real_handle, hdmarx, dma);
-            //                 else
-            //                     __HAL_LINKDMA(real_handle, hdmatx, dma);
-
-            //                 HAL_NVIC_SetPriority(irqn, 0, 0);
-            //                 HAL_NVIC_EnableIRQ(irqn);
-            //                 return;
-            //             }
-
-            //             // ---------------------------
-            //             // SPI
-            //             // id = 0 → RX
-            //             // id = 1 → TX
-            //             // ---------------------------
-            //             else if constexpr (std::is_same_v<T, SPI_HandleTypeDef>)
-            //             {
-            //                 if (id == 0)
-            //                     __HAL_LINKDMA(real_handle, hdmarx, dma);
-            //                 else
-            //                     __HAL_LINKDMA(real_handle, hdmatx, dma);
-
-            //                 HAL_NVIC_SetPriority(irqn, 0, 0);
-            //                 HAL_NVIC_EnableIRQ(irqn);
-            //                 return;
-            //             }
-
-            //             // ---------------------------
-            //             // FMAC
-            //             // id = 0 → Preload
-            //             // id = 1 → In
-            //             // id = 2 → Out
-            //             // ---------------------------
-            //             else if constexpr (std::is_same_v<T, FMAC_HandleTypeDef>)
-            //             {
-            //                 if (id == 0)
-            //                     __HAL_LINKDMA(real_handle, hdmaPreload, dma);
-            //                 else if (id == 1)
-            //                     __HAL_LINKDMA(real_handle, hdmaIn, dma);
-            //                 else
-            //                     __HAL_LINKDMA(real_handle, hdmaOut, dma);
-
-            //                 HAL_NVIC_SetPriority(irqn, 0, 0);
-            //                 HAL_NVIC_EnableIRQ(irqn);
-            //                 return;
-            //             }
-
-            //             else {
-            //                 ErrorHandler("Unsupported peripheral type in setDMAHandle");
-            //             }
-
-            //         }, handle);
-
-            //     }, instance);
-            // }
         };
 
         
