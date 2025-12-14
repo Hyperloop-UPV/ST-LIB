@@ -245,10 +245,6 @@ void MDMA::transfer_data(uint8_t* source_address, uint8_t* destination_address, 
             return;
         }
     }
-    if(done)
-    {
-        *done = false;
-    }
     return;
 }
 
