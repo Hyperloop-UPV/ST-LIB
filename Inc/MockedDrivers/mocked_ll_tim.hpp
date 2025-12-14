@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "MockedDrivers/stm32h723xx_wrapper.h"
 #include "MockedDrivers/common.hpp"
 #include "MockedDrivers/NVIC.hpp"
 #include "MockedDrivers/tim_register_definitions.hpp"
@@ -129,5 +130,7 @@ struct RegisterTraits<TimReg,TimReg::Reg_CNT> {
     TIM_TypeDef __htim##TIM_IDX{TIM_IDX##_IRQHandler,TIM_IDX##_IRQn}; \
     TIM_TypeDef*  TIM_IDX##_BASE = &__htim##TIM_IDX;
 
+#undef TIM1_BASE
 DECLARE_TIMER(TIM1)
+#undef TIM2_BASE
 DECLARE_TIMER(TIM2)

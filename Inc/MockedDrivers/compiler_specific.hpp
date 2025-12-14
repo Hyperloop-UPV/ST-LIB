@@ -6,6 +6,14 @@
  * ARM GCC intrinsics that don't work on x86_64 / host platforms.
  */
 
+//////////////////////////////////////////////////////////////////
+
+#ifdef __COMPILER_BARRIER
+#undef __COMPILER_BARRIER
+#endif
+
+//////////////////////////////////////////////////////////////////
+
 static inline uint32_t __RBIT(uint32_t val) {
     // 1. Hardware Byte Swap (Optimization: handles the large movements)
     // MSVC uses _byteswap_ulong, GCC/Clang uses __builtin_bswap32
