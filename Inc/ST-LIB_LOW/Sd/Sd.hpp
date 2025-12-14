@@ -81,8 +81,8 @@ struct SdDomain {
 
             e.peripheral = sdmmc_peripheral;
 
-            buffer0 = MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>();
-            buffer1 = MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>();
+            buffer0 = MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1);
+            buffer1 = MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1);
 
             cd = card_detect_config;
             wp = write_protect_config;
