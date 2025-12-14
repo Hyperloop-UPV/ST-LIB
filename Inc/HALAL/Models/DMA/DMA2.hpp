@@ -339,90 +339,91 @@ namespace ST_LIB {
         }
 
         struct Instances_ {
-            xTypeDef instance;
             DMA_HandleTypeDef dma;
-            IRQn_Type irqn;
             uint8_t id;
 
-            void setDMAHandle(xHandleDef handle) {
-                std::visit([&](auto* real_instance){
-                    std::visit([&](auto* real_handle){
-                        using T = std::remove_pointer_t<decltype(real_handle)>;
-                        // ---------------------------
-                        // ADC
-                        // ---------------------------
-                        if constexpr (std::is_same_v<T, ADC_HandleTypeDef>)
-                        {
-                            // ADC solo tiene un stream
-                            __HAL_LINKDMA(real_handle, DMA_Handle, dma);
-
-                            HAL_NVIC_SetPriority(irqn, 0, 0);
-                            HAL_NVIC_EnableIRQ(irqn);
-                            return;
-                        }
-
-                        // ---------------------------
-                        // I2C
-                        // id = 0 → RX
-                        // id = 1 → TX
-                        // ---------------------------
-                        else if constexpr (std::is_same_v<T, I2C_HandleTypeDef>)
-                        {
-                            if (id == 0)
-                                __HAL_LINKDMA(real_handle, hdmarx, dma);
-                            else
-                                __HAL_LINKDMA(real_handle, hdmatx, dma);
-
-                            HAL_NVIC_SetPriority(irqn, 0, 0);
-                            HAL_NVIC_EnableIRQ(irqn);
-                            return;
-                        }
-
-                        // ---------------------------
-                        // SPI
-                        // id = 0 → RX
-                        // id = 1 → TX
-                        // ---------------------------
-                        else if constexpr (std::is_same_v<T, SPI_HandleTypeDef>)
-                        {
-                            if (id == 0)
-                                __HAL_LINKDMA(real_handle, hdmarx, dma);
-                            else
-                                __HAL_LINKDMA(real_handle, hdmatx, dma);
-
-                            HAL_NVIC_SetPriority(irqn, 0, 0);
-                            HAL_NVIC_EnableIRQ(irqn);
-                            return;
-                        }
-
-                        // ---------------------------
-                        // FMAC
-                        // id = 0 → Preload
-                        // id = 1 → In
-                        // id = 2 → Out
-                        // ---------------------------
-                        else if constexpr (std::is_same_v<T, FMAC_HandleTypeDef>)
-                        {
-                            if (id == 0)
-                                __HAL_LINKDMA(real_handle, hdmaPreload, dma);
-                            else if (id == 1)
-                                __HAL_LINKDMA(real_handle, hdmaIn, dma);
-                            else
-                                __HAL_LINKDMA(real_handle, hdmaOut, dma);
-
-                            HAL_NVIC_SetPriority(irqn, 0, 0);
-                            HAL_NVIC_EnableIRQ(irqn);
-                            return;
-                        }
-
-                        else {
-                            ErrorHandler("Unsupported peripheral type in setDMAHandle");
-                        }
-
-                    }, handle);
-
-                }, instance);
+            void start(uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength){
+                HAL_DMA_Start_IT(&dma, SrcAddress, DstAddress, DataLength);
             }
+            // void setDMAHandle(xHandleDef handle) {
+            //     std::visit([&](auto* real_instance){
+            //         std::visit([&](auto* real_handle){
+            //             using T = std::remove_pointer_t<decltype(real_handle)>;
+            //             // ---------------------------
+            //             // ADC
+            //             // ---------------------------
+            //             if constexpr (std::is_same_v<T, ADC_HandleTypeDef>)
+            //             {
+            //                 // ADC solo tiene un stream
+            //                 __HAL_LINKDMA(real_handle, DMA_Handle, dma);
+
+            //                 HAL_NVIC_SetPriority(irqn, 0, 0);
+            //                 HAL_NVIC_EnableIRQ(irqn);
+            //                 return;
+            //             }
+
+            //             // ---------------------------
+            //             // I2C
+            //             // id = 0 → RX
+            //             // id = 1 → TX
+            //             // ---------------------------
+            //             else if constexpr (std::is_same_v<T, I2C_HandleTypeDef>)
+            //             {
+            //                 if (id == 0)
+            //                     __HAL_LINKDMA(real_handle, hdmarx, dma);
+            //                 else
+            //                     __HAL_LINKDMA(real_handle, hdmatx, dma);
+
+            //                 HAL_NVIC_SetPriority(irqn, 0, 0);
+            //                 HAL_NVIC_EnableIRQ(irqn);
+            //                 return;
+            //             }
+
+            //             // ---------------------------
+            //             // SPI
+            //             // id = 0 → RX
+            //             // id = 1 → TX
+            //             // ---------------------------
+            //             else if constexpr (std::is_same_v<T, SPI_HandleTypeDef>)
+            //             {
+            //                 if (id == 0)
+            //                     __HAL_LINKDMA(real_handle, hdmarx, dma);
+            //                 else
+            //                     __HAL_LINKDMA(real_handle, hdmatx, dma);
+
+            //                 HAL_NVIC_SetPriority(irqn, 0, 0);
+            //                 HAL_NVIC_EnableIRQ(irqn);
+            //                 return;
+            //             }
+
+            //             // ---------------------------
+            //             // FMAC
+            //             // id = 0 → Preload
+            //             // id = 1 → In
+            //             // id = 2 → Out
+            //             // ---------------------------
+            //             else if constexpr (std::is_same_v<T, FMAC_HandleTypeDef>)
+            //             {
+            //                 if (id == 0)
+            //                     __HAL_LINKDMA(real_handle, hdmaPreload, dma);
+            //                 else if (id == 1)
+            //                     __HAL_LINKDMA(real_handle, hdmaIn, dma);
+            //                 else
+            //                     __HAL_LINKDMA(real_handle, hdmaOut, dma);
+
+            //                 HAL_NVIC_SetPriority(irqn, 0, 0);
+            //                 HAL_NVIC_EnableIRQ(irqn);
+            //                 return;
+            //             }
+
+            //             else {
+            //                 ErrorHandler("Unsupported peripheral type in setDMAHandle");
+            //             }
+
+            //         }, handle);
+
+            //     }, instance);
+            // }
         };
 
         
@@ -437,15 +438,17 @@ namespace ST_LIB {
                     const auto &e = cfgs[i];
                     auto [instance, dma_init, stream, irqn, id] = e.init_data;           
                     
-                    instances[i].instance = instance_to_xTypeDef(instance);
                     instances[i].dma.Instance = stream_to_DMA_StreamTypeDef(stream);
                     instances[i].dma.Init = dma_init;
-                    instances[i].irqn = irqn;
                     instances[i].id = id;
 
                     // No estoy seguro de que esto tenga que ir aqui
                     if (HAL_DMA_Init(&instances[i].dma) != HAL_OK) {
                         ErrorHandler("DMA Init failed");
+                    }
+                    else{
+                        HAL_NVIC_SetPriority(irqn, 0, 0);
+                        HAL_NVIC_EnableIRQ(irqn);
                     }
                 }
             }
