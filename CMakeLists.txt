@@ -59,6 +59,7 @@ if(CMAKE_CROSSCOMPILING)
 
     # ADC
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_ll_adc.c
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc_ex.c
 
     # DFSDM
