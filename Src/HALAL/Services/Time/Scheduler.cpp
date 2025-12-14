@@ -173,8 +173,6 @@ inline uint8_t Scheduler::allocate_slot() {
 }
 
 inline void Scheduler::release_slot(uint8_t id) {
-    // NOTE: This condition shouldn't be here since it's an internal function but it could be an assert
-    if(id >= kMaxTasks) [[unlikely]] return;
     ready_bitmap_ &= ~(1u << id);
     free_bitmap_ |= (1u << id);
 }
