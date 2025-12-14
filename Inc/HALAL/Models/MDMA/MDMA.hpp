@@ -153,7 +153,7 @@ private:
      * @param source_address The source address for the transfer.
      * @param destination_address The destination address for the transfer.
      * @param data_length The length of data to be transferred.
-     * @param check A reference boolean that will be set to true if the transfer was successfully started, false otherwise.
+     * @param check A reference boolean that will be set to true if the transfer was successfully done, false otherwise.
      */
     static void transfer_data(uint8_t* source_address, uint8_t* destination_address, const uint32_t data_length, bool* done=nullptr);
 
@@ -161,7 +161,7 @@ private:
      * @brief A method to transfer using MDMA linked 
      *  
      * @param first_node The linked list node representing the first node in the linked list.
-     * @param check A reference boolean that will be set to true if the transfer was successfully queued, false otherwise.
+     * @param check A reference boolean that will be set to true if the transfer was successfully done, false otherwise.
      */
     static void transfer_list(MDMA::LinkedListNode* first_node,bool* check=nullptr);
 

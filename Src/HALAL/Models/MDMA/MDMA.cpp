@@ -147,6 +147,11 @@ void MDMA::start()
 {
     __HAL_RCC_MDMA_CLK_ENABLE();
 
+    if (buffer==nullptr) 
+    {
+    ErrorHandler("Failed to allocate MDMA link node pool buffer");
+    }
+
     uint8_t id = 0;
     for (auto& instance : instances)
     {
@@ -258,10 +263,7 @@ void MDMA::TransferCompleteCallback(MDMA_HandleTypeDef *hmdma)
     {
         return;
     }
-    else
-    {
-        *(instance.done) = true;
-    }
+    *(instance.done) = true;
 
 }
 
@@ -279,11 +281,7 @@ void MDMA::TransferErrorCallback(MDMA_HandleTypeDef *hmdma)
     {
         return;
     }
-    else
-    {
-        *(instance.done) = false;
-    }
-
+    *(instance.done) = false;
 
     const unsigned long error_code = static_cast<unsigned long>(hmdma->ErrorCode);
     ErrorHandler("MDMA Transfer Error, code: " + std::to_string(error_code));
