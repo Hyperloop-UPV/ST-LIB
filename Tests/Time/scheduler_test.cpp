@@ -119,13 +119,16 @@ static volatile int connecting_execs{0};
 static volatile int operational_execs{0};
 static volatile int fault_execs{0}; 
 void connecting_cyclic(){
-    connecting_execs++;
+    auto next_connecting_execs = connecting_execs + 1;
+    connecting_execs = next_connecting_execs;
 }
 void operational_cyclic(){
-    operational_execs++;
+    auto next_operational_execs = operational_execs + 1;
+    operational_execs = next_operational_execs;
 }
 void fault_cyclic(){
-    fault_execs++;
+    auto next_fault_execs = fault_execs + 1;
+    fault_execs = next_fault_execs;
 }
 TEST_F(SchedulerTests, TaskDe_ReRegistration) {
     uint8_t connecting_task = Scheduler::register_task(10, &connecting_cyclic);
