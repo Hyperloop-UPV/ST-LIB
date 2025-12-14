@@ -192,7 +192,7 @@ struct SdDomain {
         bool* operation_flag = nullptr; // External flag to indicate that an operation has finished
 
        private:
-        SD_HandleTypeDef* hsd;
+        SD_HandleTypeDef hsd;
 
         MPUDomain::Instance* mpu_buffer0_instance;
         MPUDomain::Instance* mpu_buffer1_instance;
@@ -352,7 +352,7 @@ struct SdDomain {
 
         // Variation of HAL_SDEx_ReadBlocksDMAMultiBuffer to fit our needs
         HAL_StatusTypeDef Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(uint32_t BlockAdd, uint32_t NumberOfBlocks) {
-            auto* hsd = instance.hsd;
+            auto* hsd = &instance.hsd;
             SDMMC_DataInitTypeDef config;
             uint32_t errorstate;
             uint32_t DmaBase0_reg;
