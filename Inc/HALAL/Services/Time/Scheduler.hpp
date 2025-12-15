@@ -92,7 +92,7 @@ struct Scheduler {
     static uint32_t ready_bitmap_;
     static uint32_t free_bitmap_;
     static uint64_t global_tick_us_;
-    static uint64_t current_interval_us_;
+    static uint32_t current_interval_us_;
 
     static inline uint8_t allocate_slot();
     static inline void release_slot(uint8_t id);
