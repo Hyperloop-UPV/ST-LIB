@@ -99,7 +99,7 @@ struct Scheduler {
     static void insert_sorted(uint8_t id);
     static void remove_sorted(uint8_t id);
     static void schedule_next_interval();
-    static inline void configure_timer_for_interval(uint64_t microseconds);
+    static inline void configure_timer_for_interval(uint32_t microseconds);
     static uint8_t register_task(uint32_t period_us, callback_t func, bool repeating);
 
     // helpers
