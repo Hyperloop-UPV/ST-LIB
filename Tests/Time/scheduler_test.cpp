@@ -178,7 +178,8 @@ TEST_F(SchedulerTests, TaskDe_ReRegistration) {
     X(12) \
     X(13) \
     X(14) \
-    X(15)
+    X(15) \
+    X(16)
 
 #define X(n) \
     int multiple_task##n##count = 0; \
@@ -189,7 +190,7 @@ multiple_tasks
 #undef X
 TEST_F(SchedulerTests, MultipleTasks) {
 #define X(n) uint8_t taskid##n = Scheduler::register_task(n, &multiple_task_##n); \
-    (void) taskid##n;
+    (void)taskid##n;
     multiple_tasks
 #undef X
 
@@ -206,3 +207,21 @@ TEST_F(SchedulerTests, MultipleTasks) {
 #undef X
 }
 
+
+TEST_F(SchedulerTests, SameTaskMultipleTimes) {
+#define X(n) uint8_t taskid_##n = Scheduler::register_task(n, &multiple_task_1); \
+    (void)taskid_##n;
+    multiple_tasks
+#undef X
+
+    Scheduler::start();
+    TIM2_BASE->PSC = 2; // quicker test
+    constexpr int NUM_TICKS = 30;
+    for(int i = 0; i < NUM_TICKS; i++) {
+        for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
+        Scheduler::update();
+    }
+
+#define X(n) NUM_TICKS / n + 
+    EXPECT_EQ(multiple_task1count, multiple_tasks   0);
+}
