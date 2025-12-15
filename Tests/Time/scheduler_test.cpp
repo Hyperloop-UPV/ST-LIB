@@ -196,7 +196,7 @@ TEST_F(SchedulerTests, MultipleTasks) {
 
     Scheduler::start();
     TIM2_BASE->PSC = 2; // quicker test
-    constexpr int NUM_TICKS = 30;
+    constexpr int NUM_TICKS = 300;
     for(int i = 0; i < NUM_TICKS; i++) {
         for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
         Scheduler::update();
@@ -207,7 +207,6 @@ TEST_F(SchedulerTests, MultipleTasks) {
 #undef X
 }
 
-
 TEST_F(SchedulerTests, SameTaskMultipleTimes) {
 #define X(n) uint8_t taskid_##n = Scheduler::register_task(n, &multiple_task_1); \
     (void)taskid_##n;
@@ -216,7 +215,7 @@ TEST_F(SchedulerTests, SameTaskMultipleTimes) {
 
     Scheduler::start();
     TIM2_BASE->PSC = 2; // quicker test
-    constexpr int NUM_TICKS = 30;
+    constexpr int NUM_TICKS = 300;
     for(int i = 0; i < NUM_TICKS; i++) {
         for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
         Scheduler::update();
