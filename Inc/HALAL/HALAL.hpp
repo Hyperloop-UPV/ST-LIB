@@ -1,5 +1,8 @@
 #pragma once
 
+#include "HALAL/Models/GPIO.hpp"
+#include "HALAL/Models/Pin.hpp"
+
 #include "HALAL/Models/HALconfig/HALconfig.hpp"
 #include "HALAL/Models/DMA/DMA.hpp"
 
@@ -33,6 +36,7 @@
 #include "HALAL/Services/FMAC/FMAC.hpp"
 
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
+#include "HALAL/Models/MPU.hpp"
 #include "HALAL/Services/InfoWarning/InfoWarning.hpp"
 #include "HALAL/Services/Watchdog/Watchdog.hpp"
 
