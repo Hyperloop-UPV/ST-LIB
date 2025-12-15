@@ -16,7 +16,7 @@
 #endif
 
 #ifndef NODES_MAX
-#define NODES_MAX 100
+#define NODES_MAX 5
 #endif
 
 #ifndef TRANSFER_QUEUE_MAX_SIZE
@@ -72,15 +72,15 @@ class MDMA{
     auto get_next() -> MDMA_LinkNodeTypeDef* { return reinterpret_cast<MDMA_LinkNodeTypeDef*>(node.CLAR); }
 
 private:
-    MDMA_LinkNodeTypeDef node;
+    alignas(8) MDMA_LinkNodeTypeDef node;
 
     void init_node(void* src, void* dst, size_t size) 
     {
         MDMA_LinkNodeConfTypeDef nodeConfig{};
-        nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE; 
+        nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_RIGHT; 
         nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
         nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-        nodeConfig.Init.BufferTransferLength = 1;
+        nodeConfig.Init.BufferTransferLength = 128;
         nodeConfig.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
         nodeConfig.Init.SourceBlockAddressOffset = 0;
         nodeConfig.Init.DestBlockAddressOffset = 0;
