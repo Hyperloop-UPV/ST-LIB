@@ -163,17 +163,35 @@ TEST_F(SchedulerTests, TaskDe_ReRegistration) {
     EXPECT_EQ(fault_execs, 2);
 }
 
-int multiple_task1count = 0;
-void multiple_task_1(void) {
-    multiple_task1count++;
-}
-int multiple_task2count = 0;
-void multiple_task_2(void) {
-    multiple_task2count++;
-}
+#define multiple_tasks \
+    X(1) \
+    X(2) \
+    X(3) \
+    X(4) \
+    X(5) \
+    X(6) \
+    X(7) \
+    X(8) \
+    X(9) \
+    X(10) \
+    X(11) \
+    X(12) \
+    X(13) \
+    X(14) \
+    X(15)
+
+#define X(n) \
+    int multiple_task##n##count = 0; \
+    void multiple_task_##n(void) { \
+        multiple_task##n##count++; \
+    }
+multiple_tasks
+#undef X
 TEST_F(SchedulerTests, MultipleTasks) {
-    uint8_t taskid1 = Scheduler::register_task(2, &multiple_task_1);
-    uint8_t taskid2 = Scheduler::register_task(3, &multiple_task_2);
+#define X(n) uint8_t taskid##n = Scheduler::register_task(n, &multiple_task_##n); \
+    (void) taskid##n;
+    multiple_tasks
+#undef X
 
     Scheduler::start();
     TIM2_BASE->PSC = 2; // quicker test
@@ -182,6 +200,9 @@ TEST_F(SchedulerTests, MultipleTasks) {
         for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
         Scheduler::update();
     }
-    EXPECT_EQ(multiple_task1count, 15);
-    EXPECT_EQ(multiple_task2count, 10);
+
+#define X(n) EXPECT_EQ(multiple_task##n##count, NUM_TICKS / n);
+    multiple_tasks
+#undef X
 }
+
