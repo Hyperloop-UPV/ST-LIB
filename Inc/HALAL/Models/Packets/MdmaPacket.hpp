@@ -158,7 +158,7 @@ struct MdmaPacketDomain {
         uint8_t* build(uint8_t* destination_address = nullptr) {
             set_build_destination(destination_address);
             bool done = false;
-            MDMA::transfer_list(0, build_nodes[0], &done);
+            MDMA::transfer_list(build_nodes[0], &done);
             while (!done) {
                 // Busy wait
             }
@@ -173,7 +173,7 @@ struct MdmaPacketDomain {
         */
         uint8_t* build(bool* done, uint8_t* destination_address = nullptr) {
             set_build_destination(destination_address);
-            MDMA::transfer_list(0, build_nodes[0], done);
+            MDMA::transfer_list(build_nodes[0], done);
             return destination_address ? destination_address : buffer;
         }
 
@@ -186,7 +186,7 @@ struct MdmaPacketDomain {
         void parse(uint8_t* data = nullptr) override {
             bool done = false;
             auto source_node = set_parse_source(data);
-            MDMA::transfer_list(0, source_node, &done);
+            MDMA::transfer_list(source_node, &done);
             while (!done) {
                 // Busy wait
             }
@@ -194,7 +194,7 @@ struct MdmaPacketDomain {
 
         void parse(bool* done, uint8_t* data = nullptr) {
             auto source_node = set_parse_source(data);
-            MDMA::transfer_list(0, source_node, done);
+            MDMA::transfer_list(source_node, done);
         }
 
         size_t get_size() override {
@@ -226,11 +226,11 @@ struct MdmaPacketDomain {
         void set_build_destination(uint8_t* external_buffer) {
             if (external_buffer != nullptr) {
                 build_transfer_node->set_destination(external_buffer);
+                // build_transfer_node->node.CTBR = 0; Hardcoded works, should fix
                 build_nodes[sizeof...(Types)]->set_next(build_transfer_node->get_node());
             } else {
                 build_nodes[sizeof...(Types)]->set_next(nullptr);
             }
-            SCB_CleanDCache_by_Addr((uint32_t*)build_nodes[sizeof...(Types)], sizeof(MDMA::LinkedListNode) * 2);
         }
 
         MDMA::LinkedListNode* set_parse_source(uint8_t* external_buffer) {
