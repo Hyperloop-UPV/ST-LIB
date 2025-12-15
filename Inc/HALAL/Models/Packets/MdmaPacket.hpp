@@ -79,10 +79,10 @@ struct MdmaPacketDomain {
             using domain = MdmaPacketDomain;
 
             static constexpr size_t packet_size_bytes = (sizeof(Types) + ...) + sizeof(uint16_t);
-            static constexpr size_t nodes_size_bytes = (2 * (sizeof...(Types) + 1) + 2) * sizeof(MDMA::LinkedListNode);
+            static constexpr size_t nodes_size = (2 * (sizeof...(Types) + 1) + 2);
 
             using PacketMem = std::array<uint8_t, packet_size_bytes>;
-            using NodesMem = std::array<uint8_t, nodes_size_bytes>;
+            using NodesMem = std::array<MDMA::LinkedListNode, nodes_size>;
 
             MPUDomain::Buffer<PacketMem> packet_req;
             MPUDomain::Buffer<NodesMem> nodes_req;
