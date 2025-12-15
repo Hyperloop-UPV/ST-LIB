@@ -152,15 +152,15 @@ struct MdmaPacketDomain {
 
         /**
         * @brief Build the packet and transfer data into non-cached buffer using MDMA
-        * @param destination_address Optional destination address for the built packet (should be non-cached, else you will need to manage cache coherency)
+        * @param destination_address Optional destination address for the built packet (should be non-cached, else you will need to manage cache coherency). It isn't optional here becasue there's a specific overload without parameters for compliance with Packet interface.
         * @return Pointer to the built packet data (internal buffer or destination address)
         */
-        uint8_t* build(uint8_t* destination_address = nullptr) {
+        uint8_t* build(uint8_t* destination_address) {
             set_build_destination(destination_address);
             bool done = false;
             MDMA::transfer_list(build_nodes[0], &done);
             while (!done) {
-                // Busy wait
+                MDMA::update();
             }
             return destination_address ? destination_address : buffer;
         }
@@ -183,15 +183,25 @@ struct MdmaPacketDomain {
             return build(destination_address);
         }
 
-        void parse(uint8_t* data = nullptr) override {
+        /**
+         * @brief Parse the packet data from non-cached buffer using MDMA
+         * @param data Optional source data address to parse from (should be non-cached, else you will need to manage cache coherency). It isn't optional here becasue there's a specific overload without parameters for compliance with Packet interface.
+         * @param done Optional pointer to a boolean that will be set to true when parsing is done.
+         */
+        void parse(uint8_t* data) override {
             bool done = false;
             auto source_node = set_parse_source(data);
             MDMA::transfer_list(source_node, &done);
             while (!done) {
-                // Busy wait
+                MDMA::update();
             }
         }
 
+        /**
+         * @brief Parse the packet data from non-cached buffer using MDMA with a promise
+         * @param done Pointer to a boolean that will be set to true when parsing is done.
+         * @param data Optional source data address to parse from (should be non-cached, else you will need to manage cache coherency).
+         */
         void parse(bool* done, uint8_t* data = nullptr) {
             auto source_node = set_parse_source(data);
             MDMA::transfer_list(source_node, done);
@@ -226,7 +236,6 @@ struct MdmaPacketDomain {
         void set_build_destination(uint8_t* external_buffer) {
             if (external_buffer != nullptr) {
                 build_transfer_node->set_destination(external_buffer);
-                // build_transfer_node->node.CTBR = 0; Hardcoded works, should fix
                 build_nodes[sizeof...(Types)]->set_next(build_transfer_node->get_node());
             } else {
                 build_nodes[sizeof...(Types)]->set_next(nullptr);
