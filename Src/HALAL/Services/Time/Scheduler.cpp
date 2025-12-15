@@ -25,7 +25,7 @@
 #define Scheduler_global_timer ((TIM_TypeDef*)SCHEDULER_TIMER_BASE)
 namespace {
 constexpr uint64_t kMaxIntervalUs =
-    static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()) + 1ULL;
+    static_cast<uint64_t>(std::numeric_limits<uint32_t>::max())/2 + 1ULL;
 }
 
 std::array<Scheduler::Task, Scheduler::kMaxTasks> Scheduler::tasks_{};
@@ -35,7 +35,7 @@ uint32_t Scheduler::active_task_count_{0};
 uint32_t Scheduler::ready_bitmap_{0};
 uint32_t Scheduler::free_bitmap_{0xFFFF'FFFF};
 uint64_t Scheduler::global_tick_us_{0};
-uint64_t Scheduler::current_interval_us_{0};
+uint32_t Scheduler::current_interval_us_{0};
 
 inline uint8_t Scheduler::get_at(uint8_t idx) {
     int word_idx = idx > 7;
@@ -160,8 +160,6 @@ void Scheduler::update() {
     }
 }
 
-inline uint64_t Scheduler::get_global_tick() { return global_tick_us_; }
-
 // void Scheduler::global_timer_callback() { on_timer_update(); }
 
 inline uint8_t Scheduler::allocate_slot() {
@@ -186,7 +184,7 @@ void Scheduler::insert_sorted(uint8_t id) {
     while (left < right) {
         std::size_t mid = left + ((right - left) / 2);
         const Task& mid_task = tasks_[Scheduler::get_at(mid)];
-        if (mid_task.next_fire_us <= task.next_fire_us) {
+        if ((int32_t)(task.next_fire_us - mid_task.next_fire_us) >= 0) {
             left = mid + 1;
         } else {
             right = mid;
@@ -265,14 +263,14 @@ void Scheduler::schedule_next_interval() {
     Scheduler::global_timer_enable();
     uint8_t next_id = Scheduler::front_id();  // sorted_task_ids_[0]
     Task& next_task = tasks_[next_id];
-    uint64_t delta = ((next_task.next_fire_us + 1ULL) > global_tick_us_) 
-        ? (next_task.next_fire_us - global_tick_us_) : 1ULL;
-
-    if (delta > kMaxIntervalUs) [[unlikely]] {
-        current_interval_us_ = kMaxIntervalUs;
+    int32_t diff = (int32_t)(next_task.next_fire_us - static_cast<uint32_t>(global_tick_us_));
+    uint32_t delta;
+    if (diff <= 0) [[unlikely]]{
+        delta = 1; // Task is due or overdue
     } else {
-        current_interval_us_ = delta;
+        delta = static_cast<uint32_t>(diff);
     }
+    current_interval_us_ = delta;
 
     configure_timer_for_interval(current_interval_us_);
 }
@@ -288,18 +286,18 @@ inline void Scheduler::configure_timer_for_interval(uint64_t microseconds) {
 void Scheduler::on_timer_update() {
     global_tick_us_ += current_interval_us_;
 
-    // pop all due tasks, several might be due in the same tick
-    while(active_task_count_ > 0) {
+    while (active_task_count_ > 0) { //Pop all due tasks, several might be due in the same tick
         uint8_t candidate_id = Scheduler::front_id();
         Task& task = tasks_[candidate_id];
-        if(task.next_fire_us > Scheduler::global_tick_us_) [[likely]] {
-            break; // task is in the future, stop processing
+        int32_t diff = (int32_t)(task.next_fire_us - static_cast<uint32_t>(global_tick_us_));
+        if (diff > 0) [[likely]]{
+            break; // Task is in the future, stop processing
         }
         pop_front();
         ready_bitmap_ |= (1u << candidate_id); // mark task as ready
 
         if (task.repeating) [[likely]] {
-            task.next_fire_us = global_tick_us_ + task.period_us;
+            task.next_fire_us = static_cast<uint32_t>(global_tick_us_ + task.period_us);
             insert_sorted(candidate_id);
         }
     }
@@ -309,6 +307,7 @@ void Scheduler::on_timer_update() {
 
 uint8_t Scheduler::register_task(uint32_t period_us, callback_t func, bool repeating) {
     if (func == nullptr) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
+    if(period_us >= kMaxIntervalUs) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
 
     uint8_t slot = allocate_slot();
     if(slot == Scheduler::INVALID_ID) return slot;
@@ -317,8 +316,7 @@ uint8_t Scheduler::register_task(uint32_t period_us, callback_t func, bool repea
     task.callback = func;
     task.period_us = period_us;
     task.repeating = repeating;
-    task.next_fire_us = global_tick_us_ + period_us;
-
+    task.next_fire_us = static_cast<uint32_t>(global_tick_us_ + period_us);
     insert_sorted(slot);
     schedule_next_interval();
     return slot;
