@@ -288,14 +288,20 @@ inline void Scheduler::configure_timer_for_interval(uint64_t microseconds) {
 void Scheduler::on_timer_update() {
     global_tick_us_ += current_interval_us_;
 
-    uint8_t candidate_id = Scheduler::front_id();
-    Task& task = tasks_[candidate_id];
-    pop_front();
-    ready_bitmap_ |= (1u << candidate_id); // mark task as ready
+    // pop all due tasks, several might be due in the same tick
+    while(active_task_count_ > 0) {
+        uint8_t candidate_id = Scheduler::front_id();
+        Task& task = tasks_[candidate_id];
+        if(task.next_fire_us > Scheduler::global_tick_us_) [[likely]] {
+            break; // task is in the future, stop processing
+        }
+        pop_front();
+        ready_bitmap_ |= (1u << candidate_id); // mark task as ready
 
-    if (task.repeating) [[likely]] {
-        task.next_fire_us = global_tick_us_ + task.period_us;
-        insert_sorted(candidate_id);
+        if (task.repeating) [[likely]] {
+            task.next_fire_us = global_tick_us_ + task.period_us;
+            insert_sorted(candidate_id);
+        }
     }
 
     schedule_next_interval();
