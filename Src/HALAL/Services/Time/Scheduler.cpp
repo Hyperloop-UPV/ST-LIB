@@ -265,8 +265,8 @@ void Scheduler::schedule_next_interval() {
     Task& next_task = tasks_[next_id];
     int32_t diff = (int32_t)(next_task.next_fire_us - static_cast<uint32_t>(global_tick_us_));
     uint32_t delta;
-    if (diff <= 0) [[unlikely]]{
-        delta = 1; // Task is due or overdue
+    if (diff <= 1) [[unlikely]]{
+        delta = 2; // Task is due or overdue
     } else {
         delta = static_cast<uint32_t>(diff);
     }
@@ -275,7 +275,7 @@ void Scheduler::schedule_next_interval() {
     configure_timer_for_interval(current_interval_us_);
 }
 
-inline void Scheduler::configure_timer_for_interval(uint64_t microseconds) {
+inline void Scheduler::configure_timer_for_interval(uint32_t microseconds) {
     // NOTE(vic): disabling the timer _might_ be necessary to prevent the timer from firing in the middle of configuring it, highly unlikely since it has a period of at least 1 microsecond
     // TODO(vic): Validation: check arr is set correctly here: https://github.com/HyperloopUPV-H8/ST-LIB/pull/534#pullrequestreview-3529132356
     Scheduler_global_timer->ARR = static_cast<uint32_t>(microseconds - 1u);
