@@ -282,11 +282,10 @@ void MDMA::TransferErrorCallback(MDMA_HandleTypeDef *hmdma)
     }
 
     Instance& instance = get_instance(channel_it->second);
-    if(instance.done == nullptr)
+    if(instance.done != nullptr)
     {
-        return;
+        *(instance.done) = false;
     }
-    *(instance.done) = false;
 
     const unsigned long error_code = static_cast<unsigned long>(hmdma->ErrorCode);
     ErrorHandler("MDMA Transfer Error, code: " + std::to_string(error_code));
