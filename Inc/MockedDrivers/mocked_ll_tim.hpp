@@ -114,10 +114,7 @@ public:
         }
 
         // If prescaler didn't overflow, the main counter doesn't move.
-        if (!main_counter_tick) {
-            return false;
-        }
-        return true;
+        return main_counter_tick;
     }
 
     void inc_cnt_and_check(uint32_t val);

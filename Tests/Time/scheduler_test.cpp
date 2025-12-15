@@ -162,3 +162,26 @@ TEST_F(SchedulerTests, TaskDe_ReRegistration) {
     EXPECT_EQ(operational_execs, 2);
     EXPECT_EQ(fault_execs, 2);
 }
+
+int multiple_task1count = 0;
+void multiple_task_1(void) {
+    multiple_task1count++;
+}
+int multiple_task2count = 0;
+void multiple_task_2(void) {
+    multiple_task2count++;
+}
+TEST_F(SchedulerTests, MultipleTasks) {
+    uint8_t taskid1 = Scheduler::register_task(2, &multiple_task_1);
+    uint8_t taskid2 = Scheduler::register_task(3, &multiple_task_2);
+
+    Scheduler::start();
+    TIM2_BASE->PSC = 2; // quicker test
+    constexpr int NUM_TICKS = 30;
+    for(int i = 0; i < NUM_TICKS; i++) {
+        for(int j = 0; j <= TIM2_BASE->PSC; j++) TIM2_BASE->inc_cnt_and_check(1);
+        Scheduler::update();
+    }
+    EXPECT_EQ(multiple_task1count, 15);
+    EXPECT_EQ(multiple_task2count, 10);
+}
