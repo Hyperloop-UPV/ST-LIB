@@ -111,7 +111,7 @@ TEST_F(SchedulerTests, TimeoutClearAddTask) {
     }
 
     // timeout is already done here
-    uint8_t task_id = Scheduler::register_task(20, &fake_workload);
+    uint8_t timeout_id_2 = Scheduler::set_timeout(20, &fake_workload);
     
     // after timeout, cancel task
     Scheduler::cancel_timeout(timeout_id);

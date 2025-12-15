@@ -41,26 +41,11 @@ struct Scheduler {
     static void update();
     static inline uint64_t get_global_tick();
 
-    static inline uint8_t register_task(uint32_t period_us, callback_t func) {
-        if(period_us == 0) [[unlikely]] period_us = 1;
-        return register_task(period_us, func, true);
-    }
-    static bool unregister_task(uint8_t id);
+    static uint32_t register_task(uint32_t period_us, callback_t func);
+    static bool unregister_task(uint32_t id);
 
-    static inline uint8_t set_timeout(uint32_t microseconds, callback_t func) {
-        if(microseconds == 0) [[unlikely]] microseconds = 1;
-        return register_task(microseconds, func, false);
-    }
-    static inline bool cancel_timeout(uint8_t id) {
-        /* NOTE: This does not fix this case:
-          1. id = set_timeout(x, func)
-          2. timeout ends, func gets called and removed internally
-          3. id_2 = set_timeout(y, func_2) // id will be equal to id_2
-          4. clear_timeout(id) -> will remove the second timeout
-         */
-        if(tasks_[id].repeating) return false;
-        return unregister_task(id);
-    }
+    static uint32_t set_timeout(uint32_t microseconds, callback_t func);
+    static bool cancel_timeout(uint32_t id);
 
     // static void global_timer_callback();
 
@@ -72,9 +57,10 @@ struct Scheduler {
     private:
 #endif
     struct Task {
-        uint64_t next_fire_us{0};
+        uint32_t next_fire_us{0};
         callback_t callback{};
         uint32_t period_us{0};
+        uint32_t id;
         bool repeating{false};
     };
 
@@ -93,6 +79,7 @@ struct Scheduler {
     static uint32_t free_bitmap_;
     static uint64_t global_tick_us_;
     static uint32_t current_interval_us_;
+    static uint32_t timeout_idx_;
 
     static inline uint8_t allocate_slot();
     static inline void release_slot(uint8_t id);
@@ -100,7 +87,6 @@ struct Scheduler {
     static void remove_sorted(uint8_t id);
     static void schedule_next_interval();
     static inline void configure_timer_for_interval(uint32_t microseconds);
-    static uint8_t register_task(uint32_t period_us, callback_t func, bool repeating);
 
     // helpers
     static inline uint8_t get_at(uint8_t idx);

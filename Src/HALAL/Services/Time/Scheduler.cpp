@@ -36,6 +36,7 @@ uint32_t Scheduler::ready_bitmap_{0};
 uint32_t Scheduler::free_bitmap_{0xFFFF'FFFF};
 uint64_t Scheduler::global_tick_us_{0};
 uint32_t Scheduler::current_interval_us_{0};
+uint32_t Scheduler::timeout_idx_{1};
 
 inline uint8_t Scheduler::get_at(uint8_t idx) {
     int word_idx = idx > 7;
@@ -305,8 +306,9 @@ void Scheduler::on_timer_update() {
     schedule_next_interval();
 }
 
-uint8_t Scheduler::register_task(uint32_t period_us, callback_t func, bool repeating) {
-    if (func == nullptr) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
+uint32_t Scheduler::register_task(uint32_t period_us, callback_t func) {
+    if(func == nullptr) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
+    if(period_us == 0) [[unlikely]] period_us = 1;
     if(period_us >= kMaxIntervalUs) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
 
     uint8_t slot = allocate_slot();
@@ -315,16 +317,54 @@ uint8_t Scheduler::register_task(uint32_t period_us, callback_t func, bool repea
     Task& task = tasks_[slot];
     task.callback = func;
     task.period_us = period_us;
-    task.repeating = repeating;
+    task.repeating = true;
     task.next_fire_us = static_cast<uint32_t>(global_tick_us_ + period_us);
+    task.id = static_cast<uint32_t>(slot);
     insert_sorted(slot);
     schedule_next_interval();
-    return slot;
+    return task.id;
 }
 
-bool Scheduler::unregister_task(uint8_t id) {
-    if (id >= kMaxTasks) return false;
-    if (free_bitmap_ & (1UL << id)) return false;
+uint32_t Scheduler::set_timeout(uint32_t microseconds, callback_t func) {
+    if (func == nullptr) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
+    if(microseconds == 0) [[unlikely]] microseconds = 1;
+    if(microseconds >= kMaxIntervalUs) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
+
+    uint8_t slot = allocate_slot();
+    if(slot == Scheduler::INVALID_ID) return slot;
+
+    Task& task = tasks_[slot];
+    task.callback = func;
+    task.period_us = microseconds;
+    task.repeating = false;
+    task.next_fire_us = static_cast<uint32_t>(global_tick_us_ + microseconds);
+    task.id = slot + Scheduler::timeout_idx_ * Scheduler::kMaxTasks;
+
+    // Add 2 instead of 1 so overflow doesn't make timeout_idx == 0, 
+    // we need it to never be 0
+    Scheduler::timeout_idx_ += 2;
+
+    insert_sorted(slot);
+    schedule_next_interval();
+    return task.id;
+}
+
+bool Scheduler::unregister_task(uint32_t id) {
+    if(id >= kMaxTasks) return false;
+    if(free_bitmap_ & (1UL << id)) return false;
+
+    remove_sorted(id);
+    release_slot(id);
+    schedule_next_interval();
+    return true;
+}
+
+bool Scheduler::cancel_timeout(uint32_t id) {
+    static_assert((kMaxTasks & (kMaxTasks - 1)) == 0, "kMaxTasks must be a power of two");
+    uint32_t idx = id & Scheduler::kMaxTasks;
+    if(tasks_[idx].repeating) return false;
+    if(tasks_[idx].id != id) return false;
+    if(free_bitmap_ & (1UL << id)) return false;
 
     remove_sorted(id);
     release_slot(id);
