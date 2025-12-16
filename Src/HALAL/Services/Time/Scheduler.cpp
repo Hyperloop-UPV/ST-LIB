@@ -36,7 +36,7 @@ uint32_t Scheduler::ready_bitmap_{0};
 uint32_t Scheduler::free_bitmap_{0xFFFF'FFFF};
 uint64_t Scheduler::global_tick_us_{0};
 uint32_t Scheduler::current_interval_us_{0};
-uint32_t Scheduler::timeout_idx_{1};
+uint16_t Scheduler::timeout_idx_{1};
 
 inline uint8_t Scheduler::get_at(uint8_t idx) {
     int word_idx = idx > 7;
@@ -306,7 +306,7 @@ void Scheduler::on_timer_update() {
     schedule_next_interval();
 }
 
-uint32_t Scheduler::register_task(uint32_t period_us, callback_t func) {
+uint16_t Scheduler::register_task(uint32_t period_us, callback_t func) {
     if(func == nullptr) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
     if(period_us == 0) [[unlikely]] period_us = 1;
     if(period_us >= kMaxIntervalUs) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
@@ -325,7 +325,7 @@ uint32_t Scheduler::register_task(uint32_t period_us, callback_t func) {
     return task.id;
 }
 
-uint32_t Scheduler::set_timeout(uint32_t microseconds, callback_t func) {
+uint16_t Scheduler::set_timeout(uint32_t microseconds, callback_t func) {
     if (func == nullptr) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
     if(microseconds == 0) [[unlikely]] microseconds = 1;
     if(microseconds >= kMaxIntervalUs) [[unlikely]] return static_cast<uint8_t>(Scheduler::INVALID_ID);
@@ -349,7 +349,7 @@ uint32_t Scheduler::set_timeout(uint32_t microseconds, callback_t func) {
     return task.id;
 }
 
-bool Scheduler::unregister_task(uint32_t id) {
+bool Scheduler::unregister_task(uint16_t id) {
     if(id >= kMaxTasks) return false;
     if(free_bitmap_ & (1UL << id)) return false;
 
@@ -359,15 +359,15 @@ bool Scheduler::unregister_task(uint32_t id) {
     return true;
 }
 
-bool Scheduler::cancel_timeout(uint32_t id) {
+bool Scheduler::cancel_timeout(uint16_t id) {
     static_assert((kMaxTasks & (kMaxTasks - 1)) == 0, "kMaxTasks must be a power of two");
-    uint32_t idx = id & Scheduler::kMaxTasks;
+    uint32_t idx = id & (Scheduler::kMaxTasks - 1UL);
     if(tasks_[idx].repeating) return false;
     if(tasks_[idx].id != id) return false;
-    if(free_bitmap_ & (1UL << id)) return false;
+    if(free_bitmap_ & (1UL << idx)) return false;
 
-    remove_sorted(id);
-    release_slot(id);
+    remove_sorted(idx);
+    release_slot(idx);
     schedule_next_interval();
     return true;
 }

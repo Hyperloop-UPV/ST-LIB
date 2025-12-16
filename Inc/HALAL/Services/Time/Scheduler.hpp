@@ -41,11 +41,11 @@ struct Scheduler {
     static void update();
     static inline uint64_t get_global_tick();
 
-    static uint32_t register_task(uint32_t period_us, callback_t func);
-    static bool unregister_task(uint32_t id);
+    static uint16_t register_task(uint32_t period_us, callback_t func);
+    static bool unregister_task(uint16_t id);
 
-    static uint32_t set_timeout(uint32_t microseconds, callback_t func);
-    static bool cancel_timeout(uint32_t id);
+    static uint16_t set_timeout(uint32_t microseconds, callback_t func);
+    static bool cancel_timeout(uint16_t id);
 
     // static void global_timer_callback();
 
@@ -60,7 +60,7 @@ struct Scheduler {
         uint32_t next_fire_us{0};
         callback_t callback{};
         uint32_t period_us{0};
-        uint32_t id;
+        uint16_t id;
         bool repeating{false};
     };
 
@@ -79,7 +79,7 @@ struct Scheduler {
     static uint32_t free_bitmap_;
     static uint64_t global_tick_us_;
     static uint32_t current_interval_us_;
-    static uint32_t timeout_idx_;
+    static uint16_t timeout_idx_;
 
     static inline uint8_t allocate_slot();
     static inline void release_slot(uint8_t id);
