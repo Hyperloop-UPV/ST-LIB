@@ -12,6 +12,7 @@ struct DigitalInputDomain {
   struct DigitalInput {
     GPIODomain::GPIO gpio;
     using domain = DigitalInputDomain;
+    size_t index;
 
     consteval DigitalInput(const GPIODomain::Pin &pin,
                            GPIODomain::Pull pull = GPIODomain::Pull::None,
@@ -21,7 +22,7 @@ struct DigitalInputDomain {
     template <class Ctx> consteval void inscribe(Ctx &ctx) const {
       const auto gpio_idx = ctx.template add<GPIODomain>(gpio.e);
       Entry e{.gpio_idx = gpio_idx};
-      ctx.template add<DigitalInputDomain>(e);
+      index = ctx.template add<DigitalInputDomain>(e);
     }
   };
 

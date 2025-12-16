@@ -18,6 +18,7 @@ struct DigitalOutputDomain {
   struct DigitalOutput {
     GPIODomain::GPIO gpio;
     using domain = DigitalOutputDomain;
+    size_t index;
 
     consteval DigitalOutput(const GPIODomain::Pin &pin,
                             OutputMode mode = OutputMode::PUSH_PULL,
@@ -29,7 +30,7 @@ struct DigitalOutputDomain {
     template <class Ctx> consteval void inscribe(Ctx &ctx) const {
       const auto gpio_idx = ctx.template add<GPIODomain>(gpio.e);
       Entry e{.gpio_idx = gpio_idx};
-      ctx.template add<DigitalOutputDomain>(e);
+      index = ctx.template add<DigitalOutputDomain>(e);
     }
   };
 
