@@ -172,7 +172,7 @@ struct GPIODomain {
 
   struct GPIO {
     using domain = GPIODomain;
-    size_t index;
+    mutable size_t index;
 
     Entry e;
 

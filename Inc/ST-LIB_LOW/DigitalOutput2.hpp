@@ -18,7 +18,7 @@ struct DigitalOutputDomain {
   struct DigitalOutput {
     GPIODomain::GPIO gpio;
     using domain = DigitalOutputDomain;
-    size_t index;
+    mutable size_t index;
 
     consteval DigitalOutput(const GPIODomain::Pin &pin,
                             OutputMode mode = OutputMode::PUSH_PULL,

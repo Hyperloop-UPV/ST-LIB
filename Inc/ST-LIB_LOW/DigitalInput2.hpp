@@ -12,7 +12,7 @@ struct DigitalInputDomain {
   struct DigitalInput {
     GPIODomain::GPIO gpio;
     using domain = DigitalInputDomain;
-    size_t index;
+    mutable size_t index;
 
     consteval DigitalInput(const GPIODomain::Pin &pin,
                            GPIODomain::Pull pull = GPIODomain::Pull::None,
