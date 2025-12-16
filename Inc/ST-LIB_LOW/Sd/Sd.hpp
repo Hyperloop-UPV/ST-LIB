@@ -244,12 +244,16 @@ struct SdDomain {
         bool card_initialized;
         BufferSelect current_buffer; // The one that is currently available for CPU access and not used by IDMA
 
+        HAL_SD_CardInfoTypeDef card_info;
+
         // Functions
         bool is_card_present() { return cd_instance->first->read() == cd_instance->second; }
         bool is_write_protected() { return wp_instance->first->read() == wp_instance->second; }
 
         bool is_busy() {
-            return (hsd.State != HAL_SD_STATE_TRANSFER);
+            if (!card_initialized) return false;
+            HAL_SD_StateTypeDef state = HAL_SD_GetState(&hsd);
+            return (state != HAL_SD_STATE_READY && state != HAL_SD_STATE_TRANSFER);
         }
 
         bool initialize_card() {
@@ -258,6 +262,10 @@ struct SdDomain {
             HAL_StatusTypeDef status = HAL_SD_Init(&hsd);
 
             if (status != HAL_OK) { return false; }
+
+            if (HAL_SD_GetCardInfo(&hsd, &card_info) != HAL_OK) {
+                ErrorHandler("Failed to get SD card info");
+            }
 
             if (!configure_idma()) {
                 ErrorHandler("SD Card IDMA configuration failed");
@@ -326,7 +334,7 @@ struct SdDomain {
             return instance.card_initialized;
         }
 
-        bool read_blocks(uint32_t start_block, uint32_t num_blocks, bool& operation_complete_flag) {
+        bool read_blocks(uint32_t start_block, uint32_t num_blocks, bool* operation_complete_flag) {
             check_cd_wp();
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
@@ -342,13 +350,13 @@ struct SdDomain {
                 ErrorHandler("SD Card read operation failed");
             }
 
-            instance.operation_flag = &operation_complete_flag;
-            operation_complete_flag = false;
+            instance.operation_flag = operation_complete_flag;
+            *operation_complete_flag = false;
 
             return true;
         }
 
-        bool write_blocks(uint32_t start_block, uint32_t num_blocks, bool& operation_complete_flag) {
+        bool write_blocks(uint32_t start_block, uint32_t num_blocks, bool* operation_complete_flag) {
             check_cd_wp();
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
@@ -364,16 +372,26 @@ struct SdDomain {
                 ErrorHandler("SD Card write operation failed");
             }
 
-            instance.operation_flag = &operation_complete_flag;
-            operation_complete_flag = false;
+            instance.operation_flag = operation_complete_flag;
+            *operation_complete_flag = false;
 
             return true;
         }
 
+        auto* get_current_buffer() {
+            if (instance.current_buffer == BufferSelect::Buffer0) {
+                return instance.mpu_buffer0_instance->template as<card_request.buffer0>();
+            } else {
+                return instance.mpu_buffer1_instance->template as<card_request.buffer1>();
+            }
+        }
+
+        bool is_busy() {
+            return instance.is_busy();
+        }
 
        private:
         Instance& instance; // Actual State
-
 
         void check_cd_wp() {
             if constexpr (has_cd) {
@@ -381,14 +399,6 @@ struct SdDomain {
             }
             if constexpr (has_wp) {
                 if (instance.is_write_protected()) { ErrorHandler("SD Card is write-protected"); }
-            }
-        }
-
-        auto& get_current_buffer() {
-            if (instance.current_buffer == BufferSelect::Buffer0) {
-                return *instance.mpu_buffer0_instance->template as<card_request.buffer0>();
-            } else {
-                return *instance.mpu_buffer1_instance->template as<card_request.buffer1>();
             }
         }
 
@@ -445,9 +455,9 @@ struct SdDomain {
                 __SDMMC_CMDTRANS_ENABLE(hsd->Instance);
 
                 if (instance.current_buffer == BufferSelect::Buffer1) {
-                hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF1;
+                    hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF1;
                 } else {
-                hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF0;
+                    hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF0;
                 }
                 instance.switch_buffer();
 
@@ -524,9 +534,9 @@ struct SdDomain {
                 __SDMMC_CMDTRANS_ENABLE(hsd->Instance);
 
                 if (instance.current_buffer == BufferSelect::Buffer1) {
-                hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF1;
+                    hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF1;
                 } else {
-                hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF0;
+                    hsd->Instance->IDMACTRL = SDMMC_ENABLE_IDMA_DOUBLE_BUFF0;
                 }
                 instance.switch_buffer();
 
@@ -586,17 +596,18 @@ struct SdDomain {
                 } else if (cfg.peripheral == Peripheral::sdmmc2) {
                     inst.hsd.Instance = SDMMC2;
                 }
-                inst.hsd.Init.ClockEdge = SDMMC_CLOCK_EDGE_FALLING;
+                inst.hsd.Init.ClockEdge = SDMMC_CLOCK_EDGE_RISING;
                 inst.hsd.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
                 inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_4B;
-                inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-                inst.hsd.Init.ClockDiv = 0;
+                inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_ENABLE;
+                inst.hsd.Init.ClockDiv = 2;
 
 
                 #ifdef SD_DEBUG_ENABLE
                 inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_1B;
                 // Get a 400 kHz clock for debugging
-                uint32_t pll1_freq = HAL_RCCEx_GetPLL1ClockFreq(); // SDMMC clock source is PLL1
+                //uint32_t pll1_freq = HAL_RCCEx_GetPLL1ClockFreq(); // SDMMC clock source is PLL1
+                uint32_t pll1_freq = 480000000; // Assume PLL1 is at 480 MHz
                 uint32_t sdmmc_clk = pll1_freq / 2; // SDMMC clock before divider
                 uint32_t target_div = sdmmc_clk / 400000; // Target divider
                 if (target_div < 2) target_div = 2; // Minimum divider is 2
