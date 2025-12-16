@@ -339,11 +339,26 @@ struct SdDomain {
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
             }
-            if (instance.is_busy()) {
-                return false; // Busy
+            
+            // 1. Wait for the CARD (hardware) to be ready, not just the handle
+            uint32_t timeout = HAL_GetTick() + 1000;
+            while (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
+                if (HAL_GetTick() > timeout) {
+                    // 2. OPTIONAL: If stuck, try forcing a STOP command to reset the state
+                    SDMMC_CmdStopTransfer(instance.hsd.Instance);
+                    HAL_Delay(10); // Give it a moment
+                    if (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
+                        ErrorHandler("Timeout waiting for SD Card to enter TRANSFER state");
+                        return false;
+                    }
+                }
             }
 
-            // Won't use HAL_SDEx_ReadBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
+            if (instance.is_busy()) {
+                return false; // Driver busy
+            }
+
+            // Now it is safe to send CMD18
             HAL_StatusTypeDef status = Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(start_block, num_blocks);
 
             if (status != HAL_OK) {
@@ -361,10 +376,24 @@ struct SdDomain {
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
             }
+            
+            // 1. Wait for the CARD (hardware) to be ready, not just the handle
+            uint32_t timeout = HAL_GetTick() + 1000;
+            while (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
+                if (HAL_GetTick() > timeout) {
+                    // 2. OPTIONAL: If stuck, try forcing a STOP command to reset the state
+                    SDMMC_CmdStopTransfer(instance.hsd.Instance);
+                    HAL_Delay(10); // Give it a moment
+                    if (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
+                        ErrorHandler("Timeout waiting for SD Card to enter TRANSFER state");
+                        return false;
+                    }
+                }
+            }
+
             if (instance.is_busy()) {
                 return false; // Busy
             }
-
             // Won't use HAL_SDEx_WriteBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
             HAL_StatusTypeDef status = Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(start_block, num_blocks);
 
@@ -596,10 +625,10 @@ struct SdDomain {
                 } else if (cfg.peripheral == Peripheral::sdmmc2) {
                     inst.hsd.Instance = SDMMC2;
                 }
-                inst.hsd.Init.ClockEdge = SDMMC_CLOCK_EDGE_RISING;
+                inst.hsd.Init.ClockEdge = SDMMC_CLOCK_EDGE_FALLING;
                 inst.hsd.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
                 inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_4B;
-                inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_ENABLE;
+                inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
                 inst.hsd.Init.ClockDiv = 2;
 
 
