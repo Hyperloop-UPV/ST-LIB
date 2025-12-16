@@ -22,6 +22,7 @@
 #include "Control/Blocks/MatrixMultiplier.hpp"
 #include "Control/Blocks/MeanCalculator.hpp"
 #include "Control/ControlSystem.hpp"
+#include "SdLogger/SdLogger.hpp"
 #ifdef SIM_ON
 #else
 	#include "FlashStorer/FlashStorer.hpp"

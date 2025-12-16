@@ -64,8 +64,14 @@ struct MdmaPacketDomain {
     * @tparam Types The types of the values in the packet.
     * @note It uses non-cached memory for MDMA operations.
     */
+    class MdmaPacketBase : public Packet {
+    public:
+        virtual uint8_t* build(bool* done, uint8_t* destination_address = nullptr) = 0;
+        using Packet::build;
+    };
+
     template<class... Types>
-    class MdmaPacket : public Packet {
+    class MdmaPacket : public MdmaPacketBase {
     public:
         uint16_t id;
         uint8_t* buffer;
@@ -158,7 +164,7 @@ struct MdmaPacketDomain {
         uint8_t* build(uint8_t* destination_address = nullptr) {
             set_build_destination(destination_address);
             bool done = false;
-            MDMA::transfer_list(0, build_nodes[0], &done);
+            MDMA::transfer_list(build_nodes[0], &done);
             while (!done) {
                 // Busy wait
             }
@@ -173,7 +179,7 @@ struct MdmaPacketDomain {
         */
         uint8_t* build(bool* done, uint8_t* destination_address = nullptr) {
             set_build_destination(destination_address);
-            MDMA::transfer_list(0, build_nodes[0], done);
+            MDMA::transfer_list(build_nodes[0], done);
             return destination_address ? destination_address : buffer;
         }
 
@@ -186,7 +192,7 @@ struct MdmaPacketDomain {
         void parse(uint8_t* data = nullptr) override {
             bool done = false;
             auto source_node = set_parse_source(data);
-            MDMA::transfer_list(0, source_node, &done);
+            MDMA::transfer_list(source_node, &done);
             while (!done) {
                 // Busy wait
             }
@@ -194,7 +200,7 @@ struct MdmaPacketDomain {
 
         void parse(bool* done, uint8_t* data = nullptr) {
             auto source_node = set_parse_source(data);
-            MDMA::transfer_list(0, source_node, done);
+            MDMA::transfer_list(source_node, done);
         }
 
         size_t get_size() override {
