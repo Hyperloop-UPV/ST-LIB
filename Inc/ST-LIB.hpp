@@ -25,6 +25,7 @@ public:
 };
 
 namespace ST_LIB {
+extern void compile_error(const char *msg);
 template <typename... Domains> struct BuildCtx {
   template <typename D> using Decl = typename D::Entry;
   template <typename D>
@@ -157,8 +158,7 @@ template <auto &...devs> struct Board {
         ...);
 
     if (!found) {
-      struct device_not_found_for_domain {};
-      //throw device_not_found_for_domain{};
+      compile_error("Device not found for domain");
     }
 
     return idx;

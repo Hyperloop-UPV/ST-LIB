@@ -19,18 +19,6 @@ using std::tuple;
 
 namespace ST_LIB {
     struct DMA_Domain {
-        using xTypeDef = std::variant<
-            ADC_TypeDef*,
-            I2C_TypeDef*,        
-            SPI_TypeDef*,
-            FMAC_TypeDef*
-        >;
-        using xHandleDef = std::variant<
-            ADC_HandleTypeDef*,
-            I2C_HandleTypeDef*,        
-            SPI_HandleTypeDef*,
-            FMAC_HandleTypeDef*
-        >;
         
         enum class Instance : uint8_t {adc1, adc2, adc3, 
                                         i2c1, i2c2, i2c3, i2c5,  
@@ -42,26 +30,6 @@ namespace ST_LIB {
                                         dma2_stream0, dma2_stream1, dma2_stream2, dma2_stream3, 
                                         dma2_stream4, dma2_stream5, dma2_stream6, dma2_stream7};
 
-        static inline xTypeDef instance_to_xTypeDef(Instance i) {
-            switch (i) {
-                case Instance::adc1: return ADC1;
-                case Instance::adc2: return ADC2;
-                case Instance::adc3: return ADC3;
-
-                case Instance::i2c1: return I2C1;
-                case Instance::i2c2: return I2C2;
-                case Instance::i2c3: return I2C3;
-                case Instance::i2c5: return I2C5;
-
-                case Instance::spi1: return SPI1;
-                case Instance::spi2: return SPI2;
-                case Instance::spi3: return SPI3;
-                case Instance::spi4: return SPI4;
-                case Instance::spi5: return SPI5;
-
-                case Instance::fmac: return FMAC;
-            }
-        }
                 
         static inline DMA_Stream_TypeDef* stream_to_DMA_StreamTypeDef(Stream s) {
             switch (s) {
@@ -340,89 +308,10 @@ namespace ST_LIB {
         }
 
         struct Instances_ {
-            xTypeDef instance;
             DMA_HandleTypeDef dma;
-            IRQn_Type irqn;
-            uint8_t id;
 
-            void setDMAHandle(xHandleDef handle) {
-                std::visit([&](auto* real_instance){
-                    std::visit([&](auto* real_handle){
-                        using T = std::remove_pointer_t<decltype(real_handle)>;
-                        // ---------------------------
-                        // ADC
-                        // ---------------------------
-                        if constexpr (std::is_same_v<T, ADC_HandleTypeDef>)
-                        {
-                            // ADC solo tiene un stream
-                            __HAL_LINKDMA(real_handle, DMA_Handle, dma);
-
-                            HAL_NVIC_SetPriority(irqn, 0, 0);
-                            HAL_NVIC_EnableIRQ(irqn);
-                            return;
-                        }
-
-                        // ---------------------------
-                        // I2C
-                        // id = 0 → RX
-                        // id = 1 → TX
-                        // ---------------------------
-                        else if constexpr (std::is_same_v<T, I2C_HandleTypeDef>)
-                        {
-                            if (id == 0)
-                                __HAL_LINKDMA(real_handle, hdmarx, dma);
-                            else
-                                __HAL_LINKDMA(real_handle, hdmatx, dma);
-
-                            HAL_NVIC_SetPriority(irqn, 0, 0);
-                            HAL_NVIC_EnableIRQ(irqn);
-                            return;
-                        }
-
-                        // ---------------------------
-                        // SPI
-                        // id = 0 → RX
-                        // id = 1 → TX
-                        // ---------------------------
-                        else if constexpr (std::is_same_v<T, SPI_HandleTypeDef>)
-                        {
-                            if (id == 0)
-                                __HAL_LINKDMA(real_handle, hdmarx, dma);
-                            else
-                                __HAL_LINKDMA(real_handle, hdmatx, dma);
-
-                            HAL_NVIC_SetPriority(irqn, 0, 0);
-                            HAL_NVIC_EnableIRQ(irqn);
-                            return;
-                        }
-
-                        // ---------------------------
-                        // FMAC
-                        // id = 0 → Preload
-                        // id = 1 → In
-                        // id = 2 → Out
-                        // ---------------------------
-                        else if constexpr (std::is_same_v<T, FMAC_HandleTypeDef>)
-                        {
-                            if (id == 0)
-                                __HAL_LINKDMA(real_handle, hdmaPreload, dma);
-                            else if (id == 1)
-                                __HAL_LINKDMA(real_handle, hdmaIn, dma);
-                            else
-                                __HAL_LINKDMA(real_handle, hdmaOut, dma);
-
-                            HAL_NVIC_SetPriority(irqn, 0, 0);
-                            HAL_NVIC_EnableIRQ(irqn);
-                            return;
-                        }
-
-                        else {
-                            ErrorHandler("Unsupported peripheral type in setDMAHandle");
-                        }
-
-                    }, handle);
-
-                }, instance);
+            void start(uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength){
+                HAL_DMA_Start_IT(&dma, SrcAddress, DstAddress, DataLength);
             }
         };
 
@@ -438,15 +327,15 @@ namespace ST_LIB {
                     const auto &e = cfgs[i];
                     auto [instance, dma_init, stream, irqn, id] = e.init_data;           
                     
-                    instances[i].instance = instance_to_xTypeDef(instance);
                     instances[i].dma.Instance = stream_to_DMA_StreamTypeDef(stream);
                     instances[i].dma.Init = dma_init;
-                    instances[i].irqn = irqn;
-                    instances[i].id = id;
 
-                    // No estoy seguro de que esto tenga que ir aqui
                     if (HAL_DMA_Init(&instances[i].dma) != HAL_OK) {
                         ErrorHandler("DMA Init failed");
+                    }
+                    else{
+                        HAL_NVIC_SetPriority(irqn, 0, 0);
+                        HAL_NVIC_EnableIRQ(irqn);
                     }
                 }
             }
