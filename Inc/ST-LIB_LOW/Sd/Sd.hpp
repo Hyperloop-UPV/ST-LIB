@@ -102,7 +102,7 @@ struct SdDomain {
                 d2 = GPIODomain::GPIO(PG11, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
                 d3 = GPIODomain::GPIO(PG12, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
             } else {
-                throw "Invalid SDMMC peripheral";
+                ST_LIB::compile_error("Invalid SDMMC peripheral");
             }
         }
     
@@ -152,6 +152,9 @@ struct SdDomain {
     template <std::size_t N>
     static consteval std::array<Config, N> build(std::span<const Entry> entries) {
         std::array<Config, N> cfgs{};
+        if (N == 0 ) {
+            return cfgs;
+        }
         bool peripheral_used[2] = {false, false}; // SDMMC1, SDMMC2
 
         for (std::size_t i = 0; i < N; i++) {
@@ -159,7 +162,7 @@ struct SdDomain {
 
             // Verify uniqueness of peripheral usage
             std::size_t peripheral_index = (e.peripheral == Peripheral::sdmmc1) ? 0 : 1;
-            if (peripheral_used[peripheral_index]) throw "SDMMC peripheral already used";
+            if (peripheral_used[peripheral_index]) ST_LIB::compile_error("SDMMC peripheral used multiple times in SdDomain");
             peripheral_used[peripheral_index] = true;
 
             // Fill configuration
