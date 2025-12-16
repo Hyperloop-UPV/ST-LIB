@@ -79,28 +79,29 @@ struct SdDomain {
                     std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> card_detect_config, std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> write_protect_config,
                     GPIODomain::Pin d0_pin_for_sdmmc1 = ST_LIB::PC8, GPIODomain::Pin d1_pin_for_sdmmc1 = ST_LIB::PC9) :
             e{.peripheral = sdmmc_peripheral},
+            peripheral(sdmmc_peripheral),
             buffer0(MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1)),
             buffer1(MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1)),
             cd(card_detect_config),
             wp(write_protect_config),
             cmd((sdmmc_peripheral == Peripheral::sdmmc1) ? 
-                GPIODomain::GPIO(ST_LIB::PC6, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
-                GPIODomain::GPIO(ST_LIB::PD7, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+                GPIODomain::GPIO(ST_LIB::PD2, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
+                GPIODomain::GPIO(ST_LIB::PD7, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF11)),
             ck((sdmmc_peripheral == Peripheral::sdmmc1) ? 
                 GPIODomain::GPIO(ST_LIB::PC12, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
-                GPIODomain::GPIO(ST_LIB::PD6, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+                GPIODomain::GPIO(ST_LIB::PD6, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF11)),
             d0((sdmmc_peripheral == Peripheral::sdmmc1) ? 
                 GPIODomain::GPIO(d0_pin_for_sdmmc1, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
-                GPIODomain::GPIO(ST_LIB::PB14, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+                GPIODomain::GPIO(ST_LIB::PB14, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF9)),
             d1((sdmmc_peripheral == Peripheral::sdmmc1) ? 
                 GPIODomain::GPIO(d1_pin_for_sdmmc1, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
-                GPIODomain::GPIO(ST_LIB::PB15, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+                GPIODomain::GPIO(ST_LIB::PB15, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF9)),
             d2((sdmmc_peripheral == Peripheral::sdmmc1) ? 
                 GPIODomain::GPIO(ST_LIB::PC10, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
-                GPIODomain::GPIO(ST_LIB::PG11, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+                GPIODomain::GPIO(ST_LIB::PG11, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF10)),
             d3((sdmmc_peripheral == Peripheral::sdmmc1) ? 
                 GPIODomain::GPIO(ST_LIB::PC11, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
-                GPIODomain::GPIO(ST_LIB::PG12, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12))
+                GPIODomain::GPIO(ST_LIB::PG12, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF10))
         {
             if (sdmmc_peripheral != Peripheral::sdmmc1 && sdmmc_peripheral != Peripheral::sdmmc2) {
                 ST_LIB::compile_error("Invalid SDMMC peripheral");
@@ -110,24 +111,32 @@ struct SdDomain {
 
         template <class Ctx>
         consteval void inscribe(Ctx &ctx) const {
-            e.mpu_buffer0_idx = ctx.template add<MPUDomain>(buffer0);
-            e.mpu_buffer1_idx = ctx.template add<MPUDomain>(buffer1);
+            Entry local_e = e;
+
+            local_e.mpu_buffer0_idx = ctx.template add<MPUDomain>(buffer0.e);
+            local_e.mpu_buffer1_idx = ctx.template add<MPUDomain>(buffer1.e);
 
             if (cd.has_value()) {
-                e.cd_pin_idx = {ctx.template add<DigitalInputDomain>(cd.value().first), cd.value().second};
+                auto& di = cd.value().first;
+                auto gpio_idx = ctx.template add<GPIODomain>(di.gpio.e);
+                DigitalInputDomain::Entry di_entry{gpio_idx};
+                local_e.cd_pin_idx = {ctx.template add<DigitalInputDomain>(di_entry), cd.value().second};
             }
             if (wp.has_value()) {
-                e.wp_pin_idx = {ctx.template add<DigitalInputDomain>(wp.value().first), wp.value().second};
+                auto& di = wp.value().first;
+                auto gpio_idx = ctx.template add<GPIODomain>(di.gpio.e);
+                DigitalInputDomain::Entry di_entry{gpio_idx};
+                local_e.wp_pin_idx = {ctx.template add<DigitalInputDomain>(di_entry), wp.value().second};
             }
 
-            e.cmd_pin_idx = ctx.template add<GPIODomain>(cmd);
-            e.ck_pin_idx = ctx.template add<GPIODomain>(ck);
-            e.d0_pin_idx = ctx.template add<GPIODomain>(d0);
-            e.d1_pin_idx = ctx.template add<GPIODomain>(d1);
-            e.d2_pin_idx = ctx.template add<GPIODomain>(d2);
-            e.d3_pin_idx = ctx.template add<GPIODomain>(d3);
+            local_e.cmd_pin_idx = ctx.template add<GPIODomain>(cmd.e);
+            local_e.ck_pin_idx = ctx.template add<GPIODomain>(ck.e);
+            local_e.d0_pin_idx = ctx.template add<GPIODomain>(d0.e);
+            local_e.d1_pin_idx = ctx.template add<GPIODomain>(d1.e);
+            local_e.d2_pin_idx = ctx.template add<GPIODomain>(d2.e);
+            local_e.d3_pin_idx = ctx.template add<GPIODomain>(d3.e);
 
-            ctx.template add<SdDomain>(e);
+            ctx.template add<SdDomain>(local_e);
         }
     };
 
@@ -250,6 +259,10 @@ struct SdDomain {
 
             if (status != HAL_OK) { return false; }
 
+            if (!configure_idma()) {
+                ErrorHandler("SD Card IDMA configuration failed");
+            }
+
             if (HAL_SD_ConfigSpeedBusOperation(&hsd, SDMMC_SPEED_MODE_AUTO) != HAL_OK) {
                 ErrorHandler("SD Card speed/bus configuration failed");
             }
@@ -286,8 +299,8 @@ struct SdDomain {
     template <auto &card_request>
     struct SdCardWrapper{
         template <std::size_t N> friend struct Init;
-        static constexpr bool has_cd = decltype(card_request)::cd.has_value();
-        static constexpr bool has_wp = decltype(card_request)::wp.has_value();
+        static constexpr bool has_cd = card_request.cd.has_value();
+        static constexpr bool has_wp = card_request.wp.has_value();
         
         SdCardWrapper(Instance& instance) : instance(instance) {
             check_cd_wp();
@@ -373,9 +386,9 @@ struct SdDomain {
 
         auto& get_current_buffer() {
             if (instance.current_buffer == BufferSelect::Buffer0) {
-                return instance.mpu_buffer0_instance->template as<card_request.buffer0>();
+                return *instance.mpu_buffer0_instance->template as<card_request.buffer0>();
             } else {
-                return instance.mpu_buffer1_instance->template as<card_request.buffer1>();
+                return *instance.mpu_buffer1_instance->template as<card_request.buffer1>();
             }
         }
 
@@ -550,12 +563,8 @@ struct SdDomain {
                          std::span<MPUDomain::Instance> mpu_buffer_instances,
                          std::span<DigitalInputDomain::Instance> digital_input_instances) {
             
-            // Initialize HAL SD
-            RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct;
-            RCC_PeriphCLKInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SDMMC;
-            RCC_PeriphCLKInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL;
-            if (HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct) != HAL_OK) {
-                ErrorHandler("SDMMC clock configuration failed");
+            if (N == 0) {
+                return;
             }
 
             for (std::size_t i = 0; i < N; i++) {
@@ -572,16 +581,16 @@ struct SdDomain {
                     inst.wp_instance = {&digital_input_instances[cfg.wp_pin_idx.value().first], cfg.wp_pin_idx.value().second};
                 }
 
-                inst.hsd.Instance = reinterpret_cast<SDMMC_TypeDef*>(static_cast<uintptr_t>(cfg.peripheral));
+                if (cfg.peripheral == Peripheral::sdmmc1) {
+                    inst.hsd.Instance = SDMMC1;
+                } else if (cfg.peripheral == Peripheral::sdmmc2) {
+                    inst.hsd.Instance = SDMMC2;
+                }
                 inst.hsd.Init.ClockEdge = SDMMC_CLOCK_EDGE_FALLING;
                 inst.hsd.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
                 inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_4B;
                 inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
                 inst.hsd.Init.ClockDiv = 0;
-
-                if (!inst.configure_idma()) {
-                    ErrorHandler("SD Card IDMA configuration failed");
-                }
 
 
                 #ifdef SD_DEBUG_ENABLE
@@ -595,23 +604,31 @@ struct SdDomain {
                 inst.hsd.Init.ClockDiv = target_div - 2; // ClockDiv is (divider - 2)
                 #endif // SD_DEBUG_ENABLE
 
-
-                inst.card_initialized = false;
-                inst.current_buffer = BufferSelect::Buffer0;
-
                 if (cfg.peripheral == Peripheral::sdmmc1) {
                     g_sdmmc1_handle = &inst.hsd;
                     g_sdmmc1_instance_ptr = &inst;
-                    __HAL_RCC_SDMMC1_CLK_ENABLE();
-                    HAL_NVIC_SetPriority(SDMMC1_IRQn, 5, 0);
-                    HAL_NVIC_EnableIRQ(SDMMC1_IRQn);
                 } else if (cfg.peripheral == Peripheral::sdmmc2) {
                     g_sdmmc2_handle = &inst.hsd;
                     g_sdmmc2_instance_ptr = &inst;
-                    __HAL_RCC_SDMMC2_CLK_ENABLE();
-                    HAL_NVIC_SetPriority(SDMMC2_IRQn, 5, 0);
-                    HAL_NVIC_EnableIRQ(SDMMC2_IRQn);
                 }
+
+                inst.card_initialized = false;
+                inst.current_buffer = BufferSelect::Buffer0;
+            }
+
+            // Initialize HAL SD
+            RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct;
+            RCC_PeriphCLKInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SDMMC;
+            RCC_PeriphCLKInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL;
+            if (HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct) != HAL_OK) {
+                ErrorHandler("SDMMC clock configuration failed");
+            }
+
+            // Ensure PLL1Q output is enabled (it might be disabled by default if not used by other peripherals)
+            __HAL_RCC_PLLCLKOUT_ENABLE(RCC_PLL1_DIVQ);
+
+            if (HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SDMMC) == 0) {
+                ErrorHandler("SDMMC clock frequency is 0");
             }
         }
     };
@@ -621,6 +638,23 @@ static inline SdDomain::Instance* get_sd_instance(SD_HandleTypeDef* hsd) {
     if (hsd == g_sdmmc1_handle) return static_cast<SdDomain::Instance*>(g_sdmmc1_instance_ptr);
     if (hsd == g_sdmmc2_handle) return static_cast<SdDomain::Instance*>(g_sdmmc2_instance_ptr);
     return nullptr;
+}
+
+extern "C" inline void HAL_SD_MspInit(SD_HandleTypeDef* hsd) {
+    if (hsd->Instance == SDMMC1) {
+        __HAL_RCC_SDMMC1_CLK_ENABLE();
+        __HAL_RCC_SDMMC1_FORCE_RESET();
+        __HAL_RCC_SDMMC1_RELEASE_RESET();
+        HAL_NVIC_SetPriority(SDMMC1_IRQn, 5, 0);
+        HAL_NVIC_EnableIRQ(SDMMC1_IRQn);
+
+    } else {
+        __HAL_RCC_SDMMC2_CLK_ENABLE();
+        __HAL_RCC_SDMMC2_FORCE_RESET();
+        __HAL_RCC_SDMMC2_RELEASE_RESET();
+        HAL_NVIC_SetPriority(SDMMC2_IRQn, 5, 0);
+        HAL_NVIC_EnableIRQ(SDMMC2_IRQn);
+    }
 }
 
 extern "C" inline void SDMMC1_IRQHandler(void) {
