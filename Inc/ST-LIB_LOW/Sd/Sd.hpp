@@ -622,13 +622,13 @@ static inline SdDomain::Instance* get_sd_instance(SD_HandleTypeDef* hsd) {
     return nullptr;
 }
 
-extern "C" void SDMMC1_IRQHandler(void) {
+extern "C" inline void SDMMC1_IRQHandler(void) {
     if (g_sdmmc1_handle != nullptr) {
         HAL_SD_IRQHandler(g_sdmmc1_handle);
     }
 }
 
-extern "C" void SDMMC2_IRQHandler(void) {
+extern "C" inline void SDMMC2_IRQHandler(void) {
     if (g_sdmmc2_handle != nullptr) {
         HAL_SD_IRQHandler(g_sdmmc2_handle);
     }
@@ -636,29 +636,29 @@ extern "C" void SDMMC2_IRQHandler(void) {
 
 extern "C" {
 
-void HAL_SDEx_Read_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
+inline void HAL_SDEx_Read_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = get_sd_instance(hsd)) {
         sd_instance->on_dma_read_complete();
     }
 }
-void HAL_SDEx_Read_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
+inline void HAL_SDEx_Read_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = get_sd_instance(hsd)) {
         sd_instance->on_dma_read_complete();
     }
 }
 
-void HAL_SDEx_Write_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
+inline void HAL_SDEx_Write_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = get_sd_instance(hsd)) {
         sd_instance->on_dma_write_complete();
     }
 }
-void HAL_SDEx_Write_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
+inline void HAL_SDEx_Write_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = get_sd_instance(hsd)) {
         sd_instance->on_dma_write_complete();
     }
 }
 
-void HAL_SD_AbortCallback(SD_HandleTypeDef* hsd) {
+inline void HAL_SD_AbortCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = get_sd_instance(hsd)) {
         sd_instance->on_abort();
     } else {
@@ -666,7 +666,7 @@ void HAL_SD_AbortCallback(SD_HandleTypeDef* hsd) {
     }
 }
 
-void HAL_SD_ErrorCallback(SD_HandleTypeDef* hsd) {
+inline void HAL_SD_ErrorCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = get_sd_instance(hsd)) {
         sd_instance->on_error();
     } else {
