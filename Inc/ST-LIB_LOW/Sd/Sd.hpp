@@ -187,12 +187,40 @@ struct SdDomain {
         Buffer1 = true
     };
 
+    template <auto&> struct SdCardWrapper;
+    template <std::size_t> struct Init;
+
     // State holder, logic is in SdCardWrapper
     struct Instance {
         template <auto &> friend struct SdCardWrapper;
-        friend struct Init;
+        template <std::size_t N> friend struct Init;
 
         bool* operation_flag = nullptr; // External flag to indicate that an operation has finished
+
+       // Public handlers called from C HAL callbacks (keeps private members encapsulated)
+       void on_dma_read_complete() {
+           if (operation_flag) {
+               *operation_flag = true;
+               operation_flag = nullptr;
+           }
+           SDMMC_CmdStopTransfer(hsd.Instance);
+       }
+
+       void on_dma_write_complete() {
+           if (operation_flag) {
+               *operation_flag = true;
+               operation_flag = nullptr;
+           }
+           SDMMC_CmdStopTransfer(hsd.Instance);
+       }
+
+       void on_abort() {
+           ErrorHandler("SD Card operation aborted");
+       }
+
+       void on_error() {
+           ErrorHandler("SD Card error occurred");
+       }
 
        private:
         SD_HandleTypeDef hsd;
@@ -256,6 +284,7 @@ struct SdDomain {
 
     template <auto &card_request>
     struct SdCardWrapper{
+        template <std::size_t N> friend struct Init;
         static constexpr bool has_cd = decltype(card_request)::cd.has_value();
         static constexpr bool has_wp = decltype(card_request)::wp.has_value();
         
@@ -608,47 +637,41 @@ extern "C" void SDMMC2_IRQHandler(void) {
 extern "C" {
 
 void HAL_SDEx_Read_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
-    auto sd_instance = get_sd_instance(hsd);
-    if (sd_instance && sd_instance->operation_flag) {
-        *sd_instance->operation_flag = true;
-        sd_instance->operation_flag = nullptr;
+    if (auto sd_instance = get_sd_instance(hsd)) {
+        sd_instance->on_dma_read_complete();
     }
-    SDMMC_CmdStopTransfer(hsd->Instance);
 }
 void HAL_SDEx_Read_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
-    auto sd_instance = get_sd_instance(hsd);
-    if (sd_instance && sd_instance->operation_flag) {
-        *sd_instance->operation_flag = true;
-        sd_instance->operation_flag = nullptr;
+    if (auto sd_instance = get_sd_instance(hsd)) {
+        sd_instance->on_dma_read_complete();
     }
-    SDMMC_CmdStopTransfer(hsd->Instance);
 }
 
 void HAL_SDEx_Write_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
-    auto sd_instance = get_sd_instance(hsd);
-    if (sd_instance && sd_instance->operation_flag) {
-        *sd_instance->operation_flag = true;
-        sd_instance->operation_flag = nullptr;
+    if (auto sd_instance = get_sd_instance(hsd)) {
+        sd_instance->on_dma_write_complete();
     }
-    SDMMC_CmdStopTransfer(hsd->Instance);
 }
 void HAL_SDEx_Write_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
-    auto sd_instance = get_sd_instance(hsd);
-    if (sd_instance && sd_instance->operation_flag) {
-        *sd_instance->operation_flag = true;
-        sd_instance->operation_flag = nullptr;
+    if (auto sd_instance = get_sd_instance(hsd)) {
+        sd_instance->on_dma_write_complete();
     }
-    SDMMC_CmdStopTransfer(hsd->Instance);
 }
 
 void HAL_SD_AbortCallback(SD_HandleTypeDef* hsd) {
-    // auto sd_instance = get_sd_instance(hsd);
-    ErrorHandler("SD Card operation aborted");
+    if (auto sd_instance = get_sd_instance(hsd)) {
+        sd_instance->on_abort();
+    } else {
+        ErrorHandler("SD Card operation aborted");
+    }
 }
 
 void HAL_SD_ErrorCallback(SD_HandleTypeDef* hsd) {
-    //auto sd_instance = get_sd_instance(hsd);
-    ErrorHandler("SD Card error occurred");
+    if (auto sd_instance = get_sd_instance(hsd)) {
+        sd_instance->on_error();
+    } else {
+        ErrorHandler("SD Card error occurred");
+    }
 }
 
 } // extern "C"
