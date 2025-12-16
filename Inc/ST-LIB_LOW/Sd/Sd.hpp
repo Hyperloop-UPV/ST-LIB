@@ -77,31 +77,32 @@ struct SdDomain {
          */
         consteval SdCard(Peripheral sdmmc_peripheral,
                     std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> card_detect_config, std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> write_protect_config,
-                    GPIODomain::Pin d0_pin_for_sdmmc1 = PC8, GPIODomain::Pin d1_pin_for_sdmmc1 = PC9) {
-
-            e.peripheral = sdmmc_peripheral;
-
-            buffer0 = MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1);
-            buffer1 = MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1);
-
-            cd = card_detect_config;
-            wp = write_protect_config;
-
-            if (sdmmc_peripheral == Peripheral::sdmmc1) {
-                cmd = GPIODomain::GPIO(PC6, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                ck = GPIODomain::GPIO(PC12, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                d0 = GPIODomain::GPIO(d0_pin_for_sdmmc1, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                d1 = GPIODomain::GPIO(d1_pin_for_sdmmc1, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                d2 = GPIODomain::GPIO(PC10, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                d3 = GPIODomain::GPIO(PC11, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-            } else if (sdmmc_peripheral == Peripheral::sdmmc2) {
-                cmd = GPIODomain::GPIO(PD7, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                ck = GPIODomain::GPIO(PD6, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                d0 = GPIODomain::GPIO(PB14, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                d1 = GPIODomain::GPIO(PB15, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                d2 = GPIODomain::GPIO(PG11, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-                d3 = GPIODomain::GPIO(PG12, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12);
-            } else {
+                    GPIODomain::Pin d0_pin_for_sdmmc1 = ST_LIB::PC8, GPIODomain::Pin d1_pin_for_sdmmc1 = ST_LIB::PC9) :
+            e{.peripheral = sdmmc_peripheral},
+            buffer0(MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1)),
+            buffer1(MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1)),
+            cd(card_detect_config),
+            wp(write_protect_config),
+            cmd((sdmmc_peripheral == Peripheral::sdmmc1) ? 
+                GPIODomain::GPIO(ST_LIB::PC6, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
+                GPIODomain::GPIO(ST_LIB::PD7, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+            ck((sdmmc_peripheral == Peripheral::sdmmc1) ? 
+                GPIODomain::GPIO(ST_LIB::PC12, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
+                GPIODomain::GPIO(ST_LIB::PD6, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+            d0((sdmmc_peripheral == Peripheral::sdmmc1) ? 
+                GPIODomain::GPIO(d0_pin_for_sdmmc1, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
+                GPIODomain::GPIO(ST_LIB::PB14, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+            d1((sdmmc_peripheral == Peripheral::sdmmc1) ? 
+                GPIODomain::GPIO(d1_pin_for_sdmmc1, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
+                GPIODomain::GPIO(ST_LIB::PB15, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+            d2((sdmmc_peripheral == Peripheral::sdmmc1) ? 
+                GPIODomain::GPIO(ST_LIB::PC10, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
+                GPIODomain::GPIO(ST_LIB::PG11, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12)),
+            d3((sdmmc_peripheral == Peripheral::sdmmc1) ? 
+                GPIODomain::GPIO(ST_LIB::PC11, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12) : 
+                GPIODomain::GPIO(ST_LIB::PG12, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, GPIODomain::AlternateFunction::AF12))
+        {
+            if (sdmmc_peripheral != Peripheral::sdmmc1 && sdmmc_peripheral != Peripheral::sdmmc2) {
                 ST_LIB::compile_error("Invalid SDMMC peripheral");
             }
         }
