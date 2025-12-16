@@ -57,6 +57,9 @@ if(CMAKE_CROSSCOMPILING)
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_gpio.c
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_exti.c
 
+    # MDMA
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_mdma.c
+
     # ADC
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc.c
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc_ex.c

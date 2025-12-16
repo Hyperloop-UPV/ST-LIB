@@ -36,6 +36,10 @@ static void common_start(UART::Peripheral &printf_peripheral) {
   DMA::start();
 #endif
 
+#ifdef HAL_MDMA_MODULE_ENABLED
+    MDMA::start();
+#endif
+
 #ifdef HAL_FMAC_MODULE_ENABLED
   MultiplierAccelerator::start();
 #endif

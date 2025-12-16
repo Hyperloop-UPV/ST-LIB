@@ -44,6 +44,8 @@
 
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"
+#include "HALAL/Models/MDMA/MDMA.hpp"
+#include "HALAL/Models/Packets/MdmaPacket.hpp"
 
 #ifdef STLIB_ETH
 #include "HALAL/Models/Packets/Packet.hpp"
