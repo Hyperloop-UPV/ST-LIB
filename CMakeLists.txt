@@ -21,10 +21,14 @@ message(STATUS "${PROJECT_NAME} Ethernet: ${USE_ETHERNET}")
 message(STATUS "${PROJECT_NAME} Nucleo:   ${TARGET_NUCLEO}")
 message(STATUS "${PROJECT_NAME} Crosscompiling: ${CMAKE_CROSSCOMPILING}")
 
-if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include)
+if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers)
   execute_process(
     COMMAND git submodule update --init --depth 1
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
   )
+endif()
+
+if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include)
   execute_process(
     COMMAND git submodule update --init --depth 1 Drivers/CMSIS/Device/ST/STM32H7xx
     WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
