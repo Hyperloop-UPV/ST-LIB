@@ -26,7 +26,7 @@ if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM3
     COMMAND git submodule update --init
   )
   execute_process(
-    COMMAND git submodule update --init --depth 1 STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx
+    COMMAND git submodule update --init --depth 1 ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx
   )
 endif()
 
