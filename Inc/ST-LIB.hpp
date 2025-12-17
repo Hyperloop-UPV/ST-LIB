@@ -143,13 +143,13 @@ template <auto &...devs> struct Board {
     using DevT = std::remove_cvref_t<decltype(Target)>;
     using Domain = typename DevT::domain;
 
-    constexpr std::size_t idx = domain_index_of<Domain, Target>();
-    constexpr std::size_t N = domain_size_for_instance<Domain>();
+    constexpr std::size_t N = domain_size<Domain>();
+    return Domain::template Init<N>::instances[Target.index];
 
     if constexpr (std::is_same_v<Domain, MPUDomain>) {
-      return Domain::template Init<N, cfg.mpu_cfgs>::instances[idx];
+      return Domain::template Init<N, cfg.mpu_cfgs>::instances[Target.index];
     } else {
-      return Domain::template Init<N>::instances[idx];
+      return Domain::template Init<N>::instances[Target.index];
     }
   }
 };
