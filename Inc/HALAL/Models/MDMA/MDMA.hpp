@@ -16,7 +16,7 @@
 #endif
 
 #ifndef NODES_MAX
-#define NODES_MAX 100
+#define NODES_MAX 5
 #endif
 
 #ifndef TRANSFER_QUEUE_MAX_SIZE
@@ -41,8 +41,30 @@ class MDMA{
     }
 
     void set_next(MDMA_LinkNodeTypeDef* next_node) { node.CLAR = reinterpret_cast<uint32_t>(next_node); }
-    void set_destination(void* destination) { node.CDAR = reinterpret_cast<uint32_t>(destination); }
-    void set_source(void* source) { node.CSAR = reinterpret_cast<uint32_t>(source); }
+    void set_destination(void* destination) 
+    { 
+        uint32_t destination_adress = reinterpret_cast<uint32_t>(destination);
+        node.CDAR = destination_adress;
+        node.CTBR &= ~MDMA_CTBR_DBUS;
+        if (destination_adress < 0x00010000) 
+        {
+            node.CTBR |= MDMA_CTBR_DBUS;
+        }
+        else if (destination_adress >= 0x20000000 && destination_adress < 0x20020000)
+        {
+            node.CTBR |= MDMA_CTBR_DBUS;
+        } 
+    }
+    void set_source(void* source) { 
+        uint32_t source_adress = reinterpret_cast<uint32_t>(source); 
+        node.CSAR = source_adress;
+    
+        node.CTBR &= ~MDMA_CTBR_SBUS; 
+
+        if ((source_adress < 0x00010000) || (source_adress >= 0x20000000 && source_adress < 0x20020000)) {
+            node.CTBR |= MDMA_CTBR_SBUS;
+        }
+    }
     auto get_node() -> MDMA_LinkNodeTypeDef* { return &node; }
     auto get_size() -> uint32_t { return node.CBNDTR; }
     auto get_destination() -> uint32_t { return node.CDAR; }
@@ -50,15 +72,15 @@ class MDMA{
     auto get_next() -> MDMA_LinkNodeTypeDef* { return reinterpret_cast<MDMA_LinkNodeTypeDef*>(node.CLAR); }
 
 private:
-    MDMA_LinkNodeTypeDef node;
+    alignas(8) MDMA_LinkNodeTypeDef node;
 
     void init_node(void* src, void* dst, size_t size) 
     {
         MDMA_LinkNodeConfTypeDef nodeConfig{};
-        nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE; 
+        nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_RIGHT; 
         nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
         nodeConfig.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
-        nodeConfig.Init.BufferTransferLength = 1;
+        nodeConfig.Init.BufferTransferLength = 128;
         nodeConfig.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
         nodeConfig.Init.SourceBlockAddressOffset = 0;
         nodeConfig.Init.DestBlockAddressOffset = 0;
