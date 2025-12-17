@@ -9,18 +9,14 @@
 #endif
 #define __IO volatile
 
-// necessary remove of some warnings due to cmsis made for 32 bit arch and not 64 bit arch
 #define __RBIT __RBIT__CMSIS
 #define TIM_TypeDef TIM_TypeDef__CMSIS
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 
 // don't do anything in "core_cm7.h"
 #define __CORE_CM7_H_GENERIC
 #define __CORE_CM7_H_DEPENDANT
 #include "stm32h723xx.h"
 
-#pragma GCC diagnostic pop
 #undef __RBIT
 #undef TIM_TypeDef
 
