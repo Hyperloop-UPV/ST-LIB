@@ -49,6 +49,7 @@ struct SdDomain {
     struct SdCard {
         using domain = SdDomain;
         Entry e;
+        mutable size_t index;
 
         Peripheral peripheral;
 
@@ -136,7 +137,7 @@ struct SdDomain {
             local_e.d2_pin_idx = ctx.template add<GPIODomain>(d2.e);
             local_e.d3_pin_idx = ctx.template add<GPIODomain>(d3.e);
 
-            ctx.template add<SdDomain>(local_e);
+            index = ctx.template add<SdDomain>(local_e);
         }
     };
 
