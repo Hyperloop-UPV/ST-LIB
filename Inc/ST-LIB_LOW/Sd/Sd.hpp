@@ -278,6 +278,9 @@ struct SdDomain {
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
             }
+            if (num_blocs > instance.mpu_buffer0_instance->size / 512) {
+                ErrorHandler("Too many blocks requested to write in SD");
+            }
             
             if (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
                 return false; // Card not ready for data transfer
@@ -300,6 +303,9 @@ struct SdDomain {
             check_cd_wp();
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
+            }
+            if (num_blocs > instance.mpu_buffer0_instance->size / 512) {
+                ErrorHandler("Too many blocks requested to write in SD");
             }
             
             if (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
