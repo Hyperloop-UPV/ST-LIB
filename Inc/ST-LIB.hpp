@@ -116,7 +116,7 @@ template <auto &...devs> struct Board {
         .mpu_cfgs = MPUDomain::template build<mpuN>(
             ctx.template span<MPUDomain>()),
         .sd_cfgs = SdDomain::template build<sdN>(
-            ctx.template span<SdDomain>()),,
+            ctx.template span<SdDomain>()),
         .mdma_packet_cfgs = MdmaPacketDomain::template build<mdmaPacketN>(
             ctx.template span<MdmaPacketDomain>())
         // ...
