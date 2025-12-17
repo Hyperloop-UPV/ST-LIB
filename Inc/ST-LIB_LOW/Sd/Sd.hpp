@@ -111,6 +111,11 @@ struct SdDomain {
                  (d0_pin_for_sdmmc1.pin != ST_LIB::PB13.pin) && (d0_pin_for_sdmmc1.port != ST_LIB::PB13.port)) {
                 ST_LIB::compile_error("D0 pin can only be PC8 or PB13 for SDMMC1");
             }
+            if (buffer_blocks == 0) {
+                ST_LIB::compile_error("Buffer blocks must be greater than 0");
+            } else if (buffer_blocks > 15) {
+                ST_LIB::compile_error("Buffer blocks must be less than or equal to 15");
+            }
         }
     
 
