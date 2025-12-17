@@ -68,7 +68,7 @@ void ADC::turn_on(uint8_t id){
 
 	uint32_t buffer_length = peripheral->init_data.channels.size();
 	if (HAL_ADC_Start_DMA(peripheral->handle, (uint32_t*) peripheral->dma_data_buffer, buffer_length) != HAL_OK) {
-		//ErrorHandler("DMA - %d - of ADC - %d - did not start correctly", peripheral->init_data.dma_stream, id);
+		ErrorHandler("DMA - %d - of ADC - %d - did not start correctly", id);
 		return;
 	}
 
