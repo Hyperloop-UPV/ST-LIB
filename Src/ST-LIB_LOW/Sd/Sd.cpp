@@ -123,7 +123,7 @@ HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(uint
         config.DPSM          = SDMMC_DPSM_DISABLE;
         (void)SDMMC_ConfigData(hsd.Instance, &config);
 
-        hsd.Instance->DCTRL |= SDMMC_DCTRL_FIFORST;
+        // hsd.Instance->DCTRL |= SDMMC_DCTRL_FIFORST;
 
         __SDMMC_CMDTRANS_ENABLE(hsd.Instance);
         if (current_buffer == BufferSelect::Buffer1) {
@@ -192,6 +192,8 @@ HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(uin
         config.TransferMode  = SDMMC_TRANSFER_MODE_BLOCK;
         config.DPSM          = SDMMC_DPSM_DISABLE;
         (void)SDMMC_ConfigData(hsd.Instance, &config);
+
+        // hsd.Instance->DCTRL |= SDMMC_DCTRL_FIFORST;
 
         __SDMMC_CMDTRANS_ENABLE(hsd.Instance);
 
