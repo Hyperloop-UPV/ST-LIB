@@ -278,7 +278,7 @@ struct SdDomain {
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
             }
-            if (num_blocs > instance.mpu_buffer0_instance->size / 512) {
+            if (num_blocks > instance.mpu_buffer0_instance->size / 512) {
                 ErrorHandler("Too many blocks requested to write in SD");
             }
             
@@ -304,7 +304,7 @@ struct SdDomain {
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
             }
-            if (num_blocs > instance.mpu_buffer0_instance->size / 512) {
+            if (num_blocks > instance.mpu_buffer0_instance->size / 512) {
                 ErrorHandler("Too many blocks requested to write in SD");
             }
             
