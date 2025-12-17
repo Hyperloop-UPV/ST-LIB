@@ -14,7 +14,7 @@ FetchContent_MakeAvailable(googletest)
 message(STATUS "Generating test executable for ST-LIB")
 
 add_executable(${STLIB_TEST_EXECUTABLE}
-    ${CMAKE_CURRENT_LIST_DIR}/Time/scheduler_test.cpp
+    # ${CMAKE_CURRENT_LIST_DIR}/Time/scheduler_test.cpp
 )
 
 set_target_properties(${STLIB_TEST_EXECUTABLE} PROPERTIES

@@ -221,17 +221,7 @@ UART_HandleTypeDef* UART::get_handle(uint8_t id) {
 extern "C" {
 #endif
 
-int _write(int file, char* str, int len) {
 
-	UART::print_by_uart(str , len);
-	if (*str == '\n') {
-		char retorno[1] = {'\r'};
-		UART::print_by_uart(retorno, 1);
-	}
-
-
-    return len;
-}
 
 #ifdef __cplusplus
 }

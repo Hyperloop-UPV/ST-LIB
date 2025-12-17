@@ -57,6 +57,7 @@ struct MPUDomain {
         using domain = MPUDomain;
         using buffer_type = T;
         Entry e;
+        mutable size_t index;
 
         /**
          * @brief Constructs a Buffer entry for a type T.
@@ -77,7 +78,7 @@ struct MPUDomain {
 
         template <class Ctx>
         consteval void inscribe(Ctx &ctx) const {
-            ctx.template add<MPUDomain>(e);
+            index = ctx.template add<MPUDomain>(e);
         }
     };
 
