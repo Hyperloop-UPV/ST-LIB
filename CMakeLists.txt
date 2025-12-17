@@ -23,10 +23,11 @@ message(STATUS "${PROJECT_NAME} Crosscompiling: ${CMAKE_CROSSCOMPILING}")
 
 if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include)
   execute_process(
-    COMMAND git submodule update --init
+    COMMAND git submodule update --init --depth 1
   )
   execute_process(
-    COMMAND git submodule update --init --depth 1 ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx
+    COMMAND git submodule update --init --depth 1 Drivers/CMSIS/Device/ST/STM32H7xx
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
   )
 endif()
 
