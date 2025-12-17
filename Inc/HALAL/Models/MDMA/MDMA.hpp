@@ -15,10 +15,6 @@
 #undef MDMA
 #endif
 
-#ifndef NODES_MAX
-#define NODES_MAX 100
-#endif
-
 #ifndef TRANSFER_QUEUE_MAX_SIZE
 #define TRANSFER_QUEUE_MAX_SIZE 50
 #endif
@@ -134,6 +130,7 @@ private:
     static void prepare_transfer(Instance& instance, MDMA::LinkedListNode* first_node);
     static void prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node);
     static Instance& get_instance(uint8_t id);
+
     inline static std::array<Instance,8> instances{};
     static std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> instance_to_channel;
     static std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> channel_to_instance;
@@ -154,13 +151,6 @@ private:
     static void inscribe(Instance& instance,uint8_t id);
 
     public:
-
-    
-    
-
-    // Pool for MDMA_LinkNodeTypeDef, uses external non-cached memory
-    static Pool<LinkedListNode, NODES_MAX, true> link_node_pool;
-    //To be reviewed when we make mdma in compile time
 
     static void start();
     static void irq_handler();
