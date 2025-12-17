@@ -72,13 +72,12 @@ struct SdDomain {
          * @param sdmmc_peripheral The SDMMC peripheral to use (Peripheral::sdmmc1 or Peripheral::sdmmc2)
          * @param card_detect_config Optional Card Detect pin (DigitalInputDomain::DigitalInput) and its active state, or nullopt for none
          * @param write_protect_config Optional Write Protect pin (DigitalInputDomain::DigitalInput) and its active state, or nullopt for none
-         * @param d0_pin_for_sdmmc1 D0 pin to use if using SDMMC1 (default PC8)
-         * @param d1_pin_for_sdmmc1 D1 pin to use if using SDMMC1 (default PC9)
-         * @note The other pins (CMD, CK, D2, D3) are fixed for each peripheral.
+         * @param d0_pin_for_sdmmc1 D0 pin to use if using SDMMC1 (default PC8, can also be PB13).
+         * @note The other pins (CMD, CK, D1, D2, D3) are fixed for each peripheral.
          */
         consteval SdCard(Peripheral sdmmc_peripheral,
                     std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> card_detect_config, std::optional<std::pair<DigitalInputDomain::DigitalInput, GPIO_PinState>> write_protect_config,
-                    GPIODomain::Pin d0_pin_for_sdmmc1 = ST_LIB::PC8, GPIODomain::Pin d1_pin_for_sdmmc1 = ST_LIB::PC9) :
+                    GPIODomain::Pin d0_pin_for_sdmmc1 = ST_LIB::PC8) :
             e{.peripheral = sdmmc_peripheral},
             peripheral(sdmmc_peripheral),
             buffer0(MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1)),
@@ -106,6 +105,9 @@ struct SdDomain {
         {
             if (sdmmc_peripheral != Peripheral::sdmmc1 && sdmmc_peripheral != Peripheral::sdmmc2) {
                 ST_LIB::compile_error("Invalid SDMMC peripheral");
+            }
+            if (d0_pin_for_sdmmc1 != ST_LIB::PC8 && d0_pin_for_sdmmc1 != ST_LIB::PB13) {
+                ST_LIB::compile_error("D0 pin can only be PC8 or PB13 for SDMMC1");
             }
         }
     
