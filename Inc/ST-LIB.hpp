@@ -139,45 +139,6 @@ template <auto &...devs> struct Board {
     // ...
   }
 
-  template <typename Domain>
-  static consteval std::size_t domain_size_for_instance() {
-    return domain_size<Domain>();
-  }
-
-  template <typename Domain, auto &Target, std::size_t I = 0>
-  static consteval std::size_t domain_index_of_impl() {
-    std::size_t idx = 0;
-    bool found = false;
-
-    (
-        [&] {
-          using DevT = std::remove_cvref_t<decltype(devs)>;
-          if constexpr (std::is_same_v<typename DevT::domain, Domain>) {
-            if (!found) {
-              auto dev_ptr = reinterpret_cast<const void*>(&devs);
-              auto target_ptr = reinterpret_cast<const void*>(&Target);
-              if (dev_ptr == target_ptr) {
-                found = true;
-              } else {
-                ++idx;
-              }
-            }
-          }
-        }(),
-        ...);
-
-    if (!found) {
-      compile_error("Device not found for domain");
-    }
-
-    return idx;
-  }
-
-  template <typename Domain, auto &Target>
-  static consteval std::size_t domain_index_of() {
-    return domain_index_of_impl<Domain, Target>();
-  }
-
   template <auto &Target> static auto &instance_of() {
     using DevT = std::remove_cvref_t<decltype(Target)>;
     using Domain = typename DevT::domain;

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "HALAL/Models/GPIO.hpp"
 
 using enum ST_LIB::GPIODomain::Port;

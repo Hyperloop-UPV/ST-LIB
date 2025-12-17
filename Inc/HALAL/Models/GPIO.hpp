@@ -1,10 +1,6 @@
 #pragma once
 
-#ifndef TESTING_ENV
 #include "stm32h7xx_hal.h"
-#else
-#include "MockedDrivers/hal_gpio_interface.h"
-#endif
 #include <array>
 #include <span>
 #include <tuple>
@@ -176,6 +172,7 @@ struct GPIODomain {
 
   struct GPIO {
     using domain = GPIODomain;
+    mutable size_t index;
 
     Entry e;
 
@@ -188,7 +185,7 @@ struct GPIODomain {
     }
 
     template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-      ctx.template add<GPIODomain>(e);
+      index = ctx.template add<GPIODomain>(e);
     }
   };
 
