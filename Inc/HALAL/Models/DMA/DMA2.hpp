@@ -18,9 +18,10 @@ using std::tuple;
     
 
 namespace ST_LIB {
+    extern void compile_error(const char *msg);
     struct DMA_Domain {
         
-        enum class Instance : uint8_t {adc1, adc2, adc3, 
+        enum class Instance : uint8_t {none, adc1, adc2, adc3, 
                                         i2c1, i2c2, i2c3, i2c5,  
                                         spi1, spi2, spi3, spi4, spi5,
                                         fmac};
@@ -95,7 +96,7 @@ namespace ST_LIB {
         static constexpr std::size_t max_instances {MAX_STREAMS};
         static_assert(max_instances > 0, "The number of instances must be greater than 0");
 
-        static inline IRQn_Type get_irqn(Stream stream) {
+        static inline constexpr IRQn_Type get_irqn(Stream stream) {
             if (stream == Stream::dma1_stream0) return DMA1_Stream0_IRQn;
             else if (stream == Stream::dma1_stream1) return DMA1_Stream1_IRQn;
             else if (stream == Stream::dma1_stream2) return DMA1_Stream2_IRQn;
@@ -141,6 +142,8 @@ namespace ST_LIB {
         }
 
         static consteval inline uint32_t get_Request(Instance instance, uint8_t i) {
+            if (instance == Instance::none) return DMA_REQUEST_MEM2MEM;
+
             if (instance == Instance::adc1) return DMA_REQUEST_ADC1;
             if (instance == Instance::adc2) return DMA_REQUEST_ADC2;
             if (instance == Instance::adc3) return DMA_REQUEST_ADC3;
@@ -174,7 +177,7 @@ namespace ST_LIB {
         }
 
         static consteval inline uint32_t get_Direction(Instance instance, uint8_t i) {
-            if (is_fmac(instance) && i == 0){
+            if ((is_fmac(instance) && i == 0) || instance == Instance::none) {
                     return DMA_MEMORY_TO_MEMORY;
                 }
             else if  ((is_i2c(instance) && i == 1) ||
@@ -221,7 +224,7 @@ namespace ST_LIB {
             return DMA_MDATAALIGN_HALFWORD;
         }
         static consteval inline uint32_t get_Mode(Instance instance, uint8_t i) {
-            if  (is_spi(instance) || is_fmac(instance)){
+            if  (is_spi(instance) || is_fmac(instance) || instance == Instance::none){
                 return DMA_NORMAL;
             }
             
@@ -235,6 +238,7 @@ namespace ST_LIB {
             
             return DMA_PRIORITY_LOW;
         }
+        
         static consteval inline uint32_t get_FIFOMode(Instance instance, uint8_t i) {
             if (is_fmac(instance)){
                 return DMA_FIFOMODE_ENABLE;
@@ -277,9 +281,8 @@ namespace ST_LIB {
                 // Yo creo que a mi no me sirve porque mis instancias si que estan repetidas
                 for (std::size_t j = 0; j < i; ++j){
                     const auto &prev = instances[j];
-                    if (prev.instance == e.instance && prev.stream == e.stream){
-                        struct peripherial_already_inscribed {};
-                        throw peripherial_already_inscribed{};
+                    if (prev.stream == e.stream){
+                        compile_error("DMA stream already in use");
                     }
                 }
         
@@ -320,7 +323,7 @@ namespace ST_LIB {
             static inline std::array<Instances_, N> instances{};
 
             static void init(std::span<const Config, N> cfgs) {
-                static_assert(N > 0);
+                //static_assert(N > 0);
                 __HAL_RCC_DMA1_CLK_ENABLE();
 	            __HAL_RCC_DMA2_CLK_ENABLE();
                 for (std::size_t i = 0; i < N; ++i) {
