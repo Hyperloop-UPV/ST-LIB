@@ -279,18 +279,8 @@ struct SdDomain {
                 ErrorHandler("SD Card not initialized");
             }
             
-            // Wait for the CARD (hardware) to be ready, not just the handle
-            uint32_t timeout = HAL_GetTick() + 1000;
-            while (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
-                if (HAL_GetTick() > timeout) {
-                    // Try to force a STOP command to reset the state, just in case
-                    SDMMC_CmdStopTransfer(instance.hsd.Instance);
-                    HAL_Delay(10); // Give it a moment
-                    if (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
-                        ErrorHandler("Timeout waiting for SD Card to enter TRANSFER state");
-                        return false;
-                    }
-                }
+            if (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
+                return false; // Card not ready for data transfer
             }
 
             // Won't use HAL_SDEx_ReadBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
@@ -312,18 +302,8 @@ struct SdDomain {
                 ErrorHandler("SD Card not initialized");
             }
             
-            // Wait for the CARD (hardware) to be ready, not just the handle
-            uint32_t timeout = HAL_GetTick() + 1000;
-            while (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
-                if (HAL_GetTick() > timeout) {
-                    // Try to force a STOP command to reset the state, just in case
-                    SDMMC_CmdStopTransfer(instance.hsd.Instance);
-                    HAL_Delay(10); // Give it a moment
-                    if (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
-                        ErrorHandler("Timeout waiting for SD Card to enter TRANSFER state");
-                        return false;
-                    }
-                }
+            if (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
+                return false; // Card not ready for data transfer
             }
             // Won't use HAL_SDEx_WriteBlocksDMAMultiBuffer because it doesn't support double buffering the way we want
             HAL_StatusTypeDef status = instance.Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(start_block, num_blocks);
