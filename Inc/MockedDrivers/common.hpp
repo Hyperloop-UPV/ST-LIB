@@ -15,7 +15,6 @@
 
 #define IS_FUNCTIONAL_STATE(STATE) (((STATE) == DISABLE) || ((STATE) == ENABLE))
 
-#if 0
 #ifdef SET_BIT
 # undef SET_BIT
 #endif
@@ -44,4 +43,3 @@
 #define MODIFY_REG(REG, CLEARMASK, SETMASK)  WRITE_REG((REG), (((READ_REG(REG)) & (~(uint32_t)(CLEARMASK))) | (SETMASK)))
 
 #define POSITION_VAL(VAL)     (__CLZ(__RBIT(VAL)))
-#endif

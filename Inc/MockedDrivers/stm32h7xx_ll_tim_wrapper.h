@@ -12,6 +12,6 @@
 #include "stm32h7xx_ll_tim.h"
 #undef uint32_t
 
-#include "MockedDrivers/compiler_specific.hpp"
+#include "MockedDrivers/common.hpp"
 
 #endif // STM32H7xx_LL_TIM_WRAPPER_H
