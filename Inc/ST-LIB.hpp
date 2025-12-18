@@ -164,7 +164,12 @@ template <auto &...devs> struct Board {
     constexpr std::size_t idx = owner_index_of<Domain, Target>();
 
     constexpr std::size_t N = domain_size<Domain>();
-    return Domain::template Init<N>::instances[idx];
+    
+    if constexpr (std::is_same_v<Domain, MPUDomain>) {
+      return Domain::template Init<N, cfg.mpu_cfgs>::instances[idx];
+    } else {
+      return Domain::template Init<N>::instances[idx];
+    }
   }
 };
 
