@@ -27,8 +27,7 @@ public:
 static_assert(sizeof(TimerRegister<Reg_CR1>) == sizeof(uint32_t) );
 
 
-class TIM_TypeDef{
-public:
+struct TIM_TypeDef{
     TIM_TypeDef(void(* irq_handler)(void),IRQn_Type irq_n):
 //        PSC(*this), callback{irq_handler}, irq_n{irq_n}
         callback{irq_handler}, irq_n{irq_n}
