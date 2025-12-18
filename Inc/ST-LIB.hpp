@@ -128,10 +128,10 @@ template <auto &...devs> struct Board {
             ctx.template span<DigitalInputDomain>()),
         .mpu_cfgs = MPUDomain::template build<mpuN>(
             ctx.template span<MPUDomain>()),
+        .mdma_packet_cfgs = MdmaPacketDomain::template build<mdmaPacketN>(
+            ctx.template span<MdmaPacketDomain>()),
         .sd_cfgs = SdDomain::template build<sdN>(
             ctx.template span<SdDomain>()),
-        .mdma_packet_cfgs = MdmaPacketDomain::template build<mdmaPacketN>(
-            ctx.template span<MdmaPacketDomain>())
         // ...
     };
   }
