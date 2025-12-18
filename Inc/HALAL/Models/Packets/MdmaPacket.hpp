@@ -85,10 +85,10 @@ struct MdmaPacketDomain {
             using domain = MdmaPacketDomain;
 
             static constexpr size_t packet_size_bytes = (sizeof(Types) + ...) + sizeof(uint16_t);
-            static constexpr size_t nodes_size_bytes = (2 * (sizeof...(Types) + 1) + 2) * sizeof(MDMA::LinkedListNode);
+            static constexpr size_t nodes_size = (2 * (sizeof...(Types) + 1) + 2);
 
             using PacketMem = std::array<uint8_t, packet_size_bytes>;
-            using NodesMem = std::array<uint8_t, nodes_size_bytes>;
+            using NodesMem = std::array<MDMA::LinkedListNode, nodes_size>;
 
             MPUDomain::Buffer<PacketMem> packet_req;
             MPUDomain::Buffer<NodesMem> nodes_req;
@@ -100,9 +100,9 @@ struct MdmaPacketDomain {
 
             template <class Ctx>
             consteval void inscribe(Ctx &ctx) const {
-                size_t p_idx = ctx.template add<MPUDomain>(packet_req.e);
-                size_t n_idx = ctx.template add<MPUDomain>(nodes_req.e);
-                ctx.template add<MdmaPacketDomain>({p_idx, n_idx});
+                size_t p_idx = ctx.template add<MPUDomain>(packet_req.e, this);
+                size_t n_idx = ctx.template add<MPUDomain>(nodes_req.e, this);
+                ctx.template add<MdmaPacketDomain>({p_idx, n_idx}, this);
             }
         };
 
@@ -158,15 +158,15 @@ struct MdmaPacketDomain {
 
         /**
         * @brief Build the packet and transfer data into non-cached buffer using MDMA
-        * @param destination_address Optional destination address for the built packet (should be non-cached, else you will need to manage cache coherency)
+        * @param destination_address Optional destination address for the built packet (should be non-cached, else you will need to manage cache coherency). It isn't optional here becasue there's a specific overload without parameters for compliance with Packet interface.
         * @return Pointer to the built packet data (internal buffer or destination address)
         */
-        uint8_t* build(uint8_t* destination_address = nullptr) {
+        uint8_t* build(uint8_t* destination_address) {
             set_build_destination(destination_address);
             bool done = false;
             MDMA::transfer_list(build_nodes[0], &done);
             while (!done) {
-                // Busy wait
+                MDMA::update();
             }
             return destination_address ? destination_address : buffer;
         }
@@ -189,15 +189,25 @@ struct MdmaPacketDomain {
             return build(destination_address);
         }
 
-        void parse(uint8_t* data = nullptr) override {
+        /**
+         * @brief Parse the packet data from non-cached buffer using MDMA
+         * @param data Optional source data address to parse from (should be non-cached, else you will need to manage cache coherency). It isn't optional here becasue there's a specific overload without parameters for compliance with Packet interface.
+         * @param done Optional pointer to a boolean that will be set to true when parsing is done.
+         */
+        void parse(uint8_t* data) override {
             bool done = false;
             auto source_node = set_parse_source(data);
             MDMA::transfer_list(source_node, &done);
             while (!done) {
-                // Busy wait
+                MDMA::update();
             }
         }
 
+        /**
+         * @brief Parse the packet data from non-cached buffer using MDMA with a promise
+         * @param done Pointer to a boolean that will be set to true when parsing is done.
+         * @param data Optional source data address to parse from (should be non-cached, else you will need to manage cache coherency).
+         */
         void parse(bool* done, uint8_t* data = nullptr) {
             auto source_node = set_parse_source(data);
             MDMA::transfer_list(source_node, done);
@@ -236,7 +246,6 @@ struct MdmaPacketDomain {
             } else {
                 build_nodes[sizeof...(Types)]->set_next(nullptr);
             }
-            SCB_CleanDCache_by_Addr((uint32_t*)build_nodes[sizeof...(Types)], sizeof(MDMA::LinkedListNode) * 2);
         }
 
         MDMA::LinkedListNode* set_parse_source(uint8_t* external_buffer) {
