@@ -85,10 +85,10 @@ struct MdmaPacketDomain {
             using domain = MdmaPacketDomain;
 
             static constexpr size_t packet_size_bytes = (sizeof(Types) + ...) + sizeof(uint16_t);
-            static constexpr size_t nodes_size_bytes = (2 * (sizeof...(Types) + 1) + 2) * sizeof(MDMA::LinkedListNode);
+            static constexpr size_t nodes_size = (2 * (sizeof...(Types) + 1) + 2);
 
             using PacketMem = std::array<uint8_t, packet_size_bytes>;
-            using NodesMem = std::array<uint8_t, nodes_size_bytes>;
+            using NodesMem = std::array<MDMA::LinkedListNode, nodes_size>;
 
             MPUDomain::Buffer<PacketMem> packet_req;
             MPUDomain::Buffer<NodesMem> nodes_req;
@@ -236,7 +236,6 @@ struct MdmaPacketDomain {
             } else {
                 build_nodes[sizeof...(Types)]->set_next(nullptr);
             }
-            SCB_CleanDCache_by_Addr((uint32_t*)build_nodes[sizeof...(Types)], sizeof(MDMA::LinkedListNode) * 2);
         }
 
         MDMA::LinkedListNode* set_parse_source(uint8_t* external_buffer) {
