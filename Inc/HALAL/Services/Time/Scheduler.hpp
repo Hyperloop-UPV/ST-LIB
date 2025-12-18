@@ -9,7 +9,7 @@
 #ifndef TESTING_ENV
     #include "stm32h7xx_ll_tim.h"
 #else
-    #include "MockedDrivers/ll_tim_interface.h"
+    #include "MockedDrivers/stm32h7xx_ll_tim_wrapper.h"
 #endif
 #include <array>
 #include <cstdint>

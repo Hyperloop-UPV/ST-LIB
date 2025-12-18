@@ -292,7 +292,8 @@ target_include_directories(${STLIB_LIBRARY} PUBLIC
   ${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include
   ${STM32CUBEH7}/Drivers/CMSIS/Include
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Core_A/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc>
+  #$<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc>
+  ${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
 
   # LWIP includes 
