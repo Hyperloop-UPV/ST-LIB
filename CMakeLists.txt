@@ -30,7 +30,7 @@ endif()
 
 if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include)
   execute_process(
-    COMMAND git submodule update --init --depth 1 Drivers/CMSIS/Device/ST/STM32H7xx
+    COMMAND git submodule update --init --depth 1 Drivers/CMSIS/Device/ST/STM32H7xx Drivers/STM32H7xx_HAL_Driver
     WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
   )
 endif()
@@ -38,6 +38,11 @@ endif()
 if(NOT CMAKE_CROSSCOMPILING)
   message(STATUS "Compiling for simulator")
   add_subdirectory(Tests)
+else()
+  execute_process(
+    COMMAND git submodule update --init --depth 1 Drivers/BSP/Components/lan8742
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
+  )
 endif()
 
 # ============================
