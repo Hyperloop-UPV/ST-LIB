@@ -262,27 +262,15 @@ void SDMMC2_IRQHandler(void) {
     }
 }
 
-void HAL_SDEx_Read_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
-    if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
-        sd_instance->on_dma_read_complete();
-    }
-}
-
-void HAL_SDEx_Read_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
-    if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
-        sd_instance->on_dma_read_complete();
-    }
-}
-
-void HAL_SDEx_Write_DMADoubleBuf0CpltCallback(SD_HandleTypeDef* hsd) {
+void HAL_SD_TxCpltCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
         sd_instance->on_dma_write_complete();
     }
 }
 
-void HAL_SDEx_Write_DMADoubleBuf1CpltCallback(SD_HandleTypeDef* hsd) {
+void HAL_SD_RxCpltCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
-        sd_instance->on_dma_write_complete();
+        sd_instance->on_dma_read_complete();
     }
 }
 

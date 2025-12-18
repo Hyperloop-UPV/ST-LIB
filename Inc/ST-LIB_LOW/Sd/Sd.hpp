@@ -49,7 +49,6 @@ struct SdDomain {
     struct SdCard {
         using domain = SdDomain;
         Entry e;
-        mutable size_t index;
 
         Peripheral peripheral;
 
@@ -123,8 +122,8 @@ struct SdDomain {
         consteval void inscribe(Ctx &ctx) const {
             Entry local_e = e;
 
-            local_e.mpu_buffer0_idx = ctx.template add<MPUDomain>(buffer0.e);
-            local_e.mpu_buffer1_idx = ctx.template add<MPUDomain>(buffer1.e);
+            local_e.mpu_buffer0_idx = ctx.template add<MPUDomain>(buffer0.e, this);
+            local_e.mpu_buffer1_idx = ctx.template add<MPUDomain>(buffer1.e, this);
 
             if (cd.has_value()) {
                 auto& di = cd.value().first;
@@ -139,14 +138,14 @@ struct SdDomain {
                 local_e.wp_pin_idx = {ctx.template add<DigitalInputDomain>(di_entry), wp.value().second};
             }
 
-            local_e.cmd_pin_idx = ctx.template add<GPIODomain>(cmd.e);
-            local_e.ck_pin_idx = ctx.template add<GPIODomain>(ck.e);
-            local_e.d0_pin_idx = ctx.template add<GPIODomain>(d0.e);
-            local_e.d1_pin_idx = ctx.template add<GPIODomain>(d1.e);
-            local_e.d2_pin_idx = ctx.template add<GPIODomain>(d2.e);
-            local_e.d3_pin_idx = ctx.template add<GPIODomain>(d3.e);
+            local_e.cmd_pin_idx = ctx.template add<GPIODomain>(cmd.e, this);
+            local_e.ck_pin_idx = ctx.template add<GPIODomain>(ck.e, this);
+            local_e.d0_pin_idx = ctx.template add<GPIODomain>(d0.e, this);
+            local_e.d1_pin_idx = ctx.template add<GPIODomain>(d1.e, this);
+            local_e.d2_pin_idx = ctx.template add<GPIODomain>(d2.e, this);
+            local_e.d3_pin_idx = ctx.template add<GPIODomain>(d3.e, this);
 
-            index = ctx.template add<SdDomain>(local_e);
+            ctx.template add<SdDomain>(local_e, this);
         }
     };
 
