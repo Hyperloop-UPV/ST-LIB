@@ -172,7 +172,6 @@ struct GPIODomain {
 
   struct GPIO {
     using domain = GPIODomain;
-    mutable size_t index;
 
     Entry e;
 
@@ -185,7 +184,7 @@ struct GPIODomain {
     }
 
     template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-      index = ctx.template add<GPIODomain>(e);
+      ctx.template add<GPIODomain>(e, this);
     }
   };
 
