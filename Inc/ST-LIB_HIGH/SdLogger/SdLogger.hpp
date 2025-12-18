@@ -98,6 +98,10 @@ class SdLogger {
         }
     }
 
+    uint32_t get_current_block() {
+        return sd_block_addr;
+    }
+
    private:
     bool flush_buffer() {
         if (sd_write_ongoing) {
