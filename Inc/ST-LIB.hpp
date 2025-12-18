@@ -32,6 +32,7 @@ template <typename... Domains> struct BuildCtx {
   static constexpr std::size_t max_count_v = D::max_instances;
 
   std::tuple<std::array<Decl<Domains>, max_count_v<Domains>>...> storage{};
+  std::tuple<std::array<const void *, max_count_v<Domains>>...> owners{};
   std::array<std::size_t, sizeof...(Domains)> sizes{};
 
   template <typename D, std::size_t I = 0>
@@ -47,12 +48,17 @@ template <typename... Domains> struct BuildCtx {
     }
   }
 
-  template <typename D> consteval std::size_t add(typename D::Entry e) {
+  template <typename D, typename Owner>
+  consteval std::size_t add(typename D::Entry e, const Owner *owner) {
     constexpr std::size_t I = domain_index<D>();
     auto &arr = std::get<I>(storage);
+    auto &own = std::get<I>(owners);
     auto &size = sizes[I];
+
     const auto idx = size;
-    arr[size++] = e;
+    arr[size] = e;
+    own[size] = owner;
+    ++size;
     return idx;
   }
 
@@ -62,6 +68,13 @@ template <typename... Domains> struct BuildCtx {
     auto const size = sizes[I];
     using E = typename D::Entry;
     return std::span<const E>{arr.data(), size};
+  }
+
+  template <typename D> consteval auto owners_span() const {
+    constexpr std::size_t I = domain_index<D>();
+    auto const &arr = std::get<I>(owners);
+    auto const size = sizes[I];
+    return std::span<const void *const>{arr.data(), size};
   }
 
   template <typename D> consteval std::size_t size() const {
@@ -141,12 +154,31 @@ template <auto &...devs> struct Board {
     // ...
   }
 
+  template <typename Domain, auto &Target, std::size_t I = 0>
+  static consteval std::size_t owner_index_of() {
+    constexpr auto owners = ctx.template owners_span<Domain>();
+
+    if constexpr (I >= owners.size()) {
+      compile_error("Device not registered in domain");
+      return 0;
+    } else {
+      return owners[I] == &Target ? I : owner_index_of<Domain, Target, I + 1>();
+    }
+  }
+
   template <auto &Target> static auto &instance_of() {
     using DevT = std::remove_cvref_t<decltype(Target)>;
     using Domain = typename DevT::domain;
 
+    constexpr std::size_t idx = owner_index_of<Domain, Target>();
+
     constexpr std::size_t N = domain_size<Domain>();
-    return Domain::template Init<N>::instances[Target.index];
+    
+    if constexpr (std::is_same_v<Domain, MPUDomain>) {
+      return Domain::template Init<N, cfg.mpu_cfgs>::instances[idx];
+    } else {
+      return Domain::template Init<N>::instances[idx];
+    }
   }
 };
 
