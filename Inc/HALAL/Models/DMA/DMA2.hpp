@@ -52,6 +52,7 @@ namespace ST_LIB {
                 case Stream::dma2_stream6: return DMA2_Stream6;
                 case Stream::dma2_stream7: return DMA2_Stream7;
             }
+            return nullptr;
         }
         
         struct Entry {
@@ -65,7 +66,7 @@ namespace ST_LIB {
         struct DMA {
             using domain = DMA_Domain;
 
-            std::array<Entry, 3> e{};
+            std::array<Entry, sizeof...(Ss)> e{};
 
             
             consteval DMA(Instance instance) {
@@ -85,14 +86,12 @@ namespace ST_LIB {
 
             template <class Ctx>
             consteval void inscribe(Ctx &ctx) const {
-                for (const auto& entry : e) {
-                    if (entry.stream != Stream{}) 
-                        ctx.template add<DMA_Domain>(entry);
+                for (const auto &entry : e) {
+                    ctx.template add<DMA_Domain>(entry);
                 }
             }
         };
 
-        // NO se para que quiero esto
         static constexpr std::size_t max_instances {MAX_STREAMS};
         static_assert(max_instances > 0, "The number of instances must be greater than 0");
 
@@ -139,6 +138,10 @@ namespace ST_LIB {
 
         static constexpr inline bool is_fmac(Instance instance) {
             return instance == Instance::fmac;
+        }
+
+        static constexpr inline bool is_none(Instance instance){
+            return instance == Instance::none;
         }
 
         static consteval inline uint32_t get_Request(Instance instance, uint8_t i) {
@@ -189,7 +192,7 @@ namespace ST_LIB {
         }
 
         static consteval inline uint32_t get_PeriphInc(Instance instance, uint8_t i) {
-            if  (is_fmac(instance) && i == 0){
+            if  ((is_fmac(instance) && i == 0) || is_none(instance)){
                 return DMA_PINC_ENABLE;
             }
             return DMA_PINC_DISABLE;
@@ -209,6 +212,11 @@ namespace ST_LIB {
             else if  (is_spi(instance)){
                 return DMA_PDATAALIGN_BYTE; 
             }
+            // Para la prueba
+            else if (is_none(instance)){
+                return DMA_PDATAALIGN_WORD;
+            }
+
 
             return DMA_PDATAALIGN_HALFWORD;
         }
@@ -314,7 +322,7 @@ namespace ST_LIB {
             DMA_HandleTypeDef dma;
 
             void start(uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength){
-                HAL_DMA_Start_IT(&dma, SrcAddress, DstAddress, DataLength);
+                HAL_DMA_Start(&dma, SrcAddress, DstAddress, DataLength);
             }
         };
 
@@ -323,13 +331,14 @@ namespace ST_LIB {
             static inline std::array<Instances_, N> instances{};
 
             static void init(std::span<const Config, N> cfgs) {
-                //static_assert(N > 0);
+                static_assert(N > 0);
                 __HAL_RCC_DMA1_CLK_ENABLE();
 	            __HAL_RCC_DMA2_CLK_ENABLE();
                 for (std::size_t i = 0; i < N; ++i) {
                     const auto &e = cfgs[i];
                     auto [instance, dma_init, stream, irqn, id] = e.init_data;           
                     
+                    instances[i].dma = {};
                     instances[i].dma.Instance = stream_to_DMA_StreamTypeDef(stream);
                     instances[i].dma.Init = dma_init;
 
