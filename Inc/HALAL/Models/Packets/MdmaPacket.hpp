@@ -100,9 +100,9 @@ struct MdmaPacketDomain {
 
             template <class Ctx>
             consteval void inscribe(Ctx &ctx) const {
-                size_t p_idx = ctx.template add<MPUDomain>(packet_req.e);
-                size_t n_idx = ctx.template add<MPUDomain>(nodes_req.e);
-                ctx.template add<MdmaPacketDomain>({p_idx, n_idx});
+                size_t p_idx = ctx.template add<MPUDomain>(packet_req.e, this);
+                size_t n_idx = ctx.template add<MPUDomain>(nodes_req.e, this);
+                ctx.template add<MdmaPacketDomain>({p_idx, n_idx}, this);
             }
         };
 
@@ -161,7 +161,7 @@ struct MdmaPacketDomain {
         * @param destination_address Optional destination address for the built packet (should be non-cached, else you will need to manage cache coherency)
         * @return Pointer to the built packet data (internal buffer or destination address)
         */
-        uint8_t* build(uint8_t* destination_address = nullptr) {
+        uint8_t* build(uint8_t* destination_address) {
             set_build_destination(destination_address);
             bool done = false;
             MDMA::transfer_list(build_nodes[0], &done);
@@ -189,7 +189,7 @@ struct MdmaPacketDomain {
             return build(destination_address);
         }
 
-        void parse(uint8_t* data = nullptr) override {
+        void parse(uint8_t* data) override {
             bool done = false;
             auto source_node = set_parse_source(data);
             MDMA::transfer_list(source_node, &done);
