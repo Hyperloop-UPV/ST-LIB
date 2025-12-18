@@ -31,7 +31,7 @@ namespace ST_LIB {
                                         dma2_stream0, dma2_stream1, dma2_stream2, dma2_stream3, 
                                         dma2_stream4, dma2_stream5, dma2_stream6, dma2_stream7};
 
-                
+        
         static inline DMA_Stream_TypeDef* stream_to_DMA_StreamTypeDef(Stream s) {
             switch (s) {
                 case Stream::dma1_stream0: return DMA1_Stream0;
@@ -117,7 +117,6 @@ namespace ST_LIB {
             return DMA1_Stream0_IRQn; // Nunca se alcanza
         }
 
-        // Si quitas el auto peta todo
         static constexpr inline bool is_one_of(Instance instance, auto... bases) {
             return ((instance == bases) || ...);
         }
@@ -279,7 +278,7 @@ namespace ST_LIB {
         };
 
         template <size_t N>
-        static consteval std::array<Config, N> build(span<const Entry> instances){
+        static consteval std::array<Config, N> build(span<const Entry> instances) {
             std::array<Config, N> cfgs{};
 
             for (std::size_t i = 0; i < N; ++i){
@@ -318,15 +317,20 @@ namespace ST_LIB {
             return cfgs;
         }
 
+
+        
         struct Instances_ {
             DMA_HandleTypeDef dma;
 
             void start(uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength){
-                HAL_DMA_Start(&dma, SrcAddress, DstAddress, DataLength);
+                HAL_DMA_Start_IT(&dma, SrcAddress, DstAddress, DataLength);
             }
         };
 
         
+        // Alomejor habria que meterlo en algun lado
+        static inline DMA_HandleTypeDef *dma_irq_table[16]; 
+
         template <std::size_t N> struct Init {
             static inline std::array<Instances_, N> instances{};
 
@@ -348,9 +352,75 @@ namespace ST_LIB {
                     else{
                         HAL_NVIC_SetPriority(irqn, 0, 0);
                         HAL_NVIC_EnableIRQ(irqn);
+                        dma_irq_table[static_cast<size_t>(stream)] = &instances[i].dma;
+
                     }
                 }
             }
         };
+        
+        void DMA1_Stream0_IRQHandler(void) {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[0]);
+        }
+        
+        void DMA1_Stream1_IRQHandler() { 
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[1]); 
+        }
+
+        void DMA1_Stream2_IRQHandler() { 
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[2]); 
+        }
+
+        void DMA1_Stream3_IRQHandler() { 
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[3]); 
+        }
+
+        void DMA1_Stream4_IRQHandler() { 
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[4]); 
+        }
+
+        void DMA1_Stream5_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[5]); 
+        }
+
+        void DMA1_Stream6_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[6]); 
+        
+        }
+
+        void DMA1_Stream7_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[7]); 
+        }
+
+        void DMA2_Stream0_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[8]); 
+        }
+
+        void DMA2_Stream1_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[9]); 
+        }
+        void DMA2_Stream2_IRQHandler() { 
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[10]); 
+        }
+
+        void DMA2_Stream3_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[11]); 
+        }
+
+        void DMA2_Stream4_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[12]); 
+        }
+
+        void DMA2_Stream5_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[13]); 
+        }
+
+        void DMA2_Stream6_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[14]); 
+        }
+
+        void DMA2_Stream7_IRQHandler() {
+            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[15]); 
+        }
     };
 }
