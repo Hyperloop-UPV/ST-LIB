@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
 #include "MockedDrivers/stm32h723xx_wrapper.h"
+#include "stm32h7xx.h"
 #include "MockedDrivers/common.hpp"
 #include "MockedDrivers/NVIC.hpp"
-#include "MockedDrivers/tim_register_definitions.hpp"
 #include "MockedDrivers/Register.hpp"
 #include <iostream>
 enum class TimReg {
