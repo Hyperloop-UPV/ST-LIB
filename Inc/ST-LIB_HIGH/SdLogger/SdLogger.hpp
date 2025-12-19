@@ -76,8 +76,11 @@ class SdLogger {
 
                 size_t packet_size = packet_sizes[i];
                 // Don't add more packets if they can't fit (this could be optimized to test if there are other packets smaller that can fit, but that's more cycles, this works)
-                if (current_buffer_offset + packet_size > current_buffer_size) {
+                if (current_buffer_offset + packet_size > current_buffer_size - 2) {
                     buffer_flush_pending = true;
+
+                    // Put "0xFFFF" end of log marker (as if it were the index, but it obviously won't match any real packet)
+                    *(uint16_t*)(current_buffer_ptr + current_buffer_offset) = 0xFFFF;
                     break; 
                 }
 
