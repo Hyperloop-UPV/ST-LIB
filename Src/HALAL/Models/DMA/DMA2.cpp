@@ -2,7 +2,7 @@
 
 
 extern "C" void DMA1_Stream0_IRQHandler(void) {
-    while(1);
+    HAL_DMA_IRQHandler(dma_irq_table[0]);
 }
 
 extern "C" void DMA1_Stream1_IRQHandler(void) { 
