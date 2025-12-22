@@ -4,7 +4,7 @@
 #include "HALAL/Models/Pin.hpp"
 
 #include "HALAL/Models/HALconfig/HALconfig.hpp"
-#include "HALAL/Models/DMA/DMA.hpp"
+//#include "HALAL/Models/DMA/DMA.hpp"
 #include "HALAL/Models/DMA/DMA2.hpp"
 
 #include "HALAL/Services/DigitalOutputService/DigitalOutputService.hpp"

@@ -15,7 +15,10 @@ using std::span;
 using std::tuple;
 
 #define MAX_STREAMS 16
-    
+
+
+// Alomejor habria que meterlo en algun lado
+ static inline DMA_HandleTypeDef *dma_irq_table[16];
 
 namespace ST_LIB {
     extern void compile_error(const char *msg);
@@ -328,8 +331,7 @@ namespace ST_LIB {
         };
 
         
-        // Alomejor habria que meterlo en algun lado
-        static inline DMA_HandleTypeDef *dma_irq_table[16]; 
+        
 
         template <std::size_t N> struct Init {
             static inline std::array<Instances_, N> instances{};
@@ -358,69 +360,7 @@ namespace ST_LIB {
                 }
             }
         };
-        
-        void DMA1_Stream0_IRQHandler(void) {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[0]);
-        }
-        
-        void DMA1_Stream1_IRQHandler() { 
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[1]); 
-        }
-
-        void DMA1_Stream2_IRQHandler() { 
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[2]); 
-        }
-
-        void DMA1_Stream3_IRQHandler() { 
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[3]); 
-        }
-
-        void DMA1_Stream4_IRQHandler() { 
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[4]); 
-        }
-
-        void DMA1_Stream5_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[5]); 
-        }
-
-        void DMA1_Stream6_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[6]); 
-        
-        }
-
-        void DMA1_Stream7_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[7]); 
-        }
-
-        void DMA2_Stream0_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[8]); 
-        }
-
-        void DMA2_Stream1_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[9]); 
-        }
-        void DMA2_Stream2_IRQHandler() { 
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[10]); 
-        }
-
-        void DMA2_Stream3_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[11]); 
-        }
-
-        void DMA2_Stream4_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[12]); 
-        }
-
-        void DMA2_Stream5_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[13]); 
-        }
-
-        void DMA2_Stream6_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[14]); 
-        }
-
-        void DMA2_Stream7_IRQHandler() {
-            HAL_DMA_IRQHandler(ST_LIB::DMA_Domain::dma_irq_table[15]); 
-        }
     };
 }
+
+
