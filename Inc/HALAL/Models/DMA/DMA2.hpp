@@ -17,8 +17,10 @@ using std::tuple;
 #define MAX_STREAMS 16
 
 
-// Alomejor habria que meterlo en algun lado
- static inline DMA_HandleTypeDef *dma_irq_table[16];
+extern "C" {
+    inline DMA_HandleTypeDef *dma_irq_table[16] = {nullptr};
+}
+
 
 namespace ST_LIB {
     extern void compile_error(const char *msg);
@@ -208,18 +210,12 @@ namespace ST_LIB {
         }
 
         static consteval inline uint32_t get_PeriphDataAlignment(Instance instance, uint8_t i) {
-            if  (is_i2c(instance)){
-                return DMA_PDATAALIGN_WORD; // Revisar esto, I2C suele trabajar con bytes
-            }
-            else if  (is_spi(instance)){
+            else if  (is_spi(instance) || is_i2c(instance)){
                 return DMA_PDATAALIGN_BYTE; 
             }
-            // Para la prueba
             else if (is_none(instance)){
                 return DMA_PDATAALIGN_WORD;
             }
-
-
             return DMA_PDATAALIGN_HALFWORD;
         }
 
@@ -233,8 +229,9 @@ namespace ST_LIB {
 
             return DMA_MDATAALIGN_HALFWORD;
         }
+
         static consteval inline uint32_t get_Mode(Instance instance, uint8_t i) {
-            if  (is_spi(instance) || is_fmac(instance) || instance == Instance::none){
+            if  (is_spi(instance) || is_fmac(instance) || is_none(instance)){
                 return DMA_NORMAL;
             }
             
@@ -287,8 +284,6 @@ namespace ST_LIB {
             for (std::size_t i = 0; i < N; ++i){
                 const auto &e = instances[i];
 
-                // No entiendo como funciona esto, pero esta copiado tal cual
-                // Yo creo que a mi no me sirve porque mis instancias si que estan repetidas
                 for (std::size_t j = 0; j < i; ++j){
                     const auto &prev = instances[j];
                     if (prev.stream == e.stream){
@@ -331,8 +326,6 @@ namespace ST_LIB {
         };
 
         
-        
-
         template <std::size_t N> struct Init {
             static inline std::array<Instances_, N> instances{};
 
@@ -354,8 +347,7 @@ namespace ST_LIB {
                     else{
                         HAL_NVIC_SetPriority(irqn, 0, 0);
                         HAL_NVIC_EnableIRQ(irqn);
-                        dma_irq_table[static_cast<size_t>(stream)] = &instances[i].dma;
-
+                        dma_irq_table[stream_to_index(stream)] = &instances[i].dma;
                     }
                 }
             }
