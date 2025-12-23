@@ -210,7 +210,7 @@ namespace ST_LIB {
         }
 
         static consteval inline uint32_t get_PeriphDataAlignment(Instance instance, uint8_t i) {
-            else if  (is_spi(instance) || is_i2c(instance)){
+            if  (is_spi(instance) || is_i2c(instance)){
                 return DMA_PDATAALIGN_BYTE; 
             }
             else if (is_none(instance)){
@@ -347,7 +347,7 @@ namespace ST_LIB {
                     else{
                         HAL_NVIC_SetPriority(irqn, 0, 0);
                         HAL_NVIC_EnableIRQ(irqn);
-                        dma_irq_table[stream_to_index(stream)] = &instances[i].dma;
+                        dma_irq_table[static_cast<uint8_t>(stream)] = &instances[i].dma;
                     }
                 }
             }
