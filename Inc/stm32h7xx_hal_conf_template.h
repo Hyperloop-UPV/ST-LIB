@@ -43,7 +43,7 @@
 #define HAL_PWR_MODULE_ENABLED
 #define HAL_RCC_MODULE_ENABLED
 #define HAL_TIM_MODULE_ENABLED
-// #define HAL_UART_MODULE_ENABLED     // Opcional: Déjalo si usas UART para depurar (printf)
+#define HAL_UART_MODULE_ENABLED     // Opcional: Déjalo si usas UART para depurar (printf)
 /* ########################## Oscillator Values adaptation ####################*/
 /**
   * @brief Adjust the value of External High Speed oscillator (HSE) used in your application.

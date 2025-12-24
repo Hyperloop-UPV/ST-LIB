@@ -105,6 +105,13 @@
 #define CHECKSUM_CHECK_ICMP6 0
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
+#undef LWIP_TCP  // Asegúrate de que no esté definido antes
+#define LWIP_TCP 0 
+
+/* MANTENER UDP */
+#define LWIP_UDP 1
+
+
 
 /* USER CODE END 1 */
 

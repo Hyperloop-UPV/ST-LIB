@@ -16,17 +16,16 @@
 
 #ifdef HAL_ETH_MODULE_ENABLED
 
-using std::getline;
-using std::stringstream;
-
 class MAC {
    public:
     uint8_t address[6];
-    string string_address;
+    // string string_address;
 
     MAC();
-    MAC(string address);
+    // MAC(string address);
     MAC(uint8_t address[6]);
+    
+    static MAC parse_string(const char* address);
 };
 
 #endif

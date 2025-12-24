@@ -11,6 +11,7 @@
 
 uint8_t ExternalInterrupt::id_counter = 0;
 map<uint8_t, Pin> ExternalInterrupt::service_ids = {};
+map<uint16_t, ExternalInterrupt::Instance> ExternalInterrupt::instances = {};
 
 ExternalInterrupt::Instance::Instance(IRQn_Type interrupt_request_number)
     : interrupt_request_number(interrupt_request_number) {}

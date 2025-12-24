@@ -66,10 +66,10 @@ void Ethernet::mpu_start() {
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 }
 
-void Ethernet::start(string local_mac, string local_ip, string subnet_mask,
-                     string gateway) {
-  start(MAC(local_mac), IPV4(local_ip), IPV4(subnet_mask), IPV4(gateway));
-}
+// void Ethernet::start(string local_mac, string local_ip, string subnet_mask,
+//                      string gateway) {
+//   start(MAC(local_mac), IPV4(local_ip), IPV4(subnet_mask), IPV4(gateway));
+// }
 
 void Ethernet::start(MAC local_mac, IPV4 local_ip, IPV4 subnet_mask,
                      IPV4 gateway) {

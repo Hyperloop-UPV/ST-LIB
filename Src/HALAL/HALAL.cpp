@@ -15,7 +15,7 @@ void HAL_ETH_IRQHandler(ETH_HandleTypeDef *heth_arg) { (void)heth_arg; }
 #endif // STLIB_ETH
 namespace HALAL {
 
-static void common_start(UART::Peripheral &printf_peripheral) {
+static void common_start() {
 #ifdef HAL_IWDG_MODULE_ENABLED
   Watchdog::check_reset_flag();
 #endif
@@ -70,35 +70,35 @@ static void common_start(UART::Peripheral &printf_peripheral) {
 #endif
 
 #ifdef HAL_TIM_MODULE_ENABLED
-  Encoder::start();
-  Global_RTC::start_rtc();
-  TimerPeripheral::start();
-  Time::start();
+  // Encoder::start();
+  // Global_RTC::start_rtc();
+  // TimerPeripheral::start();
+  // Time::start();
 #endif
 
 #ifdef HAL_EXTI_MODULE_ENABLED
-  ExternalInterrupt::start();
+  // ExternalInterrupt::start();
 #endif
 
-#ifdef NDEBUG
-#ifdef HAL_IWDG_MODULE_ENABLED
-  Watchdog::start();
-#endif
-#endif
+// #ifdef NDEBUG
+// #ifdef HAL_IWDG_MODULE_ENABLED
+//   Watchdog::start();
+// #endif
+// #endif
 }
 
 #ifdef STLIB_ETH
 
-void start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway,
-           UART::Peripheral &printf_peripheral) {
+void start(MAC mac, IPV4 ip, IPV4 subnet_mask, IPV4 gateway
+           ) {
   Ethernet::inscribe();
 
-  common_start(printf_peripheral);
+  common_start();
 
   Ethernet::start(mac, ip, subnet_mask, gateway);
 
 #ifdef HAL_TIM_MODULE_ENABLED
-  SNTP::sntp_update();
+  // SNTP::sntp_update();
 #endif
 }
 

@@ -7,6 +7,8 @@
 
 #include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 
+vector<reference_wrapper<TimerPeripheral>> TimerPeripheral::timers;
+
 map<TIM_HandleTypeDef*, TIM_TypeDef*> TimerPeripheral::handle_to_timer= {
 		{&htim1, TIM1},
 		{&htim2, TIM2},

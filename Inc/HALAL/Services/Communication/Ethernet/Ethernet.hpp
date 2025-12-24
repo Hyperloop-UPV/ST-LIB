@@ -29,7 +29,7 @@ public:
 	static bool is_running;
 
 	static void inscribe();
-	static void start(string local_mac, string local_ip, string subnet_mask, string gateway);
+	// static void start(string local_mac, string local_ip, string subnet_mask, string gateway);
 	static void start(MAC local_mac, IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway);
 
 	/**

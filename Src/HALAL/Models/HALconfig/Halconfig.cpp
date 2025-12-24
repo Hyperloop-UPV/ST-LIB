@@ -51,7 +51,7 @@ static_assert(false, "No TARGET is choosen. Choose NUCLEO or BOARD");
 #endif
 
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-		ErrorHandler("The RCC Osc config did not start correctly");
+		// ErrorHandler("The RCC Osc config did not start correctly");
 	}
 
 	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -65,7 +65,7 @@ static_assert(false, "No TARGET is choosen. Choose NUCLEO or BOARD");
 	RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
 	RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK) {
-		ErrorHandler("The RCC clock config did not start correctly");
+		// ErrorHandler("The RCC clock config did not start correctly");
 	}
 }
 
@@ -123,6 +123,6 @@ void HALconfig::peripheral_clock() {
 #endif
 
 	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-		ErrorHandler("The RCCEx peripheral clock did not start correctly");
+		// ErrorHandler("The RCCEx peripheral clock did not start correctly");
 	}
 }

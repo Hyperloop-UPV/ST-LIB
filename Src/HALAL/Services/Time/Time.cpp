@@ -10,6 +10,23 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 
+TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim5;
+TIM_HandleTypeDef htim7;
+TIM_HandleTypeDef htim8;
+TIM_HandleTypeDef htim12;
+TIM_HandleTypeDef htim15;
+TIM_HandleTypeDef htim16;
+TIM_HandleTypeDef htim17;
+TIM_HandleTypeDef htim23;
+TIM_HandleTypeDef htim24;
+
+TIM_HandleTypeDef* Time::global_timer = &htim2;
+set<TIM_HandleTypeDef*> Time::high_precision_timers = {&htim5, &htim24};
+
 TIM_HandleTypeDef* Time::low_precision_timer = &htim7;
 
 uint8_t Time::high_precision_ids = 0;
