@@ -278,9 +278,6 @@ struct MPUDomain {
             Legacy_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
             HAL_MPU_ConfigRegion(&Legacy_InitStruct);
 
-            // Set the legacy pointer
-            MPUManager::no_cached_ram_start = &d3_buffer[0];
-
             // Adjust bases for new buffers (they start after legacy_size)
             uint8_t* bases[3] = { &d1_buffer[0], &d2_buffer[0], &d3_buffer[legacy_size] };
 
