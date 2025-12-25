@@ -151,13 +151,13 @@ template <auto &...devs> struct Board {
     }
   }
 
+  template <std::size_t... Is>
+  static void init_domains(std::index_sequence<Is...>) {
+    (init_domain<std::tuple_element_t<Is, Domains>>(), ...);
+  }
+
   static void init() {
-    Domains domains;
-    std::apply(
-        [](auto &...d) {
-          (init_domain<std::remove_cvref_t<decltype(d)>>(), ...);
-        },
-        domains);
+    init_domains(std::make_index_sequence<std::tuple_size_v<Domains>>{});
   }
 
   template <typename Domain, auto &Target, std::size_t I = 0>
