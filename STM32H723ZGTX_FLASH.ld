@@ -209,6 +209,7 @@ SECTIONS
   .mpu_ram_d3_nc :
   {
     . = ALIGN(32);
+    __mpu_ram_d3_nc_start = .; /* For the legacy MPUManager */
     *(.mpu_ram_d3_nc)
     . = ALIGN(32);
   } >RAM_D3

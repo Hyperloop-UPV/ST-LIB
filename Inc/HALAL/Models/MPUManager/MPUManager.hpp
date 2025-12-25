@@ -6,7 +6,6 @@
 #define NO_CACHED_RAM_MAXIMUM_SPACE 2048
 
 class MPUManager{
-	friend struct MPUDomain;
 public:
 	static void* allocate_non_cached_memory(uint32_t size){
 		void* buffer = (void*)((uint8_t*)no_cached_ram_start + no_cached_ram_occupied_bytes);
