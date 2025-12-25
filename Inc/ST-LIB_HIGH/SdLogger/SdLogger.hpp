@@ -88,7 +88,7 @@ class SdLogger {
                 building_mask |= (1UL << i);
                 build_complete_flags[i] = false;
                 
-                packets[i]->build(const_cast<bool*>(&build_complete_flags[i]), current_buffer_ptr + current_buffer_offset);
+                packets[i]->build(&build_complete_flags[i], current_buffer_ptr + current_buffer_offset);
                 current_buffer_offset += packet_size;
             }
         }
@@ -113,7 +113,7 @@ class SdLogger {
         
         sd_write_complete_flag = false;
     
-        if (!sd.write_blocks(sd_block_addr, current_buffer_blocks, const_cast<bool*>(&sd_write_complete_flag))) {
+        if (!sd.write_blocks(sd_block_addr, current_buffer_blocks, &sd_write_complete_flag)) {
             return false;
         } else {
             sd_write_ongoing = true;
