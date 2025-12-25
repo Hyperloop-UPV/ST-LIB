@@ -183,8 +183,8 @@ struct GPIODomain {
       }
     }
 
-    template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-      ctx.template add<GPIODomain>(e, this);
+    template <class Ctx> consteval auto inscribe(Ctx &ctx) const {
+      return ctx.template add<GPIODomain>(e, this);
     }
   };
 
