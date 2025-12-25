@@ -191,7 +191,8 @@ struct GPIODomain {
   static constexpr std::size_t max_instances{110};
 
   struct Config {
-    std::tuple<Port, GPIO_InitTypeDef> init_data{};
+    Port port;
+    GPIO_InitTypeDef init_data;
   };
 
   template <size_t N>
@@ -216,7 +217,9 @@ struct GPIODomain {
         GPIO_InitStruct.Alternate = static_cast<uint32_t>(e.af);
       }
 
-      cfgs[i].init_data = std::make_tuple(e.port, GPIO_InitStruct);
+      // Assign directly to struct members
+      cfgs[i].port = e.port;
+      cfgs[i].init_data = GPIO_InitStruct;
     }
 
     return cfgs;
@@ -242,14 +245,16 @@ struct GPIODomain {
     GPIO_PinState read() { return HAL_GPIO_ReadPin(port, pin); }
   };
 
-  template <std::size_t N> struct Init {
+  template <std::size_t N, std::array<Config, N> cfgs> struct Init {
     static inline std::array<Instance, N> instances{};
 
-    static void init(std::span<const Config, N> cfgs) {
+    static void init() {
       static_assert(N > 0);
       for (std::size_t i = 0; i < N; ++i) {
         const auto &e = cfgs[i];
-        auto [port, gpio_init] = e.init_data;
+        
+        auto port = e.port;
+        auto gpio_init = e.init_data;
 
         enable_gpio_clock(port);
         HAL_GPIO_Init(port_to_reg(port), &gpio_init);

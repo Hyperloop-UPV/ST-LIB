@@ -6,6 +6,8 @@ using ST_LIB::GPIODomain;
 
 namespace ST_LIB {
 struct DigitalInputDomain {
+  using dependencies = std::tuple<GPIODomain>;
+  
   struct Entry {
     size_t gpio_idx;
   };
@@ -47,11 +49,10 @@ struct DigitalInputDomain {
     GPIO_PinState read() { return gpio_instance->read(); }
   };
 
-  template <std::size_t N> struct Init {
+  template <std::size_t N, std::array<Config, N> cfgs> struct Init {
     static inline std::array<Instance, N> instances{};
 
-    static void init(std::span<const Config, N> cfgs,
-                     std::span<GPIODomain::Instance> gpio_instances) {
+    static void init(std::span<GPIODomain::Instance> gpio_instances) {
       for (std::size_t i = 0; i < N; ++i) {
         const auto &e = cfgs[i];
 
