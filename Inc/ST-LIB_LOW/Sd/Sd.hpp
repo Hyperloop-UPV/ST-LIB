@@ -283,7 +283,7 @@ struct SdDomain {
                 ErrorHandler("SD Card not initialized");
             }
             if (num_blocks > instance.mpu_buffer0_instance->size / 512) {
-                ErrorHandler("Too many blocks requested to write in SD");
+                ErrorHandler("Too many blocks requested to read from SD");
             }
             
             if (HAL_SD_GetCardState(&instance.hsd) != HAL_SD_CARD_TRANSFER) {
