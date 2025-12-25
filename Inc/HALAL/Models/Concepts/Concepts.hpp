@@ -119,3 +119,17 @@ class FollowingUint<uint32_t>{
 public:
 	using Value = uint64_t;
 };
+
+// Allows any type that supports basic arithmetic operations (such as floats, doubles, q31, etc.)
+template<typename T>
+concept ControlSignal = std::regular<T> && requires(T a, T b) {
+    { a + b } -> std::convertible_to<T>;
+    { a - b } -> std::convertible_to<T>;
+    { a * b } -> std::convertible_to<T>;
+    { a += b };
+    { a -= b };
+    { a *= b };
+    // Support for casting from literals
+    T(0);   
+    T(0.0); 
+};

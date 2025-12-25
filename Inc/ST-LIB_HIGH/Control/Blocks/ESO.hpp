@@ -9,26 +9,19 @@
 #define ESO_HPP
 
 #include "../ControlBlock.hpp"
-#include <concepts>
+#include "C++Utilities/CppUtils.hpp"
+#include "HALAL/Models/Concepts/Concepts.hpp"
 
-// Allows any type that supports basic arithmetic operations (such as floats, doubles, q31, etc.)
-template<typename T>
-concept ControlSignal = std::regular<T> && requires(T a, T b) {
-    { a + b } -> std::convertible_to<T>;
-    { a - b } -> std::convertible_to<T>;
-    { a * b } -> std::convertible_to<T>;
-    { a += b };
-    { a -= b };
-    { a *= b };
-    // Support for casting from literals
-    T(0);   
-    T(0.0); 
+template <ControlSignal T, typename Config>
+concept ESOConfig = requires {
+    { Config::b0 } -> std::convertible_to<T>;
+    { Config::omega_o } -> std::convertible_to<T>;
+    { Config::period } -> std::convertible_to<T>;
 };
 
 
-template <ControlSignal T, class Config, int Order> requires (Order == 2 || Order == 3) // Doesn't support higher orders, can be extended with a general vector and matrix implementation
+template <ControlSignal T, ESOConfig<T> Config, int Order> requires (Order == 2 || Order == 3) // Doesn't support higher orders, can be extended with a general vector and matrix implementation
 class ESO;
-
 
 /**
  * @brief 2nd Order ESO for 1st Order Plant. Uses casting to T to allow for float/double/q31 etc.
@@ -45,7 +38,7 @@ class ESO;
  * 
  * - static constexpr T period: Execution period
  */
-template <ControlSignal T, class Config>
+template <ControlSignal T, ESOConfig<T> Config>
 class ESO<T, Config, 2> : public ControlBlock<T, T> {
 public:
     static constexpr T b0 = Config::b0;
@@ -104,7 +97,7 @@ public:
  * 
  * - static constexpr T period: Execution period
  */
-template <ControlSignal T, class Config>
+template <ControlSignal T, ESOConfig<T> Config>
 class ESO<T, Config, 3> : public ControlBlock<T, T> {
 public:
     static constexpr T b0 = Config::b0;
