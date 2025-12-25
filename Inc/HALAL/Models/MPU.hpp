@@ -423,7 +423,7 @@ struct MPUDomain {
 
         // D3 RAM (Cached)
         MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-        MPU_InitStruct.Number = MPU_REGION_NUMBER6; // FIX: Changed from 5 to 6 to avoid collision with D2 NC
+        MPU_InitStruct.Number = MPU_REGION_NUMBER6;
         MPU_InitStruct.BaseAddress = 0x38000000;
         MPU_InitStruct.Size = MPU_REGION_SIZE_16KB;
         MPU_InitStruct.SubRegionDisable = 0x0;
