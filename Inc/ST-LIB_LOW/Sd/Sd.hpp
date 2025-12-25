@@ -105,9 +105,9 @@ struct SdDomain {
             if (sdmmc_peripheral != Peripheral::sdmmc1 && sdmmc_peripheral != Peripheral::sdmmc2) {
                 ST_LIB::compile_error("Invalid SDMMC peripheral");
             }
-            if ((d0_pin_for_sdmmc1.pin != ST_LIB::PC8.pin) && (d0_pin_for_sdmmc1.port != ST_LIB::PC8.port)
-                 && 
-                 (d0_pin_for_sdmmc1.pin != ST_LIB::PB13.pin) && (d0_pin_for_sdmmc1.port != ST_LIB::PB13.port)) {
+            if ((d0_pin_for_sdmmc1.pin != ST_LIB::PC8.pin || d0_pin_for_sdmmc1.port != ST_LIB::PC8.port)
+                 &&
+                (d0_pin_for_sdmmc1.pin != ST_LIB::PB13.pin || d0_pin_for_sdmmc1.port != ST_LIB::PB13.port)) {
                 ST_LIB::compile_error("D0 pin can only be PC8 or PB13 for SDMMC1");
             }
             if (buffer_blocks == 0) {
