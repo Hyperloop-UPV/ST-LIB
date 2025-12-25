@@ -158,7 +158,7 @@ struct MdmaPacketDomain {
 
         /**
         * @brief Build the packet and transfer data into non-cached buffer using MDMA
-        * @param destination_address Optional destination address for the built packet (should be non-cached, else you will need to manage cache coherency). It isn't optional here becasue there's a specific overload without parameters for compliance with Packet interface.
+        * @param destination_address Optional destination address for the built packet (should be non-cached, else you will need to manage cache coherency). It isn't optional here because there's a specific overload without parameters for compliance with Packet interface.
         * @return Pointer to the built packet data (internal buffer or destination address)
         */
         uint8_t* build(uint8_t* destination_address) {
