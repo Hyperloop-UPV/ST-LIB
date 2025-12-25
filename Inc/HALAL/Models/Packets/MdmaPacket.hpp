@@ -173,7 +173,7 @@ struct MdmaPacketDomain {
 
         /**
         * @brief Build the packet and transfer data into non-cached buffer using MDMA with a promise
-        * @param promise Promise to be fulfilled upon transfer completion
+        * @param done Promise to be fulfilled upon transfer completion
         * @param destination_address Optional destination address for the built packet (should be non-cached, else you will need to manage cache coherency)
         * @return Pointer to the built packet data (internal buffer or destination address)
         */
