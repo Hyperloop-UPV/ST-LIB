@@ -36,6 +36,7 @@
 #include "HALAL/Services/FMAC/FMAC.hpp"
 
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
+#include "HALAL/Models/MPU.hpp"
 #include "HALAL/Services/InfoWarning/InfoWarning.hpp"
 #include "HALAL/Services/Watchdog/Watchdog.hpp"
 
@@ -43,6 +44,8 @@
 
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"
+#include "HALAL/Models/MDMA/MDMA.hpp"
+#include "HALAL/Models/Packets/MdmaPacket.hpp"
 
 #ifdef STLIB_ETH
 #include "HALAL/Models/Packets/Packet.hpp"

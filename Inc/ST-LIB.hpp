@@ -32,6 +32,7 @@ template <typename... Domains> struct BuildCtx {
   static constexpr std::size_t max_count_v = D::max_instances;
 
   std::tuple<std::array<Decl<Domains>, max_count_v<Domains>>...> storage{};
+  std::tuple<std::array<const void *, max_count_v<Domains>>...> owners{};
   std::array<std::size_t, sizeof...(Domains)> sizes{};
 
   template <typename D, std::size_t I = 0>
@@ -47,12 +48,17 @@ template <typename... Domains> struct BuildCtx {
     }
   }
 
-  template <typename D> consteval std::size_t add(typename D::Entry e) {
+  template <typename D, typename Owner>
+  consteval std::size_t add(typename D::Entry e, const Owner *owner) {
     constexpr std::size_t I = domain_index<D>();
     auto &arr = std::get<I>(storage);
+    auto &own = std::get<I>(owners);
     auto &size = sizes[I];
+
     const auto idx = size;
-    arr[size++] = e;
+    arr[size] = e;
+    own[size] = owner;
+    ++size;
     return idx;
   }
 
@@ -64,6 +70,13 @@ template <typename... Domains> struct BuildCtx {
     return std::span<const E>{arr.data(), size};
   }
 
+  template <typename D> consteval auto owners_span() const {
+    constexpr std::size_t I = domain_index<D>();
+    auto const &arr = std::get<I>(owners);
+    auto const size = sizes[I];
+    return std::span<const void *const>{arr.data(), size};
+  }
+
   template <typename D> consteval std::size_t size() const {
     constexpr std::size_t I = domain_index<D>();
     return sizes[I];
@@ -71,7 +84,8 @@ template <typename... Domains> struct BuildCtx {
 };
 
 using DomainsCtx = BuildCtx<GPIODomain, DigitalOutputDomain,
-                            DigitalInputDomain /*, ADCDomain, PWMDomain, ...*/>;
+                            DigitalInputDomain, MPUDomain, MdmaPacketDomain, SdDomain 
+                            /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {
@@ -90,12 +104,18 @@ template <auto &...devs> struct Board {
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
+    constexpr std::size_t mpuN = domain_size<MPUDomain>();
+    constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
+    constexpr std::size_t sdN = domain_size<SdDomain>();
     // ...
 
     struct ConfigBundle {
       std::array<GPIODomain::Config, gpioN> gpio_cfgs;
       std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
       std::array<DigitalInputDomain::Config, dinN> din_cfgs;
+      std::array<MPUDomain::Config, mpuN> mpu_cfgs;
+      std::array<MdmaPacketDomain::Config, mdmaPacketN> mdma_packet_cfgs;
+      std::array<SdDomain::Config, sdN> sd_cfgs;
       // ...
     };
 
@@ -106,6 +126,12 @@ template <auto &...devs> struct Board {
             ctx.template span<DigitalOutputDomain>()),
         .din_cfgs = DigitalInputDomain::template build<dinN>(
             ctx.template span<DigitalInputDomain>()),
+        .mpu_cfgs = MPUDomain::template build<mpuN>(
+            ctx.template span<MPUDomain>()),
+        .mdma_packet_cfgs = MdmaPacketDomain::template build<mdmaPacketN>(
+            ctx.template span<MdmaPacketDomain>()),
+        .sd_cfgs = SdDomain::template build<sdN>(
+            ctx.template span<SdDomain>()),
         // ...
     };
   }
@@ -116,6 +142,9 @@ template <auto &...devs> struct Board {
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
+    constexpr std::size_t mpuN = domain_size<MPUDomain>();
+    constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
+    constexpr std::size_t sdN = domain_size<SdDomain>();
     // ...
 
     GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
@@ -123,54 +152,40 @@ template <auto &...devs> struct Board {
                                            GPIODomain::Init<gpioN>::instances);
     DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
                                          GPIODomain::Init<gpioN>::instances);
+    MPUDomain::Init<mpuN, cfg.mpu_cfgs>::init();
+    MdmaPacketDomain::Init<mdmaPacketN>::init(cfg.mdma_packet_cfgs,
+                                              MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances);
+    SdDomain::Init<sdN>::init(cfg.sd_cfgs,
+                              MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances,
+                              DigitalInputDomain::Init<dinN>::instances);
     // ...
   }
 
-  template <typename Domain>
-  static consteval std::size_t domain_size_for_instance() {
-    return domain_size<Domain>();
-  }
-
   template <typename Domain, auto &Target, std::size_t I = 0>
-  static consteval std::size_t domain_index_of_impl() {
-    std::size_t idx = 0;
-    bool found = false;
+  static consteval std::size_t owner_index_of() {
+    constexpr auto owners = ctx.template owners_span<Domain>();
 
-    (
-        [&] {
-          using DevT = std::remove_cvref_t<decltype(devs)>;
-          if constexpr (std::is_same_v<typename DevT::domain, Domain>) {
-            if (!found) {
-              if (&devs == &Target) {
-                found = true;
-              } else {
-                ++idx;
-              }
-            }
-          }
-        }(),
-        ...);
-
-    if (!found) {
-      compile_error("Device not found for domain");
+    if constexpr (I >= owners.size()) {
+      compile_error("Device not registered in domain");
+      return 0;
+    } else {
+      return owners[I] == &Target ? I : owner_index_of<Domain, Target, I + 1>();
     }
-
-    return idx;
-  }
-
-  template <typename Domain, auto &Target>
-  static consteval std::size_t domain_index_of() {
-    return domain_index_of_impl<Domain, Target>();
   }
 
   template <auto &Target> static auto &instance_of() {
     using DevT = std::remove_cvref_t<decltype(Target)>;
     using Domain = typename DevT::domain;
 
-    constexpr std::size_t idx = domain_index_of<Domain, Target>();
-    constexpr std::size_t N = domain_size_for_instance<Domain>();
+    constexpr std::size_t idx = owner_index_of<Domain, Target>();
 
-    return Domain::template Init<N>::instances[idx];
+    constexpr std::size_t N = domain_size<Domain>();
+    
+    if constexpr (std::is_same_v<Domain, MPUDomain>) {
+      return Domain::template Init<N, cfg.mpu_cfgs>::instances[idx];
+    } else {
+      return Domain::template Init<N>::instances[idx];
+    }
   }
 };
 

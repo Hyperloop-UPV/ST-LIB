@@ -184,7 +184,7 @@ struct GPIODomain {
     }
 
     template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-      ctx.template add<GPIODomain>(e);
+      ctx.template add<GPIODomain>(e, this);
     }
   };
 

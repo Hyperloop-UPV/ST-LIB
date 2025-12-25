@@ -170,6 +170,13 @@ SECTIONS
     __bss_end__ = _ebss;
   } >RAM_D1
 
+  .mpu_ram_d1_nc :
+  {
+    . = ALIGN(32);
+    *(.mpu_ram_d1_nc)
+    . = ALIGN(32);
+  } >RAM_D1
+
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
   {
@@ -191,12 +198,22 @@ SECTIONS
     *(.TxDecripSection)
     
   } >RAM_D2
- .stlib_no_cache_ram_pool :
+
+  .mpu_ram_d2_nc :
   {
-  	. = ABSOLUTE(0x38000000);
-  	_no_cached_ram_start = .;
-  	
+    . = ALIGN(32);
+    *(.mpu_ram_d2_nc)
+    . = ALIGN(32);
+  } >RAM_D2
+
+  .mpu_ram_d3_nc :
+  {
+    . = ALIGN(32);
+    __mpu_ram_d3_nc_start = .; /* For the legacy MPUManager */
+    *(.mpu_ram_d3_nc)
+    . = ALIGN(32);
   } >RAM_D3
+
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {

@@ -57,6 +57,9 @@ if(CMAKE_CROSSCOMPILING)
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_gpio.c
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_exti.c
 
+    # MDMA
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_mdma.c
+
     # ADC
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc.c
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_adc_ex.c
@@ -75,6 +78,7 @@ if(CMAKE_CROSSCOMPILING)
     # SD
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd.c
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd_ex.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_ll_sdmmc.c
 
     # CAN / FDCAN
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_fdcan.c
@@ -222,6 +226,10 @@ add_library(${STLIB_LIBRARY} STATIC
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_HIGH_CPP_ETH}>
 
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB.cpp>
+
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/Scheduler.cpp>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_ll_tim.cpp>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/NVIC.cpp>
 )
 
 set_target_properties(${STLIB_LIBRARY} PROPERTIES
