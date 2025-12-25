@@ -2,9 +2,6 @@
 
 #include <algorithm>
 
-uint32_t buffer_size = sizeof(MDMA::LinkedListNode) * NODES_MAX;
-MDMA::LinkedListNode* buffer = static_cast<MDMA::LinkedListNode*>(MPUManager::allocate_non_cached_memory(buffer_size));
-inline Pool<MDMA::LinkedListNode, NODES_MAX, true> MDMA::link_node_pool{buffer};
 std::bitset<8> MDMA::instance_free_map{};
 
 std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> MDMA::instance_to_channel = {
@@ -147,11 +144,6 @@ void MDMA::inscribe(Instance& instance,uint8_t id)
 void MDMA::start()
 {
     __HAL_RCC_MDMA_CLK_ENABLE();
-
-    if (buffer==nullptr) 
-    {
-    ErrorHandler("Failed to allocate MDMA link node pool buffer");
-    }
 
     uint8_t id = 0;
     for (auto& instance : instances)
