@@ -38,8 +38,8 @@ struct SdDomain {
         std::optional<std::pair<size_t, GPIO_PinState>> wp_pin_idx; // Write Protect pin index in GPIO domain, if any
         std::size_t cmd_pin_idx;
         std::size_t ck_pin_idx;
-        std::size_t d0_pin_idx; // Hardcoded unless SDMMC1
-        std::size_t d1_pin_idx; // Hardcoded unless SDMMC1
+        std::size_t d0_pin_idx; // Fixed for SDMMC2, configurable for SDMMC1
+        std::size_t d1_pin_idx; // Fixed for SDMMC2, configurable for SDMMC1
         std::size_t d2_pin_idx;
         std::size_t d3_pin_idx;
     };
