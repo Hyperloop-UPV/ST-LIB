@@ -83,6 +83,7 @@ public:
     void reset() {
         z1 = 0;
         z2 = 0;
+        measured_value = 0;
         this->output_value = 0;
     }
 };
