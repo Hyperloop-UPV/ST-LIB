@@ -6,6 +6,8 @@ using ST_LIB::GPIODomain;
 
 namespace ST_LIB {
 struct DigitalOutputDomain {
+  using dependencies = std::tuple<GPIODomain>;
+
   enum class OutputMode : uint8_t {
     PUSH_PULL =
         static_cast<uint8_t>(GPIODomain::OperationMode::OUTPUT_PUSHPULL),
@@ -26,10 +28,10 @@ struct DigitalOutputDomain {
         : gpio{pin, static_cast<GPIODomain::OperationMode>(mode), pull, speed} {
     }
 
-    template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-      const auto gpio_idx = ctx.template add<GPIODomain>(gpio.e, &gpio);
+    template <class Ctx> consteval auto inscribe(Ctx &ctx) const {
+      const auto gpio_idx = gpio.inscribe(ctx);
       Entry e{.gpio_idx = gpio_idx};
-      ctx.template add<DigitalOutputDomain>(e, this);
+      return ctx.template add<DigitalOutputDomain>(e, this);
     }
   };
 
@@ -59,11 +61,10 @@ struct DigitalOutputDomain {
     void toggle() { gpio_instance->toggle(); }
   };
 
-  template <std::size_t N> struct Init {
+  template <std::size_t N, std::array<Config, N> cfgs> struct Init {
     static inline std::array<Instance, N> instances{};
 
-    static void init(std::span<const Config, N> cfgs,
-                     std::span<GPIODomain::Instance> gpio_instances) {
+    static void init(std::span<GPIODomain::Instance> gpio_instances) {
       for (std::size_t i = 0; i < N; ++i) {
         const auto &e = cfgs[i];
 

@@ -83,12 +83,21 @@ template <typename... Domains> struct BuildCtx {
   }
 };
 
-using DomainsCtx = BuildCtx<GPIODomain, DigitalOutputDomain,
-                            DigitalInputDomain /*, ADCDomain, PWMDomain, ...*/>;
+template <typename Tuple> struct UnpackToCtx;
+template <typename... Ds> struct UnpackToCtx<std::tuple<Ds...>> {
+  using type = BuildCtx<Ds...>;
+};
 
 template <auto &...devs> struct Board {
+  using Domains = std::tuple<
+                            /* Level 0: Base Domains */
+                            GPIODomain,
+                            /* Level 1: Domains depending on Level 0 */
+                            DigitalOutputDomain, DigitalInputDomain /*, ADCDomain, PWMDomain, ...*/>;
+  using CtxType = typename UnpackToCtx<Domains>::type;
+
   static consteval auto build_ctx() {
-    DomainsCtx ctx{};
+    CtxType ctx{};
     (devs.inscribe(ctx), ...);
     return ctx;
   }
@@ -99,44 +108,56 @@ template <auto &...devs> struct Board {
     return ctx.template span<D>().size();
   }
 
+  template <size_t... Is>
+  static consteval auto build_configs(std::index_sequence<Is...>) {
+    return std::make_tuple(
+        std::tuple_element_t<Is, Domains>::template build<
+            domain_size<std::tuple_element_t<Is, Domains>>()>(
+            ctx.template span<std::tuple_element_t<Is, Domains>>())...);
+  }
+
   static consteval auto build() {
-    constexpr std::size_t gpioN = domain_size<GPIODomain>();
-    constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
-    constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
-    // ...
-
-    struct ConfigBundle {
-      std::array<GPIODomain::Config, gpioN> gpio_cfgs;
-      std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
-      std::array<DigitalInputDomain::Config, dinN> din_cfgs;
-      // ...
-    };
-
-    return ConfigBundle{
-        .gpio_cfgs =
-            GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
-        .dout_cfgs = DigitalOutputDomain::template build<doutN>(
-            ctx.template span<DigitalOutputDomain>()),
-        .din_cfgs = DigitalInputDomain::template build<dinN>(
-            ctx.template span<DigitalInputDomain>()),
-        // ...
-    };
+    return build_configs(
+        std::make_index_sequence<std::tuple_size_v<Domains>>{});
   }
 
   static constexpr auto cfg = build();
 
-  static void init() {
-    constexpr std::size_t gpioN = domain_size<GPIODomain>();
-    constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
-    constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
-    // ...
+  template <typename Domain> static consteval auto get_config() {
+    constexpr std::size_t I = CtxType::template domain_index<Domain>();
+    return std::get<I>(cfg);
+  }
 
-    GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
-    DigitalOutputDomain::Init<doutN>::init(cfg.dout_cfgs,
-                                           GPIODomain::Init<gpioN>::instances);
-    DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
-                                         GPIODomain::Init<gpioN>::instances);
-    // ...
+  template <typename Domain> static auto &get_instances() {
+    constexpr std::size_t N = domain_size<Domain>();
+    return Domain::template Init<N, get_config<Domain>()>::instances;
+  }
+
+  template <typename InitT, typename... Deps>
+  static void init_with_deps(std::tuple<Deps...> *) { // Pointer to deduce types easily, not used
+    InitT::init(get_instances<Deps>()...);
+  }
+
+  template <typename Domain> static void init_domain() {
+    constexpr std::size_t N = domain_size<Domain>();
+    constexpr auto cfgs = get_config<Domain>();
+    using InitT = typename Domain::template Init<N, cfgs>;
+
+    if constexpr (requires { typename Domain::dependencies; }) {
+      // Resolve dependencies
+      init_with_deps<InitT>(static_cast<typename Domain::dependencies *>(nullptr));
+    } else {
+      InitT::init();
+    }
+  }
+
+  template <std::size_t... Is>
+  static void init_domains(std::index_sequence<Is...>) {
+    (init_domain<std::tuple_element_t<Is, Domains>>(), ...);
+  }
+
+  static void init() {
+    init_domains(std::make_index_sequence<std::tuple_size_v<Domains>>{});
   }
 
   template <typename Domain, auto &Target, std::size_t I = 0>
@@ -158,7 +179,8 @@ template <auto &...devs> struct Board {
     constexpr std::size_t idx = owner_index_of<Domain, Target>();
 
     constexpr std::size_t N = domain_size<Domain>();
-    return Domain::template Init<N>::instances[idx];
+
+    return Domain::template Init<N, get_config<Domain>()>::instances[idx];
   }
 };
 
