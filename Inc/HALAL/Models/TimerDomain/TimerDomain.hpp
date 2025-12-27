@@ -311,7 +311,7 @@ public:
     };
 
     struct Entry {
-        string name;
+        string name; /* max length = 7 */
         TimerRequest request;
         ST_LIB::GPIODomain::Pin *pin;
         TimerDomain::CountingMode counting_mode;
@@ -386,7 +386,7 @@ public:
                 }
                 usedTimer[reqint] = true;
 
-                Config cfg = DoTimer(requests[i], reqint, i, "Error: In request reqidx: Timer name too large, max = 7 (sizeof cfg.name - 1)");
+                Config cfg = DoTimer(requests[i], reqint, i, "Error: In request reqidx: Timer name too large, max = 7 characters (sizeof cfg.name - 1)");
                 cfgs[cfg_idx++] = cfg;
 
                 // unordered remove (remaining requests is not used here so these are ordered)
@@ -428,7 +428,7 @@ public:
             if(e.request == AnyGeneralPurpose) {
                 uint8_t reqint = remaining_timers[i];
                 // NOTE: I don't want to do an ordered remove so this has the real index
-                Config cfg = DoTimer(requests[i], reqint, i, "Error: In one of AnyGeneralPurpose timers: Timer name too large, max = 7 (sizeof cfg.name - 1)");
+                Config cfg = DoTimer(requests[i], reqint, i, "Error: In one of AnyGeneralPurpose timers: Timer name too large, max = 7 characters (sizeof cfg.name - 1)");
                 cfgs[cfg_idx++] = cfg;
             }
         }
