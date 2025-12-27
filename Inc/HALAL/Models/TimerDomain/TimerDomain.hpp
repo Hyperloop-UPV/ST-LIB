@@ -389,7 +389,7 @@ public:
                 Config cfg = DoTimer(requests[i], reqint, i, "Error: In request reqidx: Timer name too large, max = 7 (sizeof cfg.name - 1)");
                 cfgs[cfg_idx++] = cfg;
 
-                // unordered remove (remaining requests is )
+                // unordered remove (remaining requests is not used here so these are ordered)
                 count_remaining_requests--;
                 remaining_requests[i] = remaining_requests[count_remaining_requests];
             }
