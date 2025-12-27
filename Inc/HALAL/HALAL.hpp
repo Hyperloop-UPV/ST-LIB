@@ -20,7 +20,8 @@
 #include "HALAL/Services/PWM/PhasedPWM/PhasedPWM.hpp"
 #include "HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 
-#include "HALAL/Services/Time/Time.hpp"
+//#include "HALAL/Services/Time/Time.hpp"
+#include "HALAL/Models/TimerDomain/TimerDomain.hpp"
 #include "HALAL/Services/Time/Scheduler.hpp"
 #include "HALAL/Services/Time/RTC.hpp"
 
@@ -40,7 +41,7 @@
 #include "HALAL/Services/InfoWarning/InfoWarning.hpp"
 #include "HALAL/Services/Watchdog/Watchdog.hpp"
 
-#include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
+//#include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"

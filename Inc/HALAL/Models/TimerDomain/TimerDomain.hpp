@@ -509,6 +509,10 @@ public:
             // general purpose and advanced functions
         }
 
+        template<TimerDomain::CounterMode mode>
+        void set_mode();
+
+#if 0
         /* WARNING: The counter _must_ be disabled to switch from edge-aligned to center-aligned mode */
         template<TimerDomain::CounterMode mode>
         inline void set_mode(void) {
@@ -535,6 +539,7 @@ public:
                 MODIFY_REG(tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
             }
         }
+#endif
     };
 
     template <std::size_t N> struct Init {
