@@ -84,7 +84,7 @@ static void common_start(UART::Peripheral &printf_peripheral) {
     #ifdef HAL_IWDG_MODULE_ENABLED
         Watchdog::start();
     #endif
-#endif 
+#endif
     DataWatchpointTrace::enable();
     BENCHMARK_SETUP();
 }
