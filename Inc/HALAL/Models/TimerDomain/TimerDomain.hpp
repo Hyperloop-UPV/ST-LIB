@@ -7,11 +7,16 @@
 
 #pragma once
 
-#include "stm32h7xx_hal_tim.h"
+#include "stm32h7xx_hal.h"
+//#include "stm32h7xx_hal_tim.h"
+#ifdef HAL_TIM_MODULE_ENABLED
 
 #include <span>
 #include <array>
 #include <string>
+
+#include "HALAL/Models/GPIO.hpp"
+#include "ErrorHandler/ErrorHandler.hpp"
 
 // NOTE: only works for static arrays
 #define ARRAY_LENGTH(a) (sizeof(a)/sizeof(*a))
@@ -104,6 +109,9 @@ constexpr std::array<int, 25> create_idxmap() {
     
     return result;
 }
+
+namespace ST_LIB {
+extern void compile_error(const char *msg);
 
 struct TimerDomain {
     // There are 16 timers
@@ -605,7 +613,9 @@ public:
         }
     };
 };
+} // namespace ST_LIB
 
+#endif // HAL_TIM_MODULE_ENABLED
 
 /* Old init code from TimerPeripheral.cpp, some might be recycled
 
