@@ -1,5 +1,5 @@
 /*
- * New TimerPeripheral.hpp
+ * TimerDomain.hpp
  *
  *  Created on: 3 dic. 2025
  *      Author: victor
