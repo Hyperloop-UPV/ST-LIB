@@ -586,26 +586,6 @@ public:
             }
         }
     }
-
-    // Leftover from last iteration of the design of NewTimerPeripheral, will cleanup soon
-private:
-    enum TIM_CAPABILITIES {
-        Basic_Start = 0,
-        Basic_End = 1,
-
-        General_Start = 2,
-        General_End = 13,
-
-        Advanced_Start = 14,
-        Advanced_End = 15,
-
-        Count_Cap = 16,
-    };
-
-    // This should use __builtin_ffs() - 1 to get the index of the next
-    static uint32_t free_bmp = 0xFFFF'FFFF;
-
-    static void (*callbacks)()[16];
 };
 
 
