@@ -9,6 +9,10 @@
 
 #include "stm32h7xx_hal_tim.h"
 
+#include <span>
+#include <array>
+#include <string>
+
 // NOTE: only works for static arrays
 #define ARRAY_LENGTH(a) (sizeof(a)/sizeof(*a))
 
@@ -16,6 +20,7 @@ extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
+extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim8;
@@ -73,37 +78,112 @@ extern TIM_HandleTypeDef htim24;
  - Supports incremental (quadrature) encoder and Hall-sensor circuitry for positioning purposes
  - Trigger input for external clock or cycle-by-cycle current management
 */
-class TimerDomain {
-    static constexpr std::array<int, 25> create_idxmap() {
-        std::array<int, 25> result{};
-        
-        // invalid timers that don't exist
-        result[0] = -1;
-        result[9] = -1; result[10] = -1; result[11] = -1;
-        result[18] = -1; result[19] = -1; result[20] = -1; result[21] = -1; result[22] = -1;
-        
-        // general-purpose timers
-        result[2] = 0; result[3] = 1; result[4] = 2;
-        result[5] = 3; result[23] = 4; result[24] = 5;
+constexpr std::array<int, 25> create_idxmap() {
+    std::array<int, 25> result{};
+    
+    // invalid timers that don't exist
+    result[0] = -1;
+    result[9] = -1; result[10] = -1; result[11] = -1;
+    result[18] = -1; result[19] = -1; result[20] = -1; result[21] = -1; result[22] = -1;
+    
+    // general-purpose timers
+    result[2] = 0; result[3] = 1; result[4] = 2;
+    result[5] = 3; result[23] = 4; result[24] = 5;
 
-        // more general-purpose timers
-        result[12] = 6; result[13] = 7; result[14] = 8;
+    // more general-purpose timers
+    result[12] = 6; result[13] = 7; result[14] = 8;
 
-        // more general-purpose timers
-        result[15] = 9; result[16] = 10; result[17] = 11;
+    // more general-purpose timers
+    result[15] = 9; result[16] = 10; result[17] = 11;
 
-        // basic timers
-        result[6] = 12; result[7] = 13;
+    // basic timers
+    result[6] = 12; result[7] = 13;
 
-        // advanced control timers
-        result[1] = 14; result[8] = 15;
-        
-        return result;
-    }
+    // advanced control timers
+    result[1] = 14; result[8] = 15;
+    
+    return result;
+}
 
+struct TimerDomain {
+    // There are 16 timers
+    static constexpr std::size_t max_instances = 16;
+
+    /* The number corresponds with the timer nº */
+    enum TimerRequest : uint8_t {
+        Advanced1 = 1,
+        Advanced2 = 8,
+
+        AnyGeneralPurpose = 0xFF,
+        GeneralPurpose1 = 2,
+        GeneralPurpose2 = 3,
+        GeneralPurpose3 = 4,
+        GeneralPurpose4 = 5,
+        GeneralPurpose5 = 23,
+        GeneralPurpose6 = 24,
+
+        GeneralPurpose7 = 12,
+        GeneralPurpose8 = 13,
+        GeneralPurpose9 = 14,
+
+        GeneralPurpose10 = 15,
+        GeneralPurpose11 = 16,
+        GeneralPurpose12 = 17,
+
+        Basic1 = 6,
+        Basic2 = 7,
+    };
+
+    enum CountingMode : uint8_t {
+        UP = 0,
+        DOWN = 1,
+        /* center-aligned = counter counts up and down alternatively */
+        /* Output compare interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are
+           set only when the counter is counting down */
+        CENTER_ALIGNED_INTERRUPT_DOWN = 2,
+        /* Output compare interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are
+           set only when the counter is counting up */
+        CENTER_ALIGNED_INTERRUPT_UP = 3,
+        /* both up and down */
+        CENTER_ALIGNED_INTERRUPT_BOTH = 4,
+    };
+
+    enum Kind : uint8_t {
+        Basic,
+        GeneralPurpose,
+        Advanced,
+    };
+    
+    struct Entry {
+        std::string name; /* max length = 7 */
+        TimerRequest request;
+        ST_LIB::GPIODomain::Pin *pin;
+        TimerDomain::CountingMode counting_mode;
+        uint16_t prescaler;
+        uint32_t period;
+        uint32_t deadtime;
+        uint32_t polarity;
+        uint32_t negated_polarity;
+    };
+
+    struct Config {
+        char name[8]; /* "Timerxx\0" */
+        TimerDomain::Kind kind;
+        uint16_t timer_idx;
+        ST_LIB::GPIODomain::Pin *asociated_pin;
+        TimerDomain::CountingMode counting_mode;
+        uint32_t prescaler;
+        uint32_t period;
+        uint32_t deadtime;
+        uint32_t polarity;
+        uint32_t negated_polarity;
+    };
+
+private:
+    static void I_Need_To_Compile_TimerDomain_CPP(void);
     static constexpr std::array<int, 25> idxmap = create_idxmap();
 
-    static const TIM_HandleTypeDef *hal_handles[16] = {
+    static constexpr TIM_HandleTypeDef *hal_handles[16] = {
         // general purpose timers
         &htim2, &htim3, &htim4, &htim5, &htim23, &htim24,
         &htim12, &htim13, &htim14,
@@ -116,7 +196,7 @@ class TimerDomain {
         &htim1, &htim8
     };
 
-    static const TIM_TypeDef *cmsis_timers[16] = {
+    static constexpr TIM_TypeDef *cmsis_timers[16] = {
         // general purpose timers
         TIM2, TIM3, TIM4, TIM5, TIM23, TIM24,
         TIM12, TIM13, TIM14,
@@ -129,27 +209,59 @@ class TimerDomain {
         TIM1, TIM8
     };
 
-    static inline void rcc_enable_timer(TIM_TypeDef *tim) {
-        switch(tim) {
-            case TIM2: SET_BIT(RCC->APB1LENR, RCC_APB1LENR_TIM2EN); break;
-            case TIM3: SET_BIT(RCC->APB1LENR, RCC_APB1LENR_TIM3EN); break;
-            case TIM4: SET_BIT(RCC->APB1LENR, RCC_APB1LENR_TIM4EN); break;
-            case TIM5: SET_BIT(RCC->APB1LENR, RCC_APB1LENR_TIM5EN); break;
-            case TIM6: SET_BIT(RCC->APB1LENR, RCC_APB1LENR_TIM6EN); break;
-            case TIM7: SET_BIT(RCC->APB1LENR, RCC_APB1LENR_TIM7EN); break;
-            case TIM12: SET_BIT(RCC->APB1LENR, RCC_APB1LENR_TIM12EN); break;
-            case TIM13: SET_BIT(RCC->APB1LENR, RCC_APB1LENR_TIM13EN); break;
-            case TIM14: SET_BIT(RCC->APB1LENR, RCC_APB1LENR_TIM14EN); break;
-
-            case TIM24: SET_BIT(RCC->APB1HENR, RCC_APB1HENR_TIM24EN); break;
-            case TIM23: SET_BIT(RCC->APB1HENR, RCC_APB1HENR_TIM23EN); break;
-
-            case TIM17: SET_BIT(RCC->APB2ENR, RCC_APB2ENR_TIM17EN); break;
-            case TIM16: SET_BIT(RCC->APB2ENR, RCC_APB2ENR_TIM16EN); break;
-            case TIM15: SET_BIT(RCC->APB2ENR, RCC_APB2ENR_TIM15EN); break;
-            case TIM8: SET_BIT(RCC->APB2ENR, RCC_APB2ENR_TIM8EN); break;
-            case TIM1: SET_BIT(RCC->APB2ENR, RCC_APB2ENR_TIM1EN); break;
+    /* to show the error with an index */
+    static consteval void ErrorInRequestN(const char *str, int n)
+    {
+        switch(n) {
+            case 0: ST_LIB::compile_error(str);
+            case 1: ST_LIB::compile_error(str);
+            case 2: ST_LIB::compile_error(str);
+            case 3: ST_LIB::compile_error(str);
+            case 4: ST_LIB::compile_error(str);
+            case 5: ST_LIB::compile_error(str);
+            case 6: ST_LIB::compile_error(str);
+            case 7: ST_LIB::compile_error(str);
+            case 8: ST_LIB::compile_error(str);
+            case 9: ST_LIB::compile_error(str);
+            case 10: ST_LIB::compile_error(str);
+            case 11: ST_LIB::compile_error(str);
+            case 12: ST_LIB::compile_error(str);
+            case 13: ST_LIB::compile_error(str);
+            case 14: ST_LIB::compile_error(str);
+            case 15: ST_LIB::compile_error(str);
         }
+    }
+
+    static inline void rcc_enable_timer(TIM_TypeDef *tim) {
+#define TimerXList     \
+    X(TIM2, APB1LENR)  \
+    X(TIM3, APB1LENR)  \
+    X(TIM4, APB1LENR)  \
+    X(TIM5, APB1LENR)  \
+    X(TIM6, APB1LENR)  \
+    X(TIM7, APB1LENR)  \
+    X(TIM12, APB1LENR) \
+    X(TIM13, APB1LENR) \
+    X(TIM14, APB1LENR) \
+                       \
+    X(TIM23, APB1HENR) \
+    X(TIM24, APB1HENR) \
+                       \
+    X(TIM1, APB2ENR)   \
+    X(TIM8, APB2ENR)   \
+    X(TIM15, APB2ENR)  \
+    X(TIM16, APB2ENR)  \
+    X(TIM17, APB2ENR)
+#define X(t, b) \
+    else if(tim == t) { SET_BIT(RCC->b, RCC_##b##_##t##EN); }
+
+        if(false) {}
+        TimerXList
+        else {
+            ErrorHandler("Invalid timer given to rcc_enable_timer");
+        }
+
+#undef X
     }
 
     // Do any compile time checks needed for the timers...
@@ -198,82 +310,38 @@ class TimerDomain {
         }
     }
 
-    /* to show the error with an index */
-    static consteval ErrorInRequestN(char *str, int n)
-    {
-        switch(n) {
-            case 0: compile_error(str);
-            case 1: compile_error(str);
-            case 2: compile_error(str);
-            case 3: compile_error(str);
-            case 4: compile_error(str);
-            case 5: compile_error(str);
-            case 6: compile_error(str);
-            case 7: compile_error(str);
-            case 8: compile_error(str);
-            case 9: compile_error(str);
-            case 10: compile_error(str);
-            case 11: compile_error(str);
-            case 12: compile_error(str);
-            case 13: compile_error(str);
-            case 14: compile_error(str);
-            case 15: compile_error(str);
-        }
-    }
-
-    Config DoTimer(const Entry request, uint8_t reqint, int reqidx, const char *name_too_long_msg) {
-        Config cfg;
-        if(request.name.length() == 0) {
-            // "Timer" + tostring(reqint)
-            cfg.name[0] = 'T';
-            cfg.name[1] = 'i';
-            cfg.name[2] = 'm';
-            cfg.name[3] = 'e';
-            cfg.name[4] = 'r';
-            cfg.name[5] = (reqint/10) + '0';
-            cfg.name[6] = (reqint%10) + '0';
-            cfg.name[7] = '\0';
-        } else {
-            if(request.name.length() >= sizeof(cfg.name)) {
-                ErrorInRequestN(name_too_long_msg, reqidx);
-            }
-            for(int si = 0; si < request.name.length(); si++) {
-                cfg.name[si] = request.name[si];
-            }
-            cfg.name[request.name.length()] = '\0';
-        }
-        cfg.timer_idx = TimerDomain.idxmap[reqint];
-        cfg.prescaler = request.prescaler;
-        cfg.period = request.period;
-        cfg.deadtime = request.deadtime;
-        cfg.polarity = request.polarity;
-        cfg.negated_polarity = request.negated_polarity;
-
-        check_timer(&cfg, request, i);
-        return cfg;
-    }
-
-    enum Kind : uint8_t {
-        Basic,
-        GeneralPurpose,
-        Advanced,
-    };
+    #define DoTimer(request, reqint, reqidx, name_too_long_msg) do{ \
+        Config cfg; \
+        if((request).name.length() == 0) { \
+            /* "Timer" + tostring(reqint) */ \
+            cfg.name[0] = 'T'; \
+            cfg.name[1] = 'i'; \
+            cfg.name[2] = 'm'; \
+            cfg.name[3] = 'e'; \
+            cfg.name[4] = 'r'; \
+            cfg.name[5] = (reqint/10) + '0'; \
+            cfg.name[6] = (reqint%10) + '0'; \
+            cfg.name[7] = '\0'; \
+        } else { \
+            if((request).name.length() >= sizeof(cfg.name)) { \
+                ErrorInRequestN(name_too_long_msg, reqidx); \
+            } \
+            for(std::size_t si = 0; si < (request).name.length(); si++) { \
+                cfg.name[si] = (request).name[si]; \
+            } \
+            cfg.name[(request).name.length()] = '\0'; \
+        } \
+        cfg.timer_idx = TimerDomain::idxmap[reqint]; \
+        cfg.prescaler = (request).prescaler; \
+        cfg.period = (request).period; \
+        cfg.deadtime = (request).deadtime; \
+        cfg.polarity = (request).polarity; \
+        cfg.negated_polarity = (request).negated_polarity; \
+                                        \
+        check_timer(&cfg, request, i); \
+    } while(0)
 
 public:
-    enum CountingMode : uint8_t {
-        UP = 0,
-        DOWN = 1,
-        /* center-aligned = counter counts up and down alternatively */
-        /* Output compare interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are
-           set only when the counter is counting down */
-        CENTER_ALIGNED_INTERRUPT_DOWN = 2,
-        /* Output compare interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are
-           set only when the counter is counting up */
-        CENTER_ALIGNED_INTERRUPT_UP = 3,
-        /* both up and down */
-        CENTER_ALIGNED_INTERRUPT_BOTH = 4,
-    };
-
     enum PWM_MODE : uint8_t {
         NORMAL = 0,
         PHASED = 1,
@@ -285,48 +353,11 @@ public:
         PWM_MODE mode;
     };
 
-    /* The number corresponds with the timer nº */
-    enum TimerRequest : uint8_t {
-        Advanced1 = 1,
-        Advanced2 = 8,
-
-        AnyGeneralPurpose = 0xFF,
-        GeneralPurpose1 = 2,
-        GeneralPurpose2 = 3,
-        GeneralPurpose3 = 4,
-        GeneralPurpose4 = 5,
-        GeneralPurpose5 = 23,
-        GeneralPurpose6 = 24,
-
-        GeneralPurpose7 = 12,
-        GeneralPurpose8 = 13,
-        GeneralPurpose9 = 14,
-
-        GeneralPurpose10 = 15,
-        GeneralPurpose11 = 16,
-        GeneralPurpose12 = 17,
-
-        Basic1 = 6,
-        Basic2 = 7,
-    };
-
-    struct Entry {
-        string name; /* max length = 7 */
-        TimerRequest request;
-        ST_LIB::GPIODomain::Pin *pin;
-        TimerDomain::CountingMode counting_mode;
-        uint16_t prescaler;
-        uint32_t period;
-        uint32_t deadtime;
-        uint32_t polarity;
-        uint32_t negated_polarity;
-    };
-
     struct Device {
         using domain = TimerDomain;
         Entry e;
 
-        consteval Device(string name = "", TimerRequest request = TimerRequest::AnyGeneralPurpose, 
+        consteval Device(std::string name = "", TimerRequest request = TimerRequest::AnyGeneralPurpose, 
             ST_LIB::GPIODomain::Pin *pin = 0, TimerDomain::CountingMode counting_mode = CountingMode::UP,
             uint16_t prescaler = 5, uint32_t period = 55000, uint32_t deadtime = 0, 
             uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH) :
@@ -338,34 +369,18 @@ public:
         }
     };
 
-    // There are 16 timers
-    static constexpr std::size_t max_instances = 16;
-
-    struct Config {
-        char name[8]; /* "Timerxx\0" */
-        TimerDomain::Kind kind;
-        uint16_t timer_idx;
-        ST_LIB::GPIODomain::Pin *asociated_pin;
-        TimerDomain::CountingMode counting_mode;
-        uint32_t prescaler;
-        uint32_t period;
-        uint32_t deadtime;
-        uint32_t polarity;
-        uint32_t negated_polarity;
-    };
-
     template<std::size_t N>
-    static consteval std::array<Config, N> build(span<const Entry> requests) {
-        array<Config, N> cfgs{};
+    static consteval std::array<Config, N> build(std::span<const Entry> requests) {
+        std::array<Config, N> cfgs{};
         uint16_t cfg_idx = 0;
-        bool usedTimer[25] = {0};
+        bool used_timers[25] = {0};
 
         if(requests.size() > max_instances) {
             throw "too many Timer requests, there are only 16 timers";
         }
 
         int remaining_requests[max_instances] = {};
-        std::size_t count_remaining_requests = requsts.size();
+        std::size_t count_remaining_requests = requests.size();
         for(int i = 0; i < requests.size(); i++) remaining_requests[i] = i;
 
         for(int i = 0; i < requests.size(); i++) {
@@ -381,12 +396,13 @@ public:
         for(std::size_t i = 0; i < N; i++) {
             uint8_t reqint = static_cast<uint8_t>(requests[i].request);
             if(reqint != static_cast<uint8_t>(TimerRequest::AnyGeneralPurpose)) {
-                if(usedTimer[reqint]) {
+                if(used_timers[reqint]) {
                     ErrorInRequestN("Error: Timer already used. Error in request i", i);
                 }
-                usedTimer[reqint] = true;
+                used_timers[reqint] = true;
 
-                Config cfg = DoTimer(requests[i], reqint, i, "Error: In request reqidx: Timer name too large, max = 7 characters (sizeof cfg.name - 1)");
+                Config cfg;
+                DoTimer(requests[i], reqint, i, "Error: In request reqidx: Timer name too large, max = 7 characters (sizeof cfg.name - 1)");
                 cfgs[cfg_idx++] = cfg;
 
                 // unordered remove (remaining requests is not used here so these are ordered)
@@ -420,7 +436,7 @@ public:
         }
 
         if(count_remaining_requests > count_remaining_timers) {
-            compile_error("This should not happen");
+            ST_LIB::compile_error("This should not happen");
         }
 
         for(int i = 0; i < count_remaining_requests; i++) {
@@ -428,7 +444,8 @@ public:
             if(e.request == AnyGeneralPurpose) {
                 uint8_t reqint = remaining_timers[i];
                 // NOTE: I don't want to do an ordered remove so this has the real index
-                Config cfg = DoTimer(requests[i], reqint, i, "Error: In one of AnyGeneralPurpose timers: Timer name too large, max = 7 characters (sizeof cfg.name - 1)");
+                Config cfg;
+                DoTimer(requests[i], reqint, i, "Error: In one of AnyGeneralPurpose timers: Timer name too large, max = 7 characters (sizeof cfg.name - 1)");
                 cfgs[cfg_idx++] = cfg;
             }
         }
@@ -439,6 +456,16 @@ public:
     // Runtime object
     struct Instance {
         template<auto&> friend struct TimerWrapper;
+    };
+
+    template<Device &dev>
+    struct TimerWrapper {
+        TIM_TypeDef *tim;
+        TIM_HandleTypeDef *hal_tim;
+        char name[8];
+        const TimerDomain::Kind kind;
+        uint16_t timer_idx;
+        void (*callback)(TimerDomain::Instance);
 
         inline void counter_enable() {
             SET_BIT(tim->CR1, TIM_CR1_CEN);
@@ -490,17 +517,8 @@ public:
         inline uint32_t get_period() {
             return tim->ARR;
         }
-    };
 
-    template<Device &dev>
-    struct TimerWrapper {
-        TIM_TypeDef *tim;
-        TIM_HandleTypeDef *hal_tim;
-        char name[8];
-        const TimerDomain::Kind kind;
-        uint16_t timer_idx;
-        void (*callback)(TimerDomain::Instance);
-
+#if 0
         if constexpr (dev.e.request == TimerRequest::Advanced1 || dev.e.request == TimerRequest::Advanced2) {
             // advanced specific functions
         }
@@ -508,38 +526,34 @@ public:
         if constexpr (dev.e.request != TimerRequest::Basic1 && dev.e.request != TimerRequest::Basic2) {
             // general purpose and advanced functions
         }
+#endif
 
-        template<TimerDomain::CounterMode mode>
-        void set_mode();
-
-#if 0
         /* WARNING: The counter _must_ be disabled to switch from edge-aligned to center-aligned mode */
-        template<TimerDomain::CounterMode mode>
+        template<TimerDomain::CountingMode mode>
         inline void set_mode(void) {
             constexpr uint8_t reqint = static_cast<uint8_t>(dev.e.request);
             if constexpr (!(reqint == 1 || reqint == 8 ||
                 reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24 || 
                 reqint == 3 || reqint == 4))
             {
-                compile_error("Error: In request reqidx: Timers other than {Advanced{TIM1, TIM8}, TIM2, TIM3, TIM4, TIM5, TIM23, TIM24} only support upcounting");
+                ST_LIB::compile_error("Error: In request reqidx: Timers other than {Advanced{TIM1, TIM8}, TIM2, TIM3, TIM4, TIM5, TIM23, TIM24} only support upcounting");
                 return;
             }
 
-            if constexpr (mode == CounterMode::UP) {
+            if constexpr (mode == CountingMode::UP) {
                 MODIFY_REG(tim->CR1, TIM_CR1_CMS, 0);
                 CLEAR_BIT(tim->CR1, TIM_CR1_DIR); // upcounter
-            } else if constexpr (mode == CounterMode::DOWN) {
+            } else if constexpr (mode == CountingMode::DOWN) {
                 MODIFY_REG(tim->CR1, TIM_CR1_CMS, 0);
                 SET_BIT(tim->CR1, TIM_CR1_DIR); // downcounter
-            } else if constexpr (mode == CounterMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
+            } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
                 MODIFY_REG(tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
-            } else if constexpr (mode == CounterMode::CENTER_ALIGNED_INTERRUPT_UP) {
+            } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_UP) {
                 MODIFY_REG(tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_1);
-            } else if constexpr (mode == CounterMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
+            } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
                 MODIFY_REG(tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
             }
         }
-#endif
     };
 
     template <std::size_t N> struct Init {
@@ -563,15 +577,15 @@ public:
                 tim->PSC = e.prescaler;
                 tim->ARR = e.period;
 
-                if constexpr (e.counting_mode == CounterMode::UP) {
+                if(e.counting_mode == CountingMode::UP) {
                     CLEAR_BIT(tim->CR1, TIM_CR1_DIR); // upcounter
-                } else if constexpr (e.counting_mode == CounterMode::DOWN) {
+                } else if(e.counting_mode == CountingMode::DOWN) {
                     SET_BIT(tim->CR1, TIM_CR1_DIR); // downcounter
-                } else if constexpr (e.counting_mode == CounterMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
+                } else if(e.counting_mode == CountingMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
                     MODIFY_REG(tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
-                } else if constexpr (e.counting_mode == CounterMode::CENTER_ALIGNED_INTERRUPT_UP) {
+                } else if(e.counting_mode == CountingMode::CENTER_ALIGNED_INTERRUPT_UP) {
                     MODIFY_REG(tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_1);
-                } else if constexpr (e.counting_mode == CounterMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
+                } else if(e.counting_mode == CountingMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
                     MODIFY_REG(tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
                 }
 
@@ -589,7 +603,7 @@ public:
                 };
             }
         }
-    }
+    };
 };
 
 
