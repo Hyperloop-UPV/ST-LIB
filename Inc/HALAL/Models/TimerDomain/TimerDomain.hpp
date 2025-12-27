@@ -501,7 +501,6 @@ public:
         uint16_t timer_idx;
         void (*callback)(TimerDomain::Instance);
 
-        // NOTE: Need counter_enable() here for configure(), kept counter_disable() for consistency
         if constexpr (dev.e.request == TimerRequest::Advanced1 || dev.e.request == TimerRequest::Advanced2) {
             // advanced specific functions
         }
