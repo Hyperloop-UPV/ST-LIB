@@ -1,124 +1,119 @@
 #pragma once
-#include <cstdint>
-#include <iostream>
-#include <bitset>
+
+#include <array>
+#include <inttypes.h>
 #include <algorithm>
-#include "HALAL/Benchmarking_toolkit/DataWatchpointTrace/DataWatchpointTrace.hpp"
+#include <string_view> 
+
+#include "stm32h723xx.h"
+#include "core_cm7.h"
 #include "SEGGER_RTT.h"
-template<size_t N>
-struct StringLiteral {
-    constexpr StringLiteral(const char (&str)[N]) {
-        std::copy_n(str, N, value);
+
+enum class BenchmarkType : uint8_t{
+    NONE,
+    RUNTIME,
+    GDB
+};
+enum BenchmarkLoggingTypes{
+    _NONE,
+    _SD = 1,
+    _RTT = 2
+};
+
+struct TimeStamp{
+    uint32_t id;
+    uint32_t cycles;
+};
+
+
+static inline TimeStamp timestamp;
+/**
+ * This hash is used to send a lightweight identifier via RTT
+ * on the host the source code is searched for BENCHMARK_MACROS
+ * and hashed using the same hash algorithm, thus creating a 1:1
+ * match between hash and string
+ */
+consteval uint32_t custom_hash(std::string_view str){
+    uint32_t hash = 2166136261u; // FNV offset basis
+    
+    for (char c : str) {
+        hash ^= (unsigned char)c;
+        hash *= 16777619u; // FNV prime
     }
     
-    char value[N];
-};
-
-enum EVENTS : uint32_t{
-    SIMPLE_MARK = 1,
-    ISR = 2,
-    ETH_TX = 4,
-    ETH_RX = 8,
-    SPI = 16,
-    CONTROL_ALGORITHM = 32,
-    MAIN = 2 << 6
-};
-
-
-template<EVENTS... Ev>
-constexpr uint32_t configure_benchmarks(){
-    return (Ev | ...);
+    return hash;
 }
-inline constexpr uint32_t benchmark_configuration = configure_benchmarks<SIMPLE_MARK>();
+#if defined(RUNTIME_BENCHMARK) && defined(GDB_BENCHMARK)
+    #error "Cannot use RUNTIME_BENCHMARK and GDB_BENCHMARK SIMULTANEOUSLY"
+#endif
 
-struct Performace_Packet{
-    uint32_t control_field{1};
-    uint32_t initial_timestamp;
-    uint32_t final_timestamp;
-    uint32_t event_type;
-    uint32_t event_id;
-};
-
-template<uint32_t Configuration,EVENTS E = SIMPLE_MARK,uint32_t ID,StringLiteral name>
-constexpr void _benchmark_begin(Performace_Packet* p){
-
-    if constexpr( Configuration & E){
-        p->event_id = (uint32_t)ID;
-        p->event_type = static_cast<uint32_t>(E);
-        // we cannot set DWT->CYCCNT to 0 every time want to perform a benchmark
-        // because other benchmarks might be taking place
-        // so now we need to handle overflow
-        p->initial_timestamp = DWT->CYCCNT;
-        asm volatile("" ::: "memory");//acts as a memory barrier at compile time, so instructions are not reordered
-
-    }
-    else{
-        //THIS EVENT IS NOT ENABLED
-    }
-}
-
-template<uint32_t Configuration,EVENTS E = SIMPLE_MARK,uint32_t ID>
-constexpr void _benchmark_end(Performace_Packet* p){
-    if constexpr(Configuration & E){
-        p->final_timestamp = DWT->CYCCNT;
-    }
-    else{
-        //THIS EVENT IS NOT ENABLED
-    }
-}
-
-
-/**
- * 
- */
-#define BENCHMARK_BEGIN(TYPE,ID,NAME)      \
-{                                              \
-    constexpr bool begin_##ID##_found = true;       \
-    Performace_Packet p; \
-    _benchmark_begin<benchmark_configuration,TYPE,(uint32_t)ID,NAME>(&p);  \
-        
-
-/**
- * 
- */
-#define BENCHMARK_END(TYPE,ID) \
-    static_assert(begin_##ID##_found == true,"NO MATCHING BENCHMARK BEGIN FOUND IN CURRENT SCOPE"); \
-    _benchmark_end<benchmark_configuration,TYPE,(uint32_t)ID>(&p); \
-    SEGGER_RTT_Write(0,&p,sizeof(Performace_Packet)); \
-} // closing the scope opened by BENCHMARK_BEGIN
-
-struct Frequency_Packet{
-    uint32_t control_field{2};
-    uint32_t payload{};
-    uint32_t event_type;
-    uint32_t event_id;
-    uint32_t padding;
-};
-extern Frequency_Packet freq_packet;
-
-template<uint32_t Configuration,EVENTS E = SIMPLE_MARK,uint32_t ID,StringLiteral name>
-constexpr void _benchmark_begin_frequency(){
-    if constexpr( Configuration & E){
-        freq_packet.event_id = ID;
-        freq_packet.event_type = E;   
-        freq_packet.payload = DWT->CYCCNT;
-        freq_packet.control_field |= 1 << 1;
-        SEGGER_RTT_Write(0,&freq_packet,sizeof(Frequency_Packet)); \
-    }
+extern "C"{
+constexpr BenchmarkType benchmark_type = 
+#ifdef RUNTIME_BENCHMARK
+    BenchmarkType::RUNTIME;
+    static const char BENCHMARK_TYPE_RUNTIME[] __attribute__((used)) = "BENCHMARK_RUNTIME";
+#elif defined(GDB_BENCHMARK)
+    BenchmarkType::GDB;
+    static const char BENCHMARK_TYPE_GDB[] __attribute__((used)) = "BENCHMARK_GDB";
+#else 
+    BenchmarkType::NONE;
+    static const char BENCHMARK_TYPE_NONE[] __attribute__((used)) = "BENCHMARK_NONE";
+#endif 
 
 }
 
-
-#define MEASURE_FREQUENCY(TYPE,ID,NAME) \
-    {  \
-        _benchmark_begin_frequency<benchmark_configuration,TYPE,(uint32_t)ID,NAME>(); \
+inline constexpr int logging_type = 
+#if defined(SD)
+    _SD |
+#else
+    _NONE |
+#endif
+#if defined(RUNTIME_BENCHMARK)
+    _RTT;
+#else
+    _NONE;
+#endif
+template<BenchmarkType Type>
+class Benchmarker{
+public:
+    Benchmarker(){
+        DWT->CTRL |= 1;
+        DWT->CYCCNT = 0;
+        if constexpr(benchmark_type == BenchmarkType::RUNTIME){
+            SEGGER_RTT_Init();
+        }
     }
+    template<uint32_t Id>
+    __attribute__((always_inline)) inline static void __benchmark_start__(){
+        if constexpr(benchmark_type == BenchmarkType::GDB){
+            __asm__ volatile("BKPT \n");
+        } else if constexpr(benchmark_type == BenchmarkType::RUNTIME){
+            uint32_t cycles = DWT->CYCCNT;
+            if constexpr( logging_type & _RTT){
+                timestamp.id = Id;
+                timestamp.cycles = cycles;
+                SEGGER_RTT_Write(0,&timestamp,sizeof(TimeStamp));
+            }
+        }
+    }
+    template<uint32_t Id>
+    __attribute__((always_inline)) inline static void __benchmark_end__(){
+        if constexpr(benchmark_type == BenchmarkType::GDB){
+            __asm__ volatile("BKPT \n");
+        } else if constexpr(benchmark_type == BenchmarkType::RUNTIME){
+            uint32_t cycles = DWT->CYCCNT;
+            if constexpr( logging_type & _RTT){
+                timestamp.id = Id;
+                timestamp.cycles = cycles;
+                SEGGER_RTT_Write(0,&timestamp,sizeof(TimeStamp));
+            }
+        }
+    }
+};
 
-
-#define BENCHMARKING_SETUP() \
-   { SEGGER_RTT_Init(); \
-    uint32_t core_frequency = HAL_RCC_GetSysClockFreq(); \
-    freq_packet.control_field = 1 << 3;\
-    freq_packet.payload = core_frequency;\
-    SEGGER_RTT_Write(0,&freq_packet,sizeof(Frequency_Packet));    \
-   }
+#define BENCHMARK_SETUP() \
+    Benchmarker<benchmark_type> __b;
+#define BENCHMARK_START(NAME) \
+    Benchmarker<benchmark_type>::__benchmark_start__<custom_hash(NAME)>();
+#define BENCHMARK_END(NAME)\
+    Benchmarker<benchmark_type>::__benchmark_end__<custom_hash(NAME)>(); 

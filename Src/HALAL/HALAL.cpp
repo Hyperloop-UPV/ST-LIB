@@ -86,7 +86,7 @@ static void common_start(UART::Peripheral &printf_peripheral) {
     #endif
 #endif 
     DataWatchpointTrace::enable();
-    BENCHMARKING_SETUP();
+    BENCHMARK_SETUP();
 }
 #ifdef STLIB_ETH
 
