@@ -9,6 +9,9 @@
 
 #include "stm32h7xx_hal_tim.h"
 
+// NOTE: only works for static arrays
+#define ARRAY_LENGTH(a) (sizeof(a)/sizeof(*a))
+
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
@@ -150,7 +153,8 @@ class TimerDomain {
         }
     }
 
-    static consteval bool check_timer(Config *cfg, const Entry req, uint16_t timer_idx, int reqidx) {
+    // Do any compile time checks needed for the timers...
+    static consteval bool check_timer(Config *cfg, const Entry req, int reqidx) {
         if(req.period == 0) {
             ErrorInRequestN("Error: In request reqidx: period must be greater than 0 (>0)", reqidx);
             return false;
@@ -174,18 +178,18 @@ class TimerDomain {
             }
         }
 
-        if(timer_idx == 12 || timer_idx == 13) {
+        if(req.request == Basic1 || req.request == Basic2) {
             // basic timers
             cfg->kind = TimerDomain::Kind::Basic;
-        } else if(timer_idx == 14 || timer_idx == 15) {
+        } else if(req.request == Advanced1 || req.request == Advanced2) {
             // advanced timers
             cfg->kind = TimerDomain::Kind::Advanced;
         } else {
-            if(timer_idx >= 0 && timer_idx <= 5) {
+            if(cfg->timer_idx >= 0 && cfg->timer_idx <= 5) {
                 // general purpose timers 1
-            } else if(timer_idx >= 6 && timer_idx <= 8) {
+            } else if(cfg->timer_idx >= 6 && cfg->timer_idx <= 8) {
                 // general purpose timers 2
-            } else if(timer_idx >= 9 && timer_idx <= 11) {
+            } else if(cfg->timer_idx >= 9 && cfg->timer_idx <= 11) {
                 // general purpose timers 3
             } else {
                 ErrorInRequestN("Unknown timer idx in reqidx", reqidx);
@@ -216,6 +220,38 @@ class TimerDomain {
             case 14: compile_error(str);
             case 15: compile_error(str);
         }
+    }
+
+    Config DoTimer(const Entry request, uint8_t reqint, int reqidx, const char *name_too_long_msg) {
+        Config cfg;
+        if(request.name.length() == 0) {
+            // "Timer" + tostring(reqint)
+            cfg.name[0] = 'T';
+            cfg.name[1] = 'i';
+            cfg.name[2] = 'm';
+            cfg.name[3] = 'e';
+            cfg.name[4] = 'r';
+            cfg.name[5] = (reqint/10) + '0';
+            cfg.name[6] = (reqint%10) + '0';
+            cfg.name[7] = '\0';
+        } else {
+            if(request.name.length() >= sizeof(cfg.name)) {
+                ErrorInRequestN(name_too_long_msg, reqidx);
+            }
+            for(int si = 0; si < request.name.length(); si++) {
+                cfg.name[si] = request.name[si];
+            }
+            cfg.name[request.name.length()] = '\0';
+        }
+        cfg.timer_idx = TimerDomain.idxmap[reqint];
+        cfg.prescaler = request.prescaler;
+        cfg.period = request.period;
+        cfg.deadtime = request.deadtime;
+        cfg.polarity = request.polarity;
+        cfg.negated_polarity = request.negated_polarity;
+
+        check_timer(&cfg, request, i);
+        return cfg;
     }
 
     enum Kind : uint8_t {
@@ -349,46 +385,52 @@ public:
                 if(usedTimer[reqint]) {
                     ErrorInRequestN("Error: Timer already used. Error in request i", i);
                 }
+                usedTimer[reqint] = true;
 
-                Config cfg;
-                if(requests[i].name[0] == '\0') {
-                    // "Timer" + tostring(reqint)
-                    cfg.name[0] = 'T';
-                    cfg.name[1] = 'i';
-                    cfg.name[2] = 'm';
-                    cfg.name[3] = 'e';
-                    cfg.name[4] = 'r';
-                    cfg.name[5] = (reqint/10) + '0';
-                    cfg.name[6] = (reqint%10) + '0';
-                } else {
-                    if(requests[i].name.length() >= sizeof(cfg.name)) {
-                        ErrorInRequestN("Error: Timer name too large, max = 7 (sizeof cfg.name - 1). In request i", i);
-                    }
-                    for(int si = 0; si < requests[i].name.length(); si++) {
-                        cfg.name[si] = requests[i].name[si];
-                    }
-                    cfg.name[requests[i].name.length()] = '\0';
-                }
-                cfg.timer_idx = TimerDomain.idxmap[reqint];
-                cfg.prescaler = requests[i].prescaler;
-                cfg.period = requests[i].period;
-                cfg.deadtime = requests[i].deadtime;
-                cfg.polarity = requests[i].polarity;
-                cfg.negated_polarity = requests[i].negated_polarity;
-
+                Config cfg = DoTimer(requests[i], reqint, i, "Error: In request reqidx: Timer name too large, max = 7 (sizeof cfg.name - 1)");
                 cfgs[cfg_idx++] = cfg;
 
-                // unordered remove
+                // unordered remove (remaining requests is )
                 count_remaining_requests--;
                 remaining_requests[i] = remaining_requests[count_remaining_requests];
             }
         }
 
-        // Now do AnyGeneralPurpose
+        // 32 bit timers, very important for scheduler
+        uint8_t bits32_timers[] = {2, 5, 23, 24};
+        // can use any CountingMode (32 bit timers can also but they are higher priority)
+        uint8_t up_down_updown_timers[] = {3, 4};
+        // 16 bit timers
+        uint8_t bits16_timers[] = {12, 13, 14, 15, 16, 17};
+        uint8_t remaining_timers[15] = {0};
+        uint8_t count_remaining_timers = 0;
+
+        for(int i = 0; i < ARRAY_LENGTH(bits16_timers); i++) {
+            if(!used_timers[bits16_timers[i]])
+                remaining_timers[count_remaining_timers++] = bits16_timers[i];
+        }
+
+        for(int i = 0; i < ARRAY_LENGTH(up_down_updown_timers); i++) {
+            if(!used_timers[up_down_updown_timers[i]])
+                remaining_timers[count_remaining_timers++] = up_down_updown_timers[i];
+        }
+
+        for(int i = 0; i < ARRAY_LENGTH(bits32_timers); i++) {
+            if(!used_timers[bits32_timers[i]])
+                remaining_timers[count_remaining_timers++] = bits32_timers[i];
+        }
+
+        if(count_remaining_requests > count_remaining_timers) {
+            compile_error("This should not happen");
+        }
+
         for(int i = 0; i < count_remaining_requests; i++) {
             const Entry &e = requests[remaining_requests[i]];
             if(e.request == AnyGeneralPurpose) {
-                // TODO: Find first general purpose timer that isn't used
+                uint8_t reqint = remaining_timers[i];
+                // NOTE: I don't want to do an ordered remove so this has the real index
+                Config cfg = DoTimer(requests[i], reqint, i, "Error: In one of AnyGeneralPurpose timers: Timer name too large, max = 7 (sizeof cfg.name - 1)");
+                cfgs[cfg_idx++] = cfg;
             }
         }
 
