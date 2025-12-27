@@ -29,23 +29,22 @@ extern TIM_HandleTypeDef htim23;
 extern TIM_HandleTypeDef htim24;
 
 /* Tim1 & Tim8 are advanced-control timers
-    *   their ARR & prescaler are 16bit
-    *   they have up to 6 independent channels for:
-    *    - input capture (not channel 5 or 6)
-    *    - output capture
-    *    - PWM generation
-    *    - One-pulse mode output
-    */
+ *  their ARR & prescaler are 16bit
+ *  they have up to 6 independent channels for:
+ *   - input capture (not channel 5 or 6)
+ *   - output capture
+ *   - PWM generation
+ *   - One-pulse mode output
+ */
 
 /* Timers {TIM2, TIM5, TIM23, TIM24} are the only 32-bit counter resolution timers, the rest are 16-bit */
 /* Timers 2, 3, 4, 5, 23, 24 are general-purpose timers
-    * Timers 12, 13, 14 are also general-purpose timers (but separate in the ref manual)
-    * Timers 15, 16, 17 are also general purpose timers (but separate in the ref manual)
-    */
+ * Timers 12, 13, 14 are also general-purpose timers (but separate in the ref manual)
+ * Timers 15, 16, 17 are also general purpose timers (but separate in the ref manual)
+ */
 
-/* Tim6 & Tim7 are basic timers */
 
-/* basic timer features:
+/* Tim6 & Tim7 are basic timers. Features:
  - 16-bit ARR upcounter
  - 16-bit PSC
  - Synchronization circuit to trigger the DAC
@@ -485,7 +484,7 @@ public:
         }
         
         // leftover from old TimerPeripheral, maybe this was useful?
-        inline uint32_t get_prescaler() {
+        inline uint16_t get_prescaler() {
             return tim->PSC;
         }
         inline uint32_t get_period() {
