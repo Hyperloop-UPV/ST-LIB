@@ -37,32 +37,37 @@ struct SPIDomain {
     enum class SPIMode : bool {
         MASTER = true,
         SLAVE = false,
+    };
+
+    static bool compare_pin(const GPIODomain::Pin &p1, const GPIODomain::Pin &p2) {
+        return (p1.port == p2.port) && (p1.pin == p2.pin);
     }
 
-    consteval GPIODomain::AlternateFunction get_af(GPIODomain::Pin &pin, SPIPeripheral peripheral) {
+    static consteval GPIODomain::AlternateFunction get_af(const GPIODomain::Pin &pin, SPIPeripheral peripheral) {
+
         if (peripheral == SPIPeripheral::spi2) {
-            if (pin == PB4) return GPIODomain::AlternateFunction::AF7;
+            if (compare_pin(pin, PB4)) return GPIODomain::AlternateFunction::AF7;
         }
         if (peripheral == SPIPeripheral::spi3) {
-            if (pin == PA4) return GPIODomain::AlternateFunction::AF6;
-            if (pin == PA15) return GPIODomain::AlternateFunction::AF6;
-            if (pin == PB2) return GPIODomain::AlternateFunction::AF7;
-            if (pin == PB3) return GPIODomain::AlternateFunction::AF6;
-            if (pin == PB4) return GPIODomain::AlternateFunction::AF6;
-            if (pin == PB5) return GPIODomain::AlternateFunction::AF7;
-            if (pin == PC10) return GPIODomain::AlternateFunction::AF6;
-            if (pin == PC11) return GPIODomain::AlternateFunction::AF6;
-            if (pin == PC12) return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PA4)) return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PA15)) return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PB2)) return GPIODomain::AlternateFunction::AF7;
+            if (compare_pin(pin, PB3)) return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PB4)) return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PB5)) return GPIODomain::AlternateFunction::AF7;
+            if (compare_pin(pin, PC10)) return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PC11)) return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PC12)) return GPIODomain::AlternateFunction::AF6;
         }
         if (peripheral == SPIPeripheral::spi6) {
-            if (pin == PA4) return GPIODomain::AlternateFunction::AF8;
-            if (pin == PA5) return GPIODomain::AlternateFunction::AF8;
-            if (pin == PA6) return GPIODomain::AlternateFunction::AF8;
-            if (pin == PA7) return GPIODomain::AlternateFunction::AF8;
-            if (pin == PA15) return GPIODomain::AlternateFunction::AF7;
-            if (pin == PB3) return GPIODomain::AlternateFunction::AF8;
-            if (pin == PB4) return GPIODomain::AlternateFunction::AF8;
-            if (pin == PB5) return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA4)) return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA5)) return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA6)) return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA7)) return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA15)) return GPIODomain::AlternateFunction::AF7;
+            if (compare_pin(pin, PB3)) return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PB4)) return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PB5)) return GPIODomain::AlternateFunction::AF8;
         }
 
         return GPIODomain::AlternateFunction::AF5; // Default AF for everything else
@@ -143,145 +148,151 @@ struct SPIDomain {
 
         SPIPeripheral peripheral;
         SPIMode mode;
+        uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
 
         GPIODomain::GPIO sck_gpio;
         GPIODomain::GPIO miso_gpio;
         GPIODomain::GPIO mosi_gpio;
         GPIODomain::GPIO nss_gpio;
 
-        uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
+        
 
         consteval Device(SPIMode mode, SPIPeripheral peripheral, uint32_t max_baudrate,
                         GPIODomain::Pin sck_pin, GPIODomain::Pin miso_pin, 
                         GPIODomain::Pin mosi_pin, GPIODomain::Pin nss_pin)
-                        : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate} {
+                        : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate},
+                        sck_gpio(sck_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(sck_pin, peripheral)),
+                        miso_gpio(miso_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(miso_pin, peripheral)),
+                        mosi_gpio(mosi_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(mosi_pin, peripheral)),
+                        nss_gpio(nss_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(nss_pin, peripheral))
+                        {
 
             switch (peripheral) {
             case SPIPeripheral::spi1:
-                if (sck_pin != PB3 &&
-                    sck_pin != PG11 &&
-                    sck_pin != PA5) {
+                if (!compare_pin(sck_pin, PB3) &&
+                    !compare_pin(sck_pin, PG11) &&
+                    !compare_pin(sck_pin, PA5)) {
                     compile_error("Invalid SCK pin for SPI1");
                 }
-                if (miso_pin != PB4 &&
-                    miso_pin != PG9 &&
-                    miso_pin != PA6) {
+                if (!compare_pin(miso_pin, PB4) &&
+                    !compare_pin(miso_pin, PG9) &&
+                    !compare_pin(miso_pin, PA6)) {
                     compile_error("Invalid MISO pin for SPI1");
                 }
-                if (mosi_pin != PB5 &&
-                    mosi_pin != PD7 &&
-                    mosi_pin != PA7) {
+                if (!compare_pin(mosi_pin, PB5) &&
+                    !compare_pin(mosi_pin, PD7) &&
+                    !compare_pin(mosi_pin, PA7)) {
                     compile_error("Invalid MOSI pin for SPI1");
                 }
-                if (nss_pin != PG10 &&
-                    nss_pin != PA15 &&
-                    nss_pin != PA4) {
+                if (!compare_pin(nss_pin, PG10) &&
+                    !compare_pin(nss_pin, PA15) &&
+                    !compare_pin(nss_pin, PA4)) {
                     compile_error("Invalid NSS pin for SPI1");
                 }
                 break;
 
             case SPIPeripheral::spi2:
-                if (sck_pin != PD3 &&
-                    sck_pin != PA12 &&
-                    sck_pin != PA9 &&
-                    sck_pin != PB13 &&
-                    sck_pin != PB10) {
+                if (!compare_pin(sck_pin, PD3) &&
+                    !compare_pin(sck_pin, PA12) &&
+                    !compare_pin(sck_pin, PA9) &&
+                    !compare_pin(sck_pin, PB13) &&
+                    !compare_pin(sck_pin, PB10)) {
                     compile_error("Invalid SCK pin for SPI2");
                 }
-                if (miso_pin != PC2 &&
-                    miso_pin != PB14) {
+                if (!compare_pin(miso_pin, PC2) &&
+                    !compare_pin(miso_pin, PB14)) {
                     compile_error("Invalid MISO pin for SPI2");
                 }
-                if (mosi_pin != PC3 &&
-                    mosi_pin != PC1 &&
-                    mosi_pin != PB15) {
+                if (!compare_pin(mosi_pin, PC3) &&
+                    !compare_pin(mosi_pin, PC1) &&
+                    !compare_pin(mosi_pin, PB15)) {
                     compile_error("Invalid MOSI pin for SPI2");
                 }
-                if (nss_pin != PB9 &&
-                    nss_pin != PB4 &&
-                    nss_pin != PA11 &&
-                    nss_pin != PB12) {
+                if (!compare_pin(nss_pin, PB9) &&
+                    !compare_pin(nss_pin, PB4) &&
+                    !compare_pin(nss_pin, PA11) &&
+                    !compare_pin(nss_pin, PB12)) {
                     compile_error("Invalid NSS pin for SPI2");
                 }
                 break;
             
             case SPIPeripheral::spi3:
-                if (sck_pin != PB3 &&
-                    sck_pin != PC10) {
+                if (!compare_pin(sck_pin, PB3) &&
+                    !compare_pin(sck_pin, PC10)) {
                     compile_error("Invalid SCK pin for SPI3");
                 }    
-                if (miso_pin != PB4 &&
-                    miso_pin != PC11) {
+                if (!compare_pin(miso_pin, PB4) &&
+                    !compare_pin(miso_pin, PC11)) {
                     compile_error("Invalid MISO pin for SPI3");
                 }
-                if (mosi_pin != PB5 &&
-                    mosi_pin != PD6 &&
-                    mosi_pin != PC12 &&
-                    mosi_pin != PB2) {
+                if (!compare_pin(mosi_pin, PB5) &&
+                    !compare_pin(mosi_pin, PD6) &&
+                    !compare_pin(mosi_pin, PC12) &&
+                    !compare_pin(mosi_pin, PB2)) {
                     compile_error("Invalid MOSI pin for SPI3");
                 }
-                if (nss_pin != PA15 &&
-                    nss_pin != PA4) {
+                if (!compare_pin(nss_pin, PA15) &&
+                    !compare_pin(nss_pin, PA4)) {
                     compile_error("Invalid NSS pin for SPI3");
                 }
                 break;
 
             case SPIPeripheral::spi4:
-                if (sck_pin != PE2 &&
-                    sck_pin != PE12) {
+                if (!compare_pin(sck_pin, PE2) &&
+                    !compare_pin(sck_pin, PE12)) {
                     compile_error("Invalid SCK pin for SPI4");
                 }
-                if (miso_pin != PE5 &&
-                    miso_pin != PE13) {
+                if (!compare_pin(miso_pin, PE5) &&
+                    !compare_pin(miso_pin, PE13)) {
                     compile_error("Invalid MISO pin for SPI4");
                 }
-                if (mosi_pin != PE6 &&
-                    mosi_pin != PE14) {
+                if (!compare_pin(mosi_pin, PE6) &&
+                    !compare_pin(mosi_pin, PE14)) {
                     compile_error("Invalid MOSI pin for SPI4");
                 }
-                if (nss_pin != PE4 &&
-                    nss_pin != PE11) {
+                if (!compare_pin(nss_pin, PE4) &&
+                    !compare_pin(nss_pin, PE11)) {
                     compile_error("Invalid NSS pin for SPI4");
                 }
                 break;
 
             case SPIPeripheral::spi5:
-                if (sck_pin != PF7) {
+                if (!compare_pin(sck_pin, PF7)) {
                     compile_error("Invalid SCK pin for SPI5");
                 }
-                if (miso_pin != PF8) {
+                if (!compare_pin(miso_pin, PF8)) {
                     compile_error("Invalid MISO pin for SPI5");
                 }
-                if (mosi_pin != PF9 &&
-                    mosi_pin != PF11) {
+                if (!compare_pin(mosi_pin, PF9) &&
+                    !compare_pin(mosi_pin, PF11)) {
                     compile_error("Invalid MOSI pin for SPI5");
                 }
-                if (nss_pin != PF6) {
+                if (!compare_pin(nss_pin, PF6)) {
                     compile_error("Invalid NSS pin for SPI5");
                 }
                 break;
             
             case SPIPeripheral::spi6:
-                if (sck_pin != PB3 &&
-                    sck_pin != PG13 &&
-                    sck_pin != PC10 && 
-                    sck_pin != PA7) {
+                if (!compare_pin(sck_pin, PB3) &&
+                    !compare_pin(sck_pin, PG13) &&
+                    !compare_pin(sck_pin, PC10) && 
+                    !compare_pin(sck_pin, PA7)) {
                     compile_error("Invalid SCK pin for SPI6");
                 }
-                if (miso_pin != PB4 &&
-                    miso_pin != PG12 &&
-                    miso_pin != PA6) {
+                if (!compare_pin(miso_pin, PB4) &&
+                    !compare_pin(miso_pin, PG12) &&
+                    !compare_pin(miso_pin, PA6)) {
                     compile_error("Invalid MISO pin for SPI6");
                 }
-                if (mosi_pin != PB5 &&
-                    mosi_pin != PG14 &&
-                    mosi_pin != PA7) {
+                if (!compare_pin(mosi_pin, PB5) &&
+                    !compare_pin(mosi_pin, PG14) &&
+                    !compare_pin(mosi_pin, PA7)) {
                     compile_error("Invalid MOSI pin for SPI6");
                 }
-                if (nss_pin != PA0 &&
-                    nss_pin != PA15 &&
-                    nss_pin != PG8 &&
-                    nss_pin != PA4) {
+                if (!compare_pin(nss_pin, PA0) &&
+                    !compare_pin(nss_pin, PA15) &&
+                    !compare_pin(nss_pin, PG8) &&
+                    !compare_pin(nss_pin, PA4)) {
                     compile_error("Invalid NSS pin for SPI6");
                 }
                 break;
@@ -289,11 +300,6 @@ struct SPIDomain {
             default:
                 compile_error("Invalid SPI peripheral specified in SPIDomain::Device");
             }
-
-            sck_gpio = GPIODomain::GPIO{sck_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(sck_pin, peripheral)};
-            miso_gpio = GPIODomain::GPIO{miso_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(miso_pin, peripheral)};
-            mosi_gpio = GPIODomain::GPIO{mosi_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(mosi_pin, peripheral)};
-            nss_gpio = GPIODomain::GPIO{nss_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(nss_pin, peripheral)};
         }
 
         template <class Ctx>
@@ -320,12 +326,6 @@ struct SPIDomain {
     struct Instance {
         template <std::size_t N> friend struct Init;
         template <auto &device_request> friend struct SPIWrapper;
-        friend void ::SPI1_IRQHandler(void);
-        friend void ::SPI2_IRQHandler(void);
-        friend void ::SPI3_IRQHandler(void);
-        friend void ::SPI4_IRQHandler(void);
-        friend void ::SPI5_IRQHandler(void);
-        friend void ::SPI6_IRQHandler(void);
 
        private:
         SPI_HandleTypeDef hspi;
@@ -342,11 +342,15 @@ struct SPIDomain {
  * =========================================
  */
 
+    // SPI Wrapper primary template
+    template <auto &device_request, bool IsMaster = (device_request.mode == SPIMode::MASTER)>
+    struct SPIWrapper;
+
     /**
      * @brief SPI Wrapper for Master mode operations.
      */
-    template <auto &device_request> requires(device_request.mode == SPIMode::MASTER)
-    struct SPIWrapper {
+    template <auto &device_request>
+    struct SPIWrapper<device_request, true> {
         SPIWrapper(Instance &instance) : spi_instance{instance} {}
 
         /**
@@ -419,8 +423,8 @@ struct SPIDomain {
     /**
      * @brief SPI Wrapper for Slave mode operations. Doesn't allow for blocking operations.
      */
-    template <auto &device_request> requires(device_request.mode == SPIMode::SLAVE)
-    struct SPIWrapper {
+    template <auto &device_request>
+    struct SPIWrapper<device_request, false> {
         SPIWrapper(Instance &instance) : spi_instance{instance} {}
 
         /**
@@ -488,6 +492,8 @@ struct SPIDomain {
             cfgs[i].miso_gpio_idx = entries[i].miso_gpio_idx;
             cfgs[i].mosi_gpio_idx = entries[i].mosi_gpio_idx;
             cfgs[i].nss_gpio_idx = entries[i].nss_gpio_idx;
+
+            auto peripheral = entries[i].peripheral;
 
             if (peripheral == SPIPeripheral::spi1) {
                 if (used_peripherals[0]) {
