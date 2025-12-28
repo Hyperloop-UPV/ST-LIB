@@ -342,33 +342,59 @@ struct SPIDomain {
  * =========================================
  */
 
+    /**
+     * @brief SPI Wrapper for Master mode operations.
+     */
     template <auto &device_request> requires(device_request.mode == SPIMode::MASTER)
     struct SPIWrapper {
         SPIWrapper(Instance &instance) : spi_instance{instance} {}
 
+        /**
+         * @brief Sends data over SPI in blocking mode.
+         */
         bool send(span<const uint8_t> data) {
             auto error_code = HAL_SPI_Transmit(&spi_instance.hspi, data.data(), data.size(), 10);
             return check_error_code(error_code);
         }
+        
+        /**
+         * @brief Receives data over SPI in blocking mode.
+         */
         bool receive(span<uint8_t> data) {
             auto error_code = HAL_SPI_Receive(&spi_instance.hspi, data.data(), data.size(), 10);
             return check_error_code(error_code);
         }
+
+        /**
+         * @brief Sends and receives data over SPI in blocking mode.
+         */
         bool transceive(span<const uint8_t> tx_data, span<uint8_t> rx_data) {
             auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, tx_data.data(), rx_data.data(), tx_data.size(), 10);
             return check_error_code(error_code);
         }
 
+
+        /**
+         * @brief Sends data over SPI using DMA, uses an optional operation flag to signal completion.
+         */
         bool send_DMA(span<const uint8_t> data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, data.data(), data.size());
             return check_error_code(error_code);
         }
+
+        /**
+         * @brief Receives data over SPI using DMA, uses an optional operation flag to signal completion.
+         */
         bool receive_DMA(span<uint8_t> data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, data.data(), data.size());
             return check_error_code(error_code);
         }
+
+        /**
+         * @brief Sends and receives data over SPI using DMA, uses an optional operation flag to signal completion.
+         */
         bool transceive_DMA(span<const uint8_t> tx_data, span<uint8_t> rx_data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(tx_data.size(), rx_data.size());
@@ -390,20 +416,34 @@ struct SPIDomain {
         }
     };
 
+    /**
+     * @brief SPI Wrapper for Slave mode operations. Doesn't allow for blocking operations.
+     */
     template <auto &device_request> requires(device_request.mode == SPIMode::SLAVE)
     struct SPIWrapper {
         SPIWrapper(Instance &instance) : spi_instance{instance} {}
 
+        /**
+         * @brief Listens for data over SPI using DMA, uses an optional operation flag to signal completion.
+         */
         bool listen(span<uint8_t> data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, data.data(), data.size());
             return check_error_code(error_code);
         }
+
+        /**
+         * @brief Arms the SPI to send data over DMA when requested, uses an optional operation flag to signal completion.
+         */
         bool arm(span<const uint8_t> tx_data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, tx_data.data(), tx_data.size());
             return check_error_code(error_code);
         }
+
+        /**
+         * @brief Sends and receives data over SPI using DMA, uses an optional operation flag to signal completion.
+         */
         bool transceive(span<const uint8_t> tx_data, span<uint8_t> rx_data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(tx_data.size(), rx_data.size());
