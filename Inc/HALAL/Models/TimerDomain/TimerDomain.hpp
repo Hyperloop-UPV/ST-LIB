@@ -127,27 +127,28 @@ struct TimerDomain {
 
     /* The number corresponds with the timer nº */
     enum TimerRequest : uint8_t {
-        Advanced1 = 1,
-        Advanced2 = 8,
+        Advanced_1 = 1,
+        Advanced_2 = 8,
 
         AnyGeneralPurpose = 0xFF,
-        GeneralPurpose1 = 2,
-        GeneralPurpose2 = 3,
-        GeneralPurpose3 = 4,
-        GeneralPurpose4 = 5,
-        GeneralPurpose5 = 23,
-        GeneralPurpose6 = 24,
+        GeneralPurpose32bit_1 = 2,
+        GeneralPurpose32bit_2 = 3,
+        GeneralPurpose32bit_3 = 23,
+        GeneralPurpose32bit_4 = 24,
 
-        GeneralPurpose7 = 12,
-        GeneralPurpose8 = 13,
-        GeneralPurpose9 = 14,
+        GeneralPurpose_1 = 4,
+        GeneralPurpose_2 = 5,
 
-        GeneralPurpose10 = 15,
-        GeneralPurpose11 = 16,
-        GeneralPurpose12 = 17,
+        GeneralPurpose_3 = 12,
+        GeneralPurpose_4 = 13,
+        GeneralPurpose_5 = 14,
 
-        Basic1 = 6,
-        Basic2 = 7,
+        GeneralPurpose_6 = 15,
+        GeneralPurpose_7 = 16,
+        GeneralPurpose_8 = 17,
+
+        Basic_1 = 6,
+        Basic_2 = 7,
     };
 
     enum CountingMode : uint8_t {
@@ -280,10 +281,10 @@ struct TimerDomain {
             }
         }
 
-        if(request.request == Basic1 || request.request == Basic2) {
+        if(request.request == Basic_1 || request.request == Basic_2) {
             // basic timers
             cfg.kind = TimerDomain::Kind::Basic;
-        } else if(request.request == Advanced1 || request.request == Advanced2) {
+        } else if(request.request == Advanced_1 || request.request == Advanced_2) {
             // advanced timers
             cfg.kind = TimerDomain::Kind::Advanced;
         } else {
@@ -423,8 +424,6 @@ struct TimerDomain {
         return cfgs;
     }
 
-    template<const Timer&> struct TimerWrapper;
-
     // Runtime object
     struct Instance {
         char name[8];
@@ -438,102 +437,6 @@ struct TimerDomain {
 
     static void (*callbacks[TimerDomain::max_instances])(void*);
     static void *callback_data[TimerDomain::max_instances];
-
-    template<const Timer &dev>
-    struct TimerWrapper {
-        Instance& instance;
-
-        TimerWrapper(Instance& inst) : instance(inst) {}
-
-        inline void counter_enable() {
-            SET_BIT(instance.tim->CR1, TIM_CR1_CEN);
-        }
-        inline void counter_disable() {
-            CLEAR_BIT(instance.tim->CR1, TIM_CR1_CEN);
-        }
-
-        inline void clear_update_interrupt_flag() {
-            CLEAR_BIT(instance.tim->SR, TIM_SR_UIF);
-        }
-
-        /* Enabled by default */
-        inline void enable_update_interrupt() {
-            CLEAR_BIT(instance.tim->CR1, TIM_CR1_UDIS);
-        }
-        inline void disable_update_interrupt() {
-            SET_BIT(instance.tim->CR1, TIM_CR1_UDIS);
-        }
-
-        /* interrupt gets called only once, counter needs to be reenabled */
-        inline void set_one_pulse_mode() {
-            SET_BIT(instance.tim->CR1, TIM_CR1_OPM);
-        }
-        inline void multi_interrupt() {
-            CLEAR_BIT(instance.tim->CR1, TIM_CR1_OPM);
-        }
-
-        inline TIM_HandleTypeDef *get_hal_handle() {
-            return instance.hal_tim;
-        }
-        inline TIM_TypeDef *get_cmsis_handle() {
-            return instance.tim;
-        }
-
-        template<uint16_t psc = 0>
-        inline void configure(void (*callback)(), void *callback_data) {
-            if constexpr (psc != 0) {
-                instance.tim->PSC = psc;
-            }
-            TimerDomain::callbacks[this.timer_idx] = callback;
-            TimerDomain::callback_data[this.timer_idx] = callback_data;
-            this.counter_enable();
-        }
-        
-        // leftover from old TimerPeripheral, maybe this was useful?
-        inline uint16_t get_prescaler() {
-            return instance.tim->PSC;
-        }
-        inline uint32_t get_period() {
-            return instance.tim->ARR;
-        }
-
-#if 0
-        if constexpr (dev.e.request == TimerRequest::Advanced1 || dev.e.request == TimerRequest::Advanced2) {
-            // advanced specific functions
-        }
-
-        if constexpr (dev.e.request != TimerRequest::Basic1 && dev.e.request != TimerRequest::Basic2) {
-            // general purpose and advanced functions
-        }
-#endif
-
-        /* WARNING: The counter _must_ be disabled to switch from edge-aligned to center-aligned mode */
-        template<TimerDomain::CountingMode mode>
-        inline void set_mode(void) {
-            constexpr uint8_t reqint = static_cast<uint8_t>(dev.e.request);
-            if constexpr (!(reqint == 1 || reqint == 8 ||
-                reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24 || 
-                reqint == 3 || reqint == 4))
-            {
-                ST_LIB::compile_error("Error: In request reqidx: Timers other than {Advanced{TIM1, TIM8}, TIM2, TIM3, TIM4, TIM5, TIM23, TIM24} only support upcounting");
-                return;
-            }
-
-            if constexpr (mode == CountingMode::UP) {
-                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, 0);
-                CLEAR_BIT(instance.tim->CR1, TIM_CR1_DIR); // upcounter
-            } else if constexpr (mode == CountingMode::DOWN) {
-                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, 0);
-                SET_BIT(instance.tim->CR1, TIM_CR1_DIR); // downcounter
-            } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
-                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
-            } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_UP) {
-                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_1);
-            } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
-                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
-            }
-        }
-    };
 
     template <std::size_t N> struct Init {
         static inline std::array<Instance, N> instances{};
@@ -589,6 +492,145 @@ struct TimerDomain {
         }
     };
 };
+
+template<const TimerDomain::Timer&>
+concept Bits32Timer = requires (const TimerDomain::Timer &dev) {
+    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_1) ||
+    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_2) ||
+    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_3) ||
+    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_4);
+};
+template<const TimerDomain::Timer&>
+concept Bits16Timer = requires (const TimerDomain::Timer &dev) {
+    !((dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_1) ||
+    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_2) ||
+    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_3) ||
+    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_4));
+};
+
+template<const TimerDomain::Timer &dev>
+struct TimerWrapper {
+    TimerDomain::Instance& instance;
+    TimerWrapper(TimerDomain::Instance& inst) : instance(inst) {}
+    
+    inline void counter_enable() {
+        SET_BIT(instance.tim->CR1, TIM_CR1_CEN);
+    }
+    inline void counter_disable() {
+        CLEAR_BIT(instance.tim->CR1, TIM_CR1_CEN);
+    }
+
+    inline void clear_update_interrupt_flag() {
+        CLEAR_BIT(instance.tim->SR, TIM_SR_UIF);
+    }
+
+    /* Enabled by default */
+    inline void enable_update_interrupt() {
+        CLEAR_BIT(instance.tim->CR1, TIM_CR1_UDIS);
+    }
+    inline void disable_update_interrupt() {
+        SET_BIT(instance.tim->CR1, TIM_CR1_UDIS);
+    }
+
+    /* interrupt gets called only once, counter needs to be reenabled */
+    inline void set_one_pulse_mode() {
+        SET_BIT(instance.tim->CR1, TIM_CR1_OPM);
+    }
+    inline void multi_interrupt() {
+        CLEAR_BIT(instance.tim->CR1, TIM_CR1_OPM);
+    }
+
+    inline TIM_HandleTypeDef *get_hal_handle() {
+        return instance.hal_tim;
+    }
+    inline TIM_TypeDef *get_cmsis_handle() {
+        return instance.tim;
+    }
+
+#if 1
+    template<uint16_t psc = 0> requires Bits32Timer<dev>
+    inline void configure(void (*callback)(void*), void *callback_data, uint32_t period)
+    {
+        if constexpr (psc != 0) {
+            instance.tim->PSC = psc;
+        }
+        TimerDomain::callbacks[instance.timer_idx] = callback;
+        TimerDomain::callback_data[instance.timer_idx] = callback_data;
+        this->counter_enable();
+    }
+
+    template<uint16_t psc = 0> requires Bits16Timer<dev>
+    inline void configure(void (*callback)(void*), void *callback_data, uint16_t period)
+    {
+        if constexpr (psc != 0) {
+            instance.tim->PSC = psc;
+        }
+        TimerDomain::callbacks[instance.timer_idx] = callback;
+        TimerDomain::callback_data[instance.timer_idx] = callback_data;
+        this->counter_enable();
+    }
+#else
+    template<uint16_t psc = 0>
+    inline void configure(void (*callback)(void*), void *callback_data, uint32_t period) {
+        constexpr uint8_t reqint = static_cast<uint8_t>(dev.e.request);
+        constexpr bool bits32timer = (reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24);
+        if constexpr (!bits32timer) {
+            if(period > 0xFFFF) {
+                ErrorHandler("Only Timers {TIM2, TIM5, TIM23, TIM24} have a 32-bit resolution");
+            }
+        }
+        if constexpr (psc != 0) {
+            instance.tim->PSC = psc;
+        }
+        TimerDomain::callbacks[instance.timer_idx] = callback;
+        TimerDomain::callback_data[instance.timer_idx] = callback_data;
+        this->counter_enable();
+    }
+#endif
+
+    // leftover from old TimerPeripheral, maybe this was useful?
+    inline uint16_t get_prescaler() {
+        return instance.tim->PSC;
+    }
+    inline uint32_t get_period() {
+        return instance.tim->ARR;
+    }
+
+#if 0
+    if constexpr (dev.e.request == TimerDomain::TimerRequest::Advanced_1 || dev.e.request == TimerDomain::TimerRequest::Advanced_2) {
+        // advanced specific functions
+    }
+
+    if constexpr (dev.e.request != TimerDomain::TimerRequest::Basic_1 && dev.e.request != TimerDomain::TimerRequest::Basic_2) {
+        // general purpose and advanced functions
+    }
+#endif
+
+    /* WARNING: The counter _must_ be disabled to switch from edge-aligned to center-aligned mode */
+    template<TimerDomain::CountingMode mode>
+    inline void set_mode(void) {
+        constexpr uint8_t reqint = static_cast<uint8_t>(dev.e.request);
+        static_assert(!(reqint == 1 || reqint == 8 ||
+                reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24 || 
+                reqint == 3 || reqint == 4),
+            "Error: In request reqidx: Timers other than {Advanced{TIM1, TIM8}, TIM2, TIM3, TIM4, TIM5, TIM23, TIM24} only support upcounting");
+
+        if constexpr (mode == TimerDomain::CountingMode::UP) {
+            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, 0);
+            CLEAR_BIT(instance.tim->CR1, TIM_CR1_DIR); // upcounter
+        } else if constexpr (mode == TimerDomain::CountingMode::DOWN) {
+            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, 0);
+            SET_BIT(instance.tim->CR1, TIM_CR1_DIR); // downcounter
+        } else if constexpr (mode == TimerDomain::CountingMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
+            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
+        } else if constexpr (mode == TimerDomain::CountingMode::CENTER_ALIGNED_INTERRUPT_UP) {
+            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_1);
+        } else if constexpr (mode == TimerDomain::CountingMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
+            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
+        }
+    }
+};
+
 } // namespace ST_LIB
 
 #endif // HAL_TIM_MODULE_ENABLED
