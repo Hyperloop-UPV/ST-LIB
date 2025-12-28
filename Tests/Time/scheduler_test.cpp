@@ -213,6 +213,7 @@ TEST_F(SchedulerTests, SameTaskMultipleTimes) {
     multiple_tasks
 #undef X
 
+    multiple_task1count = 0;
     Scheduler::start();
     TIM2_BASE->PSC = 2; // quicker test
     constexpr int NUM_TICKS = 300;
