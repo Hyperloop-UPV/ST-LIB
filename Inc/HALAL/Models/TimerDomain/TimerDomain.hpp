@@ -218,29 +218,6 @@ private:
         TIM1, TIM8
     };
 
-    /* to show the error with an index */
-    static consteval void ErrorInRequestN(const char *str, int n)
-    {
-        switch(n) {
-            case 0: ST_LIB::compile_error(str);
-            case 1: ST_LIB::compile_error(str);
-            case 2: ST_LIB::compile_error(str);
-            case 3: ST_LIB::compile_error(str);
-            case 4: ST_LIB::compile_error(str);
-            case 5: ST_LIB::compile_error(str);
-            case 6: ST_LIB::compile_error(str);
-            case 7: ST_LIB::compile_error(str);
-            case 8: ST_LIB::compile_error(str);
-            case 9: ST_LIB::compile_error(str);
-            case 10: ST_LIB::compile_error(str);
-            case 11: ST_LIB::compile_error(str);
-            case 12: ST_LIB::compile_error(str);
-            case 13: ST_LIB::compile_error(str);
-            case 14: ST_LIB::compile_error(str);
-            case 15: ST_LIB::compile_error(str);
-        }
-    }
-
     static inline void rcc_enable_timer(TIM_TypeDef *tim) {
 #define TimerXList     \
     X(TIM2, APB1LENR)  \
@@ -273,18 +250,39 @@ private:
 #undef X
     }
 
-    // Do any compile time checks needed for the timers...
-    static consteval bool check_timer(Config *cfg, const Entry req, int reqidx) {
-        if(req.period == 0) {
-            ErrorInRequestN("Error: In request reqidx: period must be greater than 0 (>0)", reqidx);
-            return false;
+    static constexpr Config DoTimer(const Entry request, int reqint, int reqidx) {
+        Config cfg;
+        if((request).name[0] == '\0') {
+            /* "Timer" + tostring(reqint) */
+            cfg.name[0] = 'T';
+            cfg.name[1] = 'i';
+            cfg.name[2] = 'm';
+            cfg.name[3] = 'e';
+            cfg.name[4] = 'r';
+            cfg.name[5] = (reqint/10) + '0';
+            cfg.name[6] = (reqint%10) + '0';
+            cfg.name[7] = '\0';
+        } else {
+            for(int si = 0; si < 8; si++) {
+                cfg.name[si] = (request).name[si];
+            }
+        }
+        cfg.timer_idx = timer_idxmap[reqint];
+        cfg.prescaler = (request).prescaler;
+        cfg.period = (request).period;
+        cfg.deadtime = (request).deadtime;
+        cfg.polarity = (request).polarity;
+        cfg.negated_polarity = (request).negated_polarity;
+
+        //check_timer(&cfg, request, reqidx);
+        // Do any compile time checks needed for the timers...
+        if(request.period == 0) {
+            ST_LIB::compile_error("Error: period must be greater than 0 (>0)");
         }
 
-        uint8_t reqint = static_cast<uint8_t>(req.request);
         if(!(reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24)) {
-            if(req.period > 0xFFFF) {
-                ErrorInRequestN("Error: In request reqidx: Timers other than {TIM2, TIM5, TIM23, TIM24} have a maximum period of 0xFFFF (they are uint16_t)", reqidx);
-                return false;
+            if(request.period > 0xFFFF) {
+                ST_LIB::compile_error("Error: Timers other than {TIM2, TIM5, TIM23, TIM24} have a maximum period of 0xFFFF (they are uint16_t)");
             }
         }
 
@@ -292,58 +290,33 @@ private:
             reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24 || 
             reqint == 3 || reqint == 4))
         {
-            if(req.counting_mode != CountingMode::UP) {
-                ErrorInRequestN("Error: In request reqidx: Timers other than {Advanced{TIM1, TIM8}, TIM2, TIM3, TIM4, TIM5, TIM23, TIM24} only support upcounting", reqidx);
-                return false;
+            if(request.counting_mode != CountingMode::UP) {
+                ST_LIB::compile_error("Error: Timers other than {Advanced{TIM1, TIM8}, TIM2, TIM3, TIM4, TIM5, TIM23, TIM24} only support upcounting");
             }
         }
 
-        if(req.request == Basic1 || req.request == Basic2) {
+        if(request.request == Basic1 || request.request == Basic2) {
             // basic timers
-            cfg->kind = TimerDomain::Kind::Basic;
-        } else if(req.request == Advanced1 || req.request == Advanced2) {
+            cfg.kind = TimerDomain::Kind::Basic;
+        } else if(request.request == Advanced1 || request.request == Advanced2) {
             // advanced timers
-            cfg->kind = TimerDomain::Kind::Advanced;
+            cfg.kind = TimerDomain::Kind::Advanced;
         } else {
-            if(cfg->timer_idx >= 0 && cfg->timer_idx <= 5) {
+            if(cfg.timer_idx >= 0 && cfg.timer_idx <= 5) {
                 // general purpose timers 1
-            } else if(cfg->timer_idx >= 6 && cfg->timer_idx <= 8) {
+            } else if(cfg.timer_idx >= 6 && cfg.timer_idx <= 8) {
                 // general purpose timers 2
-            } else if(cfg->timer_idx >= 9 && cfg->timer_idx <= 11) {
+            } else if(cfg.timer_idx >= 9 && cfg.timer_idx <= 11) {
                 // general purpose timers 3
             } else {
-                ErrorInRequestN("Unknown timer idx in reqidx", reqidx);
+                ST_LIB::compile_error("Unknown timer idx");
             }
 
-            cfg->kind = TimerDomain::Kind::GeneralPurpose;
+            cfg.kind = TimerDomain::Kind::GeneralPurpose;
         }
-    }
 
-    #define DoTimer(request, reqint, reqidx) do{ \
-        Config cfg; \
-        if((request).name[0] == '\0') { \
-            /* "Timer" + tostring(reqint) */ \
-            cfg.name[0] = 'T'; \
-            cfg.name[1] = 'i'; \
-            cfg.name[2] = 'm'; \
-            cfg.name[3] = 'e'; \
-            cfg.name[4] = 'r'; \
-            cfg.name[5] = (reqint/10) + '0'; \
-            cfg.name[6] = (reqint%10) + '0'; \
-            cfg.name[7] = '\0'; \
-        } else { \
-            for(int si = 0; si < 8; si++) { \
-                cfg.name[si] = (request).name[si]; \
-            } \
-        } \
-        cfg.timer_idx = timer_idxmap[reqint]; \
-        cfg.prescaler = (request).prescaler; \
-        cfg.period = (request).period; \
-        cfg.deadtime = (request).deadtime; \
-        cfg.polarity = (request).polarity; \
-        cfg.negated_polarity = (request).negated_polarity; \
-        check_timer(&cfg, request, i); \
-    } while(0)
+        return cfg;
+    }
 
 public:
     enum PWM_MODE : uint8_t {
@@ -393,7 +366,7 @@ public:
                (requests[i].request < 1 || requests[i].request > 24 ||
                (requests[i].request > 17 && requests[i].request < 23)))
             {
-                ErrorInRequestN("Invalid TimerRequest value for timer i", i);
+                ST_LIB::compile_error("Invalid TimerRequest value for timer");
             }
         }
 
@@ -402,12 +375,11 @@ public:
             uint8_t reqint = static_cast<uint8_t>(requests[i].request);
             if(reqint != static_cast<uint8_t>(TimerRequest::AnyGeneralPurpose)) {
                 if(used_timers[reqint]) {
-                    ErrorInRequestN("Error: Timer already used. Error in request i", i);
+                    ST_LIB::compile_error("Error: Timer already used");
                 }
                 used_timers[reqint] = true;
 
-                Config cfg;
-                DoTimer(requests[i], reqint, i);
+                Config cfg = DoTimer(requests[i], reqint, i);
                 cfgs[cfg_idx++] = cfg;
 
                 // unordered remove (remaining requests is not used here so these are ordered)
@@ -449,8 +421,7 @@ public:
             if(e.request == AnyGeneralPurpose) {
                 uint8_t reqint = remaining_timers[i];
                 // NOTE: I don't want to do an ordered remove so this has the real index
-                Config cfg;
-                DoTimer(requests[i], reqint, i);
+                Config cfg = DoTimer(requests[i], reqint, i);
                 cfgs[cfg_idx++] = cfg;
             }
         }
@@ -463,7 +434,7 @@ public:
         TIM_TypeDef *tim;
         TIM_HandleTypeDef *hal_tim;
         char name[8];
-        const TimerDomain::Kind kind;
+        TimerDomain::Kind kind;
         uint16_t timer_idx;
         void (*callback)(TimerDomain::Instance);
 
@@ -573,7 +544,7 @@ public:
             for(std::size_t i = 0; i < N; i++) {
                 const Config &e = cfgs[i];
 
-                TIM_HandleTypeDef *handle = &hal_handles[e.timer_idx];
+                TIM_HandleTypeDef *handle = (TIM_HandleTypeDef*)&hal_handles[e.timer_idx];
                 handle->Instance = cmsis_timers[e.timer_idx];
                 handle->Init.Prescaler = e.prescaler;
                 handle->Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -582,7 +553,7 @@ public:
                 handle->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
                 handle->Init.RepetitionCounter = 0;
 
-                TIM_TypeDef *tim = &cmsis_timers[e.timer_idx];
+                TIM_TypeDef *tim = cmsis_timers[e.timer_idx];
                 tim->PSC = e.prescaler;
                 tim->ARR = e.period;
 
@@ -603,13 +574,18 @@ public:
                 // InputCapture stuff should be dome somewhere else..
                 // PWM stuff should be done somewhere else..
 
-                instances[i] = Instance{
-                    .tim = &cmsis_timers[e.timer_idx],
-                    .hal_tim = handle,
-                    .name = {e.name[0], e.name[1], e.name[2], e.name[3], e.name[4], e.name[5], e.name[6], e.name[7]},
-                    .kind = e.kind,
-                    .timer_idx = e.timer_idx,
-                };
+                instances[i].tim = cmsis_timers[e.timer_idx];
+                instances[i].hal_tim = handle;
+                instances[i].name[0] = e.name[0];
+                instances[i].name[1] = e.name[1];
+                instances[i].name[2] = e.name[2];
+                instances[i].name[3] = e.name[3];
+                instances[i].name[4] = e.name[4];
+                instances[i].name[5] = e.name[5];
+                instances[i].name[6] = e.name[6];
+                instances[i].name[7] = e.name[7];
+                instances[i].kind = e.kind;
+                instances[i].timer_idx = e.timer_idx;
             }
         }
     };
