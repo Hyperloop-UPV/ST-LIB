@@ -121,35 +121,36 @@ constexpr std::array<int, 25> create_timer_idxmap() {
 
 static constexpr std::array<int, 25> timer_idxmap = create_timer_idxmap();
 
+/* The number corresponds with the timer nº */
+enum TimerRequest : uint8_t {
+    Advanced_1 = 1,
+    Advanced_2 = 8,
+
+    AnyGeneralPurpose = 0xFF,
+    GeneralPurpose32bit_1 = 2,
+    GeneralPurpose32bit_2 = 3,
+    GeneralPurpose32bit_3 = 23,
+    GeneralPurpose32bit_4 = 24,
+
+    GeneralPurpose_1 = 4,
+    GeneralPurpose_2 = 5,
+
+    GeneralPurpose_3 = 12,
+    GeneralPurpose_4 = 13,
+    GeneralPurpose_5 = 14,
+
+    GeneralPurpose_6 = 15,
+    GeneralPurpose_7 = 16,
+    GeneralPurpose_8 = 17,
+
+    Basic_1 = 6,
+    Basic_2 = 7,
+};
+
 struct TimerDomain {
     // There are 16 timers
     static constexpr std::size_t max_instances = 16;
 
-    /* The number corresponds with the timer nº */
-    enum TimerRequest : uint8_t {
-        Advanced_1 = 1,
-        Advanced_2 = 8,
-
-        AnyGeneralPurpose = 0xFF,
-        GeneralPurpose32bit_1 = 2,
-        GeneralPurpose32bit_2 = 3,
-        GeneralPurpose32bit_3 = 23,
-        GeneralPurpose32bit_4 = 24,
-
-        GeneralPurpose_1 = 4,
-        GeneralPurpose_2 = 5,
-
-        GeneralPurpose_3 = 12,
-        GeneralPurpose_4 = 13,
-        GeneralPurpose_5 = 14,
-
-        GeneralPurpose_6 = 15,
-        GeneralPurpose_7 = 16,
-        GeneralPurpose_8 = 17,
-
-        Basic_1 = 6,
-        Basic_2 = 7,
-    };
 
     enum CountingMode : uint8_t {
         UP = 0,
@@ -493,21 +494,6 @@ struct TimerDomain {
     };
 };
 
-template<const TimerDomain::Timer&>
-concept Bits32Timer = requires (const TimerDomain::Timer &dev) {
-    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_1) ||
-    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_2) ||
-    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_3) ||
-    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_4);
-};
-template<const TimerDomain::Timer&>
-concept Bits16Timer = requires (const TimerDomain::Timer &dev) {
-    !((dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_1) ||
-    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_2) ||
-    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_3) ||
-    (dev.e.request == TimerDomain::TimerRequest::GeneralPurpose32bit_4));
-};
-
 template<const TimerDomain::Timer &dev>
 struct TimerWrapper {
     TimerDomain::Instance& instance;
@@ -547,10 +533,17 @@ struct TimerWrapper {
         return instance.tim;
     }
 
-#if 1
-    template<uint16_t psc = 0> requires Bits32Timer<dev>
-    inline void configure(void (*callback)(void*), void *callback_data, uint32_t period)
+    template<uint16_t psc = 0>
+    inline void configure32bit(void (*callback)(void*), void *callback_data, uint32_t period)
     {
+        constexpr bool bits32timer = (
+            dev.e.request == TimerRequest::GeneralPurpose32bit_1 ||
+            dev.e.request == TimerRequest::GeneralPurpose32bit_2 ||
+            dev.e.request == TimerRequest::GeneralPurpose32bit_3 ||
+            dev.e.request == TimerRequest::GeneralPurpose32bit_4
+        );
+        static_assert(bits32timer, "Only timers {TIM2, TIM5, TIM23, TIM24} have a 32-bit resolution");
+
         if constexpr (psc != 0) {
             instance.tim->PSC = psc;
         }
@@ -559,8 +552,8 @@ struct TimerWrapper {
         this->counter_enable();
     }
 
-    template<uint16_t psc = 0> requires Bits16Timer<dev>
-    inline void configure(void (*callback)(void*), void *callback_data, uint16_t period)
+    template<uint16_t psc = 0>
+    inline void configure16bit(void (*callback)(void*), void *callback_data, uint16_t period)
     {
         if constexpr (psc != 0) {
             instance.tim->PSC = psc;
@@ -569,24 +562,6 @@ struct TimerWrapper {
         TimerDomain::callback_data[instance.timer_idx] = callback_data;
         this->counter_enable();
     }
-#else
-    template<uint16_t psc = 0>
-    inline void configure(void (*callback)(void*), void *callback_data, uint32_t period) {
-        constexpr uint8_t reqint = static_cast<uint8_t>(dev.e.request);
-        constexpr bool bits32timer = (reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24);
-        if constexpr (!bits32timer) {
-            if(period > 0xFFFF) {
-                ErrorHandler("Only Timers {TIM2, TIM5, TIM23, TIM24} have a 32-bit resolution");
-            }
-        }
-        if constexpr (psc != 0) {
-            instance.tim->PSC = psc;
-        }
-        TimerDomain::callbacks[instance.timer_idx] = callback;
-        TimerDomain::callback_data[instance.timer_idx] = callback_data;
-        this->counter_enable();
-    }
-#endif
 
     // leftover from old TimerPeripheral, maybe this was useful?
     inline uint16_t get_prescaler() {
@@ -597,11 +572,11 @@ struct TimerWrapper {
     }
 
 #if 0
-    if constexpr (dev.e.request == TimerDomain::TimerRequest::Advanced_1 || dev.e.request == TimerDomain::TimerRequest::Advanced_2) {
+    if constexpr (dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_2) {
         // advanced specific functions
     }
 
-    if constexpr (dev.e.request != TimerDomain::TimerRequest::Basic_1 && dev.e.request != TimerDomain::TimerRequest::Basic_2) {
+    if constexpr (dev.e.request != TimerRequest::Basic_1 && dev.e.request != TimerRequest::Basic_2) {
         // general purpose and advanced functions
     }
 #endif
