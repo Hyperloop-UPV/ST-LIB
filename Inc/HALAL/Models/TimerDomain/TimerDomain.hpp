@@ -457,10 +457,7 @@ public:
     struct TimerWrapper {
         Instance& instance;
 
-        //TimerWrapper(const Instance& inst) : instance(const_cast<Instance&>(inst)) {}
-        TimerWrapper(Instance& inst) {
-            this->instance = inst;
-        }
+        TimerWrapper(Instance& inst) : instance(inst) {}
 
         inline void counter_enable() {
             SET_BIT(instance.tim->CR1, TIM_CR1_CEN);
