@@ -67,6 +67,40 @@ struct SPIDomain {
         return GPIODomain::AlternateFunction::AF5; // Default AF for everything else
     }
 
+    static constexpr uint32_t get_prescaler_flag(uint32_t prescaler) {
+        switch (prescaler) {
+            case 2: return SPI_BAUDRATEPRESCALER_2;
+            case 4: return SPI_BAUDRATEPRESCALER_4;
+            case 8: return SPI_BAUDRATEPRESCALER_8;
+            case 16: return SPI_BAUDRATEPRESCALER_16;
+            case 32: return SPI_BAUDRATEPRESCALER_32;
+            case 64: return SPI_BAUDRATEPRESCALER_64;
+            case 128: return SPI_BAUDRATEPRESCALER_128;
+            case 256: return SPI_BAUDRATEPRESCALER_256;
+            default:
+                if consteval {
+                    compile_error("Invalid prescaler value");
+                } else {
+                    ErrorHandler("Invalid prescaler value");
+                    return SPI_BAUDRATEPRESCALER_256;
+                }
+        }
+    }
+
+    static uint32_t calculate_prescaler(uint32_t src_freq, uint32_t max_baud) {
+        uint32_t prescaler = 2; // Smallest prescaler available
+
+        while ((src_freq / prescaler) > max_baud) {
+            prescaler *= 2; // Prescaler doubles each step (it must be a power of 2)
+
+            if (prescaler > 256) {
+                ErrorHandler("Cannot achieve desired baudrate, speed is too low");
+            }
+        }
+        
+        return get_prescaler_flag(prescaler);
+    }
+
     static constexpr std::size_t max_instances{6};
 
     struct Entry {
@@ -365,10 +399,7 @@ struct SPIDomain {
             for (std::size_t i = 0; i < N; ++i) {
                 const auto &e = cfgs[i];
 
-                instances[i].sck_gpio_instance = gpio_instances[e.sck_gpio_idx];
-                instances[i].miso_gpio_instance = gpio_instances[e.miso_gpio_idx];
-                instances[i].mosi_gpio_instance = gpio_instances[e.mosi_gpio_idx];
-                instances[i].nss_gpio_instance = gpio_instances[e.nss_gpio_idx];
+                SPIPeripheral peripheral = e.peripheral;
                 instances[i].instance = reinterpret_cast<SPI_TypeDef*>(e.peripheral);
 
                 // Configure clock
@@ -430,10 +461,15 @@ struct SPIDomain {
                     if (peripheral == SPIPeripheral::spi1 ||
                         peripheral == SPIPeripheral::spi2 ||
                         peripheral == SPIPeripheral::spi3) {
-                        pclk_freq = HAL_RCC_GetPLL1Freq(); // This function does not exist, I'll add the frequency actual getter later
+                        pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI123);
+                    } else if (peripheral == SPIPeripheral::spi4 ||
+                               peripheral == SPIPeripheral::spi5) {
+                        pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI45);
                     } else {
-                        pclk_freq = HAL_RCC_GetPLL2Freq(); // This function does not exist, I'll add the frequency actual getter later
+                        pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI6);
                     }
+                    init.BaudRatePrescaler = calculate_prescaler(pclk_freq, e.max_baudrate);
+
                 } else {
                     init.Mode = SPI_MODE_SLAVE;
                     init.NSS = SPI_NSS_HARD_INPUT;
@@ -454,7 +490,7 @@ struct SPIDomain {
                 init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA; // 1 byte, since we're using 8 bit data size for safety, may add a setting later
                 init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
                 init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-                init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
+                init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE; // Should check if this works or the peripheral needs some delay
                 init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
                 init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE; // If you are having overrun issues, then you have a problem somewhere else
                 init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_ENABLE; // Keeps MOSI, MISO, SCK state when not communicating, ensure no floating lines and no random noise
