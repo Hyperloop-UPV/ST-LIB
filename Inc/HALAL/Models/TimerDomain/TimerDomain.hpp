@@ -439,6 +439,8 @@ public:
         return cfgs;
     }
 
+    template<const Timer&> struct TimerWrapper;
+
     // Runtime object
     struct Instance {
         TIM_TypeDef *tim;
@@ -448,15 +450,17 @@ public:
         uint16_t timer_idx;
         void (*callback)(TimerDomain::Instance);
 
-        template<Timer&> friend struct TimerWrapper;
+        template<const Timer&> friend struct TimerWrapper;
     };
 
-    template<Timer &dev>
+    template<const Timer &dev>
     struct TimerWrapper {
-        const Instance& instance;
+        Instance& instance;
 
-        TimerWrapper(const Instance& inst) : instance(const_cast<Instance&>(inst)) {}
-        //TimerWrapper(const Instance& inst) : instance(inst) {}
+        //TimerWrapper(const Instance& inst) : instance(const_cast<Instance&>(inst)) {}
+        TimerWrapper(Instance& inst) {
+            this->instance = inst;
+        }
 
         inline void counter_enable() {
             SET_BIT(instance.tim->CR1, TIM_CR1_CEN);
