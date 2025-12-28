@@ -544,7 +544,7 @@ struct SPIDomain {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI1;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHanlder("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI1_CLK_ENABLE();
 
@@ -553,7 +553,7 @@ struct SPIDomain {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHanlder("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI2_CLK_ENABLE();
 
@@ -562,7 +562,7 @@ struct SPIDomain {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHanlder("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI3_CLK_ENABLE();
 
@@ -571,7 +571,7 @@ struct SPIDomain {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI4;
                     PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL2;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHanlder("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI4_CLK_ENABLE();
 
@@ -580,7 +580,7 @@ struct SPIDomain {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI5;
                     PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL2;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHanlder("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI5_CLK_ENABLE();
 
@@ -589,7 +589,7 @@ struct SPIDomain {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI6;
                     PeriphClkInitStruct.Spi6ClockSelection = RCC_SPI6CLKSOURCE_PLL2;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHanlder("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI6_CLK_ENABLE();
 
