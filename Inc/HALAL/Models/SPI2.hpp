@@ -633,8 +633,6 @@ struct SPIDomain {
                 init.DataSize = SPI_DATASIZE_8BIT; // Works with any data size (at least for bytes)
                 init.CLKPolarity = SPI_POLARITY_LOW;
                 init.CLKPhase = SPI_PHASE_1EDGE;
-                // Calculate BaudRatePrescaler
-                init.BaudRatePrescaler = // TODO
                 init.FirstBit = SPI_FIRSTBIT_MSB; // Must check if LSB first is needed for anything later
                 init.TIMode = SPI_TIMODE_DISABLE; // Texas Instruments mode, like, why would we use that?
                 init.CRCCalculation = SPI_CRCCALCULATION_DISABLE; // Doesn't seem that useful here, better to handle CRC manually with the CRC peripheral if needed
