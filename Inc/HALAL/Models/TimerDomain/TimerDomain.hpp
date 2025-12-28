@@ -338,8 +338,18 @@ public:
         consteval Timer(std::array<char, 8> name = EMPTY_TIMER_NAME, TimerRequest request = TimerRequest::AnyGeneralPurpose, 
             ST_LIB::GPIODomain::Pin *pin = 0, TimerDomain::CountingMode counting_mode = CountingMode::UP,
             uint16_t prescaler = 5, uint32_t period = 55000, uint32_t deadtime = 0, 
-            uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH) :
-            e(name, request, pin, counting_mode, prescaler, period, deadtime, polarity, negated_polarity) {}
+            uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH)
+        {
+            e.name = name;
+            e.request = request;
+            e.pin = pin;
+            e.counting_mode = counting_mode;
+            e.prescaler = prescaler;
+            e.period = period;
+            e.deadtime = deadtime;
+            e.polarity = polarity;
+            e.negated_polarity = negated_polarity;
+        }
         
         template<class Ctx>
         consteval void inscribe(Ctx &ctx) const {
@@ -443,9 +453,10 @@ public:
 
     template<Timer &dev>
     struct TimerWrapper {
-        Instance& instance;
+        const Instance& instance;
 
-        TimerWrapper(Instance& inst) : instance(inst) {}
+        TimerWrapper(const Instance& inst) : instance(const_cast<Instance&>(inst)) {}
+        //TimerWrapper(const Instance& inst) : instance(inst) {}
 
         inline void counter_enable() {
             SET_BIT(instance.tim->CR1, TIM_CR1_CEN);
