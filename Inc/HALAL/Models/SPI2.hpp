@@ -14,6 +14,8 @@
 
 using ST_LIB::GPIODomain;
 
+extern ST_LIB::SPIDomain::Instance* spi_instances[ST_LIB::SPIDomain::max_instances];
+
 namespace ST_LIB {
 
 struct SPIDomain {
@@ -402,7 +404,7 @@ struct SPIDomain {
                 SPIPeripheral peripheral = e.peripheral;
                 instances[i].instance = reinterpret_cast<SPI_TypeDef*>(e.peripheral);
 
-                // Configure clock
+                // Configure clock and store handle
                 RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
                 if (peripheral == SPIPeripheral::spi1) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI1;
@@ -411,6 +413,8 @@ struct SPIDomain {
                         ErrorHanlder("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI1_CLK_ENABLE();
+
+                    spi_instances[0] = &instances[i];
                 } else if (peripheral == SPIPeripheral::spi2) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
@@ -418,6 +422,8 @@ struct SPIDomain {
                         ErrorHanlder("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI2_CLK_ENABLE();
+
+                    spi_instances[1] = &instances[i];
                 } else if (peripheral == SPIPeripheral::spi3) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
@@ -425,6 +431,8 @@ struct SPIDomain {
                         ErrorHanlder("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI3_CLK_ENABLE();
+
+                    spi_instances[2] = &instances[i];
                 } else if (peripheral == SPIPeripheral::spi4) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI4;
                     PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL2;
@@ -432,6 +440,8 @@ struct SPIDomain {
                         ErrorHanlder("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI4_CLK_ENABLE();
+
+                    spi_instances[3] = &instances[i];
                 } else if (peripheral == SPIPeripheral::spi5) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI5;
                     PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL2;
@@ -439,6 +449,8 @@ struct SPIDomain {
                         ErrorHanlder("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI5_CLK_ENABLE();
+
+                    spi_instances[4] = &instances[i];
                 } else if (peripheral == SPIPeripheral::spi6) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI6;
                     PeriphClkInitStruct.Spi6ClockSelection = RCC_SPI6CLKSOURCE_PLL2;
@@ -446,6 +458,8 @@ struct SPIDomain {
                         ErrorHanlder("Unable to configure SPI%i clock", i+1);
                     }
                     __HAL_RCC_SPI6_CLK_ENABLE();
+
+                    spi_instances[5] = &instances[i];
                 }
 
 
@@ -524,35 +538,10 @@ struct SPIDomain {
                 }
             }
         }
-
     };
 };
 
 } // namespace ST_LIB
 
-// IRQ Handlers, won't use HAL callbacks, will use LL for all the main work, HAL just for init
-
-extern "C" {
-
-void SPI1_IRQHandler(void) {
-    // Implementation to be done
-}
-void SPI2_IRQHandler(void) {
-    // Implementation to be done
-}
-void SPI3_IRQHandler(void) {
-    // Implementation to be done
-}
-void SPI4_IRQHandler(void) {
-    // Implementation to be done
-}
-void SPI5_IRQHandler(void) {
-    // Implementation to be done
-}
-void SPI6_IRQHandler(void) {
-    // Implementation to be done
-}
-
-}
 
 #endif // SPI2_HPP
