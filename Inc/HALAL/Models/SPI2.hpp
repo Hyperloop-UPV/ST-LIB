@@ -406,6 +406,7 @@ struct SPIDomain {
 
                 // Configure clock and store handle
                 RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+                uint8_t spi_number = 0;
                 if (peripheral == SPIPeripheral::spi1) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI1;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
@@ -414,7 +415,7 @@ struct SPIDomain {
                     }
                     __HAL_RCC_SPI1_CLK_ENABLE();
 
-                    spi_instances[0] = &instances[i];
+                    spi_number = 1;
                 } else if (peripheral == SPIPeripheral::spi2) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
@@ -423,7 +424,7 @@ struct SPIDomain {
                     }
                     __HAL_RCC_SPI2_CLK_ENABLE();
 
-                    spi_instances[1] = &instances[i];
+                    spi_number = 2;
                 } else if (peripheral == SPIPeripheral::spi3) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
@@ -432,7 +433,7 @@ struct SPIDomain {
                     }
                     __HAL_RCC_SPI3_CLK_ENABLE();
 
-                    spi_instances[2] = &instances[i];
+                    spi_number = 3;
                 } else if (peripheral == SPIPeripheral::spi4) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI4;
                     PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL2;
@@ -441,7 +442,7 @@ struct SPIDomain {
                     }
                     __HAL_RCC_SPI4_CLK_ENABLE();
 
-                    spi_instances[3] = &instances[i];
+                    spi_number = 4;
                 } else if (peripheral == SPIPeripheral::spi5) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI5;
                     PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL2;
@@ -450,7 +451,7 @@ struct SPIDomain {
                     }
                     __HAL_RCC_SPI5_CLK_ENABLE();
 
-                    spi_instances[4] = &instances[i];
+                    spi_number = 5;
                 } else if (peripheral == SPIPeripheral::spi6) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI6;
                     PeriphClkInitStruct.Spi6ClockSelection = RCC_SPI6CLKSOURCE_PLL2;
@@ -459,9 +460,10 @@ struct SPIDomain {
                     }
                     __HAL_RCC_SPI6_CLK_ENABLE();
 
-                    spi_instances[5] = &instances[i];
+                    spi_number = 6;
                 }
 
+                spi_instances[spi_number - 1] = &instances[i];
 
                 auto hspi = instances[i].hspi;
                 hspi.Instance = instances[i].instance;
@@ -511,8 +513,8 @@ struct SPIDomain {
                 init.IOSwap = SPI_IO_SWAP_DISABLE; // Should not be needed
 
 
-                if (HAL_SPI_Init(spi->hspi) != HAL_OK) {
-                    ErrorHandler("Unable to init SPI%i", i+1);
+                if (HAL_SPI_Init(&hspi) != HAL_OK) {
+                    ErrorHandler("Unable to init SPI%u", spi_number);
                     return;
                 }
 
