@@ -27,6 +27,7 @@
 #include "HALAL/Services/Encoder/Encoder.hpp"
 #include "HALAL/Services/EXTI/EXTI.hpp"
 
+#include "HALAL/Models/SPI2.hpp"
 #include "HALAL/Services/Communication/SPI/SPI.hpp"
 #include "HALAL/Services/Communication/UART/UART.hpp"
 #include "HALAL/Services/Communication/I2C/I2C.hpp"
