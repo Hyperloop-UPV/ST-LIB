@@ -261,17 +261,20 @@ void Scheduler::schedule_next_interval() {
         return;
     }
 
-    Scheduler::global_timer_enable();
     uint8_t next_id = Scheduler::front_id();  // sorted_task_ids_[0]
     Task& next_task = tasks_[next_id];
     int32_t diff = (int32_t)(next_task.next_fire_us - static_cast<uint32_t>(global_tick_us_));
-    if (diff <= 1) [[unlikely]]{
+    if (diff >= -1 && diff <= 1) [[unlikely]] {
         current_interval_us_ = 1;
         Scheduler_global_timer->ARR = 1;
         Scheduler_global_timer->CNT = 1;
         Scheduler::global_timer_enable();
     } else {
-        current_interval_us_ = static_cast<uint32_t>(diff);
+        if (diff < -1) [[unlikely]]{
+            current_interval_us_ = static_cast<uint32_t>(0 - diff);
+        } else {
+            current_interval_us_ = static_cast<uint32_t>(diff);
+        }
         configure_timer_for_interval(current_interval_us_);
     }
 }
