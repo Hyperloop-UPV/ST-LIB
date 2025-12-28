@@ -136,27 +136,6 @@ struct SPIDomain {
 
 /**
  * =========================================
- *        Instance (state holder)
- * =========================================
- */
-    struct Instance {
-        template <std::size_t N> friend struct Init;
-
-
-
-
-       private:
-        SPI_HandleTypeDef hspi;
-        SPI_TypeDef* instance;
-        GPIODomain::Instance& sck_gpio_instance;
-        GPIODomain::Instance& miso_gpio_instance;
-        GPIODomain::Instance& mosi_gpio_instance;
-        GPIODomain::Instance& nss_gpio_instance;
-    };
-
-
-/**
- * =========================================
  *              Request Object
  * =========================================
  */
@@ -332,6 +311,120 @@ struct SPIDomain {
             ctx.template add<SPIDomain>(e);
         }
     };
+
+
+/**
+ * =========================================
+ *        Instance (state holder)
+ * =========================================
+ */
+    struct Instance {
+        template <std::size_t N> friend struct Init;
+        template <auto &device_request> friend struct SPIWrapper;
+        friend void ::SPI1_IRQHandler(void);
+        friend void ::SPI2_IRQHandler(void);
+        friend void ::SPI3_IRQHandler(void);
+        friend void ::SPI4_IRQHandler(void);
+        friend void ::SPI5_IRQHandler(void);
+        friend void ::SPI6_IRQHandler(void);
+
+       private:
+        SPI_HandleTypeDef hspi;
+        SPI_TypeDef* instance;
+
+        volatile bool* operation_flag;
+    };
+
+
+/**
+ * =========================================
+ *          Wrapper, public API
+ * =========================================
+ */
+
+    template <auto &device_request> requires(device_request.mode == SPIMode::MASTER)
+    struct SPIWrapper {
+        SPIWrapper(Instance &instance) : spi_instance{instance} {}
+
+        bool send(span<const uint8_t> data) {
+            auto error_code = HAL_SPI_Transmit(&spi_instance.hspi, data.data(), data.size(), 10);
+            return check_error_code(error_code);
+        }
+        bool receive(span<uint8_t> data) {
+            auto error_code = HAL_SPI_Receive(&spi_instance.hspi, data.data(), data.size(), 10);
+            return check_error_code(error_code);
+        }
+        bool transceive(span<const uint8_t> tx_data, span<uint8_t> rx_data) {
+            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, tx_data.data(), rx_data.data(), tx_data.size(), 10);
+            return check_error_code(error_code);
+        }
+
+        bool send_DMA(span<const uint8_t> data, volatile bool* operation_flag = nullptr) {
+            spi_instance.operation_flag = operation_flag;
+            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, data.data(), data.size());
+            return check_error_code(error_code);
+        }
+        bool receive_DMA(span<uint8_t> data, volatile bool* operation_flag = nullptr) {
+            spi_instance.operation_flag = operation_flag;
+            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, data.data(), data.size());
+            return check_error_code(error_code);
+        }
+        bool transceive_DMA(span<const uint8_t> tx_data, span<uint8_t> rx_data, volatile bool* operation_flag = nullptr) {
+            spi_instance.operation_flag = operation_flag;
+            auto size = std::min(tx_data.size(), rx_data.size());
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, tx_data.data(), rx_data.data(), size);
+            return check_error_code(error_code);
+        }
+
+       private:
+        Instance& spi_instance;
+        bool check_error_code(HAL_StatusTypeDef error_code) {
+            if (error_code == HAL_OK) {
+                return true;
+            } else if (error_code == HAL_BUSY) {
+                return false;
+            } else {
+                ErrorHandler("SPI transmit error: %u", static_cast<uint8_t>(error_code));
+                return false;
+            }
+        }
+    };
+
+    template <auto &device_request> requires(device_request.mode == SPIMode::SLAVE)
+    struct SPIWrapper {
+        SPIWrapper(Instance &instance) : spi_instance{instance} {}
+
+        bool listen(span<uint8_t> data, volatile bool* operation_flag = nullptr) {
+            spi_instance.operation_flag = operation_flag;
+            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, data.data(), data.size());
+            return check_error_code(error_code);
+        }
+        bool arm(span<const uint8_t> tx_data, volatile bool* operation_flag = nullptr) {
+            spi_instance.operation_flag = operation_flag;
+            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, tx_data.data(), tx_data.size());
+            return check_error_code(error_code);
+        }
+        bool transceive(span<const uint8_t> tx_data, span<uint8_t> rx_data, volatile bool* operation_flag = nullptr) {
+            spi_instance.operation_flag = operation_flag;
+            auto size = std::min(tx_data.size(), rx_data.size());
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, tx_data.data(), rx_data.data(), size);
+            return check_error_code(error_code);
+        }
+
+       private:
+        Instance& spi_instance;
+        bool check_error_code(HAL_StatusTypeDef error_code) {
+            if (error_code == HAL_OK) {
+                return true;
+            } else if (error_code == HAL_BUSY) {
+                return false;
+            } else {
+                ErrorHandler("SPI transmit error: %u", static_cast<uint8_t>(error_code));
+                return false;
+            }
+        }
+    };
+
 
 /**
  * =========================================
