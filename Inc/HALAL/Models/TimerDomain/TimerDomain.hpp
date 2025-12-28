@@ -20,22 +20,29 @@
 // NOTE: only works for static arrays
 #define ARRAY_LENGTH(a) (sizeof(a)/sizeof(*a))
 
-extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim3;
-extern TIM_HandleTypeDef htim4;
-extern TIM_HandleTypeDef htim5;
-extern TIM_HandleTypeDef htim6;
-extern TIM_HandleTypeDef htim7;
-extern TIM_HandleTypeDef htim8;
-extern TIM_HandleTypeDef htim12;
-extern TIM_HandleTypeDef htim13;
-extern TIM_HandleTypeDef htim14;
-extern TIM_HandleTypeDef htim15;
-extern TIM_HandleTypeDef htim16;
-extern TIM_HandleTypeDef htim17;
-extern TIM_HandleTypeDef htim23;
-extern TIM_HandleTypeDef htim24;
+#define TimerXList     \
+    X(2, APB1LENR)  \
+    X(3, APB1LENR)  \
+    X(4, APB1LENR)  \
+    X(5, APB1LENR)  \
+    X(6, APB1LENR)  \
+    X(7, APB1LENR)  \
+    X(12, APB1LENR) \
+    X(13, APB1LENR) \
+    X(14, APB1LENR) \
+                       \
+    X(23, APB1HENR) \
+    X(24, APB1HENR) \
+                       \
+    X(1, APB2ENR)   \
+    X(8, APB2ENR)   \
+    X(15, APB2ENR)  \
+    X(16, APB2ENR)  \
+    X(17, APB2ENR)
+
+#define X(n, b) extern TIM_HandleTypeDef htim##n;
+TimerXList
+#undef X
 
 /* Tim1 & Tim8 are advanced-control timers
  *  their ARR & prescaler are 16bit
@@ -188,10 +195,6 @@ struct TimerDomain {
         uint32_t negated_polarity;
     };
 
-private:
-    static void I_Need_To_Compile_TimerDomain_CPP(void);
-
-
     static constexpr TIM_HandleTypeDef *hal_handles[16] = {
         // general purpose timers
         &htim2, &htim3, &htim4, &htim5, &htim23, &htim24,
@@ -218,35 +221,17 @@ private:
         TIM1, TIM8
     };
 
+    static void I_Need_To_Compile_TimerDomain_CPP(void);
+
     static inline void rcc_enable_timer(TIM_TypeDef *tim) {
-#define TimerXList     \
-    X(TIM2, APB1LENR)  \
-    X(TIM3, APB1LENR)  \
-    X(TIM4, APB1LENR)  \
-    X(TIM5, APB1LENR)  \
-    X(TIM6, APB1LENR)  \
-    X(TIM7, APB1LENR)  \
-    X(TIM12, APB1LENR) \
-    X(TIM13, APB1LENR) \
-    X(TIM14, APB1LENR) \
-                       \
-    X(TIM23, APB1HENR) \
-    X(TIM24, APB1HENR) \
-                       \
-    X(TIM1, APB2ENR)   \
-    X(TIM8, APB2ENR)   \
-    X(TIM15, APB2ENR)  \
-    X(TIM16, APB2ENR)  \
-    X(TIM17, APB2ENR)
-#define X(t, b) \
-    else if(tim == t) { SET_BIT(RCC->b, RCC_##b##_##t##EN); }
+#define X(n, b) \
+    else if(tim == TIM##n) { SET_BIT(RCC->b, RCC_##b##_TIM##n##EN); }
 
         if(false) {}
         TimerXList
         else {
             ErrorHandler("Invalid timer given to rcc_enable_timer");
         }
-
 #undef X
     }
 
@@ -318,7 +303,6 @@ private:
         return cfg;
     }
 
-public:
     enum PWM_MODE : uint8_t {
         NORMAL = 0,
         PHASED = 1,
@@ -443,15 +427,17 @@ public:
 
     // Runtime object
     struct Instance {
+        char name[8];
         TIM_TypeDef *tim;
         TIM_HandleTypeDef *hal_tim;
-        char name[8];
         TimerDomain::Kind kind;
         uint16_t timer_idx;
-        void (*callback)(TimerDomain::Instance);
 
         template<const Timer&> friend struct TimerWrapper;
     };
+
+    static void (*callbacks[TimerDomain::max_instances])(void*);
+    static void *callback_data[TimerDomain::max_instances];
 
     template<const Timer &dev>
     struct TimerWrapper {
@@ -494,11 +480,12 @@ public:
         }
 
         template<uint16_t psc = 0>
-        inline void configure(void (*callback)()) {
+        inline void configure(void (*callback)(), void *callback_data) {
             if constexpr (psc != 0) {
                 instance.tim->PSC = psc;
             }
-            instance.callback = callback;
+            TimerDomain::callbacks[this.timer_idx] = callback;
+            TimerDomain::callback_data[this.timer_idx] = callback_data;
             this.counter_enable();
         }
         
