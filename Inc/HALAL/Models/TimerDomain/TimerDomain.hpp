@@ -13,7 +13,6 @@
 
 #include <span>
 #include <array>
-#include <string>
 
 #include "HALAL/Models/GPIO.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
@@ -83,7 +82,10 @@ extern TIM_HandleTypeDef htim24;
  - Supports incremental (quadrature) encoder and Hall-sensor circuitry for positioning purposes
  - Trigger input for external clock or cycle-by-cycle current management
 */
-constexpr std::array<int, 25> create_idxmap() {
+namespace ST_LIB {
+extern void compile_error(const char *msg);
+
+constexpr std::array<int, 25> create_timer_idxmap() {
     std::array<int, 25> result{};
     
     // invalid timers that don't exist
@@ -110,8 +112,7 @@ constexpr std::array<int, 25> create_idxmap() {
     return result;
 }
 
-namespace ST_LIB {
-extern void compile_error(const char *msg);
+static constexpr std::array<int, 25> timer_idxmap = create_timer_idxmap();
 
 struct TimerDomain {
     // There are 16 timers
@@ -163,7 +164,7 @@ struct TimerDomain {
     };
     
     struct Entry {
-        std::string name; /* max length = 7 */
+        std::array<char, 8> name; /* max length = 7 */
         TimerRequest request;
         ST_LIB::GPIODomain::Pin *pin;
         TimerDomain::CountingMode counting_mode;
@@ -189,7 +190,7 @@ struct TimerDomain {
 
 private:
     static void I_Need_To_Compile_TimerDomain_CPP(void);
-    static constexpr std::array<int, 25> idxmap = create_idxmap();
+
 
     static constexpr TIM_HandleTypeDef *hal_handles[16] = {
         // general purpose timers
@@ -318,9 +319,9 @@ private:
         }
     }
 
-    #define DoTimer(request, reqint, reqidx, name_too_long_msg) do{ \
+    #define DoTimer(request, reqint, reqidx) do{ \
         Config cfg; \
-        if((request).name.length() == 0) { \
+        if((request).name[0] == '\0') { \
             /* "Timer" + tostring(reqint) */ \
             cfg.name[0] = 'T'; \
             cfg.name[1] = 'i'; \
@@ -331,21 +332,16 @@ private:
             cfg.name[6] = (reqint%10) + '0'; \
             cfg.name[7] = '\0'; \
         } else { \
-            if((request).name.length() >= sizeof(cfg.name)) { \
-                ErrorInRequestN(name_too_long_msg, reqidx); \
-            } \
-            for(std::size_t si = 0; si < (request).name.length(); si++) { \
+            for(int si = 0; si < 8; si++) { \
                 cfg.name[si] = (request).name[si]; \
             } \
-            cfg.name[(request).name.length()] = '\0'; \
         } \
-        cfg.timer_idx = TimerDomain::idxmap[reqint]; \
+        cfg.timer_idx = timer_idxmap[reqint]; \
         cfg.prescaler = (request).prescaler; \
         cfg.period = (request).period; \
         cfg.deadtime = (request).deadtime; \
         cfg.polarity = (request).polarity; \
         cfg.negated_polarity = (request).negated_polarity; \
-                                        \
         check_timer(&cfg, request, i); \
     } while(0)
 
@@ -361,11 +357,12 @@ public:
         PWM_MODE mode;
     };
 
-    struct Device {
+#define EMPTY_TIMER_NAME {0,0,0,0, 0,0,0,0}
+    struct Timer {
         using domain = TimerDomain;
         Entry e;
 
-        consteval Device(std::string name = "", TimerRequest request = TimerRequest::AnyGeneralPurpose, 
+        consteval Timer(std::array<char, 8> name = EMPTY_TIMER_NAME, TimerRequest request = TimerRequest::AnyGeneralPurpose, 
             ST_LIB::GPIODomain::Pin *pin = 0, TimerDomain::CountingMode counting_mode = CountingMode::UP,
             uint16_t prescaler = 5, uint32_t period = 55000, uint32_t deadtime = 0, 
             uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH) :
@@ -384,14 +381,14 @@ public:
         bool used_timers[25] = {0};
 
         if(requests.size() > max_instances) {
-            throw "too many Timer requests, there are only 16 timers";
+            ST_LIB::compile_error("too many Timer requests, there are only 16 timers");
         }
 
         int remaining_requests[max_instances] = {};
-        std::size_t count_remaining_requests = requests.size();
-        for(int i = 0; i < requests.size(); i++) remaining_requests[i] = i;
+        int count_remaining_requests = (int)requests.size();
+        for(int i = 0; i < (int)requests.size(); i++) remaining_requests[i] = i;
 
-        for(int i = 0; i < requests.size(); i++) {
+        for(int i = 0; i < (int)requests.size(); i++) {
             if(requests[i].request != TimerRequest::AnyGeneralPurpose &&
                (requests[i].request < 1 || requests[i].request > 24 ||
                (requests[i].request > 17 && requests[i].request < 23)))
@@ -410,7 +407,7 @@ public:
                 used_timers[reqint] = true;
 
                 Config cfg;
-                DoTimer(requests[i], reqint, i, "Error: In request reqidx: Timer name too large, max = 7 characters (sizeof cfg.name - 1)");
+                DoTimer(requests[i], reqint, i);
                 cfgs[cfg_idx++] = cfg;
 
                 // unordered remove (remaining requests is not used here so these are ordered)
@@ -428,17 +425,17 @@ public:
         uint8_t remaining_timers[15] = {0};
         uint8_t count_remaining_timers = 0;
 
-        for(int i = 0; i < ARRAY_LENGTH(bits16_timers); i++) {
+        for(int i = 0; i < (int)ARRAY_LENGTH(bits16_timers); i++) {
             if(!used_timers[bits16_timers[i]])
                 remaining_timers[count_remaining_timers++] = bits16_timers[i];
         }
 
-        for(int i = 0; i < ARRAY_LENGTH(up_down_updown_timers); i++) {
+        for(int i = 0; i < (int)ARRAY_LENGTH(up_down_updown_timers); i++) {
             if(!used_timers[up_down_updown_timers[i]])
                 remaining_timers[count_remaining_timers++] = up_down_updown_timers[i];
         }
 
-        for(int i = 0; i < ARRAY_LENGTH(bits32_timers); i++) {
+        for(int i = 0; i < (int)ARRAY_LENGTH(bits32_timers); i++) {
             if(!used_timers[bits32_timers[i]])
                 remaining_timers[count_remaining_timers++] = bits32_timers[i];
         }
@@ -453,7 +450,7 @@ public:
                 uint8_t reqint = remaining_timers[i];
                 // NOTE: I don't want to do an ordered remove so this has the real index
                 Config cfg;
-                DoTimer(requests[i], reqint, i, "Error: In one of AnyGeneralPurpose timers: Timer name too large, max = 7 characters (sizeof cfg.name - 1)");
+                DoTimer(requests[i], reqint, i);
                 cfgs[cfg_idx++] = cfg;
             }
         }
@@ -463,11 +460,6 @@ public:
 
     // Runtime object
     struct Instance {
-        template<auto&> friend struct TimerWrapper;
-    };
-
-    template<Device &dev>
-    struct TimerWrapper {
         TIM_TypeDef *tim;
         TIM_HandleTypeDef *hal_tim;
         char name[8];
@@ -475,55 +467,64 @@ public:
         uint16_t timer_idx;
         void (*callback)(TimerDomain::Instance);
 
+        template<Timer&> friend struct TimerWrapper;
+    };
+
+    template<Timer &dev>
+    struct TimerWrapper {
+        Instance& instance;
+
+        TimerWrapper(Instance& inst) : instance(inst) {}
+
         inline void counter_enable() {
-            SET_BIT(tim->CR1, TIM_CR1_CEN);
+            SET_BIT(instance.tim->CR1, TIM_CR1_CEN);
         }
         inline void counter_disable() {
-            CLEAR_BIT(tim->CR1, TIM_CR1_CEN);
+            CLEAR_BIT(instance.tim->CR1, TIM_CR1_CEN);
         }
 
         inline void clear_update_interrupt_flag() {
-            CLEAR_BIT(tim->SR, TIM_SR_UIF);
+            CLEAR_BIT(instance.tim->SR, TIM_SR_UIF);
         }
 
         /* Enabled by default */
         inline void enable_update_interrupt() {
-            CLEAR_BIT(tim->CR1, TIM_CR1_UDIS);
+            CLEAR_BIT(instance.tim->CR1, TIM_CR1_UDIS);
         }
         inline void disable_update_interrupt() {
-            SET_BIT(tim->CR1, TIM_CR1_UDIS);
+            SET_BIT(instance.tim->CR1, TIM_CR1_UDIS);
         }
 
         /* interrupt gets called only once, counter needs to be reenabled */
         inline void set_one_pulse_mode() {
-            SET_BIT(tim->CR1, TIM_CR1_OPM);
+            SET_BIT(instance.tim->CR1, TIM_CR1_OPM);
         }
         inline void multi_interrupt() {
-            CLEAR_BIT(tim->CR1, TIM_CR1_OPM);
+            CLEAR_BIT(instance.tim->CR1, TIM_CR1_OPM);
         }
 
         inline TIM_HandleTypeDef *get_hal_handle() {
-            return hal_tim;
+            return instance.hal_tim;
         }
         inline TIM_TypeDef *get_cmsis_handle() {
-            return tim;
+            return instance.tim;
         }
 
         template<uint16_t psc = 0>
         inline void configure(void (*callback)()) {
             if constexpr (psc != 0) {
-                tim->PSC = psc;
+                instance.tim->PSC = psc;
             }
-            this.callback = callback;
+            instance.callback = callback;
             this.counter_enable();
         }
         
         // leftover from old TimerPeripheral, maybe this was useful?
         inline uint16_t get_prescaler() {
-            return tim->PSC;
+            return instance.tim->PSC;
         }
         inline uint32_t get_period() {
-            return tim->ARR;
+            return instance.tim->ARR;
         }
 
 #if 0
@@ -549,17 +550,17 @@ public:
             }
 
             if constexpr (mode == CountingMode::UP) {
-                MODIFY_REG(tim->CR1, TIM_CR1_CMS, 0);
-                CLEAR_BIT(tim->CR1, TIM_CR1_DIR); // upcounter
+                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, 0);
+                CLEAR_BIT(instance.tim->CR1, TIM_CR1_DIR); // upcounter
             } else if constexpr (mode == CountingMode::DOWN) {
-                MODIFY_REG(tim->CR1, TIM_CR1_CMS, 0);
-                SET_BIT(tim->CR1, TIM_CR1_DIR); // downcounter
+                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, 0);
+                SET_BIT(instance.tim->CR1, TIM_CR1_DIR); // downcounter
             } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
-                MODIFY_REG(tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
+                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
             } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_UP) {
-                MODIFY_REG(tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_1);
+                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_1);
             } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
-                MODIFY_REG(tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
+                MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
             }
         }
     };

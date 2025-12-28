@@ -106,7 +106,7 @@ template <auto &...devs> struct Board {
         .gpio_cfgs =
             GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
         .tim_cfgs =
-            TimerDomain::template build<gpioN>(ctx.template span<TimerDomain>()),
+            TimerDomain::template build<timN>(ctx.template span<TimerDomain>()),
         .dout_cfgs = DigitalOutputDomain::template build<doutN>(
             ctx.template span<DigitalOutputDomain>()),
         .din_cfgs = DigitalInputDomain::template build<dinN>(
