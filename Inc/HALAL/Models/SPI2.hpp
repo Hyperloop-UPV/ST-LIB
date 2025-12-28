@@ -14,7 +14,6 @@
 
 using ST_LIB::GPIODomain;
 
-extern ST_LIB::SPIDomain::Instance* spi_instances[ST_LIB::SPIDomain::max_instances];
 
 namespace ST_LIB {
 
@@ -336,6 +335,7 @@ struct SPIDomain {
     };
 
 
+    static inline Instance* spi_instances[max_instances];
 /**
  * =========================================
  *          Wrapper, public API
