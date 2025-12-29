@@ -326,6 +326,7 @@ struct SPIDomain {
                 .miso_gpio_idx = ctx.template add<GPIODomain>(miso_gpio.e),
                 .mosi_gpio_idx = ctx.template add<GPIODomain>(mosi_gpio.e),
                 .nss_gpio_idx = ctx.template add<GPIODomain>(nss_gpio.e),
+                .max_baudrate = max_baudrate
             };
 
             ctx.template add<SPIDomain>(e);
@@ -519,6 +520,7 @@ struct SPIDomain {
             cfgs[i].miso_gpio_idx = entries[i].miso_gpio_idx;
             cfgs[i].mosi_gpio_idx = entries[i].mosi_gpio_idx;
             cfgs[i].nss_gpio_idx = entries[i].nss_gpio_idx;
+            cfgs[i].max_baudrate = entries[i].max_baudrate;
 
             auto peripheral = entries[i].peripheral;
 
