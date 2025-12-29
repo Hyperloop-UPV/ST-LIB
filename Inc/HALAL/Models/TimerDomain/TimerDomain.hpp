@@ -7,6 +7,10 @@
 
 #pragma once
 
+/* WARNING: Timer 15 TIM15 TIM 15 Timer15
+ *  is currently not working. Don't use it until this warning is removed
+ */
+
 #include "stm32h7xx_hal.h"
 //#include "stm32h7xx_hal_tim.h"
 #ifdef HAL_TIM_MODULE_ENABLED
@@ -20,7 +24,7 @@
 // NOTE: only works for static arrays
 #define ARRAY_LENGTH(a) (sizeof(a)/sizeof(*a))
 
-#define TimerXList     \
+#define TimerXList  \
     X(2, APB1LENR)  \
     X(3, APB1LENR)  \
     X(4, APB1LENR)  \
@@ -30,10 +34,10 @@
     X(12, APB1LENR) \
     X(13, APB1LENR) \
     X(14, APB1LENR) \
-                       \
+                    \
     X(23, APB1HENR) \
     X(24, APB1HENR) \
-                       \
+                    \
     X(1, APB2ENR)   \
     X(8, APB2ENR)   \
     X(15, APB2ENR)  \
@@ -135,13 +139,13 @@ enum TimerRequest : uint8_t {
     GeneralPurpose_1 = 4,
     GeneralPurpose_2 = 5,
 
-    GeneralPurpose_3 = 12,
-    GeneralPurpose_4 = 13,
-    GeneralPurpose_5 = 14,
+    SlaveTimer_1 = 12,
+    SlaveTimer_2 = 13,
+    SlaveTimer_3 = 14,
 
-    GeneralPurpose_6 = 15,
-    GeneralPurpose_7 = 16,
-    GeneralPurpose_8 = 17,
+    GeneralPurpose_3 = 15,
+    GeneralPurpose_4 = 16,
+    GeneralPurpose_5 = 17,
 
     Basic_1 = 6,
     Basic_2 = 7,
@@ -150,7 +154,6 @@ enum TimerRequest : uint8_t {
 struct TimerDomain {
     // There are 16 timers
     static constexpr std::size_t max_instances = 16;
-
 
     enum CountingMode : uint8_t {
         UP = 0,
@@ -221,6 +224,21 @@ struct TimerDomain {
 
         // advanced control timers
         TIM1, TIM8
+    };
+
+    static constexpr IRQn_Type timer_irqn[] = {
+        // general purpose timers 1
+        TIM2_IRQn, TIM3_IRQn, TIM4_IRQn, TIM5_IRQn, TIM23_IRQn, TIM24_IRQn,
+        // slave timers
+        TIM8_BRK_TIM12_IRQn, TIM8_UP_TIM13_IRQn, TIM8_TRG_COM_TIM14_IRQn,
+        // general purpose timers 2
+        TIM15_IRQn, TIM16_IRQn, TIM17_IRQn,
+
+        // basic timers
+        TIM6_DAC_IRQn, /* TIM6 global and DAC1&2 underrun error interrupts */
+        TIM7_IRQn,
+
+        TIM1_UP_IRQn, TIM8_UP_TIM13_IRQn
     };
 
     static void I_Need_To_Compile_TimerDomain_CPP(void);
@@ -384,12 +402,15 @@ struct TimerDomain {
             }
         }
 
+        /* NOTE: timers {TIM12, TIM13, TIM14} are also 16 bit but 
+         *  they are used as slave timers to tim8
+         */
         // 32 bit timers, very important for scheduler
         uint8_t bits32_timers[] = {2, 5, 23, 24};
         // can use any CountingMode (32 bit timers can also but they are higher priority)
         uint8_t up_down_updown_timers[] = {3, 4};
         // 16 bit timers
-        uint8_t bits16_timers[] = {12, 13, 14, 15, 16, 17};
+        uint8_t bits16_timers[] = {16, 17};
         uint8_t remaining_timers[15] = {0};
         uint8_t count_remaining_timers = 0;
 
@@ -460,9 +481,10 @@ struct TimerDomain {
                 tim->PSC = e.prescaler;
                 tim->ARR = e.period;
 
-                if(e.counting_mode == CountingMode::UP) {
+                /* if(e.counting_mode == CountingMode::UP) {
                     CLEAR_BIT(tim->CR1, TIM_CR1_DIR); // upcounter
-                } else if(e.counting_mode == CountingMode::DOWN) {
+                } else */
+                if(e.counting_mode == CountingMode::DOWN) {
                     SET_BIT(tim->CR1, TIM_CR1_DIR); // downcounter
                 } else if(e.counting_mode == CountingMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
                     MODIFY_REG(tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
@@ -477,18 +499,20 @@ struct TimerDomain {
                 // InputCapture stuff should be dome somewhere else..
                 // PWM stuff should be done somewhere else..
 
-                instances[i].tim = cmsis_timers[e.timer_idx];
-                instances[i].hal_tim = handle;
-                instances[i].name[0] = e.name[0];
-                instances[i].name[1] = e.name[1];
-                instances[i].name[2] = e.name[2];
-                instances[i].name[3] = e.name[3];
-                instances[i].name[4] = e.name[4];
-                instances[i].name[5] = e.name[5];
-                instances[i].name[6] = e.name[6];
-                instances[i].name[7] = e.name[7];
-                instances[i].kind = e.kind;
-                instances[i].timer_idx = e.timer_idx;
+                Instance *inst = &instances[i];
+                inst->tim = cmsis_timers[e.timer_idx];
+                inst->hal_tim = handle;
+                inst->name[0] = e.name[0];
+                inst->name[1] = e.name[1];
+                inst->name[2] = e.name[2];
+                inst->name[3] = e.name[3];
+                inst->name[4] = e.name[4];
+                inst->name[5] = e.name[5];
+                inst->name[6] = e.name[6];
+                inst->name[7] = e.name[7];
+                inst->kind = e.kind;
+                inst->timer_idx = e.timer_idx;
+                __NOP();
             }
         }
     };
@@ -510,12 +534,49 @@ struct TimerWrapper {
         CLEAR_BIT(instance.tim->SR, TIM_SR_UIF);
     }
 
-    /* Enabled by default */
+    /* Disabled by default */
     inline void enable_update_interrupt() {
-        CLEAR_BIT(instance.tim->CR1, TIM_CR1_UDIS);
+        SET_BIT(instance.tim->DIER, TIM_DIER_UIE);
     }
     inline void disable_update_interrupt() {
+        CLEAR_BIT(instance.tim->DIER, TIM_DIER_UIE);
+    }
+
+    /* Disabled by default */
+    inline void enable_nvic() {
+        NVIC_EnableIRQ(TimerDomain::timer_irqn[instance.timer_idx]);
+    }
+    inline void disable_nvic() {
+        NVIC_DisableIRQ(TimerDomain::timer_irqn[instance.timer_idx]);
+    }
+
+    /* Enable UEV. The Update (UEV) event is generated by one of the following events:
+     * – Counter overflow/underflow
+     * – Setting the UG bit
+     * – Update generation through the slave mode controller    
+     * Enabled by default
+     */
+    inline void enable_update_event() {
+        CLEAR_BIT(instance.tim->CR1, TIM_CR1_UDIS);
+    }
+    /* Disable UEV. The Update event is not generated, shadow registers keep their value
+     * (ARR, PSC, CCRx). However the counter and the prescaler are reinitialized if the UG bit
+     * is set or if a hardware reset is received from the slave mode controller.
+     */
+    inline void disable_update_event() {
         SET_BIT(instance.tim->CR1, TIM_CR1_UDIS);
+    }
+
+    /* default: disabled */
+    inline void break_interrupt_enable() {
+        static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_2,
+            "Error: Break interrupt enable only allowed in advanced timers {TIM1, TIM8}");
+        ErrorHandler("Break interrupt is not allowed currently because gp timers {TIM12, TIM13, TIM14} use the same interrupt callback");
+    }
+    inline void break_interrupt_disable() {
+        static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_2,
+            "Error: Break interrupt enable only allowed in advanced timers {TIM1, TIM8}");
+        SET_BIT(instance.tim->DIER, TIM_DIER_BIE);
     }
 
     /* interrupt gets called only once, counter needs to be reenabled */
@@ -547,6 +608,7 @@ struct TimerWrapper {
         if constexpr (psc != 0) {
             instance.tim->PSC = psc;
         }
+        instance.tim->ARR = period;
         TimerDomain::callbacks[instance.timer_idx] = callback;
         TimerDomain::callback_data[instance.timer_idx] = callback_data;
         this->counter_enable();
@@ -558,6 +620,7 @@ struct TimerWrapper {
         if constexpr (psc != 0) {
             instance.tim->PSC = psc;
         }
+        instance.tim->ARR = period;
         TimerDomain::callbacks[instance.timer_idx] = callback;
         TimerDomain::callback_data[instance.timer_idx] = callback_data;
         this->counter_enable();

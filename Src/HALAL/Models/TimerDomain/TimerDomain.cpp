@@ -13,7 +13,7 @@ void TimerDomain::I_Need_To_Compile_TimerDomain_CPP(void) {
 void (*TimerDomain::callbacks[TimerDomain::max_instances])(void*) = {nullptr};
 void *TimerDomain::callback_data[TimerDomain::max_instances] = {nullptr};
 
-extern "C" void TIM1_IRQHandler(void) {
+extern "C" void TIM1_UP_IRQHandler(void) {
     CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[1]]->SR, TIM_SR_UIF);
     TimerDomain::callbacks[timer_idxmap[1]](TimerDomain::callback_data[timer_idxmap[1]]);
 }
@@ -38,7 +38,7 @@ extern "C" void TIM5_IRQHandler(void) {
     TimerDomain::callbacks[timer_idxmap[5]](TimerDomain::callback_data[timer_idxmap[5]]);
 }
 
-extern "C" void TIM6_IRQHandler(void) {
+extern "C" void TIM6_DAC_IRQHandler(void) {
     CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[6]]->SR, TIM_SR_UIF);
     TimerDomain::callbacks[timer_idxmap[6]](TimerDomain::callback_data[timer_idxmap[6]]);
 }
@@ -48,10 +48,44 @@ extern "C" void TIM7_IRQHandler(void) {
     TimerDomain::callbacks[timer_idxmap[7]](TimerDomain::callback_data[timer_idxmap[7]]);
 }
 
-extern "C" void TIM8_IRQHandler(void) {
+/* NOTE: If it is needed, make changes so there's a specific callback for 
+ *  tim8 which takes an int or something to know from which interrupt 
+ *  it was called / make 3 callbacks
+*/
+extern "C" void TIM8_BRK_TIM12_IRQHandler(void) {
+    CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[8]]->SR, TIM_SR_UIF);
+    TimerDomain::callbacks[timer_idxmap[8]](TimerDomain::callback_data[timer_idxmap[8]]);
+}
+extern "C" void TIM8_UP_TIM13_IRQHandler(void) {
+    CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[8]]->SR, TIM_SR_UIF);
+    TimerDomain::callbacks[timer_idxmap[8]](TimerDomain::callback_data[timer_idxmap[8]]);
+}
+extern "C" void TIM8_TRG_COM_TIM14_IRQHandler(void) {
     CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[8]]->SR, TIM_SR_UIF);
     TimerDomain::callbacks[timer_idxmap[8]](TimerDomain::callback_data[timer_idxmap[8]]);
 }
 
+extern "C" void TIM15_IRQHandler(void) {
+    CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[8]]->SR, TIM_SR_UIF);
+    TimerDomain::callbacks[timer_idxmap[8]](TimerDomain::callback_data[timer_idxmap[8]]);
+}
 
+extern "C" void TIM16_IRQHandler(void) {
+    CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[16]]->SR, TIM_SR_UIF);
+    TimerDomain::callbacks[timer_idxmap[16]](TimerDomain::callback_data[timer_idxmap[16]]);
+}
 
+extern "C" void TIM17_IRQHandler(void) {
+    CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[17]]->SR, TIM_SR_UIF);
+    TimerDomain::callbacks[timer_idxmap[17]](TimerDomain::callback_data[timer_idxmap[17]]);
+}
+
+extern "C" void TIM23_IRQHandler(void) {
+    CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[23]]->SR, TIM_SR_UIF);
+    TimerDomain::callbacks[timer_idxmap[23]](TimerDomain::callback_data[timer_idxmap[23]]);
+}
+
+extern "C" void TIM24_IRQHandler(void) {
+    CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[24]]->SR, TIM_SR_UIF);
+    TimerDomain::callbacks[timer_idxmap[24]](TimerDomain::callback_data[timer_idxmap[24]]);
+}
