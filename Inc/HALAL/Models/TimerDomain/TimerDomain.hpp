@@ -462,7 +462,6 @@ struct TimerDomain {
         static inline std::array<Instance, N> instances{};
 
         static void init(std::span<const Config, N> cfgs) {
-            static_assert(N > 0);
             for(std::size_t i = 0; i < N; i++) {
                 const Config &e = cfgs[i];
 
