@@ -241,8 +241,6 @@ struct TimerDomain {
         TIM1_UP_IRQn, TIM8_UP_TIM13_IRQn
     };
 
-    static void I_Need_To_Compile_TimerDomain_CPP(void);
-
     static inline void rcc_enable_timer(TIM_TypeDef *tim) {
 #define X(n, b) \
     else if(tim == TIM##n) { SET_BIT(RCC->b, RCC_##b##_TIM##n##EN); }

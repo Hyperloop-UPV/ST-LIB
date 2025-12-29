@@ -6,10 +6,6 @@ using namespace ST_LIB;
 TimerXList
 #undef X
 
-void TimerDomain::I_Need_To_Compile_TimerDomain_CPP(void) {
-    // Need to compile this file so I keep this symbol here
-}
-
 void (*TimerDomain::callbacks[TimerDomain::max_instances])(void*) = {nullptr};
 void *TimerDomain::callback_data[TimerDomain::max_instances] = {nullptr};
 
