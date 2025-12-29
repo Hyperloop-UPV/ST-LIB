@@ -62,8 +62,8 @@ extern "C" void TIM8_TRG_COM_TIM14_IRQHandler(void) {
 }
 
 extern "C" void TIM15_IRQHandler(void) {
-    CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[8]]->SR, TIM_SR_UIF);
-    TimerDomain::callbacks[timer_idxmap[8]](TimerDomain::callback_data[timer_idxmap[8]]);
+    CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[15]]->SR, TIM_SR_UIF);
+    TimerDomain::callbacks[timer_idxmap[15]](TimerDomain::callback_data[timer_idxmap[15]]);
 }
 
 extern "C" void TIM16_IRQHandler(void) {
