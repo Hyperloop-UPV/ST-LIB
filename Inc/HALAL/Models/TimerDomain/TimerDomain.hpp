@@ -7,10 +7,6 @@
 
 #pragma once
 
-/* WARNING: Timer 15 TIM15 TIM 15 Timer15
- *  is currently not working. Don't use it until this warning is removed
- */
-
 #include "stm32h7xx_hal.h"
 //#include "stm32h7xx_hal_tim.h"
 #ifdef HAL_TIM_MODULE_ENABLED
@@ -409,7 +405,7 @@ struct TimerDomain {
         // can use any CountingMode (32 bit timers can also but they are higher priority)
         uint8_t up_down_updown_timers[] = {3, 4};
         // 16 bit timers
-        uint8_t bits16_timers[] = {16, 17};
+        uint8_t bits16_timers[] = {15, 16, 17};
         uint8_t remaining_timers[15] = {0};
         uint8_t count_remaining_timers = 0;
 
