@@ -11,7 +11,7 @@ extern "C" {
  */
 
 void SPI1_IRQHandler(void) {
-    auto inst = ST_LIB::spi_instances[0];
+    auto inst = ST_LIB::SPIDomain::spi_instances[0];
     if (inst == nullptr) {
         ErrorHandler("SPI1 IRQ Handler called but instance is null");
         return;
@@ -19,7 +19,7 @@ void SPI1_IRQHandler(void) {
     HAL_SPI_IRQHandler(&inst->hspi);
 }
 void SPI2_IRQHandler(void) {
-    auto inst = ST_LIB::spi_instances[1];
+    auto inst = ST_LIB::SPIDomain::spi_instances[1];
     if (inst == nullptr) {
         ErrorHandler("SPI2 IRQ Handler called but instance is null");
         return;
@@ -27,7 +27,7 @@ void SPI2_IRQHandler(void) {
     HAL_SPI_IRQHandler(&inst->hspi);
 }
 void SPI3_IRQHandler(void) {
-    auto inst = ST_LIB::spi_instances[2];
+    auto inst = ST_LIB::SPIDomain::spi_instances[2];
     if (inst == nullptr) {
         ErrorHandler("SPI3 IRQ Handler called but instance is null");
         return;
@@ -35,7 +35,7 @@ void SPI3_IRQHandler(void) {
     HAL_SPI_IRQHandler(&inst->hspi);
 }
 void SPI4_IRQHandler(void) {
-    auto inst = ST_LIB::spi_instances[3];
+    auto inst = ST_LIB::SPIDomain::spi_instances[3];
     if (inst == nullptr) {
         ErrorHandler("SPI4 IRQ Handler called but instance is null");
         return;
@@ -43,7 +43,7 @@ void SPI4_IRQHandler(void) {
     HAL_SPI_IRQHandler(&inst->hspi);
 }
 void SPI5_IRQHandler(void) {
-    auto inst = ST_LIB::spi_instances[4];
+    auto inst = ST_LIB::SPIDomain::spi_instances[4];
     if (inst == nullptr) {
         ErrorHandler("SPI5 IRQ Handler called but instance is null");
         return;
@@ -51,7 +51,7 @@ void SPI5_IRQHandler(void) {
     HAL_SPI_IRQHandler(&inst->hspi);
 }
 void SPI6_IRQHandler(void) {
-    auto inst = ST_LIB::spi_instances[5];
+    auto inst = ST_LIB::SPIDomain::spi_instances[5];
     if (inst == nullptr) {
         ErrorHandler("SPI6 IRQ Handler called but instance is null");
         return;

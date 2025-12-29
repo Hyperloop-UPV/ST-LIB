@@ -84,7 +84,7 @@ template <typename... Domains> struct BuildCtx {
 };
 
 using DomainsCtx = BuildCtx<GPIODomain, DigitalOutputDomain,
-                            DigitalInputDomain /*, ADCDomain, PWMDomain, ...*/>;
+                            DigitalInputDomain, SPIDomain /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {

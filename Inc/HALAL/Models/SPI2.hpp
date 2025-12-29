@@ -10,10 +10,25 @@
 
 #include "C++Utilities/CppImports.hpp"
 #include "HALAL/Models/GPIO.hpp"
+#include "HALAL/Models/Pin.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 using ST_LIB::GPIODomain;
 
+// Forward declaration of IRQ handlers and HAL callbacks
+extern "C" {
+    void SPI1_IRQHandler(void);
+    void SPI2_IRQHandler(void);
+    void SPI3_IRQHandler(void);
+    void SPI4_IRQHandler(void);
+    void SPI5_IRQHandler(void);
+    void SPI6_IRQHandler(void);
+
+    void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi);
+    void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi);
+    void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi);
+    void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi);
+}
 
 namespace ST_LIB {
 
@@ -39,7 +54,7 @@ struct SPIDomain {
         SLAVE = false,
     };
 
-    static bool compare_pin(const GPIODomain::Pin &p1, const GPIODomain::Pin &p2) {
+    static consteval bool compare_pin(const GPIODomain::Pin &p1, const GPIODomain::Pin &p2) {
         return (p1.port == p2.port) && (p1.pin == p2.pin);
     }
 
@@ -323,9 +338,21 @@ struct SPIDomain {
  *        Instance (state holder)
  * =========================================
  */
+    template <std::size_t N> struct Init; // Forward declaration
+    template <auto &device_request, bool IsMaster> struct SPIWrapper; // Forward declaration
     struct Instance {
-        template <std::size_t N> friend struct Init;
-        template <auto &device_request> friend struct SPIWrapper;
+        template <std::size_t> friend struct Init;
+        template <auto&, bool> friend struct SPIWrapper;
+        friend void ::SPI1_IRQHandler(void);
+        friend void ::SPI2_IRQHandler(void);
+        friend void ::SPI3_IRQHandler(void);
+        friend void ::SPI4_IRQHandler(void);
+        friend void ::SPI5_IRQHandler(void);
+        friend void ::SPI6_IRQHandler(void);
+        friend void ::HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi);
+        friend void ::HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi);
+        friend void ::HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi);
+        friend void ::HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi);
 
        private:
         SPI_HandleTypeDef hspi;
@@ -607,7 +634,7 @@ struct SPIDomain {
                 auto hspi = instances[i].hspi;
                 hspi.Instance = instances[i].instance;
 
-                auto init = hspi.Init;
+                auto& init = hspi.Init;
                 if (e.mode == SPIMode::MASTER) {
                     init.Mode = SPI_MODE_MASTER;
                     init.NSS = SPI_NSS_HARD_OUTPUT; // Hardware control for now, should add software later for more flexibility
