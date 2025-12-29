@@ -128,27 +128,27 @@ static constexpr std::array<int, 25> timer_idxmap = create_timer_idxmap();
 /* The number corresponds with the timer nº */
 enum TimerRequest : uint8_t {
     Advanced_1 = 1,
-    Advanced_2 = 8,
+    Advanced_8 = 8,
 
     AnyGeneralPurpose = 0xFF,
-    GeneralPurpose32bit_1 = 2,
-    GeneralPurpose32bit_2 = 3,
-    GeneralPurpose32bit_3 = 23,
-    GeneralPurpose32bit_4 = 24,
+    GeneralPurpose32bit_2 = 2,
+    GeneralPurpose32bit_3 = 3,
+    GeneralPurpose32bit_23 = 23,
+    GeneralPurpose32bit_24 = 24,
 
-    GeneralPurpose_1 = 4,
-    GeneralPurpose_2 = 5,
+    GeneralPurpose_4 = 4,
+    GeneralPurpose_5 = 5,
 
-    SlaveTimer_1 = 12,
-    SlaveTimer_2 = 13,
-    SlaveTimer_3 = 14,
+    SlaveTimer_12 = 12,
+    SlaveTimer_13 = 13,
+    SlaveTimer_14 = 14,
 
-    GeneralPurpose_3 = 15,
-    GeneralPurpose_4 = 16,
-    GeneralPurpose_5 = 17,
+    GeneralPurpose_15 = 15,
+    GeneralPurpose_16 = 16,
+    GeneralPurpose_17 = 17,
 
-    Basic_1 = 6,
-    Basic_2 = 7,
+    Basic_6 = 6,
+    Basic_7 = 7,
 };
 
 struct TimerDomain {
@@ -300,10 +300,10 @@ struct TimerDomain {
             }
         }
 
-        if(request.request == Basic_1 || request.request == Basic_2) {
+        if(request.request == Basic_6 || request.request == Basic_7) {
             // basic timers
             cfg.kind = TimerDomain::Kind::Basic;
-        } else if(request.request == Advanced_1 || request.request == Advanced_2) {
+        } else if(request.request == Advanced_1 || request.request == Advanced_8) {
             // advanced timers
             cfg.kind = TimerDomain::Kind::Advanced;
         } else {
@@ -569,12 +569,12 @@ struct TimerWrapper {
 
     /* default: disabled */
     inline void break_interrupt_enable() {
-        static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_2,
+        static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_8,
             "Error: Break interrupt enable only allowed in advanced timers {TIM1, TIM8}");
         ErrorHandler("Break interrupt is not allowed currently because gp timers {TIM12, TIM13, TIM14} use the same interrupt callback");
     }
     inline void break_interrupt_disable() {
-        static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_2,
+        static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_8,
             "Error: Break interrupt enable only allowed in advanced timers {TIM1, TIM8}");
         SET_BIT(instance.tim->DIER, TIM_DIER_BIE);
     }
@@ -598,10 +598,10 @@ struct TimerWrapper {
     inline void configure32bit(void (*callback)(void*), void *callback_data, uint32_t period)
     {
         constexpr bool bits32timer = (
-            dev.e.request == TimerRequest::GeneralPurpose32bit_1 ||
             dev.e.request == TimerRequest::GeneralPurpose32bit_2 ||
             dev.e.request == TimerRequest::GeneralPurpose32bit_3 ||
-            dev.e.request == TimerRequest::GeneralPurpose32bit_4
+            dev.e.request == TimerRequest::GeneralPurpose32bit_23 ||
+            dev.e.request == TimerRequest::GeneralPurpose32bit_24
         );
         static_assert(bits32timer, "Only timers {TIM2, TIM5, TIM23, TIM24} have a 32-bit resolution");
 
