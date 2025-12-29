@@ -337,8 +337,9 @@ struct TimerDomain {
         using domain = TimerDomain;
         Entry e;
 
-        consteval Timer(std::array<char, 8> name = EMPTY_TIMER_NAME, TimerRequest request = TimerRequest::AnyGeneralPurpose, 
-            ST_LIB::GPIODomain::Pin *pin = 0, TimerDomain::CountingMode counting_mode = CountingMode::UP,
+        consteval Timer(TimerRequest request = TimerRequest::AnyGeneralPurpose, 
+            TimerDomain::CountingMode counting_mode = CountingMode::UP, std::array<char, 8> name = EMPTY_TIMER_NAME,
+            ST_LIB::GPIODomain::Pin *pin = 0, 
             uint16_t prescaler = 5, uint32_t period = 55000, uint32_t deadtime = 0, 
             uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH)
         {
