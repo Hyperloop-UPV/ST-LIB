@@ -159,6 +159,14 @@ struct GPIODomain {
         return true;
       return ((1 << static_cast<uint8_t>(af)) & afs) != 0;
     }
+
+    constexpr bool operator==(const Pin &other) const {
+      return (port == other.port) && (pin == other.pin);
+    }
+
+    constexpr bool operator!=(const Pin &other) const {
+      return !(*this == other);
+    }
   };
 
   struct Entry {
