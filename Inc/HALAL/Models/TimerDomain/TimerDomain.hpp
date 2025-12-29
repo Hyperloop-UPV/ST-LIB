@@ -92,6 +92,32 @@ TimerXList
 namespace ST_LIB {
 extern void compile_error(const char *msg);
 
+/* The number corresponds with the timer nº */
+enum TimerRequest : uint8_t {
+    Advanced_1 = 1,
+    Advanced_8 = 8,
+
+    AnyGeneralPurpose = 0xFF,
+    GeneralPurpose32bit_2 = 2,
+    GeneralPurpose32bit_3 = 3,
+    GeneralPurpose32bit_23 = 23,
+    GeneralPurpose32bit_24 = 24,
+
+    GeneralPurpose_4 = 4,
+    GeneralPurpose_5 = 5,
+
+    SlaveTimer_12 = 12,
+    SlaveTimer_13 = 13,
+    SlaveTimer_14 = 14,
+
+    GeneralPurpose_15 = 15,
+    GeneralPurpose_16 = 16,
+    GeneralPurpose_17 = 17,
+
+    Basic_6 = 6,
+    Basic_7 = 7,
+};
+
 constexpr std::array<int, 25> create_timer_idxmap() {
     std::array<int, 25> result{};
     
@@ -121,32 +147,6 @@ constexpr std::array<int, 25> create_timer_idxmap() {
 
 static constexpr std::array<int, 25> timer_idxmap = create_timer_idxmap();
 
-/* The number corresponds with the timer nº */
-enum TimerRequest : uint8_t {
-    Advanced_1 = 1,
-    Advanced_8 = 8,
-
-    AnyGeneralPurpose = 0xFF,
-    GeneralPurpose32bit_2 = 2,
-    GeneralPurpose32bit_3 = 3,
-    GeneralPurpose32bit_23 = 23,
-    GeneralPurpose32bit_24 = 24,
-
-    GeneralPurpose_4 = 4,
-    GeneralPurpose_5 = 5,
-
-    SlaveTimer_12 = 12,
-    SlaveTimer_13 = 13,
-    SlaveTimer_14 = 14,
-
-    GeneralPurpose_15 = 15,
-    GeneralPurpose_16 = 16,
-    GeneralPurpose_17 = 17,
-
-    Basic_6 = 6,
-    Basic_7 = 7,
-};
-
 struct TimerDomain {
     // There are 16 timers
     static constexpr std::size_t max_instances = 16;
@@ -174,7 +174,6 @@ struct TimerDomain {
     struct Entry {
         std::array<char, 8> name; /* max length = 7 */
         TimerRequest request;
-        ST_LIB::GPIODomain::Pin *pin;
         TimerDomain::CountingMode counting_mode;
         uint16_t prescaler;
         uint32_t period;
@@ -187,7 +186,6 @@ struct TimerDomain {
         char name[8]; /* "Timerxx\0" */
         TimerDomain::Kind kind;
         uint16_t timer_idx;
-        ST_LIB::GPIODomain::Pin *asociated_pin;
         TimerDomain::CountingMode counting_mode;
         uint32_t prescaler;
         uint32_t period;
@@ -335,13 +333,11 @@ struct TimerDomain {
 
         consteval Timer(TimerRequest request = TimerRequest::AnyGeneralPurpose, 
             TimerDomain::CountingMode counting_mode = CountingMode::UP, std::array<char, 8> name = EMPTY_TIMER_NAME,
-            ST_LIB::GPIODomain::Pin *pin = 0, 
             uint16_t prescaler = 5, uint32_t period = 55000, uint32_t deadtime = 0, 
             uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH)
         {
             e.name = name;
             e.request = request;
-            e.pin = pin;
             e.counting_mode = counting_mode;
             e.prescaler = prescaler;
             e.period = period;
@@ -448,8 +444,6 @@ struct TimerDomain {
         TIM_HandleTypeDef *hal_tim;
         TimerDomain::Kind kind;
         uint16_t timer_idx;
-
-        template<const Timer&> friend struct TimerWrapper;
     };
 
     static void (*callbacks[TimerDomain::max_instances])(void*);
@@ -512,11 +506,24 @@ struct TimerDomain {
     };
 };
 
-template<const TimerDomain::Timer &dev>
+// Alternate functions for timers
+enum TimerAF {
+    PWM,
+};
+
+struct TimerPin {
+    TimerAF af;
+    ST_LIB::GPIODomain::Pin pin;
+};
+
+template<const TimerDomain::Timer &dev, TimerPin... PinArgs>
 struct TimerWrapper {
+    static constexpr size_t PIN_COUNT = sizeof...(PinArgs);
+    static constexpr std::array<TimerPin, sizeof...(PinArgs)> pins = {PinArgs...};
+
     TimerDomain::Instance& instance;
     TimerWrapper(TimerDomain::Instance& inst) : instance(inst) {}
-    
+
     inline void counter_enable() {
         SET_BIT(instance.tim->CR1, TIM_CR1_CEN);
     }
