@@ -48,7 +48,6 @@ class PWM {
         0x0, 0x4, 0x8, 0xC, 0x10, 0x14
     };
 
-public:
     static constexpr float CLOCK_FREQ_MHZ_WITHOUT_PRESCALER = 275.0f;
     static constexpr float clock_period_ns = (1.0f/CLOCK_FREQ_MHZ_WITHOUT_PRESCALER)*1000.0f;
 
@@ -59,6 +58,7 @@ public:
     bool is_on = false;
     bool is_center_aligned;
 
+public:
     PWM(TimerWrapper<dev> &tim, TimerPin pin) : timer(tim) {
         static_assert(dev.e.request != TimerRequest::Basic_6 && dev.e.request != TimerRequest::Basic_7, "These timers don't support pwm");
         this->is_center_aligned = ((tim.tim->CR1 & TIM_CR1_CMS) != 0);
