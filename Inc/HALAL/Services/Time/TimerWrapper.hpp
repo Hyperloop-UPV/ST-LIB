@@ -10,6 +10,7 @@
 #ifdef HAL_TIM_MODULE_ENABLED
 
 #include "HALAL/Models/TimerDomain/TimerDomain.hpp"
+#include "HALAL/Services/PWM/PWM/NewPWM.hpp"
 #include "HALAL/Models/GPIO.hpp"
 
 #include "ErrorHandler/ErrorHandler.hpp"
@@ -17,23 +18,38 @@
 #include "stm32h7xx_hal.h"
 
 namespace ST_LIB {
-// Alternate functions for timers
-enum TimerAF {
-    PWM,
-};
 
-struct TimerPin {
-    TimerAF af;
-    ST_LIB::GPIODomain::Pin pin;
-};
-
-template<const TimerDomain::Timer &dev, TimerPin... PinArgs>
+template<const TimerDomain::Timer &dev>
 struct TimerWrapper {
-    static constexpr size_t PIN_COUNT = sizeof...(PinArgs);
-    static constexpr std::array<TimerPin, sizeof...(PinArgs)> pins = {PinArgs...};
-
     TimerDomain::Instance& instance;
     TimerWrapper(TimerDomain::Instance& inst) : instance(inst) {}
+
+    template<TimerPin pin>
+    inline PWM<dev> get_pwm(uint8_t channel) {
+        static_assert(dev.e.pin_count > 0, "Need at least one pin to get a pwm");
+        if constexpr(dev.e.pins[0].pin == pin.pin) {
+            static_assert(dev.e.pins[0].af == TimerAF::PWM, "Pin must be configured in TimerWrapper as a PWM");
+            return PWM<dev>(this, pin);
+        }
+
+        static_assert(dev.e.pin_count > 1, "No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
+        if constexpr(dev.e.pins[1].pin == pin.pin) {
+            static_assert(dev.e.pins[1].af == TimerAF::PWM, "Pin must be configured in TimerWrapper as a PWM");
+            return PWM<dev>(this, pin);
+        }
+
+        static_assert(dev.e.pin_count > 2, "No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
+        if constexpr(dev.e.pins[2].pin == pin.pin) {
+            static_assert(dev.e.pins[2].af == TimerAF::PWM, "Pin must be configured in TimerWrapper as a PWM");
+            return PWM<dev>(this, pin);
+        }
+
+        static_assert(dev.e.pin_count == 4, "No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
+        if constexpr(dev.e.pins[3].pin == pin.pin) {
+            static_assert(dev.e.pins[3].af == TimerAF::PWM, "Pin must be configured in TimerWrapper as a PWM");
+            return PWM<dev>(this, pin);
+        }
+    }
 
     inline void counter_enable() {
         SET_BIT(instance.tim->CR1, TIM_CR1_CEN);
@@ -147,11 +163,11 @@ struct TimerWrapper {
     }
 
 #if 0
-    if constexpr (dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_2) {
+    if constexpr (dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_8) {
         // advanced specific functions
     }
 
-    if constexpr (dev.e.request != TimerRequest::Basic_1 && dev.e.request != TimerRequest::Basic_2) {
+    if constexpr (dev.e.request != TimerRequest::Basic_6 && dev.e.request != TimerRequest::Basic_7) {
         // general purpose and advanced functions
     }
 #endif

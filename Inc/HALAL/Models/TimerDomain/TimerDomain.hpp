@@ -12,6 +12,8 @@
 
 #ifdef HAL_TIM_MODULE_ENABLED
 
+#include "HALAL/Models/GPIO.hpp"
+
 #include <span>
 #include <array>
 
@@ -94,10 +96,11 @@ extern void compile_error(const char *msg);
 
 /* The number corresponds with the timer nº */
 enum TimerRequest : uint8_t {
+    AnyGeneralPurpose = 0,
+
     Advanced_1 = 1,
     Advanced_8 = 8,
 
-    AnyGeneralPurpose = 0xFF,
     GeneralPurpose32bit_2 = 2,
     GeneralPurpose32bit_3 = 3,
     GeneralPurpose32bit_23 = 23,
@@ -116,6 +119,18 @@ enum TimerRequest : uint8_t {
 
     Basic_6 = 6,
     Basic_7 = 7,
+};
+
+// Alternate functions for timers
+enum class TimerAF {
+    None,
+    PWM,
+};
+
+struct TimerPin {
+    TimerAF af;
+    ST_LIB::GPIODomain::Pin pin;
+    uint8_t channel;
 };
 
 constexpr std::array<int, 25> create_timer_idxmap() {
@@ -180,6 +195,8 @@ struct TimerDomain {
         uint32_t deadtime;
         uint32_t polarity;
         uint32_t negated_polarity;
+        uint8_t pin_count;
+        std::array<TimerPin, 4> pins;
     };
 
     struct Config {
@@ -249,7 +266,7 @@ struct TimerDomain {
 
     static constexpr Config DoTimer(const Entry request, int reqint, int reqidx) {
         Config cfg;
-        if((request).name[0] == '\0') {
+        if(request.name[0] == '\0') {
             /* "Timer" + tostring(reqint) */
             cfg.name[0] = 'T';
             cfg.name[1] = 'i';
@@ -261,20 +278,22 @@ struct TimerDomain {
             cfg.name[7] = '\0';
         } else {
             for(int si = 0; si < 8; si++) {
-                cfg.name[si] = (request).name[si];
+                cfg.name[si] = request.name[si];
             }
         }
         cfg.timer_idx = timer_idxmap[reqint];
-        cfg.prescaler = (request).prescaler;
-        cfg.period = (request).period;
-        cfg.deadtime = (request).deadtime;
-        cfg.polarity = (request).polarity;
-        cfg.negated_polarity = (request).negated_polarity;
+        cfg.prescaler = request.prescaler;
+        cfg.period = request.period;
+        cfg.deadtime = request.deadtime;
+        cfg.polarity = request.polarity;
+        cfg.negated_polarity = request.negated_polarity;
 
-        //check_timer(&cfg, request, reqidx);
         // Do any compile time checks needed for the timers...
         if(request.period == 0) {
-            ST_LIB::compile_error("Error: period must be greater than 0 (>0)");
+            cfg.period = 1;
+        }
+        if(request.prescaler == 0) {
+            cfg.prescaler = 1;
         }
 
         if(!(reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24)) {
@@ -315,18 +334,10 @@ struct TimerDomain {
         return cfg;
     }
 
-    enum PWM_MODE : uint8_t {
-        NORMAL = 0,
-        PHASED = 1,
-        CENTER_ALIGNED = 2,
-    };
+    static constexpr std::array<char, 8> EMPTY_TIMER_NAME = {0,0,0,0, 0,0,0,0};
+    static constexpr TimerPin EMPTY_PIN = {TimerAF::None, GPIODomain::Pin{GPIODomain::Port{},0}, 0 };
+    static constexpr std::array<TimerPin, 4> EMPTY_TIMER_PINS = {EMPTY_PIN, EMPTY_PIN, EMPTY_PIN, EMPTY_PIN};
 
-    struct PWMData {
-        uint32_t channel;
-        PWM_MODE mode;
-    };
-
-#define EMPTY_TIMER_NAME {0,0,0,0, 0,0,0,0}
     struct Timer {
         using domain = TimerDomain;
         Entry e;
@@ -334,7 +345,8 @@ struct TimerDomain {
         consteval Timer(TimerRequest request = TimerRequest::AnyGeneralPurpose, 
             TimerDomain::CountingMode counting_mode = CountingMode::UP, std::array<char, 8> name = EMPTY_TIMER_NAME,
             uint16_t prescaler = 5, uint32_t period = 55000, uint32_t deadtime = 0, 
-            uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH)
+            uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH,
+            uint8_t pin_count = 0, std::array<TimerPin, 4> pins = EMPTY_TIMER_PINS)
         {
             e.name = name;
             e.request = request;
@@ -344,6 +356,22 @@ struct TimerDomain {
             e.deadtime = deadtime;
             e.polarity = polarity;
             e.negated_polarity = negated_polarity;
+            e.pin_count = pin_count;
+            e.pins = pins;
+        }
+
+        // anything not initialized will be 0
+        consteval Timer(Entry e) {
+            this->e.name = e.name;
+            this->e.request = e.request;
+            this->e.counting_mode = e.counting_mode;
+            this->e.prescaler = e.prescaler;
+            this->e.period = e.period;
+            this->e.deadtime = e.deadtime;
+            this->e.polarity = e.polarity;
+            this->e.negated_polarity = e.negated_polarity;
+            this->e.pin_count = e.pin_count;
+            this->e.pins = e.pins;
         }
         
         template<class Ctx>
@@ -361,6 +389,8 @@ struct TimerDomain {
         if(requests.size() > max_instances) {
             ST_LIB::compile_error("too many Timer requests, there are only 16 timers");
         }
+
+        check_pins(requests);
 
         int remaining_requests[max_instances] = {};
         int count_remaining_requests = (int)requests.size();
@@ -504,6 +534,12 @@ struct TimerDomain {
             }
         }
     };
+
+    static consteval void check_pins(std::span<const Entry> requests)
+    {
+        /* good luck n_n */
+
+    }
 };
 } // namespace ST_LIB
 
