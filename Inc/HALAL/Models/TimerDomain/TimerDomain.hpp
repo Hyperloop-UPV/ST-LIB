@@ -348,7 +348,7 @@ struct TimerDomain {
         
         template<class Ctx>
         consteval void inscribe(Ctx &ctx) const {
-            ctx.template add<TimerDomain>(e);
+            ctx.template add<TimerDomain>(e, this);
         }
     };
 
