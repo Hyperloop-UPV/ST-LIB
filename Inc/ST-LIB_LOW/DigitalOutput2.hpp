@@ -27,9 +27,9 @@ struct DigitalOutputDomain {
     }
 
     template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-      const auto gpio_idx = ctx.template add<GPIODomain>(gpio.e);
+      const auto gpio_idx = ctx.template add<GPIODomain>(gpio.e, &gpio);
       Entry e{.gpio_idx = gpio_idx};
-      ctx.template add<DigitalOutputDomain>(e);
+      ctx.template add<DigitalOutputDomain>(e, this);
     }
   };
 
