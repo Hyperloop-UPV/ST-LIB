@@ -48,31 +48,31 @@ consteval uint32_t custom_hash(std::string_view str){
 #endif
 
 extern "C"{
-constexpr BenchmarkType benchmark_type = 
 #ifdef RUNTIME_BENCHMARK
-    BenchmarkType::RUNTIME;
+    constexpr BenchmarkType benchmark_type = BenchmarkType::RUNTIME;
     static const char BENCHMARK_TYPE_RUNTIME[] __attribute__((used)) = "BENCHMARK_RUNTIME";
 #elif defined(GDB_BENCHMARK)
-    BenchmarkType::GDB;
+    constexpr BenchmarkType benchmark_type = BenchmarkType::GDB;
     static const char BENCHMARK_TYPE_GDB[] __attribute__((used)) = "BENCHMARK_GDB";
 #else 
-    BenchmarkType::NONE;
+    constexpr BenchmarkType benchmark_type = BenchmarkType::NONE;
     static const char BENCHMARK_TYPE_NONE[] __attribute__((used)) = "BENCHMARK_NONE";
 #endif 
 
 }
 
-inline constexpr int logging_type = 
-#if defined(SD)
-    _SD |
-#else
-    _NONE |
-#endif
 #if defined(RUNTIME_BENCHMARK)
-    _RTT;
+#define RUNTIME_BENCHMARK_TAG  _RTT
 #else
-    _NONE;
+#define RUNTIME_BENCHMARK_TAG  _NONE
 #endif
+
+#if defined(SD)
+#define SD_BENCHMARK_TAG  _SD
+#else
+#define SD_BENCHMARK_TAG  _NONE
+#endif
+inline constexpr int logging_type =  RUNTIME_BENCHMARK_TAG | SD_BENCHMARK_TAG;
 template<BenchmarkType Type>
 class Benchmarker{
 public:
