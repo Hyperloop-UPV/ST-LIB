@@ -63,6 +63,14 @@ public:
     constexpr const std::array<T, Capacity>& get_array() const { return data; }
     constexpr const size_t size() const { return size_; }
     constexpr  T& operator[](size_t i) { return data[i]; }
+    constexpr bool contains(const T& value) const {
+        for (size_t i = 0; i < size_; ++i) {
+            if (data[i] == value) {
+                return true;
+            }
+        }
+        return false;
+    }
 };
 template <typename T, size_t Capacity>
 using FixedVector = StaticVector<T, Capacity>;
@@ -104,24 +112,24 @@ private:
 
   consteval void add_enter_action(Callback action){
     on_enter_actions.push_back(action);
-  };
+  }
 
   consteval void add_exit_action(Callback action){
     on_exit_actions.push_back(action);
-  };
+  }
 
   void enter(){
     for (const auto& action : on_enter_actions) {
           if(action) action();
       }
       register_all_timed_actions();
-  };
+  }
   void exit(){
     unregister_all_timed_actions();
     for (const auto& action : on_exit_actions) {
         if(action) action();
     }
-  };
+  }
 
   void unregister_all_timed_actions(){
     for(size_t i = 0; i < cyclic_actions.size(); i++)
@@ -146,7 +154,7 @@ private:
       }
       timed_action.is_on = false;
     }
-  }; 
+  }
 
   void register_all_timed_actions(){
     for(size_t i = 0; i < cyclic_actions.size(); i++)
@@ -164,18 +172,15 @@ private:
         timed_action.id = Time::register_high_precision_alarm(timed_action.period, timed_action.action);
         break;
       default:
-        ErrorHandler("Cannot register timed action with erroneus alarm precision, Alarm Precision Type: %d", timed_action.alarm_precision);
         return;
         break;
       }
       timed_action.is_on = true;
     }
-  };
+  }
 
   void remove_cyclic_action(TimedAction *timed_action){
     if(timed_action->is_on) unregister_timed_action(timed_action);
-    // StaticVector no tiene erase, marcamos como vacía o implementamos erase en StaticVector si es crítico
-    // Por ahora, invalidamos la acción
     for(size_t i = 0; i < cyclic_actions.size(); i++)
     {
       TimedAction& slot = cyclic_actions[i];
@@ -184,7 +189,7 @@ private:
           return;
       }
     }
-  };
+  }
 
   void unregister_timed_action(TimedAction* timed_action){
     switch(timed_action->alarm_precision){
@@ -203,11 +208,11 @@ private:
       break;
     }
     timed_action->is_on = false;
-  };
+  }
 
-  void add_state_order(uint16_t id){
+  consteval void add_state_order(uint16_t id){
     state_orders_ids.push_back(id);
-  };
+  }
 
   template <class TimeUnit>
   consteval TimedAction * 
@@ -221,7 +226,7 @@ private:
     
     cyclic_actions.push_back(timed_action);
     return &cyclic_actions[cyclic_actions.size() - 1];
-  };
+  }
 
   template <class TimeUnit>
   consteval TimedAction *
@@ -235,7 +240,7 @@ private:
     
     cyclic_actions.push_back(timed_action);
     return &cyclic_actions[cyclic_actions.size() - 1];
-  };
+  }
 
   template <class TimeUnit>
   consteval TimedAction *
@@ -249,7 +254,7 @@ private:
     
     cyclic_actions.push_back(timed_action);
     return &cyclic_actions[cyclic_actions.size() - 1];
-  };
+  }
 
 };
 
@@ -267,7 +272,7 @@ template <class StateEnum, size_t NStates, size_t NTransitions>
 class StateMachine {
 private:
   using Transitions = FixedVector<Transition<StateEnum>, NTransitions>;
-  using TAssocs = FixedVector<std::pair<size_t, size_t>, NStates>;
+  using TAssocs = std::array<std::pair<size_t, size_t>, NStates>;
 
   StateEnum current_state;
   Transitions transitions;
@@ -279,7 +284,8 @@ private:
 
   consteval void process_state(auto state, size_t offset) {
         for (const auto& t : state.get_transitions()) {
-            transitions[offset++] = t;
+            transitions.push_back(t);
+            offset++;
         }
 
         transitions_assoc[static_cast<size_t>(state.get_state())] = {
@@ -304,7 +310,9 @@ public:
         requires are_states<StateEnum, S...>
     consteval StateMachine(StateEnum initial_state, S... states) {
         current_state = initial_state;
-        this->states = {states...};
+        for(const auto& state : {states...}) {
+            this->states[static_cast<size_t>(state.get_state())] = state;
+        }
         size_t offset = 0;
         ((process_state(states, offset),
           offset += states.get_transitions().size()),
@@ -321,23 +329,61 @@ public:
                 exit();
                 current_state = t.target;
                 enter();
+                refresh_state_orders();
                 break;
             }
         }
         if (nested_state_machine.contains(current_state)) {
           nested_state_machine[current_state]->check_transitions();
         }
-    };
+    }
 
     void force_change_state(StateEnum new_state) {
         exit();
         current_state = new_state;
         enter();
-    };
+    }
   
-  consteval void add_cyclic_action(TimedAction *timed_action, StateEnum state); //helpers que llamarán en tiempo de compilacion a las funciones de state
+  template <class TimeUnit>
+  consteval TimedAction *
+  add_low_precision_cyclic_action(Callback action,
+                                   chrono::duration<int64_t, TimeUnit> period,StateEnum state){
+    if (not states.contains(state)) {
+      throw "Error: The state is not added to the state machine";
+      return nullptr;
+    }
+    return states[static_cast<size_t>(state)].add_low_precision_cyclic_action(action, period);
+  }
 
-  void remove_cyclic_action(TimedAction *timed_action, StateEnum state);
+  template <class TimeUnit>
+  consteval TimedAction *
+  add_mid_precision_cyclic_action(Callback action,
+                                   chrono::duration<int64_t, TimeUnit> period,StateEnum state){
+    if (not states.contains(state)) {
+      throw "Error: The state is not added to the state machine";
+      return nullptr;
+    }
+    return states[static_cast<size_t>(state)].add_mid_precision_cyclic_action(action, period);
+  }
+
+  template <class TimeUnit>
+  consteval TimedAction *
+  add_high_precision_cyclic_action(Callback action,
+                                   chrono::duration<int64_t, TimeUnit> period,StateEnum state){
+    if (not states.contains(state)) {
+      throw "Error: The state is not added to the state machine";
+      return nullptr;
+    }
+    return states[static_cast<size_t>(state)].add_high_precision_cyclic_action(action, period);
+  }
+
+  constexpr void remove_cyclic_action(TimedAction *timed_action, StateEnum state){
+    if (not states.contains(state)) {
+      throw "Error: The state is not added to the state machine";
+      return;
+    }
+    states[static_cast<size_t>(state)].remove_cyclic_action(timed_action);
+  }
 
   consteval void add_enter_action(Callback action, StateEnum state){
     if (not states.contains(state)) {
@@ -345,7 +391,7 @@ public:
       return;
     }
     states[state].on_enter_actions.push_back(action);
-  };
+  }
 
   consteval void add_exit_action(Callback action, StateEnum state){
     if (not states.contains(state)) {
@@ -353,7 +399,7 @@ public:
       return;
     }
     states[state].on_exit_actions.push_back(action);
-  };
+  }
 
   void add_state_machine(StateMachine& state_machine, uint8_t state) {
 	if(nested_state_machine.contains(state)){
@@ -372,17 +418,18 @@ public:
 	}
 }
 
-  void add_state_machine(StateMachine &state_machine, StateEnum state);
 
   void refresh_state_orders(){
   #ifdef STLIB_ETH
-    if(states[current_state].state_orders_ids.size() != 0) StateOrder::add_state_orders(states[current_state].state_orders_ids); //Por ver
+    if(states[current_state].state_orders_ids.size() != 0) StateOrder::add_state_orders(states[current_state].state_orders_ids); 
   #endif
   }
 
   consteval std::array<State<StateEnum, NTransitions>, NStates>& get_states(){
     return states;
   }
+
+
   template <typename EnumType, typename... Transitions>
   requires are_transitions<StateEnum, Transitions...>
   static consteval auto make_state(StateEnum state, Callback action,
@@ -390,6 +437,15 @@ public:
     constexpr size_t number_of_transitions = sizeof...(transitions);
     return State<StateEnum, number_of_transitions>(state, action,
                                           transitions...);
+  }
+
+  template <typename EnumType, typename... States>
+    requires are_states<StateEnum, States...>
+  static consteval auto make_state_machine(StateEnum initial_state, States... states) {
+    constexpr size_t number_of_states = sizeof...(states);
+    constexpr size_t number_of_transitions = (states.get_transitions().size() + ... + 0);
+
+    return StateMachine<StateEnum, number_of_states, number_of_transitions>(initial_state, states...);
   }
 
 
