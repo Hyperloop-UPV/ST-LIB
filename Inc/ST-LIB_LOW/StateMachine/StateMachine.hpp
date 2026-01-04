@@ -32,10 +32,11 @@ enum AlarmType { LOW_PRECISION, MID_PRECISION, HIGH_PRECISION };
 
 class TimedAction {
 public:
-  Callback action;
-  uint32_t period;
-  AlarmType alarm_precision;
-  uint8_t id = -1;
+  Callback action = nullptr;
+  uint32_t period = 0;
+  AlarmType alarm_precision = LOW_PRECISION;
+  uint8_t id = 255;
+  bool is_on = false;
 
   TimedAction() = default;
 };
@@ -67,80 +68,181 @@ private:
 
   consteval const StateEnum& get_state() const { return state; };
   consteval const auto& get_transitions() const { return transitions; };
-  consteval const auto& get_cyclic_actions() const {return cyclic_actions};
-  consteval const auto& get_enter_actions() const {return on_enter_actions};
-  consteval const auto& get_exit_actions() const {return on_exit_actions};
+  consteval const auto& get_cyclic_actions() const {return cyclic_actions;};
+  consteval const auto& get_enter_actions() const {return on_enter_actions;};
+  consteval const auto& get_exit_actions() const {return on_exit_actions;};
 
   consteval void add_cyclic_action(TimedAction *timed_action); 
 
   consteval void add_enter_action(Callback action){
-    on_enter_actions.push_back(action);
+    for(auto& slot : on_enter_actions){
+        if(slot == nullptr){
+            slot = action;
+            return;
+        }
+    }
   };
 
   consteval void add_exit_action(Callback action){
-    on_exit_actions.push_back(action);
+    for(auto& slot : on_exit_actions){
+        if(slot == nullptr){
+            slot = action;
+            return;
+        }
+    }
   };
 
+  void enter(){
+    for (const auto& action : on_enter_actions) {
+          if(action) action();
+      }
+      register_all_timed_actions();
+  };
+  void exit(){
+    unregister_all_timed_actions();
+    for (const auto& action : on_exit_actions) {
+        if(action) action();
+    }
+  };
+
+  void unregister_all_timed_actions(){
+    for(TimedAction& timed_action : cyclic_actions){
+      if(timed_action.action == nullptr) continue;
+      if(!timed_action.is_on) continue;
+      switch(timed_action.alarm_precision){
+      case LOW_PRECISION:
+        Time::unregister_low_precision_alarm(timed_action.id);
+        break;
+      case MID_PRECISION:
+        Time::unregister_mid_precision_alarm(timed_action.id);
+        break;
+      case HIGH_PRECISION:
+        Time::unregister_high_precision_alarm(timed_action.id);
+        break;
+      default:
+        ErrorHandler("Cannot unregister timed action with erroneus alarm precision, Alarm Precision Type: %d", timed_action.alarm_precision);
+        return;
+        break;
+      }
+      timed_action.is_on = false;
+    }
+  }; 
+
+  void register_all_timed_actions(){
+    for(TimedAction& timed_action : cyclic_actions){
+      if(timed_action.action == nullptr) continue;
+      switch(timed_action.alarm_precision){
+      case LOW_PRECISION:
+        timed_action.id = Time::register_low_precision_alarm(timed_action.period, timed_action.action);
+        break;
+      case MID_PRECISION:
+        timed_action.id = Time::register_mid_precision_alarm(timed_action.period, timed_action.action);
+        break;
+      case HIGH_PRECISION:
+        timed_action.id = Time::register_high_precision_alarm(timed_action.period, timed_action.action);
+        break;
+      default:
+        ErrorHandler("Cannot register timed action with erroneus alarm precision, Alarm Precision Type: %d", timed_action.alarm_precision);
+        return;
+        break;
+      }
+      timed_action.is_on = true;
+    }
+  };
+
+  void remove_cyclic_action(TimedAction *timed_action){
+    if(timed_action->is_on) unregister_timed_action(timed_action);
+    for(auto& slot : cyclic_actions){
+      if(&slot == timed_action){
+          slot = TimedAction{};
+          return;
+      }
+    }
+  };
+
+  void unregister_timed_action(TimedAction* timed_action){
+    switch(timed_action->alarm_precision){
+    case LOW_PRECISION:
+      Time::unregister_low_precision_alarm(timed_action->id);
+      break;
+    case MID_PRECISION:
+      Time::unregister_mid_precision_alarm(timed_action->id);
+      break;
+    case HIGH_PRECISION:
+      Time::unregister_high_precision_alarm(timed_action->id);
+      break;
+    default:
+      ErrorHandler("Cannot unregister timed action with erroneus alarm precision, Alarm Precision Type: %d", timed_action->alarm_precision);
+      return;
+      break;
+    }
+    timed_action->is_on = false;
+  };
+
+  void add_state_order(uint16_t id){
+    state_orders_ids.push_back(id);
+  };
 
   template <class TimeUnit>
-  consteval TimedAction *
+  consteval TimedAction * 
   add_low_precision_cyclic_action(Callback action,
-                                  chrono::duration<int64_t, TimeUnit> period);
-  template <class TimeUnit>
-  consteval TimedAction *
-  add_mid_precision_cyclic_action(Callback action,
-                                  chrono::duration<int64_t, TimeUnit> period);
-
-  template <class TimeUnit>
-  consteval TimedAction *
-  add_high_precision_cyclic_action(Callback action,
-                                   chrono::duration<int64_t, TimeUnit> period);
-
-  void enter();
-  void exit();
-
-  void unregister_all_timed_actions(); 
-  void register_all_timed_actions();
-  void remove_cyclic_action(TimedAction *timed_action);
-  void add_state_order(uint16_t id);
-};
-
-
-template <class TimeUnit>
-consteval TimedAction * State::add_low_precision_cyclic_action(Callback action,
-                            chrono::duration<int64_t, TimeUnit> period) {
+                                  chrono::duration<int64_t, TimeUnit> period){
   TimedAction timed_action = {};
   timed_action.alarm_precision = LOW_PRECISION;
   timed_action.action = action;
   uint32_t miliseconds = chrono::duration_cast<chrono::milliseconds>(period).count();
   timed_action.period = miliseconds;
-  cyclic_actions.push_back(timed_action);
-  return &cyclic_actions.back();
-}
+  
+  for(auto& slot : cyclic_actions){
+      if(slot.action == nullptr){
+          slot = timed_action;
+          return &slot;
+      }
+  }
+  return nullptr;
+  };
 
-template <class TimeUnit>
-consteval TimedAction * State::add_mid_precision_cyclic_action(Callback action,
-                            chrono::duration<int64_t, TimeUnit> period) {
+  template <class TimeUnit>
+  consteval TimedAction *
+  add_mid_precision_cyclic_action(Callback action,
+                                  chrono::duration<int64_t, TimeUnit> period){
   TimedAction timed_action = {};
   timed_action.alarm_precision = MID_PRECISION;
   timed_action.action = action;
   uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
   timed_action.period = microseconds;
-  cyclic_actions.push_back(timed_action);
-  return &cyclic_actions.back();
-}
+  
+  for(auto& slot : cyclic_actions){
+      if(slot.action == nullptr){
+          slot = timed_action;
+          return &slot;
+      }
+  }
+  return nullptr;
+  };
 
-template <class TimeUnit>
-consteval TimedAction * State::add_high_precision_cyclic_action(Callback action,
-                            chrono::duration<int64_t, TimeUnit> period) {
+  template <class TimeUnit>
+  consteval TimedAction *
+  add_high_precision_cyclic_action(Callback action,
+                                   chrono::duration<int64_t, TimeUnit> period){
   TimedAction timed_action = {};
   timed_action.alarm_precision = HIGH_PRECISION;
   timed_action.action = action;
   uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
   timed_action.period = microseconds;
-  cyclic_actions.push_back(timed_action);
-  return &cyclic_actions.back();
-}
+  
+  for(auto& slot : cyclic_actions){
+      if(slot.action == nullptr){
+          slot = timed_action;
+          return &slot;
+      }
+  }
+  return nullptr;
+  };
+
+};
+
+
 template <typename T, class StateEnum>
 struct is_state : std::false_type {};
 
@@ -174,26 +276,18 @@ private:
             state.get_transitions().size()};
     }
 
-  void enter() { //ESTO ESTÁ EN LA CLASE STATE MOVER DE AQUI
+  void enter() { 
       auto& state = states[static_cast<size_t>(current_state)];
-      for (const auto& action : state.get_enter_actions()) {
-          action();
-      }
-      register_all_timed_actions(current_state);
+      state.enter();
+      
   }
 
   void exit() {
-      unregister_all_timed_actions(current_state);
       auto& state = states[static_cast<size_t>(current_state)];
-      for (const auto& action : state.get_exit_actions()) {
-          action();
-      }
+      state.exit();
   }
 
 public:
-  
-  bool is_on = true;
-
 
   template <typename... S>
         requires are_states<StateEnum, S...>
@@ -228,7 +322,7 @@ public:
         current_state = new_state;
         enter();
     };
-
+  
     //Falta helper crear transiciones y crear estado
   consteval void add_cyclic_action(TimedAction *timed_action, StateEnum state); //helpers que llamarán en tiempo de compilacion a las funciones de state
 
@@ -250,7 +344,7 @@ public:
     states[state].on_exit_actions.push_back(action);
   };
 
-  void StateMachine::add_state_machine(StateMachine& state_machine, uint8_t state) {
+  void add_state_machine(StateMachine& state_machine, uint8_t state) {
 	if(nested_state_machine.contains(state)){
 		ErrorHandler("Only one Nested State Machine can be added per state, tried to add to state: %d", state);
 		return;
@@ -266,11 +360,10 @@ public:
 		state_machine.is_on = false;
 	}
 }
-  void force_change_state(StateEnum new_state);
 
   void add_state_machine(StateMachine &state_machine, StateEnum state);
 
-  void StateMachine::refresh_state_orders(){
+  void refresh_state_orders(){
   #ifdef STLIB_ETH
     if(states[current_state].state_orders_ids.size() != 0) StateOrder::add_state_orders(states[current_state].state_orders_ids); //Por ver
   #endif
@@ -279,6 +372,17 @@ public:
   consteval std::array<State<StateEnum, NTransitions>, NStates> states& get_states(){
     return states;
   }
+
+  template <typename StateEnum, typename... Transitions>
+    requires are_transitions<StateEnum, Transitions...>
+  static consteval auto make_state(StateEnum state, Callback action,
+                                  Transitions... transitions) {
+    constexpr size_t NTransitions = sizeof...(transitions);
+    return State<StateEnum, NTransitions>(state, action,
+                                          transitions...);
+  }
+
+
 
 #ifdef SIM_ON
   uint8_t get_id_in_shm();
