@@ -1,7 +1,3 @@
-/*
- * Created by Alejandro
- */
-
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
@@ -85,7 +81,7 @@ template <class StateEnum, typename... T>
 concept are_transitions = (std::same_as<T, Transition<StateEnum>> && ...);
 
 template <class StateEnum, size_t NTransitions,size_t Number_of_state_orders=0>
-class State {
+class State { 
 private:
   FixedVector<TimedAction,NUMBER_OF_ACTIONS> cyclic_actions;
   FixedVector<Callback,NUMBER_OF_ACTIONS> on_enter_actions = {};
