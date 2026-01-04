@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <type_traits>
 #include <utility>
+#include <unordered_map>
 
 #ifdef STLIB_ETH
 #include "StateMachine/StateOrder.hpp"
@@ -61,10 +62,10 @@ public:
     
     constexpr const std::array<T, Capacity>& get_array() const { return data; }
     constexpr const size_t size() const { return size_; }
-    constexpr const T& operator[](size_t i) { return data[i]; }
+    constexpr  T& operator[](size_t i) { return data[i]; }
 };
 template <typename T, size_t Capacity>
-using array = StaticVector<T, Capacity>;
+using FixedVector = StaticVector<T, Capacity>;
 
 template <class StateEnum>
 struct Transition {
@@ -78,12 +79,12 @@ concept are_transitions = (std::same_as<T, Transition<StateEnum>> && ...);
 template <class StateEnum, size_t NTransitions,size_t Number_of_state_orders=0>
 class State {
 private:
-  array<TimedAction,NUMBER_OF_ACTIONS> cyclic_actions;
-  array<Callback,NUMBER_OF_ACTIONS> on_enter_actions = {};
-  array<Callback,NUMBER_OF_ACTIONS> on_exit_actions = {};
-  [[no_unique_address]]array<uint16_t,Number_of_state_orders> state_orders_ids = {};
+  FixedVector<TimedAction,NUMBER_OF_ACTIONS> cyclic_actions;
+  FixedVector<Callback,NUMBER_OF_ACTIONS> on_enter_actions = {};
+  FixedVector<Callback,NUMBER_OF_ACTIONS> on_exit_actions = {};
+  [[no_unique_address]]FixedVector<uint16_t,Number_of_state_orders> state_orders_ids = {};
   StateEnum state;
-  array<Transition<StateEnum>, NTransitions> transitions;
+  FixedVector<Transition<StateEnum>, NTransitions> transitions;
   public:
   template <typename... T>
         requires are_transitions<StateEnum, T...>
@@ -123,7 +124,9 @@ private:
   };
 
   void unregister_all_timed_actions(){
-    for(TimedAction& timed_action : cyclic_actions){
+    for(size_t i = 0; i < cyclic_actions.size(); i++)
+    {
+      TimedAction& timed_action = cyclic_actions[i];
       if(timed_action.action == nullptr) continue;
       if(!timed_action.is_on) continue;
       switch(timed_action.alarm_precision){
@@ -146,7 +149,9 @@ private:
   }; 
 
   void register_all_timed_actions(){
-    for(TimedAction& timed_action : cyclic_actions){
+    for(size_t i = 0; i < cyclic_actions.size(); i++)
+    {
+      TimedAction& timed_action = cyclic_actions[i];
       if(timed_action.action == nullptr) continue;
       switch(timed_action.alarm_precision){
       case LOW_PRECISION:
@@ -171,7 +176,9 @@ private:
     if(timed_action->is_on) unregister_timed_action(timed_action);
     // StaticVector no tiene erase, marcamos como vacía o implementamos erase en StaticVector si es crítico
     // Por ahora, invalidamos la acción
-    for(auto& slot : cyclic_actions){
+    for(size_t i = 0; i < cyclic_actions.size(); i++)
+    {
+      TimedAction& slot = cyclic_actions[i];
       if(&slot == timed_action){
           slot = TimedAction{}; 
           return;
@@ -206,42 +213,42 @@ private:
   consteval TimedAction * 
   add_low_precision_cyclic_action(Callback action,
                                   chrono::duration<int64_t, TimeUnit> period){
-  TimedAction timed_action = {};
-  timed_action.alarm_precision = LOW_PRECISION;
-  timed_action.action = action;
-  uint32_t miliseconds = chrono::duration_cast<chrono::milliseconds>(period).count();
-  timed_action.period = miliseconds;
-  
-  cyclic_actions.push_back(timed_action);
-  return &cyclic_actions[cyclic_actions.size() - 1];
+    TimedAction timed_action = {};
+    timed_action.alarm_precision = LOW_PRECISION;
+    timed_action.action = action;
+    uint32_t miliseconds = chrono::duration_cast<chrono::milliseconds>(period).count();
+    timed_action.period = miliseconds;
+    
+    cyclic_actions.push_back(timed_action);
+    return &cyclic_actions[cyclic_actions.size() - 1];
   };
 
   template <class TimeUnit>
   consteval TimedAction *
   add_mid_precision_cyclic_action(Callback action,
                                   chrono::duration<int64_t, TimeUnit> period){
-  TimedAction timed_action = {};
-  timed_action.alarm_precision = MID_PRECISION;
-  timed_action.action = action;
-  uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
-  timed_action.period = microseconds;
-  
-  cyclic_actions.push_back(timed_action);
-  return &cyclic_actions[cyclic_actions.size() - 1];
+    TimedAction timed_action = {};
+    timed_action.alarm_precision = MID_PRECISION;
+    timed_action.action = action;
+    uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
+    timed_action.period = microseconds;
+    
+    cyclic_actions.push_back(timed_action);
+    return &cyclic_actions[cyclic_actions.size() - 1];
   };
 
   template <class TimeUnit>
   consteval TimedAction *
   add_high_precision_cyclic_action(Callback action,
                                    chrono::duration<int64_t, TimeUnit> period){
-  TimedAction timed_action = {};
-  timed_action.alarm_precision = HIGH_PRECISION;
-  timed_action.action = action;
-  uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
-  timed_action.period = microseconds;
-  
-  cyclic_actions.push_back(timed_action);
-  return &cyclic_actions[cyclic_actions.size() - 1];
+    TimedAction timed_action = {};
+    timed_action.alarm_precision = HIGH_PRECISION;
+    timed_action.action = action;
+    uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
+    timed_action.period = microseconds;
+    
+    cyclic_actions.push_back(timed_action);
+    return &cyclic_actions[cyclic_actions.size() - 1];
   };
 
 };
@@ -259,13 +266,13 @@ concept are_states = (is_state<Ts, StateEnum>::value && ...);
 template <class StateEnum, size_t NStates, size_t NTransitions>
 class StateMachine {
 private:
-  using Transitions = array<Transition<StateEnum>, NTransitions>;
-  using TAssocs = array<std::pair<size_t, size_t>, NStates>;
+  using Transitions = FixedVector<Transition<StateEnum>, NTransitions>;
+  using TAssocs = FixedVector<std::pair<size_t, size_t>, NStates>;
 
   StateEnum current_state;
   Transitions transitions;
   TAssocs transitions_assoc;
-  array<State<StateEnum, NTransitions>, NStates> states;
+  std::array<State<StateEnum, NTransitions>, NStates> states;
   unordered_map<StateEnum, StateMachine*> nested_state_machine; //ya veremos que hacemos con esto
 
 
@@ -297,6 +304,7 @@ public:
         requires are_states<StateEnum, S...>
     consteval StateMachine(StateEnum initial_state, S... states) {
         current_state = initial_state;
+        this->states = {states...};
         size_t offset = 0;
         ((process_state(states, offset),
           offset += states.get_transitions().size()),
@@ -372,16 +380,15 @@ public:
   #endif
   }
 
-  consteval std::array<State<StateEnum, NTransitions>, NStates> states& get_states(){
+  consteval std::array<State<StateEnum, NTransitions>, NStates>& get_states(){
     return states;
   }
-
-  template <typename StateEnum, typename... Transitions>
-    requires are_transitions<StateEnum, Transitions...>
+  template <typename EnumType, typename... Transitions>
+  requires are_transitions<StateEnum, Transitions...>
   static consteval auto make_state(StateEnum state, Callback action,
                                   Transitions... transitions) {
-    constexpr size_t NTransitions = sizeof...(transitions);
-    return State<StateEnum, NTransitions>(state, action,
+    constexpr size_t number_of_transitions = sizeof...(transitions);
+    return State<StateEnum, number_of_transitions>(state, action,
                                           transitions...);
   }
 
