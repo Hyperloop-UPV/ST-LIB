@@ -233,22 +233,7 @@ void StateMachine::add_transition(uint8_t old_state, uint8_t new_state,
  * machine to the current StateMachine object.
  * @param state The state to which the nested state machine is being added.
  */
-void StateMachine::add_state_machine(StateMachine& state_machine, uint8_t state) {
-	if(nested_state_machine.contains(state)){
-		ErrorHandler("Only one Nested State Machine can be added per state, tried to add to state: %d", state);
-		return;
-	}
 
-	if(not state_machine.states[state_machine.current_state].cyclic_actions.empty()){
-		ErrorHandler("Nested State Machine current state has actions registered, must be empty until nesting");
-	}
-
-	nested_state_machine[state] = &state_machine;
-
-	if (current_state != state) {
-		state_machine.is_on = false;
-	}
-}
 
 /**
  * The function checks for state transitions and changes the current state if necessary, and also
@@ -350,11 +335,7 @@ unordered_map<StateMachine::state_id, State>& StateMachine::get_states(){
 	return states;
 }
 
-void StateMachine::refresh_state_orders(){
-#ifdef STLIB_ETH
-	if(states[current_state].state_orders_ids.size() != 0) StateOrder::add_state_orders(states[current_state].state_orders_ids);
-#endif
-}
+
 
 #ifdef SIM_ON
 uint8_t StateMachine::get_id_in_shm(){
