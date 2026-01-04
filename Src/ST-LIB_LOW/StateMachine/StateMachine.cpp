@@ -14,7 +14,9 @@ void State::enter() {
 		action();
 	}
 #ifdef STLIB_ETH
+	if(Number_of_state_orderss != 0){
 	if(state_orders_ids.size() != 0) StateOrder::add_state_orders(state_orders_ids);
+	}
 #endif
 }
 
@@ -23,28 +25,12 @@ void State::exit() {
 		action();
 	}
 #ifdef STLIB_ETH
+	if(Number_of_state_orderss != 0){
 	if(state_orders_ids.size() != 0) StateOrder::remove_state_orders(state_orders_ids);
+	}
 #endif
 }
 
-void State::unregister_timed_action(TimedAction* timed_action){
-	switch (timed_action->alarm_precision) {
-		case LOW_PRECISION:
-			Time::unregister_low_precision_alarm(timed_action->id);
-			break;
-		case MID_PRECISION:
-			Time::unregister_mid_precision_alarm(timed_action->id);
-			break;
-		case HIGH_PRECISION:
-			Time::unregister_high_precision_alarm(timed_action->id);
-			break;
-		default:
-			ErrorHandler("Alarm Precision Type does not exist, AlarmType: %d", timed_action->alarm_precision);
-			return;
-			break;
-	}
-	timed_action->is_on = false;
-}
 
 void State::erase_timed_action(TimedAction* timed_action){
 	if(timed_action->is_on) unregister_timed_action(timed_action);
