@@ -26,6 +26,7 @@ using s = std::chrono::seconds;
 using Callback = void (*)();
 using Guard = bool (*)();
 
+
 static constexpr size_t NUMBER_OF_ACTIONS = 20;
 
 enum AlarmType { LOW_PRECISION, MID_PRECISION, HIGH_PRECISION };
@@ -41,6 +42,30 @@ public:
   TimedAction() = default;
 };
 
+template <typename T, size_t Capacity>
+class StaticVector {
+    std::array<T, Capacity> data;
+    size_t size_ = 0;
+
+public:
+    constexpr void push_back(const T& value) {
+        if (size_ >= Capacity) {
+            throw std::out_of_range("StaticVector capacity exceeded");
+        }        
+        data[size_] = value;
+        size_++;
+    }
+
+    constexpr auto begin() { return data.begin(); }
+    constexpr auto end() { return data.begin() + size_; } 
+    
+    constexpr const std::array<T, Capacity>& get_array() const { return data; }
+    constexpr const size_t size() const { return size_; }
+    constexpr const T& operator[](size_t i) { return data[i]; }
+};
+template <typename T, size_t Capacity>
+using array = StaticVector<T, Capacity>;
+
 template <class StateEnum>
 struct Transition {
     StateEnum target;
@@ -53,17 +78,19 @@ concept are_transitions = (std::same_as<T, Transition<StateEnum>> && ...);
 template <class StateEnum, size_t NTransitions,size_t Number_of_state_orders=0>
 class State {
 private:
-  std::array<TimedAction,NUMBER_OF_ACTIONS> cyclic_actions;
-  std::array<Callback,NUMBER_OF_ACTIONS> on_enter_actions = {};
-  std::array<Callback,NUMBER_OF_ACTIONS> on_exit_actions = {};
-  [[no_unique_address]]std::array<uint16_t,Number_of_state_orders> state_orders_ids = {};
+  array<TimedAction,NUMBER_OF_ACTIONS> cyclic_actions;
+  array<Callback,NUMBER_OF_ACTIONS> on_enter_actions = {};
+  array<Callback,NUMBER_OF_ACTIONS> on_exit_actions = {};
+  [[no_unique_address]]array<uint16_t,Number_of_state_orders> state_orders_ids = {};
   StateEnum state;
-  std::array<Transition<StateEnum>, NTransitions> transitions;
+  array<Transition<StateEnum>, NTransitions> transitions;
   public:
   template <typename... T>
         requires are_transitions<StateEnum, T...>
     consteval State(StateEnum state, T... transitions)
-        : state(state), transitions({transitions...}) {}
+        : state(state) {
+            (this->transitions.push_back(transitions), ...);
+        }
   
 
   consteval const StateEnum& get_state() const { return state; };
@@ -75,21 +102,11 @@ private:
   consteval void add_cyclic_action(TimedAction *timed_action); 
 
   consteval void add_enter_action(Callback action){
-    for(auto& slot : on_enter_actions){
-        if(slot == nullptr){
-            slot = action;
-            return;
-        }
-    }
+    on_enter_actions.push_back(action);
   };
 
   consteval void add_exit_action(Callback action){
-    for(auto& slot : on_exit_actions){
-        if(slot == nullptr){
-            slot = action;
-            return;
-        }
-    }
+    on_exit_actions.push_back(action);
   };
 
   void enter(){
@@ -152,9 +169,11 @@ private:
 
   void remove_cyclic_action(TimedAction *timed_action){
     if(timed_action->is_on) unregister_timed_action(timed_action);
+    // StaticVector no tiene erase, marcamos como vacía o implementamos erase en StaticVector si es crítico
+    // Por ahora, invalidamos la acción
     for(auto& slot : cyclic_actions){
       if(&slot == timed_action){
-          slot = TimedAction{};
+          slot = TimedAction{}; 
           return;
       }
     }
@@ -193,13 +212,8 @@ private:
   uint32_t miliseconds = chrono::duration_cast<chrono::milliseconds>(period).count();
   timed_action.period = miliseconds;
   
-  for(auto& slot : cyclic_actions){
-      if(slot.action == nullptr){
-          slot = timed_action;
-          return &slot;
-      }
-  }
-  return nullptr;
+  cyclic_actions.push_back(timed_action);
+  return &cyclic_actions[cyclic_actions.size() - 1];
   };
 
   template <class TimeUnit>
@@ -212,13 +226,8 @@ private:
   uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
   timed_action.period = microseconds;
   
-  for(auto& slot : cyclic_actions){
-      if(slot.action == nullptr){
-          slot = timed_action;
-          return &slot;
-      }
-  }
-  return nullptr;
+  cyclic_actions.push_back(timed_action);
+  return &cyclic_actions[cyclic_actions.size() - 1];
   };
 
   template <class TimeUnit>
@@ -231,13 +240,8 @@ private:
   uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
   timed_action.period = microseconds;
   
-  for(auto& slot : cyclic_actions){
-      if(slot.action == nullptr){
-          slot = timed_action;
-          return &slot;
-      }
-  }
-  return nullptr;
+  cyclic_actions.push_back(timed_action);
+  return &cyclic_actions[cyclic_actions.size() - 1];
   };
 
 };
@@ -255,13 +259,13 @@ concept are_states = (is_state<Ts, StateEnum>::value && ...);
 template <class StateEnum, size_t NStates, size_t NTransitions>
 class StateMachine {
 private:
-  using Transitions = std::array<Transition<StateEnum>, NTransitions>;
-  using TAssocs = std::array<std::pair<size_t, size_t>, NStates>;
+  using Transitions = array<Transition<StateEnum>, NTransitions>;
+  using TAssocs = array<std::pair<size_t, size_t>, NStates>;
 
   StateEnum current_state;
   Transitions transitions;
   TAssocs transitions_assoc;
-  std::array<State<StateEnum, NTransitions>, NStates> states;
+  array<State<StateEnum, NTransitions>, NStates> states;
   unordered_map<StateEnum, StateMachine*> nested_state_machine; //ya veremos que hacemos con esto
 
 
@@ -323,7 +327,6 @@ public:
         enter();
     };
   
-    //Falta helper crear transiciones y crear estado
   consteval void add_cyclic_action(TimedAction *timed_action, StateEnum state); //helpers que llamarán en tiempo de compilacion a las funciones de state
 
   void remove_cyclic_action(TimedAction *timed_action, StateEnum state);
