@@ -221,7 +221,7 @@ private:
     TimedAction timed_action = {};
     timed_action.alarm_precision = LOW_PRECISION;
     timed_action.action = action;
-    uint32_t miliseconds = chrono::duration_cast<chrono::milliseconds>(period).count();
+    constexpr uint32_t miliseconds = chrono::duration_cast<chrono::milliseconds>(period).count();
     timed_action.period = miliseconds;
     
     cyclic_actions.push_back(timed_action);
@@ -235,7 +235,7 @@ private:
     TimedAction timed_action = {};
     timed_action.alarm_precision = MID_PRECISION;
     timed_action.action = action;
-    uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
+    constexpr uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
     timed_action.period = microseconds;
     
     cyclic_actions.push_back(timed_action);
@@ -249,7 +249,7 @@ private:
     TimedAction timed_action = {};
     timed_action.alarm_precision = HIGH_PRECISION;
     timed_action.action = action;
-    uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
+    constexpr uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
     timed_action.period = microseconds;
     
     cyclic_actions.push_back(timed_action);
@@ -278,9 +278,7 @@ private:
   Transitions transitions;
   TAssocs transitions_assoc;
   std::array<State<StateEnum, NTransitions>, NStates> states;
-  unordered_map<StateEnum, StateMachine*> nested_state_machine; //ya veremos que hacemos con esto
-
-
+  unordered_map<StateEnum, StateMachine*> nested_state_machine; 
 
   consteval void process_state(auto state, size_t offset) {
         for (const auto& t : state.get_transitions()) {
@@ -293,13 +291,13 @@ private:
             state.get_transitions().size()};
     }
 
-  void enter() { 
+  inline void enter() { 
       auto& state = states[static_cast<size_t>(current_state)];
       state.enter();
       
   }
 
-  void exit() {
+  inline void exit() {
       auto& state = states[static_cast<size_t>(current_state)];
       state.exit();
   }
@@ -327,6 +325,7 @@ public:
             const auto& t = transitions[index];
             if (t.predicate()) {
                 exit();
+                remove_state_orders();
                 current_state = t.target;
                 enter();
                 refresh_state_orders();
@@ -402,26 +401,32 @@ public:
   }
 
   void add_state_machine(StateMachine& state_machine, uint8_t state) {
-	if(nested_state_machine.contains(state)){
-		ErrorHandler("Only one Nested State Machine can be added per state, tried to add to state: %d", state);
-		return;
-	}
+    if(nested_state_machine.contains(state)){
+      ErrorHandler("Only one Nested State Machine can be added per state, tried to add to state: %d", state);
+      return;
+    }
 
-	if(not state_machine.states[state_machine.current_state].cyclic_actions.empty()){
-		ErrorHandler("Nested State Machine current state has actions registered, must be empty until nesting");
-	}
+    if(not state_machine.states[state_machine.current_state].cyclic_actions.empty()){
+      ErrorHandler("Nested State Machine current state has actions registered, must be empty until nesting");
+    }
 
-	nested_state_machine[state] = &state_machine;
+    nested_state_machine[state] = &state_machine;
 
-	if (current_state != state) {
-		state_machine.is_on = false;
-	}
-}
+    if (current_state != state) {
+      state_machine.is_on = false;
+    }
+  }
 
 
-  void refresh_state_orders(){
+  inline void refresh_state_orders(){
   #ifdef STLIB_ETH
     if(states[current_state].state_orders_ids.size() != 0) StateOrder::add_state_orders(states[current_state].state_orders_ids); 
+  #endif
+  }
+
+  inline void remove_state_orders(){
+  #ifdef STLIB_ETH
+    if(states[current_state].state_orders_ids.size() != 0) StateOrder::remove_state_orders(states[current_state].state_orders_ids);
   #endif
   }
 
