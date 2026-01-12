@@ -191,8 +191,6 @@ struct TimerDomain {
         std::array<char, 8> name; /* max length = 7 */
         TimerRequest request;
         TimerDomain::CountingMode counting_mode;
-        uint16_t prescaler;
-        uint32_t period;
         uint32_t deadtime;
         uint32_t polarity;
         uint32_t negated_polarity;
@@ -205,8 +203,6 @@ struct TimerDomain {
         TimerDomain::Kind kind;
         uint16_t timer_idx;
         TimerDomain::CountingMode counting_mode;
-        uint32_t prescaler;
-        uint32_t period;
         uint32_t deadtime;
         uint32_t polarity;
         uint32_t negated_polarity;
@@ -283,26 +279,11 @@ struct TimerDomain {
             }
         }
         cfg.timer_idx = timer_idxmap[reqint];
-        cfg.prescaler = request.prescaler;
-        cfg.period = request.period;
         cfg.deadtime = request.deadtime;
         cfg.polarity = request.polarity;
         cfg.negated_polarity = request.negated_polarity;
 
         // Do any compile time checks needed for the timers...
-        if(request.period == 0) {
-            cfg.period = 1;
-        }
-        if(request.prescaler == 0) {
-            cfg.prescaler = 1;
-        }
-
-        if(!(reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24)) {
-            if(request.period > 0xFFFF) {
-                ST_LIB::compile_error("Error: Timers other than {TIM2, TIM5, TIM23, TIM24} have a maximum period of 0xFFFF (they are uint16_t)");
-            }
-        }
-
         if(!(reqint == 1 || reqint == 8 ||
             reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24 || 
             reqint == 3 || reqint == 4))
@@ -342,16 +323,14 @@ struct TimerDomain {
         Entry e;
 
         consteval Timer(TimerRequest request = TimerRequest::AnyGeneralPurpose, 
-            TimerDomain::CountingMode counting_mode = CountingMode::UP, std::array<char, 8> name = EMPTY_TIMER_NAME,
-            uint16_t prescaler = 5, uint32_t period = 55000, uint32_t deadtime = 0, 
+            TimerDomain::CountingMode counting_mode = CountingMode::UP, 
+            std::array<char, 8> name = EMPTY_TIMER_NAME, uint32_t deadtime = 0, 
             uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH,
             std::initializer_list<TimerPin> pinargs = {})
         {
             e.name = name;
             e.request = request;
             e.counting_mode = counting_mode;
-            e.prescaler = prescaler;
-            e.period = period;
             e.deadtime = deadtime;
             e.polarity = polarity;
             e.negated_polarity = negated_polarity;
@@ -372,8 +351,6 @@ struct TimerDomain {
             this->e.name = e.name;
             this->e.request = e.request;
             this->e.counting_mode = e.counting_mode;
-            this->e.prescaler = e.prescaler;
-            this->e.period = e.period;
             this->e.deadtime = e.deadtime;
             this->e.polarity = e.polarity;
             this->e.negated_polarity = e.negated_polarity;
@@ -506,17 +483,14 @@ struct TimerDomain {
                 const Config &e = cfgs[i];
 
                 TIM_HandleTypeDef *handle = (TIM_HandleTypeDef*)&hal_handles[e.timer_idx];
-                handle->Instance = cmsis_timers[e.timer_idx];
-                handle->Init.Prescaler = e.prescaler;
+                TIM_TypeDef *tim = cmsis_timers[e.timer_idx];
+                handle->Instance = tim;
+                handle->Init.Period = 0;
+                handle->Init.Prescaler = 0;
                 handle->Init.CounterMode = TIM_COUNTERMODE_UP;
                 handle->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-                handle->Init.Period = e.period;
                 handle->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
                 handle->Init.RepetitionCounter = 0;
-
-                TIM_TypeDef *tim = cmsis_timers[e.timer_idx];
-                tim->PSC = e.prescaler;
-                tim->ARR = e.period;
 
                 /* if(e.counting_mode == CountingMode::UP) {
                     CLEAR_BIT(tim->CR1, TIM_CR1_DIR); // upcounter
@@ -537,7 +511,7 @@ struct TimerDomain {
                 // PWM stuff should be done somewhere else..
 
                 Instance *inst = &instances[i];
-                inst->tim = cmsis_timers[e.timer_idx];
+                inst->tim = tim;
                 inst->hal_tim = handle;
                 inst->name[0] = e.name[0];
                 inst->name[1] = e.name[1];
