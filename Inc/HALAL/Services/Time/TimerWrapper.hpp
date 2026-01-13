@@ -17,6 +17,9 @@
 
 #include "stm32h7xx_hal.h"
 
+#define get_timer_instance(board, timer_type) \
+    ST_LIB::TimerWrapper<timer_type>(board::instance_of<timer_type>())
+
 namespace ST_LIB {
 
 template<const TimerDomain::Timer &dev>
