@@ -32,7 +32,7 @@ struct TimerWrapper {
         dev.e.request == TimerRequest::GeneralPurpose32bit_3 ||
         dev.e.request == TimerRequest::GeneralPurpose32bit_23 ||
         dev.e.request == TimerRequest::GeneralPurpose32bit_24 ||
-        dev.e.request == TimerRequest::Any32bitTimer
+        dev.e.request == TimerRequest::Any32bit
     );
 
     template<TimerPin pin>
