@@ -24,6 +24,14 @@ struct TimerWrapper {
     TimerDomain::Instance& instance;
     TimerWrapper(TimerDomain::Instance& inst) : instance(inst) {}
 
+    static constexpr bool bits32timer = (
+        dev.e.request == TimerRequest::GeneralPurpose32bit_2 ||
+        dev.e.request == TimerRequest::GeneralPurpose32bit_3 ||
+        dev.e.request == TimerRequest::GeneralPurpose32bit_23 ||
+        dev.e.request == TimerRequest::GeneralPurpose32bit_24 ||
+        dev.e.request == TimerRequest::Any32bitTimer
+    );
+
     template<TimerPin pin>
     inline PWM<dev> get_pwm(uint8_t channel) {
         static_assert(dev.e.pin_count > 0, "Need at least one pin to get a pwm");
@@ -125,12 +133,6 @@ struct TimerWrapper {
     template<uint16_t psc = 0>
     inline void configure32bit(void (*callback)(void*), void *callback_data, uint32_t period)
     {
-        constexpr bool bits32timer = (
-            dev.e.request == TimerRequest::GeneralPurpose32bit_2 ||
-            dev.e.request == TimerRequest::GeneralPurpose32bit_3 ||
-            dev.e.request == TimerRequest::GeneralPurpose32bit_23 ||
-            dev.e.request == TimerRequest::GeneralPurpose32bit_24
-        );
         static_assert(bits32timer, "Only timers {TIM2, TIM5, TIM23, TIM24} have a 32-bit resolution");
 
         if constexpr (psc != 0) {

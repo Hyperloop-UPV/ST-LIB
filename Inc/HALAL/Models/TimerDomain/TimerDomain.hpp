@@ -98,6 +98,7 @@ extern void compile_error(const char *msg);
 /* The number corresponds with the timer nº */
 enum TimerRequest : uint8_t {
     AnyGeneralPurpose = 0,
+    Any32bitTimer = 0xFF,
 
     Advanced_1 = 1,
     Advanced_8 = 8,
@@ -404,7 +405,9 @@ struct TimerDomain {
         // First find any that have requested a specific timer
         for(std::size_t i = 0; i < N; i++) {
             uint8_t reqint = static_cast<uint8_t>(requests[i].request);
-            if(reqint != static_cast<uint8_t>(TimerRequest::AnyGeneralPurpose)) {
+            if((requests[i].request != TimerRequest::AnyGeneralPurpose) &&
+               (requests[i].request != TimerRequest::Any32bitTimer))
+            {
                 if(used_timers[reqint]) {
                     ST_LIB::compile_error("Error: Timer already used");
                 }
@@ -419,14 +422,43 @@ struct TimerDomain {
             }
         }
 
+        // 32 bit timers, very important for scheduler
+        uint8_t bits32_timers[] = {2, 5, 23, 24};
+        uint8_t remaining_32bit_timers[4] = {0};
+        uint8_t count_remaining_32bit_timers = 0;
+        uint8_t count_32bit_requests = 0;
+
+        for(int i = 0; i < (int)ARRAY_LENGTH(bits32_timers); i++) {
+            if(!used_timers[bits32_timers[i]])
+                remaining_32bit_timers[count_remaining_32bit_timers++] = bits32_timers[i];
+        }
+
+        for(int i = 0; i < count_remaining_requests; ) {
+            const Entry &e = requests[remaining_requests[i]];
+            if(e.request == TimerRequest::Any32bitTimer) {
+                if(count_remaining_32bit_timers <= count_32bit_requests) {
+                    ST_LIB::compile_error("No remaining 32 bit timers, there are only 4. Timers {2, 5, 23, 24}");
+                }
+    
+                uint8_t reqint = remaining_32bit_timers[count_32bit_requests];
+                Config cfg = DoTimer(requests[i], reqint, i);
+                cfgs[cfg_idx++] = cfg;
+
+                // unordered remove
+                count_remaining_requests--;
+                remaining_requests[i] = remaining_requests[count_remaining_requests];
+            } else {
+                i++;
+            }
+        }
+
+        // can use any CountingMode (32 bit timers can also but they are higher priority)
+        uint8_t up_down_updown_timers[] = {3, 4};
+
+        // 16 bit timers
         /* NOTE: timers {TIM12, TIM13, TIM14} are also 16 bit but 
          *  they are used as slave timers to tim8
          */
-        // 32 bit timers, very important for scheduler
-        uint8_t bits32_timers[] = {2, 5, 23, 24};
-        // can use any CountingMode (32 bit timers can also but they are higher priority)
-        uint8_t up_down_updown_timers[] = {3, 4};
-        // 16 bit timers
         uint8_t bits16_timers[] = {15, 16, 17};
         uint8_t remaining_timers[15] = {0};
         uint8_t count_remaining_timers = 0;
@@ -452,12 +484,12 @@ struct TimerDomain {
 
         for(int i = 0; i < count_remaining_requests; i++) {
             const Entry &e = requests[remaining_requests[i]];
-            if(e.request == AnyGeneralPurpose) {
-                uint8_t reqint = remaining_timers[i];
-                // NOTE: I don't want to do an ordered remove so this has the real index
-                Config cfg = DoTimer(requests[i], reqint, i);
-                cfgs[cfg_idx++] = cfg;
+            if(e.request != TimerRequest::AnyGeneralPurpose) {
+                ST_LIB::compile_error("This only processes TimerRequest::AnyGeneralPurpose");
             }
+            uint8_t reqint = remaining_timers[i];
+            Config cfg = DoTimer(requests[i], reqint, i);
+            cfgs[cfg_idx++] = cfg;
         }
 
         return cfgs;
