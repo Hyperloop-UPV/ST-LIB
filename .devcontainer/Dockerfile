@@ -7,6 +7,6 @@ RUN apt-get update && apt-get -y install git git-lfs python3-colorama cmake g++ 
     git lfs install
 
 # Install cubeclt
-RUN mkdir /temp && cd /temp && git clone https://github.com/HyperloopUPV-H8/cubeclt.git && \
+RUN mkdir /temp && cd /temp && git clone https://github.com/Hyperloop-UPV/cubeclt.git && \
     cd cubeclt && git lfs pull && chmod +x cubeclt_1.16.0_installer.sh && \
     echo | LICENSE_ALREADY_ACCEPTED=1 ./cubeclt_1.16.0_installer.sh
