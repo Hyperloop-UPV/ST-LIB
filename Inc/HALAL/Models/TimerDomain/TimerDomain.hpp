@@ -98,7 +98,7 @@ extern void compile_error(const char *msg);
 /* The number corresponds with the timer nº */
 enum TimerRequest : uint8_t {
     AnyGeneralPurpose = 0,
-    Any32bitTimer = 0xFF,
+    Any32bit = 0xFF,
 
     Advanced_1 = 1,
     Advanced_8 = 8,
@@ -406,7 +406,7 @@ struct TimerDomain {
         for(std::size_t i = 0; i < N; i++) {
             uint8_t reqint = static_cast<uint8_t>(requests[i].request);
             if((requests[i].request != TimerRequest::AnyGeneralPurpose) &&
-               (requests[i].request != TimerRequest::Any32bitTimer))
+               (requests[i].request != TimerRequest::Any32bit))
             {
                 if(used_timers[reqint]) {
                     ST_LIB::compile_error("Error: Timer already used");
@@ -435,7 +435,7 @@ struct TimerDomain {
 
         for(int i = 0; i < count_remaining_requests; ) {
             const Entry &e = requests[remaining_requests[i]];
-            if(e.request == TimerRequest::Any32bitTimer) {
+            if(e.request == TimerRequest::Any32bit) {
                 if(count_remaining_32bit_timers <= count_32bit_requests) {
                     ST_LIB::compile_error("No remaining 32 bit timers, there are only 4. Timers {2, 5, 23, 24}");
                 }
