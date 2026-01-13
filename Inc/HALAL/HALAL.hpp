@@ -43,6 +43,10 @@
 
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"
+#include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
+#include "HALAL/Benchmarking_toolkit/DataWatchpointTrace/DataWatchpointTrace.hpp"
+#include "HALAL/Benchmarking_toolkit/Benchmarking.hpp"
+
 
 #ifdef STLIB_ETH
 #include "HALAL/Models/Packets/Packet.hpp"

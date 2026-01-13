@@ -4,7 +4,7 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/PinModel/Pin.hpp"
 #include "core_cm7.h"
-
+#include "HALAL/Benchmarking_toolkit/Benchmarking.hpp"
 #if !defined DWT_LSR_Present_Msk
 #define DWT_LSR_Present_Msk ITM_LSR_Present_Msk
 #endif
@@ -14,6 +14,8 @@
 #define DWT_LAR_KEY 0xC5ACCE55
 #define DEMCR_TRCENA 0x01000000
 #define DWT_CTRL_CYCCNTENA 0x00000001
+
+
 /*
     This class is designed to study the efficiency of an algorithm 
     by counting the number of clock cycles required for execution. 
@@ -28,36 +30,24 @@
 */
 class DataWatchpointTrace {
    public:
-    static void start() {
-        unlock_dwt();
-        reset_cnt();
+    static uint32_t num_overflows;
+    static void enable() {
+        DWT->CTRL |= DWT_CTRL_CYCCNTENA | DWT_CTRL_EXCTRCENA_Msk | DWT_CTRL_EXCEVTENA_Msk;  // enables the counter
+        DWT->FUNCTION0 |= (1 << 7) | 0b1000; // enable comparison
+        DWT->COMP0 = 0xFFFFFFFF; // detect overflow
     }
-    static unsigned int start_count() {
-        DWT->CTRL |= DWT_CTRL_CYCCNTENA;  // enables the counter
-        DWT->CYCCNT = 0;
-        return DWT->CYCCNT;
-    }
-    static unsigned int stop_count() {
+
+    static void disable(){
         DWT->CTRL &= ~DWT_CTRL_CYCCNTENA;  // disable the counter
-        return DWT->CYCCNT;
     }
+
     static unsigned int get_count() {
         return DWT->CYCCNT;  // returns the current value of the counter
     }
 
    private:
     static void reset_cnt() {
-        CoreDebug->DEMCR |= DEMCR_TRCENA;
         DWT->CYCCNT = 0;  // reset the counter
-        DWT->CTRL = 0;
-    }
 
-    static void unlock_dwt() {  // unlock the dwt
-        uint32_t lsr = DWT->LSR;
-        if ((lsr & DWT_LSR_Present_Msk) != 0) {
-            if ((lsr & DWT_LSR_Access_Msk) != 0) {
-                DWT->LAR = DWT_LAR_KEY;
-            }
-        }
     }
 };
