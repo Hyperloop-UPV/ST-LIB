@@ -90,10 +90,12 @@ namespace ST_LIB {
             }
 
             template <class Ctx>
-            consteval void inscribe(Ctx &ctx) const {
-                for (const auto &entry : e) {
-                    ctx.template add<DMA_Domain>(entry);
+            consteval array<size_t, sizeof...(Ss)> inscribe(Ctx &ctx) const {
+                array<size_t, sizeof...(Ss)> indices{};
+                for (size_t i = 0; i < sizeof...(Ss); i++) {
+                    indices[i] = ctx.template add<DMA_Domain>(e[i], this);
                 }
+                return indices;
             }
         };
 
