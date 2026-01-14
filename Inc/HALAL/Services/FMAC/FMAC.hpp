@@ -58,10 +58,6 @@ public:
 	struct FMACInstance{
 		FMACmodes mode;
 		FMAC_HandleTypeDef *hfmac;
-		DMA::Stream dma_preload;
-		DMA::Stream dma_read;
-		DMA::Stream dma_write;
-
 	};
 
 	static FMACInstance Instance;
