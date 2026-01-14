@@ -10,8 +10,5 @@
       "mem.h": "c",
       "tinydir.h": "c",
       "dirent.h": "c",
-      "compare": "cpp",
-      "cstdint": "cpp",
-      "iostream": "cpp"
     }
 }
