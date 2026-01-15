@@ -71,24 +71,25 @@ struct GPIODomain {
       return GPIO_SPEED_FREQ_VERY_HIGH;
     }
   }
+  // Note: AF mapping is inverted: AF0 -> 15, AF1 -> 14, ..., AF15 -> 0, it is staticly casted and inverted later
   enum class AlternateFunction : uint8_t {
     NO_AF = 20,
-    AF0 = 0,
-    AF1 = 1,
-    AF2 = 2,
-    AF3 = 3,
-    AF4 = 4,
-    AF5 = 5,
-    AF6 = 6,
-    AF7 = 7,
-    AF8 = 8,
-    AF9 = 9,
-    AF10 = 10,
-    AF11 = 11,
-    AF12 = 12,
-    AF13 = 13,
-    AF14 = 14,
-    AF15 = 15
+    AF0 = 15,
+    AF1 = 14,
+    AF2 = 13,
+    AF3 = 12,
+    AF4 = 11,
+    AF5 = 10,
+    AF6 = 9,
+    AF7 = 8,
+    AF8 = 7,
+    AF9 = 6,
+    AF10 = 5,
+    AF11 = 4,
+    AF12 = 3,
+    AF13 = 2,
+    AF14 = 1,
+    AF15 = 0
   };
   enum class Port : uint8_t { A, B, C, D, E, F, G, H };
   static inline GPIO_TypeDef *port_to_reg(Port p) {
@@ -189,6 +190,10 @@ struct GPIODomain {
       if (!pin.valid_af(af)) {
         compile_error("Alternate function not valid for this pin");
       }
+
+      if ((mode == OperationMode::ALT_PP || mode == OperationMode::ALT_OD) && af == AlternateFunction::NO_AF) {
+        compile_error("Alternate function must be specified for alternate modes");
+      }
     }
 
     template <class Ctx> consteval void inscribe(Ctx &ctx) const {
@@ -221,7 +226,7 @@ struct GPIODomain {
       GPIO_InitStruct.Pull = to_hal_pull(e.pull);
       GPIO_InitStruct.Speed = to_hal_speed(e.speed);
       if (e.mode == OperationMode::ALT_PP || e.mode == OperationMode::ALT_OD) {
-        GPIO_InitStruct.Alternate = static_cast<uint32_t>(e.af);
+        GPIO_InitStruct.Alternate = 15 - static_cast<uint32_t>(e.af); // AF mapping inversion
       }
 
       cfgs[i].init_data = std::make_tuple(e.port, GPIO_InitStruct);
