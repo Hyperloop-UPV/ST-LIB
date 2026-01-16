@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <type_traits>
 #include <utility>
+#include <stack>
 
 #ifdef MDMA
 #undef MDMA
@@ -135,7 +136,7 @@ private:
     static std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> instance_to_channel;
     static std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> channel_to_instance;
     static std::bitset<8> instance_free_map;
-    inline static Stack<std::pair<MDMA::LinkedListNode*,bool*>,50> transfer_queue{};
+    inline static std::stack<std::pair<MDMA::LinkedListNode*,bool*>,50> transfer_queue{};
 
     static void TransferCompleteCallback(MDMA_HandleTypeDef *hmdma);
     static void TransferErrorCallback(MDMA_HandleTypeDef *hmdma);
