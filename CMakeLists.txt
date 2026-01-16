@@ -11,6 +11,9 @@ if(NOT PROJECT_IS_TOP_LEVEL)
   set(STLIB_LIBRARY ${STLIB_LIBRARY} PARENT_SCOPE)
 endif()
 
+include(CTest)
+enable_testing()
+
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
 
@@ -18,26 +21,28 @@ message(STATUS "${PROJECT_NAME} Ethernet: ${USE_ETHERNET}")
 message(STATUS "${PROJECT_NAME} Nucleo:   ${TARGET_NUCLEO}")
 message(STATUS "${PROJECT_NAME} Crosscompiling: ${CMAKE_CROSSCOMPILING}")
 
-# ============================
-# Tests + GTest - Simulator
-# ============================
-if((PROJECT_IS_TOP_LEVEL AND (NOT CMAKE_CROSSCOMPILING)))
-  include(FetchContent)
-  option(BUILD_GMOCK OFF)
-  option(INSTALL_GTEST OFF)
-  FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.15.2
+if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers)
+  execute_process(
+    COMMAND git submodule update --init --depth 1
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
   )
-  FetchContent_MakeAvailable(googletest)
-  add_library(GTest::GTest INTERFACE IMPORTED)
-  target_link_libraries(GTest::GTest INTERFACE gtest_main)
+endif()
+
+if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include)
+  execute_process(
+    COMMAND git submodule update --init --depth 1 Drivers/CMSIS/Device/ST/STM32H7xx Drivers/STM32H7xx_HAL_Driver
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
+  )
 endif()
 
 if(NOT CMAKE_CROSSCOMPILING)
   message(STATUS "Compiling for simulator")
   add_subdirectory(Tests)
+else()
+  execute_process(
+    COMMAND git submodule update --init --depth 1 Drivers/BSP/Components/lan8742
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
+  )
 endif()
 
 # ============================
@@ -219,25 +224,31 @@ add_library(${STLIB_LIBRARY} STATIC
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_SOURCES}>
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${USER_LWIP_SOURCES}>
 
-  ${HALAL_C_NO_ETH}
-  ${HALAL_CPP_NO_ETH}
-  $<$<BOOL:${USE_ETHERNET}>:${HALAL_C_ETH}>
-  $<$<BOOL:${USE_ETHERNET}>:${HALAL_CPP_ETH}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HALAL_C_NO_ETH}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HALAL_CPP_NO_ETH}>
+  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HALAL_C_ETH}>
+  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HALAL_CPP_ETH}>
 
-  ${CPP_UTILITIES_C}
-  ${CPP_UTILITIES_CPP}
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CPP_UTILITIES_C}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CPP_UTILITIES_CPP}>
 
-  ${STLIB_LOW_C_NO_ETH}
-  ${STLIB_LOW_CPP_NO_ETH}
-  $<$<BOOL:${USE_ETHERNET}>:${STLIB_LOW_C_ETH}>
-  $<$<BOOL:${USE_ETHERNET}>:${STLIB_LOW_CPP_ETH}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_LOW_C_NO_ETH}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_LOW_CPP_NO_ETH}>
+  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_LOW_C_ETH}>
+  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_LOW_CPP_ETH}>
 
-  ${STLIB_HIGH_C_NO_ETH}
-  ${STLIB_HIGH_CPP_NO_ETH}
-  $<$<BOOL:${USE_ETHERNET}>:${STLIB_HIGH_C_ETH}>
-  $<$<BOOL:${USE_ETHERNET}>:${STLIB_HIGH_CPP_ETH}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_HIGH_C_NO_ETH}>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_HIGH_CPP_NO_ETH}>
+  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_HIGH_C_ETH}>
+  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_HIGH_CPP_ETH}>
 
-  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB.cpp
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB.cpp>
+
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/Scheduler.cpp>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_ll_tim.cpp>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_system_stm32h7xx.c>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/stm32h723xx_wrapper.c>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/NVIC.cpp>
 )
 
 set_target_properties(${STLIB_LIBRARY} PROPERTIES
@@ -251,7 +262,7 @@ target_compile_definitions(${STLIB_LIBRARY} PUBLIC
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:USE_HAL_DRIVER>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:STM32H723xx>
 
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:SIM_ON>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:TESTING_ENV>
 
   $<$<BOOL:${USE_ETHERNET}>:STLIB_ETH>
   $<IF:$<BOOL:${TARGET_NUCLEO}>,NUCLEO,BOARD>
@@ -284,10 +295,13 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
 
 target_include_directories(${STLIB_LIBRARY} PUBLIC
   # CMSIS + HAL
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Include>
+  #$<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
+  #$<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Include>
+  ${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include
+  ${STM32CUBEH7}/Drivers/CMSIS/Include
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Core_A/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc>
+  #$<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc>
+  ${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
 
   # LWIP includes 
@@ -315,6 +329,23 @@ target_include_directories(${STLIB_LIBRARY} PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/Inc/ST-LIB_LOW
   ${CMAKE_CURRENT_LIST_DIR}/Inc/ST-LIB_HIGH
 )
+
+
+if(PROJECT_IS_TOP_LEVEL)
+  configure_file(
+    ${CMAKE_CURRENT_LIST_DIR}/Inc/stm32h7xx_hal_conf_template.h
+    ${CMAKE_CURRENT_BINARY_DIR}/stm32h7xx_hal_conf.h
+    COPYONLY
+  )
+
+  target_include_directories(${STLIB_LIBRARY} PUBLIC
+    ${CMAKE_CURRENT_BINARY_DIR}
+  )
+else()
+  target_include_directories(${STLIB_LIBRARY} PUBLIC
+    ${CMAKE_SOURCE_DIR}/Core/Inc
+  )
+endif()
 
 if(PROJECT_IS_TOP_LEVEL)
   execute_process(
