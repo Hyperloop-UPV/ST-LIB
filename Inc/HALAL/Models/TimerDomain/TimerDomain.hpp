@@ -104,12 +104,12 @@ enum TimerRequest : uint8_t {
     Advanced_8 = 8,
 
     GeneralPurpose32bit_2 = 2,
-    GeneralPurpose32bit_3 = 3,
+    GeneralPurpose32bit_5 = 5,
     GeneralPurpose32bit_23 = 23,
     GeneralPurpose32bit_24 = 24,
 
+    GeneralPurpose_3 = 3,
     GeneralPurpose_4 = 4,
-    GeneralPurpose_5 = 5,
 
     SlaveTimer_12 = 12,
     SlaveTimer_13 = 13,
@@ -563,7 +563,156 @@ struct TimerDomain {
     static consteval void check_pins(std::span<const Entry> requests)
     {
         /* good luck n_n */
+        for(std::size_t i = 0; i < requests.size(); i++) {
+            const Entry &e = requests[i];
 
+            switch(e.request) {
+                case TimerRequest::AnyGeneralPurpose:
+                case TimerRequest::Any32bit: {
+                    if(e.pin_count > 0) {
+                        ST_LIB::compile_error("Any* timers can't use pins");
+                    }
+                } break;
+
+                case TimerRequest::Advanced_1: {
+                    // 4 capture-compare channels
+                    // complementary output
+                    
+                    /* TIM1 pins
+                     * PE6:
+                     * - TIM1_BKIN2: AF1
+                     * - TIM1_BKIN2_COMP12: AF12
+                     * PA6:
+                     * - TIM1_BKIN: AF1
+                     * - TIM1_BKIN_COMP12: AF11
+                     * PA7:
+                     * - TIM1_CH1N: AF1
+                     * PB0:
+                     * - TIM1_CH2N: AF1
+                     * PB1:
+                     * - TIM1_CH3N: AF1
+                     * PE7:
+                     * - TIM1_ETR: AF1
+                     * PE8:
+                     * - TIM1_CH1N: AF1
+                     * PE9:
+                     * - TIM1_CH1: AF1
+                     * PE10:
+                     * - TIM1_CH2N: AF1
+                     * PE11:
+                     * - TIM1_CH2: AF1
+                     * PE12:
+                     * - TIM1_CH3N: AF1
+                     * PE13:
+                     * - TIM1_CH3: AF1
+                     * PE14:
+                     * - TIM1_CH4: AF1
+                     * PE15:
+                     * - TIM1_BKIN: AF1
+                     * - TIM1_BKIN_COMP12: AF13
+                     * PB12:
+                     * - TIM1_BKIN: AF1
+                     * - TIM1_BKIN_COMP12: AF13
+                     * PB13:
+                     * - TIM1_CH1N: AF1
+                     * PB14:
+                     * - TIM1_CH2N: AF1
+                     * PB15:
+                     * - TIM1_CH3N: AF1
+                     * PG4:
+                     * - TIM1_BKIN2: AF1
+                     * - TIM1_BKIN2_COMP12: AF11
+                     * PG5:
+                     * - TIM1_ETR: AF1
+                     * PA8:
+                     * - TIM1_CH1: AF1
+                     * PA9:
+                     * - TIM1_CH2: AF1
+                     * PA10:
+                     * - TIM1_CH3: AF1
+                     * PA11:
+                     * - TIM1_CH4: AF1
+                     * PA12:
+                     * - TIM1_ETR: AF1
+                     * - TIM1_BKIN2: AF12
+                     * 
+                     */
+                } break;
+
+                case TimerRequest::GeneralPurpose32bit_2: {
+                    // 4 capture-compare channels
+                    
+                } break;
+
+                case TimerRequest::GeneralPurpose_3: {
+                    // 4 capture-compare channels
+
+                } break;
+
+                case TimerRequest::GeneralPurpose_4: {
+                    // 4 capture-compare channels
+
+                } break;
+
+                case TimerRequest::GeneralPurpose32bit_5: {
+                    // 4 capture-compare channels
+
+                } break;
+
+                case TimerRequest::Basic_6:
+                case TimerRequest::Basic_7: {
+                    if(e.pin_count > 0) {
+                        ST_LIB::compile_error("Basic timers can't use pins");
+                    }
+                } break;
+
+                case TimerRequest::Advanced_8: {
+                    // 4 capture-compare channels
+                    // complementary output
+
+                } break;
+
+                case TimerRequest::SlaveTimer_12: {
+                    // 2 capture-compare channels
+
+                } break;
+
+                case TimerRequest::SlaveTimer_13: {
+                    // 1 capture-compare channel
+
+                } break;
+
+                case TimerRequest::SlaveTimer_14: {
+                    // 1 capture-compare channel
+
+                } break;
+
+                case TimerRequest::GeneralPurpose_15: {
+                    // 2 capture-compare channels
+
+                } break;
+
+                case TimerRequest::GeneralPurpose_16: {
+                    // 1 capture-compare channel
+
+                } break;
+
+                case TimerRequest::GeneralPurpose_17: {
+                    // 1 capture-compare channel
+
+                } break;
+
+                case TimerRequest::GeneralPurpose32bit_23: {
+                    // 4 capture-compare channels
+
+                } break;
+
+                case TimerRequest::GeneralPurpose32bit_24: {
+                    // 4 capture-compare channels
+
+                } break;
+            }
+        }
     }
 };
 } // namespace ST_LIB
