@@ -642,16 +642,83 @@ struct TimerDomain {
                 case TimerRequest::GeneralPurpose32bit_2: {
                     // 4 capture-compare channels
                     
+                    /* TIM2 pins
+                     * PA0:
+                     * - TIM2_CH1: AF1
+                     * - TIM2_ETR: AF1
+                     * PA1:
+                     * - TIM2_CH2: AF1
+                     * PA2:
+                     * - TIM2_CH3: AF1
+                     * PA3:
+                     * - TIM2_CH4: AF1
+                     * PA5:
+                     * - TIM2_CH1: AF1
+                     * - TIM2_ETR: AF1
+                     * PA15:
+                     * - TIM2_CH1: AF1
+                     * - TIM2_ETR: AF1
+                     * PB3:
+                     * - TIM2_CH2: AF1
+                     * PB10:
+                     * - TIM2_CH3: AF1
+                     * PB11:
+                     * - TIM2_CH4: AF1
+                     */
                 } break;
 
                 case TimerRequest::GeneralPurpose_3: {
                     // 4 capture-compare channels
 
+                    /* TIM3 pins:
+                     * PA6:
+                     * - TIM3_CH1: AF2
+                     * PA7:
+                     * - TIM3_CH2: AF2
+                     * PB0:
+                     * - TIM3_CH3: AF2
+                     * PB1:
+                     * - TIM3_CH4: AF2
+                     * PB4:
+                     * - TIM3_CH1: AF2
+                     * PB5:
+                     * - TIM3_CH2: AF2
+                     * PC6:
+                     * - TIM3_CH1: AF2
+                     * PC7:
+                     * - TIM3_CH2: AF2
+                     * PC8:
+                     * - TIM3_CH3: AF2
+                     * PC9:
+                     * - TIM3_CH4: AF2
+                     * PD2:
+                     * - TIM3_ETR: AF2
+                     */
                 } break;
 
                 case TimerRequest::GeneralPurpose_4: {
                     // 4 capture-compare channels
 
+                    /* TIM4 pins:
+                     * PB6:
+                     * - TIM4_CH1: AF2
+                     * PB7:
+                     * - TIM4_CH2: AF2
+                     * PB8:
+                     * - TIM4_CH3: AF2
+                     * PB9:
+                     * - TIM4_CH4: AF2
+                     * PD12:
+                     * - TIM4_CH1: AF2
+                     * PD13:
+                     * - TIM4_CH2: AF2
+                     * PD14:
+                     * - TIM4_CH3: AF2
+                     * PD15:
+                     * - TIM4_CH4: AF2
+                     * PE0:
+                     * - TIM4_ETR: AF2
+                     */
                 } break;
 
                 case TimerRequest::GeneralPurpose32bit_5: {
