@@ -53,6 +53,22 @@ MEMORY
 /* Define output sections */
 SECTIONS
 {
+  /* Export Memory Layout Information for MPU Configuration */
+  PROVIDE(__itcm_base = ORIGIN(ITCMRAM));
+  PROVIDE(__itcm_size = LENGTH(ITCMRAM));
+  PROVIDE(__dtcm_base = ORIGIN(DTCMRAM));
+  PROVIDE(__dtcm_size = LENGTH(DTCMRAM));
+  PROVIDE(__flash_base = ORIGIN(RAM_EXEC)); /* Emulate Flash as RAM_EXEC start for RAM mode */
+  PROVIDE(__flash_size = LENGTH(RAM_EXEC));
+  PROVIDE(__ram_d1_base = ORIGIN(RAM_EXEC));
+  PROVIDE(__ram_d1_size = LENGTH(RAM_EXEC));
+  PROVIDE(__ram_d2_base = ORIGIN(RAM_D2));
+  PROVIDE(__ram_d2_size = LENGTH(RAM_D2));
+  PROVIDE(__ram_d3_base = ORIGIN(RAM_D3));
+  PROVIDE(__ram_d3_size = LENGTH(RAM_D3));
+  PROVIDE(__peripheral_base = 0x40000000);
+  PROVIDE(__peripheral_size = 0x20000000);
+
   /* The startup code goes first into RAM_EXEC */
   .isr_vector :
   {
@@ -125,9 +141,25 @@ SECTIONS
   .mpu_ram_d1_nc :
   {
     . = ALIGN(32);
+    PROVIDE(__mpu_d1_nc_start = .);
     *(.mpu_ram_d1_nc)
-    . = ALIGN(32);
   } >RAM_EXEC
+
+  /* CALCULATE PADDING FOR MPU SUBREGIONS (D1) */
+  _d1_size = SIZEOF(.mpu_ram_d1_nc);
+  /* Find next power of 2 */
+  _d1_p2 = (_d1_size <= 32) ? 32 : (_d1_size <= 64) ? 64 : (_d1_size <= 128) ? 128 : (_d1_size <= 256) ? 256 : 
+           (_d1_size <= 512) ? 512 : (_d1_size <= 1024) ? 1024 : (_d1_size <= 2048) ? 2048 : 
+           (_d1_size <= 4096) ? 4096 : (_d1_size <= 8192) ? 8192 : (_d1_size <= 16384) ? 16384 : 
+           (_d1_size <= 32768) ? 32768 : (_d1_size <= 65536) ? 65536 : (_d1_size <= 131072) ? 131072 : 
+           (_d1_size <= 262144) ? 262144 : 524288;
+  /* Subregion size is RegionSize / 8 */
+  _d1_sub = _d1_p2 / 8;
+  /* Align effective size to the subregion granularity */
+  _d1_pad = (_d1_size + _d1_sub - 1) / _d1_sub * _d1_sub;
+  /* Advance current pointer to reserve this space */
+  . = __mpu_d1_nc_start + _d1_pad;
+  PROVIDE(__mpu_d1_nc_end = .);
 
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
@@ -171,19 +203,44 @@ SECTIONS
     . = ALIGN(8);
   } >DTCMRAM
 
+  /* MPU D2 Non-Cached Section: Placed at start of RAM_D2 for alignment */
   .mpu_ram_d2_nc :
   {
     . = ALIGN(32);
+    PROVIDE(__mpu_d2_nc_start = .);
     *(.mpu_ram_d2_nc)
-    . = ALIGN(32);
   } >RAM_D2
 
+  /* CALCULATE PADDING FOR MPU SUBREGIONS (D2) */
+  _d2_size = SIZEOF(.mpu_ram_d2_nc);
+  /* Find next power of 2 */
+  _d2_p2 = (_d2_size <= 32) ? 32 : (_d2_size <= 64) ? 64 : (_d2_size <= 128) ? 128 : (_d2_size <= 256) ? 256 : 
+           (_d2_size <= 512) ? 512 : (_d2_size <= 1024) ? 1024 : (_d2_size <= 2048) ? 2048 : 
+           (_d2_size <= 4096) ? 4096 : (_d2_size <= 8192) ? 8192 : (_d2_size <= 16384) ? 16384 : 
+           (_d2_size <= 32768) ? 32768 : 65536;
+  _d2_sub = _d2_p2 / 8;
+  _d2_pad = (_d2_size + _d2_sub - 1) / _d2_sub * _d2_sub;
+  . = __mpu_d2_nc_start + _d2_pad;
+  PROVIDE(__mpu_d2_nc_end = .);
+
+  /* MPU D3 Non-Cached Section: Placed at start of RAM_D3 for alignment */
   .mpu_ram_d3_nc :
   {
     . = ALIGN(32);
+    PROVIDE(__mpu_d3_nc_start = .);
     *(.mpu_ram_d3_nc)
-    . = ALIGN(32);
   } >RAM_D3
+
+  /* CALCULATE PADDING FOR MPU SUBREGIONS (D3) */
+  _d3_size = SIZEOF(.mpu_ram_d3_nc);
+  /* Find next power of 2 */
+  _d3_p2 = (_d3_size <= 32) ? 32 : (_d3_size <= 64) ? 64 : (_d3_size <= 128) ? 128 : (_d3_size <= 256) ? 256 : 
+           (_d3_size <= 512) ? 512 : (_d3_size <= 1024) ? 1024 : (_d3_size <= 2048) ? 2048 : 
+           (_d3_size <= 4096) ? 4096 : (_d3_size <= 8192) ? 8192 : (_d3_size <= 16384) ? 16384 : 32768;
+  _d3_sub = _d3_p2 / 8;
+  _d3_pad = (_d3_size + _d3_sub - 1) / _d3_sub * _d3_sub;
+  . = __mpu_d3_nc_start + _d3_pad;
+  PROVIDE(__mpu_d3_nc_end = .);
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
