@@ -287,4 +287,28 @@ SECTIONS
   }
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
+
+  /* MPU D1 Cached Section */
+  .ram_d1 :
+  {
+    . = ALIGN(32);
+    *(.ram_d1)
+    *(.ram_d1*)
+  } >RAM_D1
+
+  /* MPU D2 Cached Section */
+  .ram_d2 :
+  {
+    . = ALIGN(32);
+    *(.ram_d2)
+    *(.ram_d2*)
+  } >RAM_D2
+
+  /* MPU D3 Cached Section */
+  .ram_d3 :
+  {
+    . = ALIGN(32);
+    *(.ram_d3)
+    *(.ram_d3*)
+  } >RAM_D3
 }

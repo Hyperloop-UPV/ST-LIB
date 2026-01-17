@@ -256,6 +256,30 @@ SECTIONS
   } >ITCMRAM AT> RAM_EXEC
   _siram_code = LOADADDR(.ram_code);
 
+  /* Cached D1 Section - Explicitly placed after the Non-Cached region */
+  .ram_d1 :
+  {
+    . = ALIGN(32);
+    *(.ram_d1)
+    *(.ram_d1*)
+  } >RAM_D1
+
+  /* Cached D2 Section - Explicitly placed after the Non-Cached region */
+  .ram_d2 :
+  {
+    . = ALIGN(32);
+    *(.ram_d2)
+    *(.ram_d2*)
+  } >RAM_D2
+
+  /* Cached D3 Section - Explicitly placed after the Non-Cached region */
+  .ram_d3 :
+  {
+    . = ALIGN(32);
+    *(.ram_d3)
+    *(.ram_d3*)
+  } >RAM_D3
+
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {
