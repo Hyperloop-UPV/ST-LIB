@@ -28,6 +28,9 @@
 #define D2_C __attribute__((section(".ram_d2")))
 #define D3_C __attribute__((section(".ram_d3")))
 
+// Define for RAM code
+#define RAM_CODE __attribute__((section(".ram_code")))
+
 // Memory Bank Symbols from Linker
 extern "C" uint32_t __itcm_base;
 extern "C" uint32_t __itcm_size;

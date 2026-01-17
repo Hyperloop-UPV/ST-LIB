@@ -266,6 +266,18 @@ SECTIONS
   . = __mpu_d3_nc_start + _d3_pad;
   PROVIDE(__mpu_d3_nc_end = .);
 
+  /* Code running in ITCM RAM (0 Wait States, Instruction Bus) */
+  .ram_code :
+  {
+  	. = ALIGN(4);
+  	_sram_code = .; 
+    *(.ram_code)
+    *(.ram_code*)
+    . = ALIGN(4);
+    _eram_code = .;
+  } >ITCMRAM AT> FLASH
+  _siram_code = LOADADDR(.ram_code);
+
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {
