@@ -68,7 +68,7 @@ SECTIONS
   PROVIDE(__ram_d3_base = ORIGIN(RAM_D3));
   PROVIDE(__ram_d3_size = LENGTH(RAM_D3));
   PROVIDE(__peripheral_base = 0x40000000);
-  PROVIDE(__peripheral_size = 0x20000000); // 512MB
+  PROVIDE(__peripheral_size = 0x20000000); /* 512MB */
 
   /* The startup code goes first into FLASH */
   .isr_vector :
