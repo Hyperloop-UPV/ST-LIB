@@ -8,7 +8,7 @@
 #ifndef MPU_HPP
 #define MPU_HPP
 
-#ifndef HALAL_MPUBUFFERS_MAX_INSTANCES
+#ifndef HALAL_MPUBUFFERS_MAX_INSTANCES // Define this in you build system if you need a different value
 #define HALAL_MPUBUFFERS_MAX_INSTANCES 100
 #endif
 
@@ -76,8 +76,8 @@ struct MPUDomain {
         }
 
         template <class Ctx>
-        consteval void inscribe(Ctx &ctx) const {
-            ctx.template add<MPUDomain>(e, this);
+        consteval std::size_t inscribe(Ctx &ctx) const {
+            return ctx.template add<MPUDomain>(e, this);
         }
     };
 
@@ -127,7 +127,7 @@ struct MPUDomain {
                 else if (cfg.domain == MemoryDomain::D3) sizes.d3_nc_size = cfg.mpu_region_size;
             }
         }
-        // Align totals to 32 bytes
+        // Align totals to 32 bytes (max possible alignment, just in case)
         sizes.d1_total = align_up(sizes.d1_total, 32);
         sizes.d2_total = align_up(sizes.d2_total, 32);
         sizes.d3_total = align_up(sizes.d3_total, 32);
@@ -379,6 +379,34 @@ struct MPUDomain {
         MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE; // This should be scrutinized to see why it was non-bufferable before changing to bufferable
         HAL_MPU_ConfigRegion(&MPU_InitStruct);
 
+        // DTCM RAM (Cached)
+        MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+        MPU_InitStruct.Number = MPU_REGION_NUMBER10; 
+        MPU_InitStruct.BaseAddress = 0x20000000;
+        MPU_InitStruct.Size = MPU_REGION_SIZE_128KB;
+        MPU_InitStruct.SubRegionDisable = 0x0;
+        MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
+        MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+        MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE; // DTCM is not effective for code exec
+        MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
+        MPU_InitStruct.IsCacheable = MPU_ACCESS_CACHEABLE;
+        MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;
+        HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
+        // ITCM RAM + Shared ITCM/AXI (0x00000000 - 0x0003FFFF = 256KB total) Executable, Critical Code / Vector Table
+        MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+        MPU_InitStruct.Number = MPU_REGION_NUMBER11; 
+        MPU_InitStruct.BaseAddress = 0x00000000;
+        MPU_InitStruct.Size = MPU_REGION_SIZE_256KB; // 64KB ITCM + 192KB Shared (with AXI)
+        MPU_InitStruct.SubRegionDisable = 0x0;
+        MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
+        MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+        MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
+        MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
+        MPU_InitStruct.IsCacheable = MPU_ACCESS_CACHEABLE; 
+        MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE; 
+        HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
         // D1 RAM (Cached)
         MPU_InitStruct.Enable = MPU_REGION_ENABLE;
         MPU_InitStruct.Number = MPU_REGION_NUMBER2;
@@ -411,7 +439,7 @@ struct MPUDomain {
         MPU_InitStruct.Enable = MPU_REGION_ENABLE;
         MPU_InitStruct.Number = MPU_REGION_NUMBER8;
         MPU_InitStruct.BaseAddress = 0x30000000;
-        MPU_InitStruct.Size = MPU_REGION_SIZE_512B;
+        MPU_InitStruct.Size = MPU_REGION_SIZE_512B; // Should check if ethernet descriptors really use only this (linker script uses absolute addresses)
         MPU_InitStruct.SubRegionDisable = 0x0;
         MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
         MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;

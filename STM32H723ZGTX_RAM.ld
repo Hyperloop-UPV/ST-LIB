@@ -70,8 +70,11 @@ SECTIONS
     *(.glue_7)         /* glue arm to thumb code */
     *(.glue_7t)        /* glue thumb to arm code */
     *(.eh_frame)
+
+    /* No implementation nor use for them just yet
     *(.RamFunc)        /* .RamFunc sections */
     *(.RamFunc*)       /* .RamFunc* sections */
+    */
 
     KEEP (*(.init))
     KEEP (*(.fini))
