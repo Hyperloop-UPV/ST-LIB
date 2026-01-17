@@ -139,8 +139,17 @@ SECTIONS
   {
     . = ALIGN(32);
     PROVIDE(__mpu_d1_nc_start = .);
-    *(.mpu_ram_d1_nc)
-    *(.mpu_ram_d1_nc*)
+    
+    /* Legacy MPUManager allocations (if any) */
+    *(.mpu_ram_d1_nc.legacy)
+    
+    /* User manual allocations via D1_NC macro */
+    *(.mpu_ram_d1_nc.user)
+    
+    /* New MPU system buffers */
+    *(.mpu_ram_d1_nc.buffer)
+    
+    /* Ethernet Rx Pool */
     . = ALIGN(32);
     *(.Rx_PoolSection)
   } >RAM_D1
@@ -171,11 +180,6 @@ SECTIONS
     _sdata = .;        /* create a global symbol at data start */
     *(.data)           /* .data sections */
     *(.data*)          /* .data* sections */
-
-    /* No implementation nor use for them just yet
-    *(.RamFunc)        /* .RamFunc sections */
-    *(.RamFunc*)       /* .RamFunc* sections */
-  */
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
@@ -232,9 +236,14 @@ SECTIONS
     *(.RxDecripSection) 
     *(.TxDecripSection)
     
-    /* Generic Non-Cached D2 data */
-    *(.mpu_ram_d2_nc)
-    *(.mpu_ram_d2_nc*)
+    /* Legacy MPUManager allocations (if any) */
+    *(.mpu_ram_d2_nc.legacy)
+    
+    /* User manual allocations via D2_NC macro */
+    *(.mpu_ram_d2_nc.user)
+    
+    /* New MPU system buffers */
+    *(.mpu_ram_d2_nc.buffer)
   } >RAM_D2
 
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D2) */
@@ -254,8 +263,15 @@ SECTIONS
   {
     . = ALIGN(32);
     PROVIDE(__mpu_d3_nc_start = .);
-    *(.mpu_ram_d3_nc)
-    *(.mpu_ram_d3_nc*)
+    
+    /* Legacy MPUManager allocations */
+    *(.mpu_ram_d3_nc.legacy)
+    
+    /* User manual allocations via D3_NC macro */
+    *(.mpu_ram_d3_nc.user)
+    
+    /* New MPU system buffers */
+    *(.mpu_ram_d3_nc.buffer)
   } >RAM_D3
 
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D3) */
@@ -295,23 +311,44 @@ SECTIONS
   .ram_d1 :
   {
     . = ALIGN(32);
-    *(.ram_d1)
-    *(.ram_d1*)
+    
+    /* Legacy MPUManager allocations (if any) */
+    *(.ram_d1.legacy)
+    
+    /* User manual allocations via D1_C macro */
+    *(.ram_d1.user)
+    
+    /* New MPU system buffers */
+    *(.ram_d1.buffer)
   } >RAM_D1
 
   /* MPU D2 Cached Section */
   .ram_d2 :
   {
     . = ALIGN(32);
-    *(.ram_d2)
-    *(.ram_d2*)
+    
+    /* Legacy MPUManager allocations (if any) */
+    *(.ram_d2.legacy)
+    
+    /* User manual allocations via D2_C macro */
+    *(.ram_d2.user)
+    
+    /* New MPU system buffers */
+    *(.ram_d2.buffer)
   } >RAM_D2
 
   /* MPU D3 Cached Section */
   .ram_d3 :
   {
     . = ALIGN(32);
-    *(.ram_d3)
-    *(.ram_d3*)
+    
+    /* Legacy MPUManager allocations (if any) */
+    *(.ram_d3.legacy)
+    
+    /* User manual allocations via D3_C macro */
+    *(.ram_d3.user)
+    
+    /* New MPU system buffers */
+    *(.ram_d3.buffer)
   } >RAM_D3
 }

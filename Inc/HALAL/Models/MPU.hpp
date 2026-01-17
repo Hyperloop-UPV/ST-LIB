@@ -3,12 +3,34 @@
  *
  *  Created on: 10 dic. 2025
  *      Author: Boris
+ *
+ *  Memory Allocation Strategies:
+ *  ==============================
+ *  This system supports three distinct memory allocation methods that can coexist:
+ *
+ *  1. MANUAL ALLOCATION (via macros):
+ *     Use D1_NC, D2_NC, D3_NC, D1_C, D2_C, D3_C macros for static/global variables.
+ *     Example: D1_NC uint8_t my_buffer[100];
+ *     Placed in: .mpu_ram_dX_nc.user or .ram_dX.user sections
+ *
+ *  2. NEW MPU SYSTEM (compile-time allocation):
+ *     Use MPUDomain::Buffer<T> with compile-time buffer management.
+ *     Automatically placed and sized by the Domain system.
+ *     Placed in: .mpu_ram_dX_nc.buffer or .ram_dX.buffer sections
+ *
+ *  3. LEGACY MPUManager (runtime allocation):
+ *     Use MPUManager::allocate_non_cached_memory() for dynamic allocation.
+ *     Currently uses a 2KB pool in D3 non-cached memory.
+ *     Placed in: .mpu_ram_d3_nc.legacy section
+ *
+ *  These three methods are separated in the linker script to prevent overlap.
+ *  All memory is properly configured by MPU regions as non-cached or cached.
  */
 
 #ifndef MPU_HPP
 #define MPU_HPP
 
-#ifndef HALAL_MPUBUFFERS_MAX_INSTANCES // Define this in you build system if you need a different value
+#ifndef HALAL_MPUBUFFERS_MAX_INSTANCES // Define this in your build system if you need a different value
 #define HALAL_MPUBUFFERS_MAX_INSTANCES 100
 #endif
 
@@ -21,12 +43,12 @@
 // Defines for attributes
 // Note1: Variables declared with these attributes will likely not be initialized by the startup
 // Note2: These attributes can only be used for static/global variables
-#define D1_NC __attribute__((section(".mpu_ram_d1_nc")))
-#define D2_NC __attribute__((section(".mpu_ram_d2_nc")))
-#define D3_NC __attribute__((section(".mpu_ram_d3_nc")))
-#define D1_C __attribute__((section(".ram_d1")))
-#define D2_C __attribute__((section(".ram_d2")))
-#define D3_C __attribute__((section(".ram_d3")))
+#define D1_NC __attribute__((section(".mpu_ram_d1_nc.user")))
+#define D2_NC __attribute__((section(".mpu_ram_d2_nc.user")))
+#define D3_NC __attribute__((section(".mpu_ram_d3_nc.user")))
+#define D1_C __attribute__((section(".ram_d1.user")))
+#define D2_C __attribute__((section(".ram_d2.user")))
+#define D3_C __attribute__((section(".ram_d3.user")))
 
 // Define for RAM code
 #define RAM_CODE __attribute__((section(".ram_code")))
