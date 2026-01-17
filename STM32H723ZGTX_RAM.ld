@@ -143,6 +143,8 @@ SECTIONS
     . = ALIGN(32);
     PROVIDE(__mpu_d1_nc_start = .);
     *(.mpu_ram_d1_nc)
+    . = ALIGN(32);
+    *(.Rx_PoolSection)
   } >RAM_EXEC
 
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D1) */

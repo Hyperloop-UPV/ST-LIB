@@ -140,6 +140,8 @@ SECTIONS
     . = ALIGN(32);
     PROVIDE(__mpu_d1_nc_start = .);
     *(.mpu_ram_d1_nc)
+    . = ALIGN(32);
+    *(.Rx_PoolSection)
   } >RAM_D1
 
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D1) */
@@ -203,11 +205,6 @@ SECTIONS
     *(.bss*)
     *(COMMON)
 
-    /* ETH_CODE: add placement of RX buffer. STM32H72x/H73x has small D2 RAM, so we need to put it there.
-     * (NOLOAD) attribute used for .bss section to avoid linker warning (.bss initialized by startup code)
-     */
-    . = ALIGN(32);
-    *(.Rx_PoolSection)
     . = ALIGN(4);
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
