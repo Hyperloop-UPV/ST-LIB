@@ -237,19 +237,19 @@ struct MPUDomain {
         static constexpr auto Sizes = calculate_total_sizes(cfgs);
 
         // Sections defined in Linker Script (aligned to 32 bytes just in case)
-        D1_NC alignas(32)
+        __attribute__((section(".mpu_ram_d1_nc.buffer"))) alignas(32)
         static inline uint8_t d1_nc_buffer[Sizes.d1_nc_total > 0 ? Sizes.d1_nc_total : 1];
-        D1_C alignas(32)
+        __attribute__((section(".ram_d1.buffer"))) alignas(32)
         static inline uint8_t d1_c_buffer[Sizes.d1_c_total > 0 ? Sizes.d1_c_total : 1];
 
-        D2_NC alignas(32)
+        __attribute__((section(".mpu_ram_d2_nc.buffer"))) alignas(32)
         static inline uint8_t d2_nc_buffer[Sizes.d2_nc_total > 0 ? Sizes.d2_nc_total : 1];
-        D2_C alignas(32)
+        __attribute__((section(".ram_d2.buffer"))) alignas(32)
         static inline uint8_t d2_c_buffer[Sizes.d2_c_total > 0 ? Sizes.d2_c_total : 1];
 
-        D3_NC alignas(32)
+        __attribute__((section(".mpu_ram_d3_nc.buffer"))) alignas(32)
         static inline uint8_t d3_nc_buffer[Sizes.d3_nc_total > 0 ? Sizes.d3_nc_total : 1];
-        D3_C alignas(32)
+        __attribute__((section(".ram_d3.buffer"))) alignas(32)
         static inline uint8_t d3_c_buffer[Sizes.d3_c_total > 0 ? Sizes.d3_c_total : 1];
 
         static void init() {

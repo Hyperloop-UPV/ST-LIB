@@ -140,6 +140,7 @@ SECTIONS
     . = ALIGN(32);
     PROVIDE(__mpu_d1_nc_start = .);
     *(.mpu_ram_d1_nc)
+    *(.mpu_ram_d1_nc*)
     . = ALIGN(32);
     *(.Rx_PoolSection)
   } >RAM_D1
@@ -233,6 +234,7 @@ SECTIONS
     
     /* Generic Non-Cached D2 data */
     *(.mpu_ram_d2_nc)
+    *(.mpu_ram_d2_nc*)
   } >RAM_D2
 
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D2) */
@@ -253,6 +255,7 @@ SECTIONS
     . = ALIGN(32);
     PROVIDE(__mpu_d3_nc_start = .);
     *(.mpu_ram_d3_nc)
+    *(.mpu_ram_d3_nc*)
   } >RAM_D3
 
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D3) */
