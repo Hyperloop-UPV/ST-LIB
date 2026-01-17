@@ -310,40 +310,46 @@ struct MPUDomain {
         MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
         HAL_MPU_ConfigRegion(&MPU_InitStruct);
 
-        // Peripherals (Device)
+        // Peripherals (Device, Buffered)
+        // Guarded against speculative execution and cache
         configure_region((uint32_t)&__peripheral_base, (uint32_t)&__peripheral_size, MPU_REGION_NUMBER8,
                          MPU_TEX_LEVEL0, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_SHAREABLE, MPU_ACCESS_NOT_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
-        // Flash (Non-cached, Executable)
+        // Flash (Normal, Cacheable)
+        // TEX=1, C=1, B=0: Normal, Write-Through (Read optimized)
+        // Not Shareable to allow full caching
         configure_region((uint32_t)&__flash_base, (uint32_t)&__flash_size, MPU_REGION_NUMBER1,
-                         MPU_TEX_LEVEL0, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
-                         MPU_ACCESS_SHAREABLE, MPU_ACCESS_NOT_CACHEABLE, MPU_ACCESS_NOT_BUFFERABLE);
+                         MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
+                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_NOT_BUFFERABLE);
 
-        // DTCM (Cached, No Exec)
+        // DTCM (Normal, Cacheable)
+        // Uses Normal memory attributes. TCM access is uncached by hardware, but "Normal" allows unaligned access.
         configure_region((uint32_t)&__dtcm_base, (uint32_t)&__dtcm_size, MPU_REGION_NUMBER10,
-                         MPU_TEX_LEVEL0, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
-                         MPU_ACCESS_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
+                         MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
+                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
-        // ITCM (Shared/ITCM, Cached, Executable)
+        // ITCM (Normal, Cacheable)
         configure_region((uint32_t)&__itcm_base, (uint32_t)&__itcm_size, MPU_REGION_NUMBER11,
-                         MPU_TEX_LEVEL0, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
-                         MPU_ACCESS_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
+                         MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
+                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
-        // D1 RAM (Cached)
+        // D1 RAM Cached (Normal, WBWA)
+        // TEX=1, C=1, B=1: Normal, Write-Back, Write-Allocate
+        // Not Shareable ensures strict L1 utilization.
         configure_region((uint32_t)&__ram_d1_base, (uint32_t)&__ram_d1_size, MPU_REGION_NUMBER2,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
-                         MPU_ACCESS_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
+                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
-        // D2 RAM (Cached)
+        // D2 RAM Cached (Normal, WBWA)
         configure_region((uint32_t)&__ram_d2_base, (uint32_t)&__ram_d2_size, MPU_REGION_NUMBER4,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
-                         MPU_ACCESS_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
+                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
-        // D3 RAM (Cached)
+        // D3 RAM Cached (Normal, WBWA)
         configure_region((uint32_t)&__ram_d3_base, (uint32_t)&__ram_d3_size, MPU_REGION_NUMBER6,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
-                         MPU_ACCESS_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
+                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
     }
 
     static void configure_region(uint32_t base, uint32_t size, uint8_t region_num, 
