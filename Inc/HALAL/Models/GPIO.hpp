@@ -159,6 +159,14 @@ struct GPIODomain {
         return true;
       return ((1 << static_cast<uint8_t>(af)) & afs) != 0;
     }
+
+    constexpr bool operator==(const Pin &other) const {
+      return (port == other.port) && (pin == other.pin);
+    }
+
+    constexpr bool operator!=(const Pin &other) const {
+      return !(*this == other);
+    }
   };
 
   struct Entry {
@@ -246,7 +254,6 @@ struct GPIODomain {
     static inline std::array<Instance, N> instances{};
 
     static void init(std::span<const Config, N> cfgs) {
-      static_assert(N > 0);
       for (std::size_t i = 0; i < N; ++i) {
         const auto &e = cfgs[i];
         auto [port, gpio_init] = e.init_data;
