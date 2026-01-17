@@ -140,14 +140,11 @@ SECTIONS
     . = ALIGN(32);
     PROVIDE(__mpu_d1_nc_start = .);
     
-    /* Legacy MPUManager allocations (if any) */
-    *(.mpu_ram_d1_nc.legacy)
+    /* New MPU system buffers */
+    *(.mpu_ram_d1_nc.buffer)
     
     /* User manual allocations via D1_NC macro */
     *(.mpu_ram_d1_nc.user)
-    
-    /* New MPU system buffers */
-    *(.mpu_ram_d1_nc.buffer)
     
     /* Ethernet Rx Pool */
     . = ALIGN(32);
@@ -236,14 +233,12 @@ SECTIONS
     *(.RxDecripSection) 
     *(.TxDecripSection)
     
-    /* Legacy MPUManager allocations (if any) */
-    *(.mpu_ram_d2_nc.legacy)
-    
+    /* New MPU system buffers */
+    *(.mpu_ram_d2_nc.buffer)
+
     /* User manual allocations via D2_NC macro */
     *(.mpu_ram_d2_nc.user)
     
-    /* New MPU system buffers */
-    *(.mpu_ram_d2_nc.buffer)
   } >RAM_D2
 
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D2) */
@@ -264,14 +259,16 @@ SECTIONS
     . = ALIGN(32);
     PROVIDE(__mpu_d3_nc_start = .);
     
+    /* New MPU system buffers */
+    *(.mpu_ram_d3_nc.buffer)
+
     /* Legacy MPUManager allocations */
     *(.mpu_ram_d3_nc.legacy)
     
     /* User manual allocations via D3_NC macro */
     *(.mpu_ram_d3_nc.user)
     
-    /* New MPU system buffers */
-    *(.mpu_ram_d3_nc.buffer)
+
   } >RAM_D3
 
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D3) */
