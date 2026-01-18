@@ -251,6 +251,16 @@ struct MPUDomain {
         }
     };
 
+    template <typename Board, mpu_buffer_request auto &Target, typename... Args>
+    static auto& construct(Args&&... args) {
+        return Board::template instance_of<Target>().template construct<Target>(std::forward<Args>(args)...);
+    }
+
+    template <typename Board, mpu_buffer_request auto &Target>
+    static auto* as() {
+        return Board::template instance_of<Target>().template as<Target>();
+    }
+
     
     template <std::size_t N, std::array<Config, N> cfgs>
     struct Init {
