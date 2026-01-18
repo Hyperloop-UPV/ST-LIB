@@ -121,10 +121,10 @@ struct MPUDomain {
          * @brief Constructs a Buffer entry for a type T.
          * @tparam T The type for which the buffer is requested. Must be a POD type.
          * @param type The memory type (Cached or NonCached).
-         * @param domain The memory domain where the buffer should be allocated.
+         * @param domain The memory domain where the buffer should be allocated (Defaults to D1, since it is the largest and fastest).
          * @param force_cache_alignment If true, forces the buffer to be cache line aligned (32 bytes, takes the rest as padding).
          */
-        consteval Buffer(MemoryType type = MemoryType::NonCached, MemoryDomain domain = MemoryDomain::D2, bool force_cache_alignment = false)
+        consteval Buffer(MemoryType type = MemoryType::NonCached, MemoryDomain domain = MemoryDomain::D1, bool force_cache_alignment = false)
         : e{
             domain,
             type,
