@@ -132,6 +132,7 @@ struct MPUDomain {
             sizeof(T)}
         {
             static_assert(alignof(T) <= 32, "Requested type has alignment greater than cache line size (32 bytes).");
+            static_assert(std::ranges::contains(alignments, alignof(T)), "Requested type has alignment not supported by MPU buffer system.");
         }
 
         template <class Ctx>
@@ -202,8 +203,6 @@ struct MPUDomain {
             uint32_t offsets_nc[3] = {}; // D1, D2, D3
             uint32_t offsets_c[3] = {};  // D1, D2, D3
             uint32_t assigned_offsets[N]; 
-
-            size_t alignments[] = {32, 16, 8, 4, 2, 1};
             
             for (size_t align : alignments) {
                 for (size_t i = 0; i < N; i++) {
@@ -320,6 +319,8 @@ struct MPUDomain {
     };
 
    private:
+    static constexpr std::size_t alignments[6] = {32, 16, 8, 4, 2, 1};
+
     static void configure_dynamic_region(uint32_t start, uint32_t end, uint8_t region_num) {
         if (end <= start) return; 
         configure_region(start, end - start, region_num, 
@@ -393,17 +394,17 @@ struct MPUDomain {
         if (size == 0) return;
 
         // Find smallest power of 2 >= size, starting at 32 bytes (MPU minimum)
-        uint32_t p2 = 32;
-        while (p2 < size) {
-            p2 <<= 1;
+        // Enforce MPU minimum (32 bytes = 2^(4+1))
+        uint8_t mpu_size = 4;
+
+        if (size > 32) {
+            // Calculate ceil(log2(size)) - 1
+            // __builtin_clz(x) returns leading zeros. For 32, it's 26: 31 - 26 = 5
+            mpu_size = 31 - __builtin_clz(size - 1);
         }
 
-        // Convert p2 to MPU_REGION_SIZE_xx constant
-        // __builtin_clz(x) returns leading zeros. For 32, it's 26: 31 - 26 = 5
-        uint8_t mpu_size = (31 - __builtin_clz(p2)) - 1;
-
         // Calculate SubRegion Disable (SRD)
-        uint32_t sub_size = p2 / 8;
+        uint32_t sub_size = (1 << (mpu_size + 1)) / 8;
         // Number of subregions needed to cover 'size'
         uint8_t needed_subs = (size + sub_size - 1) / sub_size;
         
