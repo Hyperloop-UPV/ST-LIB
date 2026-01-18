@@ -155,11 +155,7 @@ SECTIONS
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D1) */
   _d1_size = SIZEOF(.mpu_ram_d1_nc);
   /* Find next power of 2 */
-  _d1_p2 = (_d1_size <= 32) ? 32 : (_d1_size <= 64) ? 64 : (_d1_size <= 128) ? 128 : (_d1_size <= 256) ? 256 : 
-           (_d1_size <= 512) ? 512 : (_d1_size <= 1024) ? 1024 : (_d1_size <= 2048) ? 2048 : 
-           (_d1_size <= 4096) ? 4096 : (_d1_size <= 8192) ? 8192 : (_d1_size <= 16384) ? 16384 : 
-           (_d1_size <= 32768) ? 32768 : (_d1_size <= 65536) ? 65536 : (_d1_size <= 131072) ? 131072 : 
-           (_d1_size <= 262144) ? 262144 : 524288;
+  _d1_p2 = (1 << LOG2CEIL(MAX(32, _d1_size)));
   /* Subregion size is RegionSize / 8 */
   _d1_sub = _d1_p2 / 8;
   /* Align effective size to the subregion granularity */
@@ -229,10 +225,7 @@ SECTIONS
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D2) */
   _d2_size = SIZEOF(.mpu_ram_d2_nc);
   /* Find next power of 2 */
-  _d2_p2 = (_d2_size <= 32) ? 32 : (_d2_size <= 64) ? 64 : (_d2_size <= 128) ? 128 : (_d2_size <= 256) ? 256 : 
-           (_d2_size <= 512) ? 512 : (_d2_size <= 1024) ? 1024 : (_d2_size <= 2048) ? 2048 : 
-           (_d2_size <= 4096) ? 4096 : (_d2_size <= 8192) ? 8192 : (_d2_size <= 16384) ? 16384 : 
-           (_d2_size <= 32768) ? 32768 : 65536;
+  _d2_p2 = (1 << LOG2CEIL(MAX(32, _d2_size)));
   _d2_sub = _d2_p2 / 8;
   _d2_pad = (_d2_size + _d2_sub - 1) / _d2_sub * _d2_sub;
   . = __mpu_d2_nc_start + _d2_pad;
@@ -257,9 +250,7 @@ SECTIONS
   /* CALCULATE PADDING FOR MPU SUBREGIONS (D3) */
   _d3_size = SIZEOF(.mpu_ram_d3_nc);
   /* Find next power of 2 */
-  _d3_p2 = (_d3_size <= 32) ? 32 : (_d3_size <= 64) ? 64 : (_d3_size <= 128) ? 128 : (_d3_size <= 256) ? 256 : 
-           (_d3_size <= 512) ? 512 : (_d3_size <= 1024) ? 1024 : (_d3_size <= 2048) ? 2048 : 
-           (_d3_size <= 4096) ? 4096 : (_d3_size <= 8192) ? 8192 : (_d3_size <= 16384) ? 16384 : 32768;
+  _d3_p2 = (1 << LOG2CEIL(MAX(32, _d3_size)));
   _d3_sub = _d3_p2 / 8;
   _d3_pad = (_d3_size + _d3_sub - 1) / _d3_sub * _d3_sub;
   . = __mpu_d3_nc_start + _d3_pad;
