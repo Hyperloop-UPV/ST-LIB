@@ -132,7 +132,7 @@ struct MPUDomain {
             sizeof(T)}
         {
             static_assert(alignof(T) <= 32, "Requested type has alignment greater than cache line size (32 bytes).");
-            static_assert(std::ranges::contains(alignments, alignof(T)), "Requested type has alignment not supported by MPU buffer system.");
+            static_assert(std::ranges::find(alignments, alignof(T)) != std::ranges::end(alignments), "Requested type has alignment not supported by MPU buffer system.");
         }
 
         template <class Ctx>
