@@ -13,9 +13,11 @@
 #include "HALAL/Models/Pin.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/DMA/DMA2.hpp"
+#include "HALAL/Models/SPI/SPIConfig.hpp"
 
 using ST_LIB::GPIODomain;
 using ST_LIB::DMA_Domain;
+using ST_LIB::SPIConfigTypes;
 
 // Forward declaration of IRQ handlers and HAL callbacks
 extern "C" {
@@ -41,6 +43,18 @@ struct SPIDomain {
  *          Internal working things
  * =========================================
  */
+
+    // Configuration types
+    using ClockPolarity = SPIConfigTypes::ClockPolarity;
+    using ClockPhase = SPIConfigTypes::ClockPhase;
+    using BitOrder = SPIConfigTypes::BitOrder;
+    using NSSMode = SPIConfigTypes::NSSMode;
+    using DataSize = SPIConfigTypes::DataSize;
+    using Direction = SPIConfigTypes::Direction;
+    using FIFOThreshold = SPIConfigTypes::FIFOThreshold;
+    using NSSPolarity = SPIConfigTypes::NSSPolarity;
+    using CRCLength = SPIConfigTypes::CRCLength;
+    using SPIConfig = SPIConfigTypes::SPIConfig;
 
     enum class SPIPeripheral : uintptr_t {
         spi1 = SPI1_BASE,
@@ -110,19 +124,8 @@ struct SPIDomain {
         }
     }
 
-    static uint32_t calculate_prescaler(uint32_t src_freq, uint32_t max_baud) {
-        uint32_t prescaler = 2; // Smallest prescaler available
-
-        while ((src_freq / prescaler) > max_baud) {
-            prescaler *= 2; // Prescaler doubles each step (it must be a power of 2)
-
-            if (prescaler > 256) {
-                ErrorHandler("Cannot achieve desired baudrate, speed is too low");
-            }
-        }
-        
-        return get_prescaler_flag(prescaler);
-    }
+    // Forward declaration
+    static uint32_t calculate_prescaler(uint32_t src_freq, uint32_t max_baud);
 
     static constexpr std::size_t max_instances{6};
 
@@ -133,12 +136,13 @@ struct SPIDomain {
         std::size_t sck_gpio_idx;
         std::size_t miso_gpio_idx;
         std::size_t mosi_gpio_idx;
-        std::size_t nss_gpio_idx;
+        std::optional<std::size_t> nss_gpio_idx;
 
         std::size_t dma_rx_idx;
         std::size_t dma_tx_idx;
 
         uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
+        SPIConfig config;      // User-defined SPI configuration
     };
 
     struct Config {
@@ -148,12 +152,13 @@ struct SPIDomain {
         std::size_t sck_gpio_idx;
         std::size_t miso_gpio_idx;
         std::size_t mosi_gpio_idx;
-        std::size_t nss_gpio_idx;
+        std::optional<std::size_t> nss_gpio_idx;
 
         std::size_t dma_rx_idx;
         std::size_t dma_tx_idx;
 
         uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
+        SPIConfig config;      // User-defined SPI configuration
     };
 
 
@@ -162,33 +167,69 @@ struct SPIDomain {
  *              Request Object
  * =========================================
  */
+    template<DMA_Domain::Stream dma_rx_stream, DMA_Domain::Stream dma_tx_stream>
     struct Device {
         using domain = SPIDomain;
 
         SPIPeripheral peripheral;
         SPIMode mode;
         uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
+        SPIConfig config;      // User-defined SPI configuration
 
         GPIODomain::GPIO sck_gpio;
         GPIODomain::GPIO miso_gpio;
         GPIODomain::GPIO mosi_gpio;
-        GPIODomain::GPIO nss_gpio;
-
-        DMA_Domain::Stream dma_rx_stream;
-        DMA_Domain::Stream dma_tx_stream;
+        std::optional<GPIODomain::GPIO> nss_gpio;
         
         consteval Device(SPIMode mode, SPIPeripheral peripheral, uint32_t max_baudrate,
                         GPIODomain::Pin sck_pin, GPIODomain::Pin miso_pin, 
                         GPIODomain::Pin mosi_pin, GPIODomain::Pin nss_pin,
-                        DMA_Domain::Stream rx_stream, DMA_Domain::Stream tx_stream)
+                        SPIConfig config = SPIConfig{})
                         : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate},
+                        config{config},
                         sck_gpio(sck_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(sck_pin, peripheral)),
                         miso_gpio(miso_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(miso_pin, peripheral)),
                         mosi_gpio(mosi_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(mosi_pin, peripheral)),
-                        nss_gpio(nss_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(nss_pin, peripheral)),
-                        dma_rx_stream(rx_stream), dma_tx_stream(tx_stream)
+                        nss_gpio(GPIODomain::GPIO(nss_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(nss_pin, peripheral)))
                         {
+            config.validate();
 
+            if (config.nss_mode == NSSMode::SOFTWARE) {
+                compile_error("Use NSSMode::SOFTWARE, and omit NSS pin for software NSS management, it is handled externally");
+            }
+
+            validate_nss_pin(peripheral, nss_pin);
+            
+            validate_spi_pins(peripheral, sck_pin, miso_pin, mosi_pin);
+        }
+        
+        // Constructor without NSS pin (for software NSS mode)
+        consteval Device(SPIMode mode, SPIPeripheral peripheral, uint32_t max_baudrate,
+                        GPIODomain::Pin sck_pin, GPIODomain::Pin miso_pin, 
+                        GPIODomain::Pin mosi_pin,
+                        SPIConfig config)
+                        : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate},
+                        config{config},
+                        sck_gpio(sck_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(sck_pin, peripheral)),
+                        miso_gpio(miso_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(miso_pin, peripheral)),
+                        mosi_gpio(mosi_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(mosi_pin, peripheral)),
+                        nss_gpio(std::nullopt)  // No NSS GPIO
+                        {
+            config.validate();
+            
+            if (config.nss_mode == NSSMode::HARDWARE) {
+                compile_error("NSS pin must be provided for hardware NSS mode, or use NSSMode::SOFTWARE");
+            }
+            
+            validate_spi_pins(peripheral, sck_pin, miso_pin, mosi_pin);
+        }
+
+    private:
+        // Helper function to validate SPI pins (SCK, MISO, MOSI only)
+        static consteval void validate_spi_pins(SPIPeripheral peripheral, 
+                                               GPIODomain::Pin sck_pin,
+                                               GPIODomain::Pin miso_pin,
+                                               GPIODomain::Pin mosi_pin) {
             switch (peripheral) {
             case SPIPeripheral::spi1:
                 if (!compare_pin(sck_pin, PB3) &&
@@ -205,11 +246,6 @@ struct SPIDomain {
                     !compare_pin(mosi_pin, PD7) &&
                     !compare_pin(mosi_pin, PA7)) {
                     compile_error("Invalid MOSI pin for SPI1");
-                }
-                if (!compare_pin(nss_pin, PG10) &&
-                    !compare_pin(nss_pin, PA15) &&
-                    !compare_pin(nss_pin, PA4)) {
-                    compile_error("Invalid NSS pin for SPI1");
                 }
                 break;
 
@@ -230,12 +266,6 @@ struct SPIDomain {
                     !compare_pin(mosi_pin, PB15)) {
                     compile_error("Invalid MOSI pin for SPI2");
                 }
-                if (!compare_pin(nss_pin, PB9) &&
-                    !compare_pin(nss_pin, PB4) &&
-                    !compare_pin(nss_pin, PA11) &&
-                    !compare_pin(nss_pin, PB12)) {
-                    compile_error("Invalid NSS pin for SPI2");
-                }
                 break;
             
             case SPIPeripheral::spi3:
@@ -253,10 +283,6 @@ struct SPIDomain {
                     !compare_pin(mosi_pin, PB2)) {
                     compile_error("Invalid MOSI pin for SPI3");
                 }
-                if (!compare_pin(nss_pin, PA15) &&
-                    !compare_pin(nss_pin, PA4)) {
-                    compile_error("Invalid NSS pin for SPI3");
-                }
                 break;
 
             case SPIPeripheral::spi4:
@@ -272,10 +298,6 @@ struct SPIDomain {
                     !compare_pin(mosi_pin, PE14)) {
                     compile_error("Invalid MOSI pin for SPI4");
                 }
-                if (!compare_pin(nss_pin, PE4) &&
-                    !compare_pin(nss_pin, PE11)) {
-                    compile_error("Invalid NSS pin for SPI4");
-                }
                 break;
 
             case SPIPeripheral::spi5:
@@ -288,9 +310,6 @@ struct SPIDomain {
                 if (!compare_pin(mosi_pin, PF9) &&
                     !compare_pin(mosi_pin, PF11)) {
                     compile_error("Invalid MOSI pin for SPI5");
-                }
-                if (!compare_pin(nss_pin, PF6)) {
-                    compile_error("Invalid NSS pin for SPI5");
                 }
                 break;
             
@@ -311,6 +330,54 @@ struct SPIDomain {
                     !compare_pin(mosi_pin, PA7)) {
                     compile_error("Invalid MOSI pin for SPI6");
                 }
+                break;
+
+            default:
+                compile_error("Invalid SPI peripheral specified in SPIDomain::Device");
+            }
+        }
+
+        // Helper function to validate NSS pin (only called for hardware NSS mode)
+        static consteval void validate_nss_pin(SPIPeripheral peripheral, GPIODomain::Pin nss_pin) {
+            switch (peripheral) {
+            case SPIPeripheral::spi1:
+                if (!compare_pin(nss_pin, PA4) &&
+                    !compare_pin(nss_pin, PA15) &&
+                    !compare_pin(nss_pin, PG10)) {
+                    compile_error("Invalid NSS pin for SPI1");
+                }
+                break;
+
+            case SPIPeripheral::spi2:
+                if (!compare_pin(nss_pin, PA11) &&
+                    !compare_pin(nss_pin, PB9) &&
+                    !compare_pin(nss_pin, PB4) &&
+                    !compare_pin(nss_pin, PB12)) {
+                    compile_error("Invalid NSS pin for SPI2");
+                }
+                break;
+
+            case SPIPeripheral::spi3:
+                if (!compare_pin(nss_pin, PA15) &&
+                    !compare_pin(nss_pin, PA4)) {
+                    compile_error("Invalid NSS pin for SPI3");
+                }
+                break;
+
+            case SPIPeripheral::spi4:
+                if (!compare_pin(nss_pin, PE4) &&
+                    !compare_pin(nss_pin, PE11)) {
+                    compile_error("Invalid NSS pin for SPI4");
+                }
+                break;
+
+            case SPIPeripheral::spi5:
+                if (!compare_pin(nss_pin, PF6)) {
+                    compile_error("Invalid NSS pin for SPI5");
+                }
+                break;
+
+            case SPIPeripheral::spi6:
                 if (!compare_pin(nss_pin, PA0) &&
                     !compare_pin(nss_pin, PA15) &&
                     !compare_pin(nss_pin, PG8) &&
@@ -347,18 +414,26 @@ struct SPIDomain {
                 default:
                     compile_error("Invalid SPI peripheral for DMA mapping");
             }
-            DMA_Domain::DMA dma_rx_tx<dma_rx_stream, dma_tx_stream>(dma_instance);
-            std::size_t[2] dma_indices = dma_rx_tx.inscribe(ctx);
+            DMA_Domain::DMA<dma_rx_stream, dma_tx_stream> dma_rx_tx(dma_instance);
+            auto dma_indices = dma_rx_tx.inscribe(ctx);
+            
+            // Conditionally add NSS GPIO if provided
+            std::optional<std::size_t> nss_idx = std::nullopt;
+            if (nss_gpio.has_value()) {
+                nss_idx = ctx.template add<GPIODomain>(nss_gpio.value().e);
+            }
+            
             Entry e{
                 .peripheral = peripheral,
                 .mode = mode,
                 .sck_gpio_idx = ctx.template add<GPIODomain>(sck_gpio.e),
                 .miso_gpio_idx = ctx.template add<GPIODomain>(miso_gpio.e),
                 .mosi_gpio_idx = ctx.template add<GPIODomain>(mosi_gpio.e),
-                .nss_gpio_idx = ctx.template add<GPIODomain>(nss_gpio.e),
+                .nss_gpio_idx = nss_idx,
                 .dma_rx_idx = dma_indices[0],
                 .dma_tx_idx = dma_indices[1],
-                .max_baudrate = max_baudrate
+                .max_baudrate = max_baudrate,
+                .config = config
             };
 
             ctx.template add<SPIDomain>(e);
@@ -552,7 +627,10 @@ struct SPIDomain {
             cfgs[i].miso_gpio_idx = entries[i].miso_gpio_idx;
             cfgs[i].mosi_gpio_idx = entries[i].mosi_gpio_idx;
             cfgs[i].nss_gpio_idx = entries[i].nss_gpio_idx;
+            cfgs[i].dma_rx_idx = entries[i].dma_rx_idx;
+            cfgs[i].dma_tx_idx = entries[i].dma_tx_idx;
             cfgs[i].max_baudrate = entries[i].max_baudrate;
+            cfgs[i].config = entries[i].config;
 
             auto peripheral = entries[i].peripheral;
 
@@ -612,55 +690,49 @@ struct SPIDomain {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI1;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHandler("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI1 clock");
                     }
                     __HAL_RCC_SPI1_CLK_ENABLE();
-
                     spi_number = 1;
                 } else if (peripheral == SPIPeripheral::spi2) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHandler("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI2 clock");
                     }
                     __HAL_RCC_SPI2_CLK_ENABLE();
-
                     spi_number = 2;
                 } else if (peripheral == SPIPeripheral::spi3) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3;
                     PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHandler("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI3 clock");
                     }
                     __HAL_RCC_SPI3_CLK_ENABLE();
-
                     spi_number = 3;
                 } else if (peripheral == SPIPeripheral::spi4) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI4;
                     PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL2;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHandler("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI4 clock");
                     }
                     __HAL_RCC_SPI4_CLK_ENABLE();
-
                     spi_number = 4;
                 } else if (peripheral == SPIPeripheral::spi5) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI5;
                     PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL2;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHandler("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI5 clock");
                     }
                     __HAL_RCC_SPI5_CLK_ENABLE();
-
                     spi_number = 5;
                 } else if (peripheral == SPIPeripheral::spi6) {
                     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI6;
                     PeriphClkInitStruct.Spi6ClockSelection = RCC_SPI6CLKSOURCE_PLL2;
                     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        ErrorHandler("Unable to configure SPI%i clock", i+1);
+                        ErrorHandler("Unable to configure SPI6 clock");
                     }
                     __HAL_RCC_SPI6_CLK_ENABLE();
-
                     spi_number = 6;
                 }
 
@@ -683,7 +755,6 @@ struct SPIDomain {
                 auto& init = hspi.Init;
                 if (e.mode == SPIMode::MASTER) {
                     init.Mode = SPI_MODE_MASTER;
-                    init.NSS = SPI_NSS_HARD_OUTPUT; // Hardware control for now, should add software later for more flexibility
                     // Baudrate prescaler calculation
                     uint32_t pclk_freq;
                     if (peripheral == SPIPeripheral::spi1 ||
@@ -697,31 +768,32 @@ struct SPIDomain {
                         pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI6);
                     }
                     init.BaudRatePrescaler = calculate_prescaler(pclk_freq, e.max_baudrate);
-
                 } else {
                     init.Mode = SPI_MODE_SLAVE;
-                    init.NSS = SPI_NSS_HARD_INPUT;
                 }
-                init.Direction = SPI_DIRECTION_2LINES;
-                init.DataSize = SPI_DATASIZE_8BIT; // Works with any data size (at least for bytes)
-                init.CLKPolarity = SPI_POLARITY_LOW;
-                init.CLKPhase = SPI_PHASE_1EDGE;
-                init.FirstBit = SPI_FIRSTBIT_MSB; // Must check if LSB first is needed for anything later
-                init.TIMode = SPI_TIMODE_DISABLE; // Texas Instruments mode, like, why would we use that?
-                init.CRCCalculation = SPI_CRCCALCULATION_DISABLE; // Doesn't seem that useful here, better to handle CRC manually with the CRC peripheral if needed
-                init.CRCPolynomial = 0; // Nope
-                init.CRCLength = SPI_CRC_LENGTH_8BIT; // Doesn't matter since CRC calculation is disabled
-                init.NSSPMode = SPI_NSS_PULSE_DISABLE; // Hardcoded for now, may add a setting later
-                init.NSSPolarity = SPI_NSS_POLARITY_LOW; // Standard polarity
-                init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA; // 1 byte, since we're using 8 bit data size for safety, may add a setting later
+                
+                init.NSS = SPIConfigTypes::translate_nss_mode(e.config.nss_mode, e.mode == SPIMode::MASTER);
+                init.Direction = SPIConfigTypes::translate_direction(e.config.direction);
+                init.DataSize = SPIConfigTypes::translate_data_size(e.config.data_size);
+                init.CLKPolarity = SPIConfigTypes::translate_clock_polarity(e.config.polarity);
+                init.CLKPhase = SPIConfigTypes::translate_clock_phase(e.config.phase);
+                init.FirstBit = SPIConfigTypes::translate_bit_order(e.config.bit_order);
+                init.TIMode = SPIConfigTypes::translate_ti_mode(e.config.ti_mode);
+                init.CRCCalculation = SPIConfigTypes::translate_crc_calculation(e.config.crc_calculation);
+                if (e.config.crc_calculation) {
+                    init.CRCPolynomial = e.config.crc_polynomial;
+                    init.CRCLength = SPIConfigTypes::translate_crc_length(e.config.crc_length);
+                }
+                init.NSSPMode = SPIConfigTypes::translate_nss_pulse(e.config.nss_pulse);
+                init.NSSPolarity = SPIConfigTypes::translate_nss_polarity(e.config.nss_polarity);
+                init.FifoThreshold = SPIConfigTypes::translate_fifo_threshold(e.config.fifo_threshold);
                 init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
                 init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-                init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE; // Should check if this works or the peripheral needs some delay
-                init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
-                init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE; // If you are having overrun issues, then you have a problem somewhere else
-                init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_ENABLE; // Keeps MOSI, MISO, SCK state when not communicating, ensure no floating lines and no random noise
-                init.IOSwap = SPI_IO_SWAP_DISABLE; // Should not be needed
-
+                init.MasterSSIdleness = SPIConfigTypes::translate_ss_idleness(e.config.master_ss_idleness);
+                init.MasterInterDataIdleness = SPIConfigTypes::translate_interdata_idleness(e.config.master_interdata_idleness);
+                init.MasterReceiverAutoSusp = SPIConfigTypes::translate_rx_autosusp(e.config.master_rx_autosusp);
+                init.MasterKeepIOState = SPIConfigTypes::translate_keep_io_state(e.config.keep_io_state);
+                init.IOSwap = SPIConfigTypes::translate_io_swap(e.config.io_swap);
 
                 if (HAL_SPI_Init(&hspi) != HAL_OK) {
                     ErrorHandler("Unable to init SPI%u", spi_number);

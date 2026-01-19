@@ -1,4 +1,17 @@
-#include "HALAL/Models/SPI2.hpp"
+#include "HALAL/Models/SPI/SPI2.hpp"
+uint32_t ST_LIB::SPIDomain::calculate_prescaler(uint32_t src_freq, uint32_t max_baud) {
+    uint32_t prescaler = 2; // Smallest prescaler available
+
+    while ((src_freq / prescaler) > max_baud) {
+        prescaler *= 2; // Prescaler doubles each step (it must be a power of 2)
+
+        if (prescaler > 256) {
+            ErrorHandler("Cannot achieve desired baudrate, speed is too low");
+        }
+    }
+    
+    return get_prescaler_flag(prescaler);
+}
 
 ST_LIB::SPIDomain::Instance* spi_instances[ST_LIB::SPIDomain::max_instances];
 
