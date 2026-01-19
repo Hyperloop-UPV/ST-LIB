@@ -12,8 +12,10 @@
 #include "HALAL/Models/GPIO.hpp"
 #include "HALAL/Models/Pin.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
+#include "HALAL/Models/DMA/DMA2.hpp"
 
 using ST_LIB::GPIODomain;
+using ST_LIB::DMA_Domain;
 
 // Forward declaration of IRQ handlers and HAL callbacks
 extern "C" {
@@ -133,9 +135,10 @@ struct SPIDomain {
         std::size_t mosi_gpio_idx;
         std::size_t nss_gpio_idx;
 
-        uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
+        std::size_t dma_rx_idx;
+        std::size_t dma_tx_idx;
 
-        // DMA here, maybe? Depends on new DMA implementation
+        uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
     };
 
     struct Config {
@@ -147,9 +150,10 @@ struct SPIDomain {
         std::size_t mosi_gpio_idx;
         std::size_t nss_gpio_idx;
 
-        uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
+        std::size_t dma_rx_idx;
+        std::size_t dma_tx_idx;
 
-        // DMA here, maybe? Depends on new DMA implementation
+        uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
     };
 
 
@@ -170,16 +174,19 @@ struct SPIDomain {
         GPIODomain::GPIO mosi_gpio;
         GPIODomain::GPIO nss_gpio;
 
+        DMA_Domain::Stream dma_rx_stream;
+        DMA_Domain::Stream dma_tx_stream;
         
-
         consteval Device(SPIMode mode, SPIPeripheral peripheral, uint32_t max_baudrate,
                         GPIODomain::Pin sck_pin, GPIODomain::Pin miso_pin, 
-                        GPIODomain::Pin mosi_pin, GPIODomain::Pin nss_pin)
+                        GPIODomain::Pin mosi_pin, GPIODomain::Pin nss_pin,
+                        DMA_Domain::Stream rx_stream, DMA_Domain::Stream tx_stream)
                         : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate},
                         sck_gpio(sck_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(sck_pin, peripheral)),
                         miso_gpio(miso_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(miso_pin, peripheral)),
                         mosi_gpio(mosi_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(mosi_pin, peripheral)),
-                        nss_gpio(nss_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(nss_pin, peripheral))
+                        nss_gpio(nss_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(nss_pin, peripheral)),
+                        dma_rx_stream(rx_stream), dma_tx_stream(tx_stream)
                         {
 
             switch (peripheral) {
@@ -319,6 +326,29 @@ struct SPIDomain {
 
         template <class Ctx>
         consteval void inscribe(Ctx &ctx) const {
+            // Convert spix to DMA_Domain::Instance
+            DMA_Domain::Instance dma_instance;
+            switch (peripheral) {
+                case SPIPeripheral::spi1:
+                    dma_instance = DMA_Domain::Instance::spi1;
+                    break;
+                case SPIPeripheral::spi2:
+                    dma_instance = DMA_Domain::Instance::spi2;
+                    break;
+                case SPIPeripheral::spi3:
+                    dma_instance = DMA_Domain::Instance::spi3;
+                    break;
+                case SPIPeripheral::spi4:
+                    dma_instance = DMA_Domain::Instance::spi4;
+                    break;
+                case SPIPeripheral::spi5:
+                    dma_instance = DMA_Domain::Instance::spi5;
+                    break;
+                default:
+                    compile_error("Invalid SPI peripheral for DMA mapping");
+            }
+            DMA_Domain::DMA dma_rx_tx<dma_rx_stream, dma_tx_stream>(dma_instance);
+            std::size_t[2] dma_indices = dma_rx_tx.inscribe(ctx);
             Entry e{
                 .peripheral = peripheral,
                 .mode = mode,
@@ -326,6 +356,8 @@ struct SPIDomain {
                 .miso_gpio_idx = ctx.template add<GPIODomain>(miso_gpio.e),
                 .mosi_gpio_idx = ctx.template add<GPIODomain>(mosi_gpio.e),
                 .nss_gpio_idx = ctx.template add<GPIODomain>(nss_gpio.e),
+                .dma_rx_idx = dma_indices[0],
+                .dma_tx_idx = dma_indices[1],
                 .max_baudrate = max_baudrate
             };
 
@@ -565,7 +597,8 @@ struct SPIDomain {
         static inline std::array<Instance, N> instances{};
 
         static void init(std::span<const Config, N> cfgs,
-                         std::span<GPIODomain::Instance> gpio_instances) {
+                         std::span<GPIODomain::Instance> gpio_instances,
+                         std::span<DMA_Domain::Instance> dma_instances) {
             for (std::size_t i = 0; i < N; ++i) {
                 const auto &e = cfgs[i];
 
@@ -633,8 +666,19 @@ struct SPIDomain {
 
                 spi_instances[spi_number - 1] = &instances[i];
 
-                auto hspi = instances[i].hspi;
+                auto& hspi = instances[i].hspi;
                 hspi.Instance = instances[i].instance;
+
+                auto& dma_rx = dma_instances[e.dma_rx_idx];
+                auto& dma_tx = dma_instances[e.dma_tx_idx];
+
+                // DMA handles are already configured and initialized by DMA_Domain
+                hspi.hdmarx = &dma_rx.hdma;
+                hspi.hdmatx = &dma_tx.hdma;
+
+                // Link back from DMA to SPI (required by HAL)
+                dma_rx.hdma.Parent = &hspi;
+                dma_tx.hdma.Parent = &hspi;
 
                 auto& init = hspi.Init;
                 if (e.mode == SPIMode::MASTER) {
