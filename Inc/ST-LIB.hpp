@@ -148,7 +148,8 @@ template <auto &...devs> struct Board {
                                          GPIODomain::Init<gpioN>::instances);
     DMA_Domain::Init<dmaN>::init(cfg.dma_cfgs);
     SPIDomain::Init<spiN>::init(cfg.spi_cfgs,
-                                GPIODomain::Init<gpioN>::instances);
+                                GPIODomain::Init<gpioN>::instances,
+                                DMA_Domain::Init<dmaN>::instances);
     // ...
   }
 
