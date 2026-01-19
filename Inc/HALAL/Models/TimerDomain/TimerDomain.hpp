@@ -724,6 +724,18 @@ struct TimerDomain {
                 case TimerRequest::GeneralPurpose32bit_5: {
                     // 4 capture-compare channels
 
+                    /* TIM5 pins:
+                     * PA0:
+                     * - TIM5_CH1: AF2
+                     * PA1:
+                     * - TIM5_CH2: AF2
+                     * PA2:
+                     * - TIM5_CH3: AF2
+                     * PA3:
+                     * - TIM5_CH4: AF2
+                     * PA4:
+                     * - TIM5_ETR: AF2
+                     */
                 } break;
 
                 case TimerRequest::Basic_6:
@@ -737,36 +749,136 @@ struct TimerDomain {
                     // 4 capture-compare channels
                     // complementary output
 
+                    /* TIM8 pins:
+                     * PA0:
+                     * - TIM8_ETR: AF3
+                     * PA5:
+                     * - TIM8_CH1N: AF3
+                     * PA6:
+                     * - TIM8_BKIN: AF3
+                     * - TIM8_BKIN_COMP12: AF10
+                     * PA7:
+                     * - TIM8_CH1N: AF3
+                     * PA8:
+                     * - TIM8_BKIN2: AF3
+                     * - TIM8_BKIN2_COMP12: AD12
+                     * PB0:
+                     * - TIM8_CH2N: AF3
+                     * PB1:
+                     * - TIM8_CH3N: AF3
+                     * PB14:
+                     * - TIM8_CH2N: AF3
+                     * PB15:
+                     * - TIM8_CH3N: AF3
+                     * PC6:
+                     * - TIM8_CH1: AF3
+                     * PC7:
+                     * - TIM8_CH2: AF3
+                     * PC8:
+                     * - TIM8_CH3: AF3
+                     * PC9:
+                     * - TIM8_CH4: AF3
+                     * PG2:
+                     * - TIM8_BKIN: AF3
+                     * - TIM8_BKIN_COMP12: AF11
+                     * PG3:
+                     * - TIM8_BKIN2: AF3
+                     * - TIM8_BKIN2_COMP12: AF11
+                     * PG8:
+                     * - TIM8_ETR: AF3
+                     */
                 } break;
 
                 case TimerRequest::SlaveTimer_12: {
                     // 2 capture-compare channels
 
+                    /* TIM12 pins:
+                     * PB14:
+                     * - TIM12_CH1: AF2
+                     * PB15:
+                     * - TIM12_CH2: AF2
+                     */
                 } break;
 
                 case TimerRequest::SlaveTimer_13: {
                     // 1 capture-compare channel
 
+                    /* TIM13 pins:
+                     * PA6:
+                     * - TIM13_CH1: AF9
+                     * PF8:
+                     * - TIM13_CH1: AF9
+                     */
                 } break;
 
                 case TimerRequest::SlaveTimer_14: {
                     // 1 capture-compare channel
 
+                    /* TIM14 pins:
+                     * PA7:
+                     * - TIM14_CH1: AF9
+                     * PF9:
+                     * - TIM14_CH1: AF9
+                     */
                 } break;
 
                 case TimerRequest::GeneralPurpose_15: {
                     // 2 capture-compare channels
 
+                    /* TIM15 pins:
+                     * PA0:
+                     * - TIM15_BKIN: AF4
+                     * PA1:
+                     * - TIM15_CH1N: AF4
+                     * PA2:
+                     * - TIM15_CH1: AF4
+                     * PA3:
+                     * - TIM15_CH2: AF4
+                     * PC12:
+                     * - TIM15_CH1: AF2
+                     * PD2:
+                     * - TIM15_BKIN: AF4
+                     * PE3:
+                     * - TIM15_BKIN: AF4
+                     * PE4:
+                     * - TIM15_CH1N: AF4
+                     * PE5:
+                     * - TIM15_CH1: AF4
+                     * PE6:
+                     * - TIM15_CH2: AF4
+                     */
                 } break;
 
                 case TimerRequest::GeneralPurpose_16: {
                     // 1 capture-compare channel
 
+                    /* TIM16 pins:
+                     * PF6:
+                     * - TIM16_CH1: AF1
+                     * PF8:
+                     * - TIM16_CH1N: AF1
+                     * PF10:
+                     * - TIM16_BKIN: AF1
+                     */
                 } break;
 
                 case TimerRequest::GeneralPurpose_17: {
                     // 1 capture-compare channel
 
+                    /* TIM17 pins:
+                     * PB5:
+                     * - TIM17_BKIN: AF1
+                     * PB7:
+                     * - TIM17_CH1N: AF1
+                     * PB9:
+                     * - TIM17_CH1: AF1
+                     * PF7:
+                     * - TIM17_CH1: AF1
+                     * PF9:
+                     * - TIM17_CH1N: AF1
+                     * PG6:
+                     * - TIM17_BKIN: AF1
+                     */
                 } break;
 
                 case TimerRequest::GeneralPurpose32bit_23: {
