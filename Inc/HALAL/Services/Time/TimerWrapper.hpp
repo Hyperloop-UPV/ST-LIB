@@ -12,6 +12,7 @@
 #include "HALAL/Models/TimerDomain/TimerDomain.hpp"
 #include "HALAL/Services/PWM/PWM/NewPWM.hpp"
 #include "HALAL/Models/GPIO.hpp"
+#include "HALAL/Models/Pin.hpp"
 
 #include "ErrorHandler/ErrorHandler.hpp"
 
@@ -29,7 +30,7 @@ struct TimerWrapper {
 
     static constexpr bool bits32timer = (
         dev.e.request == TimerRequest::GeneralPurpose32bit_2 ||
-        dev.e.request == TimerRequest::GeneralPurpose32bit_3 ||
+        dev.e.request == TimerRequest::GeneralPurpose32bit_5 ||
         dev.e.request == TimerRequest::GeneralPurpose32bit_23 ||
         dev.e.request == TimerRequest::GeneralPurpose32bit_24 ||
         dev.e.request == TimerRequest::Any32bit

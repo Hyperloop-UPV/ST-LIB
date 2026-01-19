@@ -562,376 +562,284 @@ struct TimerDomain {
 
     static consteval void check_pins(std::span<const Entry> requests)
     {
+        enum TimerAF_Use {
+            Channel_1,
+            Channel_2,
+            Channel_3,
+            Channel_4,
+            ExternalTriggerFilter, /* ETR */
+            BreakInput_1,
+            BreakInput_2,
+            BreakInputCompare_1,
+            BreakInputCompare_2,
+        };
+
+        struct TimerPossiblePin {
+            ST_LIB::GPIODomain::Pin pin;
+            ST_LIB::GPIODomain::AlternateFunction af;
+            TimerAF_Use use;
+        };
+        TimerPossiblePin tim1pins[] = {
+            // 4 capture-compare channels
+            // complementary output
+            {ST_LIB::PE6, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_2},
+            {ST_LIB::PE6, (ST_LIB::GPIODomain::AlternateFunction)12, BreakInputCompare_2},
+
+            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
+            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)11, BreakInputCompare_1},
+
+            {ST_LIB::PA7, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
+            {ST_LIB::PB0, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2}, /* negated */
+            {ST_LIB::PB1, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3}, /* negated */
+            {ST_LIB::PE7, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
+            {ST_LIB::PE8, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
+            {ST_LIB::PE9, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
+            {ST_LIB::PE10, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2}, /* negated */
+            {ST_LIB::PE11, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2},
+            {ST_LIB::PE12, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3}, /* negated */
+            {ST_LIB::PE13, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3},
+            {ST_LIB::PE14, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_4},
+            
+            {ST_LIB::PE15, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
+            {ST_LIB::PE15, (ST_LIB::GPIODomain::AlternateFunction)13, BreakInputCompare_1},
+
+            {ST_LIB::PB12, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
+            {ST_LIB::PB12, (ST_LIB::GPIODomain::AlternateFunction)13, BreakInputCompare_1},
+
+            {ST_LIB::PB13, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
+            {ST_LIB::PB14, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2}, /* negated */
+            {ST_LIB::PB15, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3}, /* negated */
+
+            {ST_LIB::PG4, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_2},
+            {ST_LIB::PG4, (ST_LIB::GPIODomain::AlternateFunction)11, BreakInputCompare_2},
+
+            {ST_LIB::PG5, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
+            
+            {ST_LIB::PA8, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
+            {ST_LIB::PA9, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2},
+            {ST_LIB::PA10, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3},
+            {ST_LIB::PA11, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_4},
+
+            {ST_LIB::PA12, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
+            {ST_LIB::PA12, (ST_LIB::GPIODomain::AlternateFunction)12, BreakInput_2},
+        };
+        TimerPossiblePin tim2pins[] = {
+            // 4 capture-compare channels
+            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
+            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
+            {ST_LIB::PA1, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2},
+            {ST_LIB::PA2, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3},
+            {ST_LIB::PA3, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_4},
+            
+            {ST_LIB::PA5, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
+            {ST_LIB::PA5, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
+            
+            {ST_LIB::PA15, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
+            {ST_LIB::PA15, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
+            {ST_LIB::PB3, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2},
+            {ST_LIB::PB10, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3},
+            {ST_LIB::PB11, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_4},
+        };
+        TimerPossiblePin tim3pins[] = {
+            // 4 capture-compare channels
+            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
+            {ST_LIB::PA7, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
+            {ST_LIB::PB0, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
+            {ST_LIB::PB1, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
+            
+            {ST_LIB::PB4, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
+            {ST_LIB::PB5, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
+            
+            {ST_LIB::PC6, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
+            {ST_LIB::PC7, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
+            {ST_LIB::PC8, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
+            {ST_LIB::PC9, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
+            
+            {ST_LIB::PD2, (ST_LIB::GPIODomain::AlternateFunction)2, ExternalTriggerFilter},
+        };
+        TimerPossiblePin tim4pins[] = {
+            // 4 capture-compare channels
+            {ST_LIB::PB6, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
+            {ST_LIB::PB7, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
+            {ST_LIB::PB8, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
+            {ST_LIB::PB9, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
+            
+            {ST_LIB::PD12, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
+            {ST_LIB::PD13, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
+            {ST_LIB::PD14, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
+            {ST_LIB::PD15, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
+
+            {ST_LIB::PE0, (ST_LIB::GPIODomain::AlternateFunction)2, ExternalTriggerFilter},
+        };
+        TimerPossiblePin tim5pins[] = {
+            // 4 capture-compare channels
+            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
+            {ST_LIB::PA1, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
+            {ST_LIB::PA2, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
+            {ST_LIB::PA3, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
+            {ST_LIB::PA4, (ST_LIB::GPIODomain::AlternateFunction)2, ExternalTriggerFilter},
+        };
+        TimerPossiblePin tim8pins[] = {
+            // 4 capture-compare channels
+            // complementary output
+            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)3, ExternalTriggerFilter},
+            {ST_LIB::PA5, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_1}, /* negated */
+
+            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)3, BreakInput_1},
+            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)10, BreakInputCompare_1},
+
+            {ST_LIB::PA7, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_1}, /* negated */
+            
+            {ST_LIB::PA8, (ST_LIB::GPIODomain::AlternateFunction)3, BreakInput_2},
+            {ST_LIB::PA8, (ST_LIB::GPIODomain::AlternateFunction)12, BreakInputCompare_2},
+
+            {ST_LIB::PB0, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_2}, /* negated */
+            {ST_LIB::PB1, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_3}, /* negated */
+            {ST_LIB::PB14, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_2}, /* negated */
+            {ST_LIB::PB15, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_3}, /* negated */
+
+            {ST_LIB::PC6, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_1},
+            {ST_LIB::PC7, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_2},
+            {ST_LIB::PC8, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_3},
+            {ST_LIB::PC9, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_4},
+
+            {ST_LIB::PG2, (ST_LIB::GPIODomain::AlternateFunction)3, BreakInput_1},
+            {ST_LIB::PG2, (ST_LIB::GPIODomain::AlternateFunction)11, BreakInputCompare_1},
+
+            {ST_LIB::PG3, (ST_LIB::GPIODomain::AlternateFunction)3, BreakInput_2},
+            {ST_LIB::PG3, (ST_LIB::GPIODomain::AlternateFunction)11, BreakInputCompare_2},
+            
+            {ST_LIB::PG8, (ST_LIB::GPIODomain::AlternateFunction)3, ExternalTriggerFilter},
+        };
+        TimerPossiblePin tim12pins[] = {
+            // 2 capture-compare channels
+            {ST_LIB::PB14, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
+            {ST_LIB::PB15, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
+        };
+        TimerPossiblePin tim13pins[] = {
+            // 1 capture-compare channel
+            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)9, Channel_1},
+            {ST_LIB::PF8, (ST_LIB::GPIODomain::AlternateFunction)9, Channel_1},
+        };
+        TimerPossiblePin tim14pins[] = {
+            // 1 capture-compare channel
+            {ST_LIB::PA7, (ST_LIB::GPIODomain::AlternateFunction)9, Channel_1},
+            {ST_LIB::PF9, (ST_LIB::GPIODomain::AlternateFunction)9, Channel_1},
+        };
+        TimerPossiblePin tim15pins[] = {
+            // 2 capture-compare channels
+            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)4, BreakInput_1},
+
+            {ST_LIB::PA1, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_1}, /* negated */
+            {ST_LIB::PA2, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_1},
+            {ST_LIB::PA3, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_2},
+            
+            {ST_LIB::PC12, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
+            {ST_LIB::PD2, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_2},
+
+            {ST_LIB::PE3, (ST_LIB::GPIODomain::AlternateFunction)4, BreakInput_1},
+            {ST_LIB::PE4, (ST_LIB::GPIODomain::AlternateFunction)4, BreakInput_1},
+            
+            {ST_LIB::PE4, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_1},
+            {ST_LIB::PE4, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_2},
+        };
+        TimerPossiblePin tim16pins[] = {
+            // 1 capture-compare channel
+            {ST_LIB::PF6, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
+            {ST_LIB::PF8, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
+            {ST_LIB::PF10, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
+        };
+        TimerPossiblePin tim17pins[] = {
+            // 1 capture-compare channel
+            {ST_LIB::PB5, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
+            {ST_LIB::PB7, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
+            {ST_LIB::PB9, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
+            {ST_LIB::PF7, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
+            {ST_LIB::PF9, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
+            {ST_LIB::PG6, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
+        };
+        TimerPossiblePin tim23pins[] = {
+            // 4 capture-compare channels
+            {ST_LIB::PB2, (ST_LIB::GPIODomain::AlternateFunction)13, ExternalTriggerFilter},
+            {ST_LIB::PF0, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_1},
+            {ST_LIB::PF1, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_2},
+            {ST_LIB::PF2, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_3},
+            {ST_LIB::PF3, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_4},
+
+            {ST_LIB::PF6, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_1},
+            {ST_LIB::PF7, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_2},
+            {ST_LIB::PF8, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_3},
+            {ST_LIB::PF9, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_4},
+            
+            {ST_LIB::PG3, (ST_LIB::GPIODomain::AlternateFunction)13, ExternalTriggerFilter},
+            {ST_LIB::PG12, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_1},
+            {ST_LIB::PG13, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_2},
+            {ST_LIB::PG14, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_3},
+        };
+        TimerPossiblePin tim24pins[] = {
+            // 4 capture-compare channels
+            {ST_LIB::PB3, (ST_LIB::GPIODomain::AlternateFunction)14, ExternalTriggerFilter},
+            {ST_LIB::PF11, (ST_LIB::GPIODomain::AlternateFunction)14, Channel_1},
+            {ST_LIB::PF12, (ST_LIB::GPIODomain::AlternateFunction)14, Channel_2},
+            {ST_LIB::PF13, (ST_LIB::GPIODomain::AlternateFunction)14, Channel_3},
+            {ST_LIB::PF14, (ST_LIB::GPIODomain::AlternateFunction)14, Channel_4},
+            {ST_LIB::PG2, (ST_LIB::GPIODomain::AlternateFunction)14, ExternalTriggerFilter},
+        };
+
+        struct TimerPossiblePinSlice {
+            std::span<TimerPossiblePin> pins;
+            int pin_count;
+        };
+
+        TimerPossiblePinSlice tim_pins[25];
+        tim_pins[TimerRequest::Advanced_1] = 
+            {std::span<TimerPossiblePin>(tim1pins), ARRAY_LENGTH(tim1pins)};
+        tim_pins[TimerRequest::GeneralPurpose32bit_2] = 
+            {std::span<TimerPossiblePin>(tim2pins), ARRAY_LENGTH(tim2pins)};
+        tim_pins[TimerRequest::GeneralPurpose_3] = 
+            {std::span<TimerPossiblePin>(tim3pins), ARRAY_LENGTH(tim3pins)};
+        tim_pins[TimerRequest::GeneralPurpose_4] = 
+            {std::span<TimerPossiblePin>(tim4pins), ARRAY_LENGTH(tim4pins)};
+        tim_pins[TimerRequest::GeneralPurpose32bit_5] = 
+            {std::span<TimerPossiblePin>(tim5pins), ARRAY_LENGTH(tim5pins)};
+        /* TIM6, TIM7 have no associated pins */        
+        tim_pins[TimerRequest::Advanced_8] = 
+            {std::span<TimerPossiblePin>(tim8pins), ARRAY_LENGTH(tim8pins)};
+        tim_pins[TimerRequest::SlaveTimer_12] = 
+            {std::span<TimerPossiblePin>(tim12pins), ARRAY_LENGTH(tim12pins)};
+        tim_pins[TimerRequest::SlaveTimer_13] = 
+            {std::span<TimerPossiblePin>(tim13pins), ARRAY_LENGTH(tim13pins)};
+        tim_pins[TimerRequest::SlaveTimer_14] = 
+            {std::span<TimerPossiblePin>(tim14pins), ARRAY_LENGTH(tim14pins)};
+        tim_pins[TimerRequest::GeneralPurpose_15] = 
+            {std::span<TimerPossiblePin>(tim15pins), ARRAY_LENGTH(tim15pins)};
+        tim_pins[TimerRequest::GeneralPurpose_16] = 
+            {std::span<TimerPossiblePin>(tim16pins), ARRAY_LENGTH(tim16pins)};
+        tim_pins[TimerRequest::GeneralPurpose_17] = 
+            {std::span<TimerPossiblePin>(tim17pins), ARRAY_LENGTH(tim17pins)};
+        tim_pins[TimerRequest::GeneralPurpose32bit_23] = 
+            {std::span<TimerPossiblePin>(tim23pins), ARRAY_LENGTH(tim23pins)};
+        tim_pins[TimerRequest::GeneralPurpose32bit_24] = 
+            {std::span<TimerPossiblePin>(tim24pins), ARRAY_LENGTH(tim24pins)};
+
         /* good luck n_n */
         for(std::size_t i = 0; i < requests.size(); i++) {
             const Entry &e = requests[i];
+            if(e.pin_count == 0) continue;
+            if(e.request == TimerRequest::AnyGeneralPurpose || 
+               e.request == TimerRequest::Any32bit)
+            {
+                ST_LIB::compile_error("Any* timers can't use pins");
+            }
+            if(e.request == TimerRequest::Basic_6 || 
+               e.request == TimerRequest::Basic_7)
+            {
+                ST_LIB::compile_error("Basic timers can't use pins");
+            }
 
-            switch(e.request) {
-                case TimerRequest::AnyGeneralPurpose:
-                case TimerRequest::Any32bit: {
-                    if(e.pin_count > 0) {
-                        ST_LIB::compile_error("Any* timers can't use pins");
-                    }
-                } break;
-
-                case TimerRequest::Advanced_1: {
-                    // 4 capture-compare channels
-                    // complementary output
-                    
-                    /* TIM1 pins
-                     * PE6:
-                     * - TIM1_BKIN2: AF1
-                     * - TIM1_BKIN2_COMP12: AF12
-                     * PA6:
-                     * - TIM1_BKIN: AF1
-                     * - TIM1_BKIN_COMP12: AF11
-                     * PA7:
-                     * - TIM1_CH1N: AF1
-                     * PB0:
-                     * - TIM1_CH2N: AF1
-                     * PB1:
-                     * - TIM1_CH3N: AF1
-                     * PE7:
-                     * - TIM1_ETR: AF1
-                     * PE8:
-                     * - TIM1_CH1N: AF1
-                     * PE9:
-                     * - TIM1_CH1: AF1
-                     * PE10:
-                     * - TIM1_CH2N: AF1
-                     * PE11:
-                     * - TIM1_CH2: AF1
-                     * PE12:
-                     * - TIM1_CH3N: AF1
-                     * PE13:
-                     * - TIM1_CH3: AF1
-                     * PE14:
-                     * - TIM1_CH4: AF1
-                     * PE15:
-                     * - TIM1_BKIN: AF1
-                     * - TIM1_BKIN_COMP12: AF13
-                     * PB12:
-                     * - TIM1_BKIN: AF1
-                     * - TIM1_BKIN_COMP12: AF13
-                     * PB13:
-                     * - TIM1_CH1N: AF1
-                     * PB14:
-                     * - TIM1_CH2N: AF1
-                     * PB15:
-                     * - TIM1_CH3N: AF1
-                     * PG4:
-                     * - TIM1_BKIN2: AF1
-                     * - TIM1_BKIN2_COMP12: AF11
-                     * PG5:
-                     * - TIM1_ETR: AF1
-                     * PA8:
-                     * - TIM1_CH1: AF1
-                     * PA9:
-                     * - TIM1_CH2: AF1
-                     * PA10:
-                     * - TIM1_CH3: AF1
-                     * PA11:
-                     * - TIM1_CH4: AF1
-                     * PA12:
-                     * - TIM1_ETR: AF1
-                     * - TIM1_BKIN2: AF12
-                     * 
-                     */
-                } break;
-
-                case TimerRequest::GeneralPurpose32bit_2: {
-                    // 4 capture-compare channels
-                    
-                    /* TIM2 pins
-                     * PA0:
-                     * - TIM2_CH1: AF1
-                     * - TIM2_ETR: AF1
-                     * PA1:
-                     * - TIM2_CH2: AF1
-                     * PA2:
-                     * - TIM2_CH3: AF1
-                     * PA3:
-                     * - TIM2_CH4: AF1
-                     * PA5:
-                     * - TIM2_CH1: AF1
-                     * - TIM2_ETR: AF1
-                     * PA15:
-                     * - TIM2_CH1: AF1
-                     * - TIM2_ETR: AF1
-                     * PB3:
-                     * - TIM2_CH2: AF1
-                     * PB10:
-                     * - TIM2_CH3: AF1
-                     * PB11:
-                     * - TIM2_CH4: AF1
-                     */
-                } break;
-
-                case TimerRequest::GeneralPurpose_3: {
-                    // 4 capture-compare channels
-
-                    /* TIM3 pins:
-                     * PA6:
-                     * - TIM3_CH1: AF2
-                     * PA7:
-                     * - TIM3_CH2: AF2
-                     * PB0:
-                     * - TIM3_CH3: AF2
-                     * PB1:
-                     * - TIM3_CH4: AF2
-                     * PB4:
-                     * - TIM3_CH1: AF2
-                     * PB5:
-                     * - TIM3_CH2: AF2
-                     * PC6:
-                     * - TIM3_CH1: AF2
-                     * PC7:
-                     * - TIM3_CH2: AF2
-                     * PC8:
-                     * - TIM3_CH3: AF2
-                     * PC9:
-                     * - TIM3_CH4: AF2
-                     * PD2:
-                     * - TIM3_ETR: AF2
-                     */
-                } break;
-
-                case TimerRequest::GeneralPurpose_4: {
-                    // 4 capture-compare channels
-
-                    /* TIM4 pins:
-                     * PB6:
-                     * - TIM4_CH1: AF2
-                     * PB7:
-                     * - TIM4_CH2: AF2
-                     * PB8:
-                     * - TIM4_CH3: AF2
-                     * PB9:
-                     * - TIM4_CH4: AF2
-                     * PD12:
-                     * - TIM4_CH1: AF2
-                     * PD13:
-                     * - TIM4_CH2: AF2
-                     * PD14:
-                     * - TIM4_CH3: AF2
-                     * PD15:
-                     * - TIM4_CH4: AF2
-                     * PE0:
-                     * - TIM4_ETR: AF2
-                     */
-                } break;
-
-                case TimerRequest::GeneralPurpose32bit_5: {
-                    // 4 capture-compare channels
-
-                    /* TIM5 pins:
-                     * PA0:
-                     * - TIM5_CH1: AF2
-                     * PA1:
-                     * - TIM5_CH2: AF2
-                     * PA2:
-                     * - TIM5_CH3: AF2
-                     * PA3:
-                     * - TIM5_CH4: AF2
-                     * PA4:
-                     * - TIM5_ETR: AF2
-                     */
-                } break;
-
-                case TimerRequest::Basic_6:
-                case TimerRequest::Basic_7: {
-                    if(e.pin_count > 0) {
-                        ST_LIB::compile_error("Basic timers can't use pins");
-                    }
-                } break;
-
-                case TimerRequest::Advanced_8: {
-                    // 4 capture-compare channels
-                    // complementary output
-
-                    /* TIM8 pins:
-                     * PA0:
-                     * - TIM8_ETR: AF3
-                     * PA5:
-                     * - TIM8_CH1N: AF3
-                     * PA6:
-                     * - TIM8_BKIN: AF3
-                     * - TIM8_BKIN_COMP12: AF10
-                     * PA7:
-                     * - TIM8_CH1N: AF3
-                     * PA8:
-                     * - TIM8_BKIN2: AF3
-                     * - TIM8_BKIN2_COMP12: AD12
-                     * PB0:
-                     * - TIM8_CH2N: AF3
-                     * PB1:
-                     * - TIM8_CH3N: AF3
-                     * PB14:
-                     * - TIM8_CH2N: AF3
-                     * PB15:
-                     * - TIM8_CH3N: AF3
-                     * PC6:
-                     * - TIM8_CH1: AF3
-                     * PC7:
-                     * - TIM8_CH2: AF3
-                     * PC8:
-                     * - TIM8_CH3: AF3
-                     * PC9:
-                     * - TIM8_CH4: AF3
-                     * PG2:
-                     * - TIM8_BKIN: AF3
-                     * - TIM8_BKIN_COMP12: AF11
-                     * PG3:
-                     * - TIM8_BKIN2: AF3
-                     * - TIM8_BKIN2_COMP12: AF11
-                     * PG8:
-                     * - TIM8_ETR: AF3
-                     */
-                } break;
-
-                case TimerRequest::SlaveTimer_12: {
-                    // 2 capture-compare channels
-
-                    /* TIM12 pins:
-                     * PB14:
-                     * - TIM12_CH1: AF2
-                     * PB15:
-                     * - TIM12_CH2: AF2
-                     */
-                } break;
-
-                case TimerRequest::SlaveTimer_13: {
-                    // 1 capture-compare channel
-
-                    /* TIM13 pins:
-                     * PA6:
-                     * - TIM13_CH1: AF9
-                     * PF8:
-                     * - TIM13_CH1: AF9
-                     */
-                } break;
-
-                case TimerRequest::SlaveTimer_14: {
-                    // 1 capture-compare channel
-
-                    /* TIM14 pins:
-                     * PA7:
-                     * - TIM14_CH1: AF9
-                     * PF9:
-                     * - TIM14_CH1: AF9
-                     */
-                } break;
-
-                case TimerRequest::GeneralPurpose_15: {
-                    // 2 capture-compare channels
-
-                    /* TIM15 pins:
-                     * PA0:
-                     * - TIM15_BKIN: AF4
-                     * PA1:
-                     * - TIM15_CH1N: AF4
-                     * PA2:
-                     * - TIM15_CH1: AF4
-                     * PA3:
-                     * - TIM15_CH2: AF4
-                     * PC12:
-                     * - TIM15_CH1: AF2
-                     * PD2:
-                     * - TIM15_BKIN: AF4
-                     * PE3:
-                     * - TIM15_BKIN: AF4
-                     * PE4:
-                     * - TIM15_CH1N: AF4
-                     * PE5:
-                     * - TIM15_CH1: AF4
-                     * PE6:
-                     * - TIM15_CH2: AF4
-                     */
-                } break;
-
-                case TimerRequest::GeneralPurpose_16: {
-                    // 1 capture-compare channel
-
-                    /* TIM16 pins:
-                     * PF6:
-                     * - TIM16_CH1: AF1
-                     * PF8:
-                     * - TIM16_CH1N: AF1
-                     * PF10:
-                     * - TIM16_BKIN: AF1
-                     */
-                } break;
-
-                case TimerRequest::GeneralPurpose_17: {
-                    // 1 capture-compare channel
-
-                    /* TIM17 pins:
-                     * PB5:
-                     * - TIM17_BKIN: AF1
-                     * PB7:
-                     * - TIM17_CH1N: AF1
-                     * PB9:
-                     * - TIM17_CH1: AF1
-                     * PF7:
-                     * - TIM17_CH1: AF1
-                     * PF9:
-                     * - TIM17_CH1N: AF1
-                     * PG6:
-                     * - TIM17_BKIN: AF1
-                     */
-                } break;
-
-                case TimerRequest::GeneralPurpose32bit_23: {
-                    // 4 capture-compare channels
-
-                    /* TIM23 pins:
-                     * PB2:
-                     * - TIM23_ETR: AF13
-                     * PF0:
-                     * - TIM23_CH1: AF13
-                     * PF1:
-                     * - TIM23_CH2: AF13
-                     * PF2:
-                     * - TIM23_CH3: AF13
-                     * PF3:
-                     * - TIM23_CH4: AF13
-                     * PF6:
-                     * - TIM23_CH1: AF13
-                     * PF7:
-                     * - TIM23_CH2: AF13
-                     * PF8:
-                     * - TIM23_CH3: AF13
-                     * PF9:
-                     * - TIM23_CH4: AF13
-                     * PG3:
-                     * - TIM23_ETR: AF13
-                     * PG12:
-                     * - TIM23_CH1: AF13
-                     * PG13:
-                     * - TIM23_CH2: AF13
-                     * PG14:
-                     * - TIM23_CH3: AF13
-                     */
-                } break;
-
-                case TimerRequest::GeneralPurpose32bit_24: {
-                    // 4 capture-compare channels
-
-                    /* TIM24 pins:
-                     * PB3:
-                     * - TIM24_ETR: AF14
-                     * PF11:
-                     * - TIM24_CH1: AF14
-                     * PF12:
-                     * - TIM24_CH2: AF14
-                     * PF13:
-                     * - TIM24_CH3: AF14
-                     * PF14:
-                     * - TIM24_CH4: AF14
-                     * PG2:
-                     * - TIM24_ETR: AF14
-                     */
-                } break;
+            TimerPossiblePinSlice curr_pins = tim_pins[(int)e.request];
+            for(int j = 0; j < curr_pins.pin_count; j++) {
+                // TODO
             }
         }
     }
