@@ -884,11 +884,53 @@ struct TimerDomain {
                 case TimerRequest::GeneralPurpose32bit_23: {
                     // 4 capture-compare channels
 
+                    /* TIM23 pins:
+                     * PB2:
+                     * - TIM23_ETR: AF13
+                     * PF0:
+                     * - TIM23_CH1: AF13
+                     * PF1:
+                     * - TIM23_CH2: AF13
+                     * PF2:
+                     * - TIM23_CH3: AF13
+                     * PF3:
+                     * - TIM23_CH4: AF13
+                     * PF6:
+                     * - TIM23_CH1: AF13
+                     * PF7:
+                     * - TIM23_CH2: AF13
+                     * PF8:
+                     * - TIM23_CH3: AF13
+                     * PF9:
+                     * - TIM23_CH4: AF13
+                     * PG3:
+                     * - TIM23_ETR: AF13
+                     * PG12:
+                     * - TIM23_CH1: AF13
+                     * PG13:
+                     * - TIM23_CH2: AF13
+                     * PG14:
+                     * - TIM23_CH3: AF13
+                     */
                 } break;
 
                 case TimerRequest::GeneralPurpose32bit_24: {
                     // 4 capture-compare channels
 
+                    /* TIM24 pins:
+                     * PB3:
+                     * - TIM24_ETR: AF14
+                     * PF11:
+                     * - TIM24_CH1: AF14
+                     * PF12:
+                     * - TIM24_CH2: AF14
+                     * PF13:
+                     * - TIM24_CH3: AF14
+                     * PF14:
+                     * - TIM24_CH4: AF14
+                     * PG2:
+                     * - TIM24_ETR: AF14
+                     */
                 } break;
             }
         }
