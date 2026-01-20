@@ -110,19 +110,19 @@ struct TimerWrapper {
     inline void break_interrupt_enable() {
         static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_8,
             "Error: Break interrupt enable only allowed in advanced timers {TIM1, TIM8}");
-        ErrorHandler("Break interrupt is not allowed currently because gp timers {TIM12, TIM13, TIM14} use the same interrupt callback");
+        SET_BIT(instance.tim->DIER, TIM_DIER_BIE);
     }
     inline void break_interrupt_disable() {
         static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_8,
             "Error: Break interrupt enable only allowed in advanced timers {TIM1, TIM8}");
-        SET_BIT(instance.tim->DIER, TIM_DIER_BIE);
+        CLEAR_BIT(instance.tim->DIER, TIM_DIER_BIE);
     }
 
     /* interrupt gets called only once, counter needs to be reenabled */
     inline void set_one_pulse_mode() {
         SET_BIT(instance.tim->CR1, TIM_CR1_OPM);
     }
-    inline void multi_interrupt() {
+    inline void set_multi_interrupt_mode() {
         CLEAR_BIT(instance.tim->CR1, TIM_CR1_OPM);
     }
 
@@ -180,16 +180,6 @@ struct TimerWrapper {
     inline uint32_t get_period() {
         return instance.tim->ARR;
     }
-
-#if 0
-    if constexpr (dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_8) {
-        // advanced specific functions
-    }
-
-    if constexpr (dev.e.request != TimerRequest::Basic_6 && dev.e.request != TimerRequest::Basic_7) {
-        // general purpose and advanced functions
-    }
-#endif
 
     /* WARNING: The counter _must_ be disabled to switch from edge-aligned to center-aligned mode */
     template<TimerDomain::CountingMode mode>
