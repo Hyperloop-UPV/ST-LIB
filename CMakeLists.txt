@@ -79,6 +79,7 @@ if (CMAKE_CROSSCOMPILING)
       ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/UDP/DatagramSocket.cpp
       
       ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Flash/Flash.cpp
+      ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/DigitalOutputService/DigitalOutputService.cpp
       
     
   )

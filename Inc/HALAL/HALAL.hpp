@@ -3,6 +3,7 @@
 #include "HALAL/Models/HALconfig/HALconfig.hpp"
 #include "HALAL/Models/DMA/DMA.hpp"
 #include "HALAL/Services/Flash/Flash.hpp"
+#include "HALAL/Services/DigitalOutputService/DigitalOutputService.hpp"
 
 
 // #include "HALAL/Services/EXTI/EXTI.hpp"
