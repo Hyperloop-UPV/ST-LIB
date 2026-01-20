@@ -9,6 +9,7 @@
 #define HF_FLAG_VALUE (0xFF00FF00U) //Flag to know if already is written information in the flash
 #define METADATA_FLASH_SIZE (0X100U)
 #define HARD_FAULT_FLASH_SIZE (0X200U)
+#define CALL_TRACE_MAX_DEPTH 16
 typedef struct __attribute__((packed)) ContextStateFrame {
   uint32_t r0;
   uint32_t r1;
@@ -37,15 +38,17 @@ typedef struct __attribute__((packed)) HardFaultLog{
     uint32_t MMAR_VALID;
     uint32_t BFAR_VALID;
   }fault_address;
-}HardFaultLog; // 44 bytes this estructure
-// static void LED_init(void);
-// static void LED_Blink(uint32_t delay_ms);
-// static uint8_t HF_FLASH(void);
+  struct __attribute__((packed)){
+    uint32_t depth;
+    uint32_t pcs[CALL_TRACE_MAX_DEPTH];
+  }CallTrace;
+}HardFaultLog; // 112 bytes this estructure
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 void Hard_fault_check(void);
-
 #ifdef __cplusplus
 }
 #endif
