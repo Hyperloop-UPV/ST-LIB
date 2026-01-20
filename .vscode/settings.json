@@ -24,6 +24,5 @@
     "mutex": "cpp",
     "shared_mutex": "cpp",
     "regex": "cpp"
-  },
-  "cortex-debug.variableUseNaturalFormat": false
+}
 }
