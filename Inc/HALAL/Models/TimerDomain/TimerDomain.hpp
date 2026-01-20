@@ -13,6 +13,7 @@
 #ifdef HAL_TIM_MODULE_ENABLED
 
 #include "HALAL/Models/GPIO.hpp"
+#include "HALAL/Models/Pin.hpp"
 
 #include <span>
 #include <array>
@@ -127,12 +128,24 @@ enum TimerRequest : uint8_t {
 enum class TimerAF {
     None,
     PWM,
+    InputCapture,
+    BreakInput,
+    BreakInputCompare,
+};
+
+enum class TimerChannel : uint8_t {
+    CHANNEL_1 = 1,
+    CHANNEL_2 = 2,
+    CHANNEL_3 = 3,
+    CHANNEL_4 = 4,
+    CHANNEL_5 = 5,
+    CHANNEL_6 = 6,
 };
 
 struct TimerPin {
-    TimerAF af;
+    ST_LIB::TimerAF af;
     ST_LIB::GPIODomain::Pin pin;
-    uint8_t channel;
+    ST_LIB::TimerChannel channel;
 };
 
 constexpr std::array<int, 25> create_timer_idxmap() {
@@ -563,10 +576,10 @@ struct TimerDomain {
     static consteval void check_pins(std::span<const Entry> requests)
     {
         enum TimerAF_Use {
-            Channel_1,
-            Channel_2,
-            Channel_3,
-            Channel_4,
+            Channel_1 = 1,
+            Channel_2 = 2,
+            Channel_3 = 3,
+            Channel_4 = 4,
             ExternalTriggerFilter, /* ETR */
             BreakInput_1,
             BreakInput_2,
@@ -621,7 +634,7 @@ struct TimerDomain {
             {ST_LIB::PA11, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_4},
 
             {ST_LIB::PA12, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
-            {ST_LIB::PA12, (ST_LIB::GPIODomain::AlternateFunction)12, BreakInput_2},
+            {ST_LIB::PA12, (ST_LIB::GPIODomain::AlternateFunction)12, BreakInput_2}, // comprobar
         };
         TimerPossiblePin tim2pins[] = {
             // 4 capture-compare channels
@@ -786,41 +799,22 @@ struct TimerDomain {
             {ST_LIB::PG2, (ST_LIB::GPIODomain::AlternateFunction)14, ExternalTriggerFilter},
         };
 
-        struct TimerPossiblePinSlice {
-            std::span<TimerPossiblePin> pins;
-            int pin_count;
-        };
-
-        TimerPossiblePinSlice tim_pins[25];
-        tim_pins[TimerRequest::Advanced_1] = 
-            {std::span<TimerPossiblePin>(tim1pins), ARRAY_LENGTH(tim1pins)};
-        tim_pins[TimerRequest::GeneralPurpose32bit_2] = 
-            {std::span<TimerPossiblePin>(tim2pins), ARRAY_LENGTH(tim2pins)};
-        tim_pins[TimerRequest::GeneralPurpose_3] = 
-            {std::span<TimerPossiblePin>(tim3pins), ARRAY_LENGTH(tim3pins)};
-        tim_pins[TimerRequest::GeneralPurpose_4] = 
-            {std::span<TimerPossiblePin>(tim4pins), ARRAY_LENGTH(tim4pins)};
-        tim_pins[TimerRequest::GeneralPurpose32bit_5] = 
-            {std::span<TimerPossiblePin>(tim5pins), ARRAY_LENGTH(tim5pins)};
+        std::span<TimerPossiblePin> tim_pins[25];
+        tim_pins[TimerRequest::Advanced_1] = std::span<TimerPossiblePin>(tim1pins);
+        tim_pins[TimerRequest::GeneralPurpose32bit_2] = std::span<TimerPossiblePin>(tim2pins);
+        tim_pins[TimerRequest::GeneralPurpose_3] = std::span<TimerPossiblePin>(tim3pins);
+        tim_pins[TimerRequest::GeneralPurpose_4] = std::span<TimerPossiblePin>(tim4pins);
+        tim_pins[TimerRequest::GeneralPurpose32bit_5] = std::span<TimerPossiblePin>(tim5pins);
         /* TIM6, TIM7 have no associated pins */        
-        tim_pins[TimerRequest::Advanced_8] = 
-            {std::span<TimerPossiblePin>(tim8pins), ARRAY_LENGTH(tim8pins)};
-        tim_pins[TimerRequest::SlaveTimer_12] = 
-            {std::span<TimerPossiblePin>(tim12pins), ARRAY_LENGTH(tim12pins)};
-        tim_pins[TimerRequest::SlaveTimer_13] = 
-            {std::span<TimerPossiblePin>(tim13pins), ARRAY_LENGTH(tim13pins)};
-        tim_pins[TimerRequest::SlaveTimer_14] = 
-            {std::span<TimerPossiblePin>(tim14pins), ARRAY_LENGTH(tim14pins)};
-        tim_pins[TimerRequest::GeneralPurpose_15] = 
-            {std::span<TimerPossiblePin>(tim15pins), ARRAY_LENGTH(tim15pins)};
-        tim_pins[TimerRequest::GeneralPurpose_16] = 
-            {std::span<TimerPossiblePin>(tim16pins), ARRAY_LENGTH(tim16pins)};
-        tim_pins[TimerRequest::GeneralPurpose_17] = 
-            {std::span<TimerPossiblePin>(tim17pins), ARRAY_LENGTH(tim17pins)};
-        tim_pins[TimerRequest::GeneralPurpose32bit_23] = 
-            {std::span<TimerPossiblePin>(tim23pins), ARRAY_LENGTH(tim23pins)};
-        tim_pins[TimerRequest::GeneralPurpose32bit_24] = 
-            {std::span<TimerPossiblePin>(tim24pins), ARRAY_LENGTH(tim24pins)};
+        tim_pins[TimerRequest::Advanced_8] = std::span<TimerPossiblePin>(tim8pins);
+        tim_pins[TimerRequest::SlaveTimer_12] = std::span<TimerPossiblePin>(tim12pins);
+        tim_pins[TimerRequest::SlaveTimer_13] = std::span<TimerPossiblePin>(tim13pins);
+        tim_pins[TimerRequest::SlaveTimer_14] = std::span<TimerPossiblePin>(tim14pins);
+        tim_pins[TimerRequest::GeneralPurpose_15] = std::span<TimerPossiblePin>(tim15pins);
+        tim_pins[TimerRequest::GeneralPurpose_16] = std::span<TimerPossiblePin>(tim16pins);
+        tim_pins[TimerRequest::GeneralPurpose_17] = std::span<TimerPossiblePin>(tim17pins);
+        tim_pins[TimerRequest::GeneralPurpose32bit_23] = std::span<TimerPossiblePin>(tim23pins);
+        tim_pins[TimerRequest::GeneralPurpose32bit_24] = std::span<TimerPossiblePin>(tim24pins);
 
         /* good luck n_n */
         for(std::size_t i = 0; i < requests.size(); i++) {
@@ -837,9 +831,33 @@ struct TimerDomain {
                 ST_LIB::compile_error("Basic timers can't use pins");
             }
 
-            TimerPossiblePinSlice curr_pins = tim_pins[(int)e.request];
-            for(int j = 0; j < curr_pins.pin_count; j++) {
-                // TODO
+            std::span<TimerPossiblePin> curr_pins = tim_pins[(int)e.request];
+            for(int j = 0; j < e.pin_count; j++) {
+                ST_LIB::TimerPin pin = e.pins[j];
+                bool found = false;
+                for(TimerPossiblePin p : curr_pins) {
+                    if(pin.af == ST_LIB::TimerAF::None) {
+                        ST_LIB::compile_error("Error: Timers with pins must have associated TimerAF (alternate functions)");
+                    } else if(pin.af == ST_LIB::TimerAF::InputCapture || pin.af == ST_LIB::TimerAF::PWM) {
+                        if((static_cast<uint8_t>(pin.channel) == static_cast<uint8_t>(p.use))) {
+                            found = true;
+                            break;
+                        }
+                    } else if(pin.af == ST_LIB::TimerAF::BreakInput) {
+                        if(p.use == BreakInput_1 || p.use == BreakInput_2) {
+                            found = true;
+                            break;
+                        }
+                    } else if(pin.af == ST_LIB::TimerAF::BreakInputCompare) {
+                        if(p.use == BreakInputCompare_1 || p.use == BreakInputCompare_2) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if(!found) {
+                    ST_LIB::compile_error("Error: Couldn't find any pins with the requested alternate function");
+                }
             }
         }
     }

@@ -28,25 +28,34 @@ struct PWMData {
 
 template<const TimerDomain::Timer &dev>
 class PWM {
-    static constexpr size_t channel_to_CCR[7] = {
-        0,
-        offsetof(TIM_TypeDef, CCR1),
-        offsetof(TIM_TypeDef, CCR2),
-        offsetof(TIM_TypeDef, CCR3),
-        offsetof(TIM_TypeDef, CCR4),
-        offsetof(TIM_TypeDef, CCR5),
-        offsetof(TIM_TypeDef, CCR6)
-    };
+    static consteval uint8_t get_channel_state_idx(const ST_LIB::TimerChannel ch) {
+        switch(ch) {
+            case TimerChannel::CHANNEL_1:
+            case TimerChannel::CHANNEL_2:
+            case TimerChannel::CHANNEL_3:
+            case TimerChannel::CHANNEL_4:
+            case TimerChannel::CHANNEL_5:
+            case TimerChannel::CHANNEL_6:
+                return static_cast<uint8_t>(ch) - 1;
 
-    static constexpr uint32_t channel_to_channel_state_idx[7] = {
-        0,
-        0, 1, 2, 3, 4, 5,
-    };
+            default: ST_LIB::compile_error("unreachable");
+                return 0;
+        }
+    }
 
-    static constexpr uint32_t channel_to_channelmul4[7] = {
-        0,
-        0x0, 0x4, 0x8, 0xC, 0x10, 0x14
-    };
+    static consteval uint8_t get_channel_mul4(const ST_LIB::TimerChannel ch) {
+        switch(ch) {
+            case TimerChannel::CHANNEL_1: return 0x00;
+            case TimerChannel::CHANNEL_2: return 0x04;
+            case TimerChannel::CHANNEL_3: return 0x08;
+            case TimerChannel::CHANNEL_4: return 0x0C;
+            case TimerChannel::CHANNEL_5: return 0x10;
+            case TimerChannel::CHANNEL_6: return 0x14;
+
+            default: ST_LIB::compile_error("unreachable");
+                return 0;
+        }
+    }
 
     static constexpr float CLOCK_FREQ_MHZ_WITHOUT_PRESCALER = 275.0f;
     static constexpr float clock_period_ns = (1.0f/CLOCK_FREQ_MHZ_WITHOUT_PRESCALER)*1000.0f;
@@ -69,16 +78,16 @@ public:
         if(is_on) return;
         
         // if(HAL_TIM_PWM_Start(timer.htim, channel) != HAL_OK) { ErrorHandler("", 0); }
-        HAL_TIM_ChannelStateTypeDef *state = &timer.htim.ChannelState[channel_to_channel_state_idx[pin.channel]];
+        HAL_TIM_ChannelStateTypeDef *state = &timer.htim.ChannelState[get_channel_state_idx(pin.channel)];
         if(*state != HAL_TIM_CHANNEL_STATE_READY) {
             ErrorHandler("Channel not ready");
         }
 
         *state = HAL_TIM_CHANNEL_STATE_BUSY;
         // enable CCx
-        uint32_t tmp = TIM_CCER_CC1E << (channel_to_channelmul4[pin.channel] & 0x1FU); /* 0x1FU = 31 bits max shift */
+        uint32_t tmp = TIM_CCER_CC1E << (get_channel_mul4(pin.channel) & 0x1FU); /* 0x1FU = 31 bits max shift */
 
-        SET_BIT(timer.tim->CCER, (uint32_t)(TIM_CCx_ENABLE << (channel_to_channelmul4[pin.channel] & 0x1FU)));
+        SET_BIT(timer.tim->CCER, (uint32_t)(TIM_CCx_ENABLE << (get_channel_mul4(pin.channel) & 0x1FU)));
 
         // if timer supports break
         if constexpr ((dev.e.request == (TimerRequest)1) || (dev.e.request == (TimerRequest)8) || (dev.e.request == (TimerRequest)15) || (dev.e.request == (TimerRequest)16) || (dev.e.request == (TimerRequest)17))
@@ -105,7 +114,7 @@ public:
         if(!is_on) return;
         // if(HAL_TIM_PWM_Stop(timer.htim, channel) != HAL_OK) { ErrorHandler("", 0); }
 
-        SET_BIT(timer.tim->CCER, (uint32_t)(TIM_CCx_DISABLE << (channel_to_channelmul4[pin.channel] & 0x1FU)));
+        SET_BIT(timer.tim->CCER, (uint32_t)(TIM_CCx_DISABLE << (get_channel_mul4(pin.channel) & 0x1FU)));
 
         // if timer supports break
         if constexpr ((dev.e.request == (TimerRequest)1) || (dev.e.request == (TimerRequest)8) || (dev.e.request == (TimerRequest)15) || (dev.e.request == (TimerRequest)16) || (dev.e.request == (TimerRequest)17))
@@ -116,7 +125,7 @@ public:
 
         __HAL_TIM_DISABLE(timer.htim);
 
-        HAL_TIM_ChannelStateTypeDef *state = &timer.htim.ChannelState[channel_to_channel_state_idx[pin.channel]];
+        HAL_TIM_ChannelStateTypeDef *state = &timer.htim.ChannelState[get_channel_state_idx(pin.channel)];
         *state = HAL_TIM_CHANNEL_STATE_READY;
 
         is_on = false;
@@ -125,7 +134,7 @@ public:
     void set_duty_cycle(float duty_cycle) {
         uint16_t raw_duty = (uint16_t)((float)timer->tim->ARR / 200.0f * duty_cycle);
         //__HAL_TIM_SET_COMPARE(timer->htim, pin.channel, raw_duty);
-        *(uint16_t*)((uint8_t*)(timer->tim) + channel_to_CCR[pin.channel]) = raw_duty;
+        *(uint16_t*)((uint8_t*)(timer->tim) + timer.get_CCR_offset(pin.channel)) = raw_duty;
         this->duty_cycle = duty_cycle;
     }
 

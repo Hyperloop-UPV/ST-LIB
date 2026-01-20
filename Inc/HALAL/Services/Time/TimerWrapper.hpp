@@ -12,7 +12,6 @@
 #include "HALAL/Models/TimerDomain/TimerDomain.hpp"
 #include "HALAL/Services/PWM/PWM/NewPWM.hpp"
 #include "HALAL/Models/GPIO.hpp"
-#include "HALAL/Models/Pin.hpp"
 
 #include "ErrorHandler/ErrorHandler.hpp"
 
@@ -158,6 +157,20 @@ struct TimerWrapper {
         TimerDomain::callbacks[instance.timer_idx] = callback;
         TimerDomain::callback_data[instance.timer_idx] = callback_data;
         this->counter_enable();
+    }
+
+    static consteval size_t get_CCR_offset(const ST_LIB::TimerChannel ch) {
+        switch(ch) {
+            case TimerChannel::CHANNEL_1: return offsetof(TIM_TypeDef, CCR1);
+            case TimerChannel::CHANNEL_2: return offsetof(TIM_TypeDef, CCR2);
+            case TimerChannel::CHANNEL_3: return offsetof(TIM_TypeDef, CCR3);
+            case TimerChannel::CHANNEL_4: return offsetof(TIM_TypeDef, CCR4);
+            case TimerChannel::CHANNEL_5: return offsetof(TIM_TypeDef, CCR5);
+            case TimerChannel::CHANNEL_6: return offsetof(TIM_TypeDef, CCR6);
+
+            default: ST_LIB::compile_error("unreachable"); 
+                return 0;
+        }
     }
 
     // leftover from old TimerPeripheral, maybe this was useful?
