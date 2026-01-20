@@ -392,7 +392,7 @@ struct SPIDomain {
         }
 
         template <class Ctx>
-        consteval void inscribe(Ctx &ctx) const {
+        consteval std::size_t inscribe(Ctx &ctx) const {
             // Convert spix to DMA_Domain::Instance
             DMA_Domain::Instance dma_instance;
             switch (peripheral) {
@@ -436,7 +436,7 @@ struct SPIDomain {
                 .config = config
             };
 
-            ctx.template add<SPIDomain>(e);
+            return ctx.template add<SPIDomain>(e);
         }
     };
 
