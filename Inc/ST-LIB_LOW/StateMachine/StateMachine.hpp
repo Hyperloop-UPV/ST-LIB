@@ -134,12 +134,12 @@ private:
   constexpr const auto& get_exit_actions() const {return on_exit_actions;};
 
 
-  constexpr void add_enter_action(Callback action)
+  consteval void add_enter_action(Callback action)
   {
     on_enter_actions.push_back(action);
   }
 
-  constexpr void add_exit_action(Callback action)
+  consteval void add_exit_action(Callback action)
   {
     on_exit_actions.push_back(action);
   }
@@ -258,7 +258,7 @@ private:
   }
 
   template <class TimeUnit>
-  constexpr TimedAction * 
+  consteval TimedAction * 
   add_low_precision_cyclic_action(Callback action,
                                   chrono::duration<int64_t, TimeUnit> period){
     TimedAction timed_action = {};
@@ -272,7 +272,7 @@ private:
   }
 
   template <class TimeUnit>
-  constexpr TimedAction *
+  consteval TimedAction *
   add_mid_precision_cyclic_action(Callback action,
                                   chrono::duration<int64_t, TimeUnit> period){
     TimedAction timed_action = {};
@@ -286,7 +286,7 @@ private:
   }
 
   template <class TimeUnit>
-  constexpr TimedAction *
+  consteval TimedAction *
   add_high_precision_cyclic_action(Callback action,
                                    chrono::duration<int64_t, TimeUnit> period){
     TimedAction timed_action = {};
@@ -448,7 +448,7 @@ public:
     }
   
 template <class TimeUnit, size_t N, size_t O>
-  constexpr TimedAction * 
+  consteval TimedAction * 
   add_low_precision_cyclic_action(Callback action,
                                   chrono::duration<int64_t, TimeUnit> period,const State<StateEnum, N, O>& state){
     for(size_t i = 0; i < states.size(); ++i)
@@ -463,7 +463,7 @@ template <class TimeUnit, size_t N, size_t O>
   }
 
   template <class TimeUnit, size_t N, size_t O>
-  constexpr TimedAction *
+  consteval TimedAction *
   add_mid_precision_cyclic_action(Callback action,
                                   chrono::duration<int64_t, TimeUnit> period,const State<StateEnum, N, O>& state){
     for(size_t i = 0; i < states.size(); ++i)
@@ -478,7 +478,7 @@ template <class TimeUnit, size_t N, size_t O>
   }
 
   template <class TimeUnit, size_t N, size_t O>
-  constexpr TimedAction *
+  consteval TimedAction *
   add_high_precision_cyclic_action(Callback action,
                                    chrono::duration<int64_t, TimeUnit> period,const State<StateEnum, N, O>& state){
     for(size_t i = 0; i < states.size(); ++i)
@@ -493,7 +493,7 @@ template <class TimeUnit, size_t N, size_t O>
   }
 
   template <size_t N, size_t O>
-  constexpr void remove_cyclic_action(TimedAction *timed_action, const State<StateEnum, N, O>& state){
+  consteval void remove_cyclic_action(TimedAction *timed_action, const State<StateEnum, N, O>& state){
     for(size_t i = 0; i < states.size(); ++i)
     {
         if(states[i].get_state() == state.get_state())
@@ -506,7 +506,7 @@ template <class TimeUnit, size_t N, size_t O>
   }
 
   template <size_t N, size_t O>
-  constexpr void add_enter_action(Callback action, const State<StateEnum, N, O>& state){
+  consteval void add_enter_action(Callback action, const State<StateEnum, N, O>& state){
     for(size_t i = 0; i < states.size(); ++i)
     {
         if(states[i].get_state() == state.get_state())
@@ -519,7 +519,7 @@ template <class TimeUnit, size_t N, size_t O>
   }
 
   template <size_t N, size_t O>
-  constexpr void add_exit_action(Callback action, const State<StateEnum, N, O>& state){
+  consteval void add_exit_action(Callback action, const State<StateEnum, N, O>& state){
     for(size_t i = 0; i < states.size(); ++i)
     {
         if(states[i].get_state() == state.get_state())
