@@ -6,18 +6,18 @@
  */
 #pragma once
 
+/* Uso del scheduler, descrito en la wiki: https://wiki.hyperloopupv.com/es/firmware/Timing/Scheduler */
+
 #ifndef TESTING_ENV
-    #include "stm32h7xx_ll_tim.h"
+#include "stm32h7xx_ll_tim.h"
 #else
-    #include "MockedDrivers/stm32h7xx_ll_tim_wrapper.h"
+#include "MockedDrivers/stm32h7xx_ll_tim_wrapper.h"
 #endif
 #include <array>
 #include <cstdint>
 #include <functional>
 
-/* NOTE(vic): Pido perdón a Boris pero es la mejor manera que se me ha ocurrido hacer esto
- *  Cambiar el SCHEDULER_TIMER_IDX si es mejor usar otro timer que no sea TIM2
- */
+/* NOTE(vic): Esto cambiará pronto */
 #ifndef SCHEDULER_TIMER_IDX
 # define SCHEDULER_TIMER_IDX 2
 #endif
@@ -26,7 +26,7 @@
 #define glue(a,b) glue_(a,b)
 #define SCHEDULER_TIMER_BASE glue(TIM, glue(SCHEDULER_TIMER_IDX, _BASE))
 
-    // Used to reserve a TimerPeripheral
+// Used to reserve a TimerPeripheral
 #ifndef TESTING_ENV
 #include "stm32h7xx_hal_tim.h"
 #define SCHEDULER_HAL_TIM glue(htim, SCHEDULER_TIMER_IDX)
