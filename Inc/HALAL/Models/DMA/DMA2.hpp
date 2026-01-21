@@ -31,7 +31,7 @@ namespace ST_LIB {
                                         spi1, spi2, spi3, spi4, spi5,
                                         fmac};
         
-        enum class Stream : uint8_t {dma1_stream0, dma1_stream1, dma1_stream2, dma1_stream3, 
+        enum class Stream : uint8_t {none, dma1_stream0, dma1_stream1, dma1_stream2, dma1_stream3, 
                                         dma1_stream4, dma1_stream5, dma1_stream6, dma1_stream7, 
                                         dma2_stream0, dma2_stream1, dma2_stream2, dma2_stream3, 
                                         dma2_stream4, dma2_stream5, dma2_stream6, dma2_stream7};
@@ -56,6 +56,7 @@ namespace ST_LIB {
                 case Stream::dma2_stream5: return DMA2_Stream5;
                 case Stream::dma2_stream6: return DMA2_Stream6;
                 case Stream::dma2_stream7: return DMA2_Stream7;
+                case Stream::none: return nullptr;
             }
             return nullptr;
         }
@@ -83,7 +84,11 @@ namespace ST_LIB {
                 for (uint8_t j = 0; j < n; j++) {
                     e[j].instance = instance;
                     e[j].stream   = streams[j];
-                    e[j].irqn     = get_irqn(streams[j]);
+                    if (streams[j] != Stream::none) {
+                        e[j].irqn     = get_irqn(streams[j]);
+                    } else {
+                        e[j].irqn = (IRQn_Type)0; // Dummy value
+                    }
                     e[j].id       = j;
                 }
                 
@@ -120,8 +125,8 @@ namespace ST_LIB {
             else if (stream == Stream::dma2_stream5) return DMA2_Stream5_IRQn;
             else if (stream == Stream::dma2_stream6) return DMA2_Stream6_IRQn;
             else if (stream == Stream::dma2_stream7) return DMA2_Stream7_IRQn;
-            else ErrorHandler("Unknown DMA stream");
-            return DMA1_Stream0_IRQn; // Nunca se alcanza
+            else if (stream == Stream::none) return (IRQn_Type)0;
+            else compile_error("No tiene que llegar aqui nunca, creo");
         }
 
         static constexpr inline bool is_one_of(Instance instance, auto... bases) {
@@ -181,7 +186,7 @@ namespace ST_LIB {
             if (instance == Instance::fmac && i == 1) return DMA_REQUEST_FMAC_WRITE;
             if (instance == Instance::fmac && i == 2) return DMA_REQUEST_FMAC_READ;
 
-            ErrorHandler("Invalid DMA request configuration");
+            compile_error("Invalid DMA request configuration");
             return 0;
         }
 
@@ -282,12 +287,49 @@ namespace ST_LIB {
         template <size_t N>
         static consteval std::array<Config, N> build(span<const Entry> instances) {
             std::array<Config, N> cfgs{};
+            std::array<Entry, N> ents;
+            for(size_t i=0; i<N; ++i) ents[i] = instances[i];
+
+            std::array<bool, MAX_STREAMS> used_streams{}; // Defaults to false
+
+            // First pass: process user-specified streams
+            for (std::size_t i = 0; i < N; ++i) {
+                const auto &e = ents[i];
+                if (e.stream != Stream::none) {
+                    uint8_t stream_idx = static_cast<uint8_t>(e.stream) - 1;
+                    if (used_streams[stream_idx]) {
+                        compile_error("DMA stream already in use");
+                    }
+                    used_streams[stream_idx] = true;
+                }
+            }
+
+            // Second pass: assign streams for entries with Stream::none
+            for (std::size_t i = 0; i < N; ++i) {
+                auto &e = ents[i];
+                if (e.stream == Stream::none) {
+                    bool assigned = false;
+                    for (uint8_t j = 0; j < MAX_STREAMS; ++j) {
+                        if (!used_streams[j]) {
+                            e.stream = static_cast<Stream>(j + 1);
+                            e.irqn = get_irqn(e.stream);
+                            used_streams[j] = true;
+                            assigned = true;
+                            break;
+                        }
+                    }
+                    if (!assigned) {
+                        compile_error("Not enough DMA streams available");
+                    }
+                }
+            }
+
 
             for (std::size_t i = 0; i < N; ++i){
-                const auto &e = instances[i];
+                const auto &e = ents[i];
 
                 for (std::size_t j = 0; j < i; ++j){
-                    const auto &prev = instances[j];
+                    const auto &prev = ents[j];
                     if (prev.stream == e.stream){
                         compile_error("DMA stream already in use");
                     }
@@ -349,7 +391,7 @@ namespace ST_LIB {
                     else{
                         HAL_NVIC_SetPriority(irqn, 0, 0);
                         HAL_NVIC_EnableIRQ(irqn);
-                        dma_irq_table[static_cast<uint8_t>(stream)] = &instances[i].dma;
+                        dma_irq_table[static_cast<uint8_t>(stream) - 1] = &instances[i].dma;
                     }
                 }
             }
