@@ -21,29 +21,6 @@ public:
     using RegisterBase<TimReg, Reg>::operator=;
 };
 
-// temp until scheduler uses TimerDomain
-#ifndef TimerXList
-#define TimerXList  \
-    X(2, APB1LENR)  \
-    X(3, APB1LENR)  \
-    X(4, APB1LENR)  \
-    X(5, APB1LENR)  \
-    X(6, APB1LENR)  \
-    X(7, APB1LENR)  \
-    X(12, APB1LENR) \
-    X(13, APB1LENR) \
-    X(14, APB1LENR) \
-                    \
-    X(23, APB1HENR) \
-    X(24, APB1HENR) \
-                    \
-    X(1, APB2ENR)   \
-    X(8, APB2ENR)   \
-    X(15, APB2ENR)  \
-    X(16, APB2ENR)  \
-    X(17, APB2ENR)
-#endif
-
 static_assert(sizeof(TimerRegister<Reg_CR1>) == sizeof(uint32_t) );
 
 
@@ -154,19 +131,6 @@ struct RegisterTraits<TimReg,TimReg::Reg_CNT> {
 };
 */
 
-#define DECLARE_TIMER(TIM_IDX) \
-    extern TIM_TypeDef*  glue(TIM, glue(TIM_IDX, _BASE)); \
-    extern "C"{ \
-    void glue(TIM, glue(TIM_IDX, _IRQHandler))(void); \
-    } 
-
-#define INSTANTIATE_TIMER(TIM_IDX) \
-    TIM_TypeDef __htim##TIM_IDX { \
-        glue(TIM, glue(TIM_IDX, _IRQHandler)), \
-        glue(TIM, glue(TIM_IDX, _IRQn)) \
-    }; \
-    TIM_TypeDef *glue(TIM, glue(TIM_IDX, _BASE)) = &__htim##TIM_IDX;
-
 #undef TIM2_BASE
 #undef TIM3_BASE
 #undef TIM4_BASE
@@ -184,6 +148,36 @@ struct RegisterTraits<TimReg,TimReg::Reg_CNT> {
 #undef TIM16_BASE
 #undef TIM17_BASE
 
-#define X(n, ignore) DECLARE_TIMER(n)
-TimerXList
-#undef X
+extern TIM_TypeDef* TIM2_BASE;
+extern "C"{ void TIM2_IRQHandler(void); }
+extern TIM_TypeDef* TIM3_BASE;
+extern "C"{ void TIM3_IRQHandler(void); }
+extern TIM_TypeDef* TIM4_BASE;
+extern "C"{ void TIM4_IRQHandler(void); }
+extern TIM_TypeDef* TIM5_BASE;
+extern "C"{ void TIM5_IRQHandler(void); }
+extern TIM_TypeDef* TIM6_BASE;
+extern "C"{ void TIM6_DAC_IRQHandler(void); }
+extern TIM_TypeDef* TIM7_BASE;
+extern "C"{ void TIM7_IRQHandler(void); }
+
+extern TIM_TypeDef* TIM12_BASE;
+extern "C"{ void TIM8_BRK_TIM12_IRQHandler(void); }
+extern TIM_TypeDef* TIM13_BASE;
+extern TIM_TypeDef* TIM14_BASE;
+extern "C"{ void TIM8_TRG_COM_TIM14_IRQHandler(void); }
+
+extern TIM_TypeDef* TIM23_BASE;
+extern "C"{ void TIM23_IRQHandler(void); }
+extern TIM_TypeDef* TIM24_BASE;
+extern "C"{ void TIM24_IRQHandler(void); }
+extern TIM_TypeDef* TIM1_BASE;
+extern "C"{ void TIM1_UP_IRQHandler(void); }
+extern TIM_TypeDef* TIM8_BASE;
+extern "C"{ void TIM8_UP_TIM13_IRQHandler(void); }
+extern TIM_TypeDef* TIM15_BASE;
+extern "C"{ void TIM15_IRQHandler(void); }
+extern TIM_TypeDef* TIM16_BASE;
+extern "C"{ void TIM16_IRQHandler(void); }
+extern TIM_TypeDef* TIM17_BASE;
+extern "C"{ void TIM17_IRQHandler(void); }

@@ -2,16 +2,38 @@
 
 #include <iostream>
 
-#define TIM1_IRQn TIM1_UP_IRQn
-#define TIM6_IRQn TIM6_DAC_IRQn
-#define TIM8_IRQn TIM8_UP_TIM13_IRQn
-#define TIM12_IRQn TIM8_BRK_TIM12_IRQn
-#define TIM13_IRQn TIM8_UP_TIM13_IRQn
-#define TIM14_IRQn TIM8_TRG_COM_TIM14_IRQn
-
-#define X(n, ignore) INSTANTIATE_TIMER(n)
-TimerXList
-#undef X
+TIM_TypeDef __htim2{TIM2_IRQHandler, TIM2_IRQn};
+TIM_TypeDef *TIM2_BASE = &__htim2;
+TIM_TypeDef __htim3{TIM3_IRQHandler, TIM3_IRQn};
+TIM_TypeDef *TIM3_BASE = &__htim3;
+TIM_TypeDef __htim4{TIM4_IRQHandler, TIM4_IRQn};
+TIM_TypeDef *TIM4_BASE = &__htim4;
+TIM_TypeDef __htim5{TIM5_IRQHandler, TIM5_IRQn};
+TIM_TypeDef *TIM5_BASE = &__htim5;
+TIM_TypeDef __htim6{TIM6_DAC_IRQHandler, TIM6_DAC_IRQn};
+TIM_TypeDef *TIM6_BASE = &__htim6;
+TIM_TypeDef __htim7{TIM7_IRQHandler, TIM7_IRQn};
+TIM_TypeDef *TIM7_BASE = &__htim7;
+TIM_TypeDef __htim12{TIM8_BRK_TIM12_IRQHandler, TIM8_BRK_TIM12_IRQn};
+TIM_TypeDef *TIM12_BASE = &__htim12;
+TIM_TypeDef __htim13{TIM8_UP_TIM13_IRQHandler, TIM8_UP_TIM13_IRQn};
+TIM_TypeDef *TIM13_BASE = &__htim13;
+TIM_TypeDef __htim14{TIM8_TRG_COM_TIM14_IRQHandler, TIM8_TRG_COM_TIM14_IRQn};
+TIM_TypeDef *TIM14_BASE = &__htim14;
+TIM_TypeDef __htim23{TIM23_IRQHandler, TIM23_IRQn};
+TIM_TypeDef *TIM23_BASE = &__htim23;
+TIM_TypeDef __htim24{TIM24_IRQHandler, TIM24_IRQn};
+TIM_TypeDef *TIM24_BASE = &__htim24;
+TIM_TypeDef __htim1{TIM1_UP_IRQHandler, TIM1_UP_IRQn};
+TIM_TypeDef *TIM1_BASE = &__htim1;
+TIM_TypeDef __htim8{TIM8_UP_TIM13_IRQHandler, TIM8_UP_TIM13_IRQn};
+TIM_TypeDef *TIM8_BASE = &__htim8;
+TIM_TypeDef __htim15{TIM15_IRQHandler, TIM15_IRQn};
+TIM_TypeDef *TIM15_BASE = &__htim15;
+TIM_TypeDef __htim16{TIM16_IRQHandler, TIM16_IRQn};
+TIM_TypeDef *TIM16_BASE = &__htim16;
+TIM_TypeDef __htim17{TIM17_IRQHandler, TIM17_IRQn};
+TIM_TypeDef *TIM17_BASE = &__htim17;
 
 void TIM_TypeDef::generate_update() {
         active_PSC = PSC;
