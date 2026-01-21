@@ -4,28 +4,17 @@
 
 std::bitset<8> MDMA::instance_free_map{};
 
-std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> MDMA::instance_to_channel = {
-    {0, MDMA_Channel0},
-    {1, MDMA_Channel1},
-    {2, MDMA_Channel2},
-    {3, MDMA_Channel3},
-    {4, MDMA_Channel4},
-    {5, MDMA_Channel5},
-    {6, MDMA_Channel6},
-    {7, MDMA_Channel7}
-};
+MDMA_Channel_TypeDef* MDMA::get_channel(uint8_t id) {
+    if (id > 15) {
+        return nullptr;
+    }
+    return reinterpret_cast<MDMA_Channel_TypeDef*>(MDMA_BASE + 0x40UL + (id * 0x40UL));
+}
 
-
-std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> MDMA::channel_to_instance = {
-    {MDMA_Channel0, 0},
-    {MDMA_Channel1, 1},
-    {MDMA_Channel2, 2},
-    {MDMA_Channel3, 3},
-    {MDMA_Channel4, 4},
-    {MDMA_Channel5, 5},
-    {MDMA_Channel6, 6},
-    {MDMA_Channel7, 7}
-};
+uint8_t MDMA::get_instance_id(MDMA_Channel_TypeDef* channel) {
+    uint32_t address = reinterpret_cast<uint32_t>(channel);
+    return static_cast<uint8_t>((address - (MDMA_BASE + 0x40UL)) / 0x40UL);
+}
 
 
 void MDMA::prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node)
@@ -85,13 +74,13 @@ MDMA::Instance& MDMA::get_instance(uint8_t id)
 void MDMA::inscribe(Instance& instance,uint8_t id)
 {
     MDMA_HandleTypeDef mdma_handle{};
-    const auto channel_it = instance_to_channel.find(id);
-    if (channel_it == instance_to_channel.end())
+    MDMA_Channel_TypeDef* channel = get_channel(id);
+    if (channel == nullptr)
     {
         ErrorHandler("MDMA channel mapping not found");
         return;
     }
-    mdma_handle.Instance = channel_it->second;
+    mdma_handle.Instance = channel;
     mdma_handle.Init.Request = MDMA_REQUEST_SW;
     mdma_handle.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
     mdma_handle.Init.Priority = MDMA_PRIORITY_VERY_HIGH;
@@ -208,7 +197,7 @@ void MDMA::irq_handler()
 }
 
 
-void MDMA::transfer_list(MDMA::LinkedListNode* first_node, bool* done)
+void MDMA::transfer_list(MDMA::LinkedListNode* first_node, volatile bool* done)
 {
     if(transfer_queue.size() >= TRANSFER_QUEUE_MAX_SIZE)
     {
@@ -220,7 +209,7 @@ void MDMA::transfer_list(MDMA::LinkedListNode* first_node, bool* done)
 
 
 
-void MDMA::transfer_data(uint8_t* source_address, uint8_t* destination_address, const uint32_t data_length, bool* done)
+void MDMA::transfer_data(uint8_t* source_address, uint8_t* destination_address, const uint32_t data_length, volatile bool* done)
 {
     for(size_t i = 0; i < instances.size(); i++)
     {
@@ -247,13 +236,14 @@ void MDMA::transfer_data(uint8_t* source_address, uint8_t* destination_address, 
 
 void MDMA::TransferCompleteCallback(MDMA_HandleTypeDef *hmdma)
 {
-    const auto channel_it = channel_to_instance.find(hmdma->Instance);
-    if (channel_it == channel_to_instance.end())
+    uint8_t id = get_instance_id(hmdma->Instance);
+    if (id >= instances.size())
     {
         ErrorHandler("MDMA channel not registered");
+        return;
     }
 
-    Instance& instance = get_instance(channel_it->second);
+    Instance& instance = get_instance(id);
     instance.handle.State = HAL_MDMA_STATE_READY;
     instance_free_map[instance.id] = true;
     if(instance.done == nullptr)
@@ -267,13 +257,14 @@ void MDMA::TransferCompleteCallback(MDMA_HandleTypeDef *hmdma)
 
 void MDMA::TransferErrorCallback(MDMA_HandleTypeDef *hmdma)
 {
-    const auto channel_it = channel_to_instance.find(hmdma->Instance);
-    if (channel_it == channel_to_instance.end())
+    uint8_t id = get_instance_id(hmdma->Instance);
+    if (id >= instances.size())
     {
         ErrorHandler("MDMA channel not registered");
+        return;
     }
 
-    Instance& instance = get_instance(channel_it->second);
+    Instance& instance = get_instance(id);
     if(instance.done != nullptr)
     {
         *(instance.done) = false;

@@ -39,26 +39,33 @@ class MDMA{
     void set_next(MDMA_LinkNodeTypeDef* next_node) { node.CLAR = reinterpret_cast<uint32_t>(next_node); }
     void set_destination(void* destination) 
     { 
-        uint32_t destination_adress = reinterpret_cast<uint32_t>(destination);
-        node.CDAR = destination_adress;
-        node.CTBR &= ~MDMA_CTBR_DBUS;
-        if (destination_adress < 0x00010000) 
-        {
+        uint32_t destination_address = reinterpret_cast<uint32_t>(destination);
+        node.CDAR = destination_address;
+        
+        if ((destination_address < 0x00010000) || (destination_address >= 0x20000000 && destination_address < 0x20020000)) {
+            ErrorHandler("Error: MDMA destination address is inside ITCM or DTCM, which are not accessible.");
+            return;
+        }
+        
+        if (destination_address >= 0x24000000 && destination_address < 0x24050000) {
+            node.CTBR &= ~MDMA_CTBR_DBUS;
+        } else {
             node.CTBR |= MDMA_CTBR_DBUS;
         }
-        else if (destination_adress >= 0x20000000 && destination_adress < 0x20020000)
-        {
-            node.CTBR |= MDMA_CTBR_DBUS;
-        } 
     }
     void set_source(void* source) { 
-        uint32_t source_adress = reinterpret_cast<uint32_t>(source); 
-        node.CSAR = source_adress;
+        uint32_t source_address = reinterpret_cast<uint32_t>(source); 
+        node.CSAR = source_address;
     
-        node.CTBR &= ~MDMA_CTBR_SBUS; 
+        if ((source_address < 0x00010000) || (source_address >= 0x20000000 && source_address < 0x20020000)) {
+            ErrorHandler("Error: MDMA source address is inside ITCM or DTCM, which are not accessible.");
+            return;
+        }
 
-        if ((source_adress < 0x00010000) || (source_adress >= 0x20000000 && source_adress < 0x20020000)) {
-            node.CTBR |= MDMA_CTBR_SBUS;
+        if (source_address >= 0x24000000 && source_address < 0x24050000) {
+            node.CTBR &= ~MDMA_CTBR_SBUS;
+        } else {
+             node.CTBR |= MDMA_CTBR_SBUS;
         }
     }
     auto get_node() -> MDMA_LinkNodeTypeDef* { return &node; }
@@ -89,10 +96,43 @@ private:
         nodeConfig.SrcAddress = reinterpret_cast<uint32_t>(src);
         nodeConfig.DstAddress = reinterpret_cast<uint32_t>(dst);
         nodeConfig.BlockDataLength = static_cast<uint32_t>(size);
-        nodeConfig.Init.SourceDataSize = MDMA_SRC_DATASIZE_BYTE;
-        nodeConfig.Init.DestDataSize = MDMA_DEST_DATASIZE_BYTE;
-        nodeConfig.Init.SourceInc = MDMA_SRC_INC_BYTE;
-        nodeConfig.Init.DestinationInc = MDMA_DEST_INC_BYTE;
+        
+        uint32_t source_data_size;
+        uint32_t dest_data_size;
+        uint32_t source_inc;
+        uint32_t dest_inc;
+
+        switch(static_cast<uint32_t>(size)) {
+            case 2:
+                source_data_size = MDMA_SRC_DATASIZE_HALFWORD;
+                dest_data_size = MDMA_DEST_DATASIZE_HALFWORD;
+                source_inc = MDMA_SRC_INC_HALFWORD;
+                dest_inc = MDMA_DEST_INC_HALFWORD;
+                break;
+            case 4:
+                source_data_size = MDMA_SRC_DATASIZE_WORD;
+                dest_data_size = MDMA_DEST_DATASIZE_WORD;
+                source_inc = MDMA_SRC_INC_WORD;
+                dest_inc = MDMA_DEST_INC_WORD;
+                break;
+            case 8:
+                source_data_size = MDMA_SRC_DATASIZE_DOUBLEWORD;
+                dest_data_size = MDMA_DEST_DATASIZE_DOUBLEWORD;
+                source_inc = MDMA_SRC_INC_DOUBLEWORD;
+                dest_inc = MDMA_DEST_INC_DOUBLEWORD;
+                break;
+            default:
+                source_data_size = MDMA_SRC_DATASIZE_BYTE;
+                dest_data_size = MDMA_DEST_DATASIZE_BYTE;
+                source_inc = MDMA_SRC_INC_BYTE;
+                dest_inc = MDMA_DEST_INC_BYTE;
+                break;
+        }
+
+        nodeConfig.Init.SourceDataSize = source_data_size;
+        nodeConfig.Init.DestDataSize = dest_data_size;
+        nodeConfig.Init.SourceInc = source_inc;
+        nodeConfig.Init.DestinationInc = dest_inc;
 
         if (HAL_MDMA_LinkedList_CreateNode(&node, &nodeConfig) != HAL_OK) {
             ErrorHandler("Error creating linked list in MDMA");
@@ -105,7 +145,7 @@ private:
     public:
         MDMA_HandleTypeDef handle;
         uint8_t id;
-        bool* done;
+        volatile bool* done;
         MDMA_LinkNodeTypeDef transfer_node;
 
         Instance()
@@ -117,7 +157,7 @@ private:
 
         Instance(MDMA_HandleTypeDef handle_,
                  uint8_t id_,
-                 bool* done_,
+                 volatile bool* done_,
                  MDMA_LinkNodeTypeDef transfer_node_)
             : handle(handle_)
             , id(id_)
@@ -130,12 +170,12 @@ private:
     static void prepare_transfer(Instance& instance, MDMA::LinkedListNode* first_node);
     static void prepare_transfer(Instance& instance, MDMA_LinkNodeTypeDef* first_node);
     static Instance& get_instance(uint8_t id);
+    static MDMA_Channel_TypeDef* get_channel(uint8_t id);
+    static uint8_t get_instance_id(MDMA_Channel_TypeDef* channel);
 
     inline static std::array<Instance,8> instances{};
-    static std::unordered_map<uint8_t, MDMA_Channel_TypeDef*> instance_to_channel;
-    static std::unordered_map<MDMA_Channel_TypeDef*, uint8_t> channel_to_instance;
     static std::bitset<8> instance_free_map;
-    inline static Stack<std::pair<MDMA::LinkedListNode*,bool*>,50> transfer_queue{};
+    inline static Stack<std::pair<MDMA::LinkedListNode*,volatile bool*>,50> transfer_queue{};
 
     static void TransferCompleteCallback(MDMA_HandleTypeDef *hmdma);
     static void TransferErrorCallback(MDMA_HandleTypeDef *hmdma);
@@ -167,7 +207,7 @@ private:
      * @param data_length The length of data to be transferred.
      * @param check A reference boolean that will be set to true if the transfer was successfully done, false otherwise.
      */
-    static void transfer_data(uint8_t* source_address, uint8_t* destination_address, const uint32_t data_length, bool* done=nullptr);
+    static void transfer_data(uint8_t* source_address, uint8_t* destination_address, const uint32_t data_length,volatile bool* done=nullptr);
 
     /**
      * @brief A method to transfer using MDMA linked 
@@ -175,6 +215,6 @@ private:
      * @param first_node The linked list node representing the first node in the linked list.
      * @param check A reference boolean that will be set to true if the transfer was successfully done, false otherwise.
      */
-    static void transfer_list(MDMA::LinkedListNode* first_node,bool* check=nullptr);
+    static void transfer_list(MDMA::LinkedListNode* first_node,volatile bool* check=nullptr);
 
 };
