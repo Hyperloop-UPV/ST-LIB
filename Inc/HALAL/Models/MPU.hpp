@@ -118,21 +118,38 @@ struct MPUDomain {
         Entry e;
 
         /**
-         * @brief Constructs a Buffer entry for a type T.
+         * @brief Constructs a Buffer entry for a type T with explicit parameter.
          * @tparam T The type for which the buffer is requested. Must be a POD type.
          * @param type The memory type (Cached or NonCached).
          * @param domain The memory domain where the buffer should be allocated (Defaults to D1, since it is the largest and fastest).
          * @param force_cache_alignment If true, forces the buffer to be cache line aligned (32 bytes, takes the rest as padding).
          */
-        consteval Buffer(MemoryType type = MemoryType::NonCached, MemoryDomain domain = MemoryDomain::D1, bool force_cache_alignment = false)
+        consteval Buffer(MemoryType type = MemoryType::NonCached, 
+                        MemoryDomain mem_domain = MemoryDomain::D1, 
+                        bool force_cache_alignment = false)
         : e{
-            domain,
+            mem_domain,
             type,
             force_cache_alignment ? 32 : alignof(T),
             sizeof(T)}
         {
             static_assert(alignof(T) <= 32, "Requested type has alignment greater than cache line size (32 bytes).");
-            static_assert(std::ranges::find(alignments, alignof(T)) != std::ranges::end(alignments), "Requested type has alignment not supported by MPU buffer system.");
+            static_assert(std::ranges::find(alignments, alignof(T)) != std::ranges::end(alignments), 
+                         "Requested type has alignment not supported by MPU buffer system.");
+        }
+
+        /**
+         * @brief Constructs a Buffer from an Entry struct (allows named parameter syntax).
+         * @param entry The Entry with all buffer requirements specified.
+         */
+        consteval Buffer(Entry entry) : e(entry) {
+            static_assert(entry.alignment <= 32, "Requested alignment greater than cache line size (32 bytes).");
+            static_assert(std::ranges::find(alignments, entry.alignment) != std::ranges::end(alignments),
+                         "Requested alignment not supported by MPU buffer system.");
+            // Verify size matches sizeof(T)
+            if (entry.size_in_bytes != sizeof(T)) {
+                compile_error("Entry size_in_bytes must match sizeof(T)");
+            }
         }
 
         template <class Ctx>
