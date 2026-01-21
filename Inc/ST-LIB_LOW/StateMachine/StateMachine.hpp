@@ -115,8 +115,8 @@ private:
   FixedVector<TimedAction,NUMBER_OF_ACTIONS> cyclic_actions = {};
   FixedVector<Callback,NUMBER_OF_ACTIONS> on_enter_actions = {};
   FixedVector<Callback,NUMBER_OF_ACTIONS> on_exit_actions = {};
-  StateEnum state;
-  FixedVector<Transition<StateEnum>, NTransitions> transitions;
+  StateEnum state = {};
+  FixedVector<Transition<StateEnum>, NTransitions> transitions = {};
 
   public:
   [[no_unique_address]]FixedVector<uint16_t,Number_of_state_orders> state_orders_ids = {};
@@ -382,16 +382,23 @@ public:
 
   template <IsState<StateEnum>... S>
     consteval StateMachine(StateEnum initial_state, S... states) 
-    : current_state(initial_state),
-    // Initialize states with copy of states passed to constructor by using the copy constructor
-    states{State<StateEnum, NTransitions>(states)...}
+    : current_state(initial_state)
      {        
         //Sort states by their enum value
         using StateType = State<StateEnum, NTransitions>;
-        std::array<StateType, sizeof...(S)> sorted_states = {StateType(states)...};
-        std::sort(sorted_states.begin(), sorted_states.end(), [](const auto& a, const auto& b){
-            return a.get_state() < b.get_state();
-        });
+        std::array<StateType, sizeof...(S)> sorted_states;
+        size_t index = 0;
+        ((sorted_states[index++] = StateType(states)), ...);
+    
+        for(size_t i = 0; i < sorted_states.size(); i++){
+            for(size_t j = 0; j < sorted_states.size() - 1; j++){
+                if(sorted_states[j].get_state() > sorted_states[j+1].get_state()){
+                    auto temp = sorted_states[j];
+                    sorted_states[j] = sorted_states[j+1];
+                    sorted_states[j+1] = temp;
+                }
+            }
+        }
         
         //Check that states are contiguous and start from 0
         for(size_t i = 0; i < sorted_states.size(); i++) {
@@ -401,7 +408,7 @@ public:
         }
 
         for(size_t i = 0; i < sorted_states.size(); i++) {
-            this->states[i] = sorted_states[i];
+            this->states.push_back(sorted_states[i]);
         }
 
         size_t offset = 0;
@@ -563,12 +570,30 @@ public:
 #endif
 };
 
+/* @brief Helper function to create a State instance
+ *
+ * @tparam StateEnum Enum type representing the states
+ * @tparam Transitions Variadic template parameter pack representing the transitions
+ * @param state The state enum value
+ * @param transitions The transitions associated with the state
+ * @return A State instance initialized with the provided state and transitions
+*
+*/
+
 template <typename StateEnum, typename... Transitions>
   requires are_transitions<StateEnum, Transitions...>
   consteval auto make_state(StateEnum state, Transitions... transitions) {
     constexpr size_t number_of_transitions = sizeof...(transitions);
     return State<StateEnum, number_of_transitions>(state,transitions...);
   }
+
+  /* @brief Helper function to create a StateMachine instance
+  *
+  * @tparam States Variadic template parameter pack representing the states
+  * @param initial_state The initial state enum value
+  * @param states The states to be included in the state machine
+  * @return A StateMachine instance initialized with the provided initial state and states
+  */
 
   template <typename StateEnum, typename... States>
     requires are_states<StateEnum, States...>
