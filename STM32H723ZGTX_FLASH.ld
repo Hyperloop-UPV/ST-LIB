@@ -55,20 +55,20 @@ MEMORY
 SECTIONS
 {
   /* Export Memory Layout Information for MPU Configuration */
-  PROVIDE(__itcm_base = ORIGIN(ITCMRAM));
-  PROVIDE(__itcm_size = LENGTH(ITCMRAM));
-  PROVIDE(__dtcm_base = ORIGIN(DTCMRAM));
-  PROVIDE(__dtcm_size = LENGTH(DTCMRAM));
-  PROVIDE(__flash_base = ORIGIN(FLASH));
-  PROVIDE(__flash_size = LENGTH(FLASH));
-  PROVIDE(__ram_d1_base = ORIGIN(RAM_D1));
-  PROVIDE(__ram_d1_size = LENGTH(RAM_D1));
-  PROVIDE(__ram_d2_base = ORIGIN(RAM_D2));
-  PROVIDE(__ram_d2_size = LENGTH(RAM_D2));
-  PROVIDE(__ram_d3_base = ORIGIN(RAM_D3));
-  PROVIDE(__ram_d3_size = LENGTH(RAM_D3));
-  PROVIDE(__peripheral_base = 0x40000000);
-  PROVIDE(__peripheral_size = 0x20000000); /* 512MB */
+  __itcm_base = ABSOLUTE(ORIGIN(ITCMRAM));
+  __itcm_size = ABSOLUTE(LENGTH(ITCMRAM));
+  __dtcm_base = ABSOLUTE(ORIGIN(DTCMRAM));
+  __dtcm_size = ABSOLUTE(LENGTH(DTCMRAM));
+  __flash_base = ABSOLUTE(ORIGIN(FLASH));
+  __flash_size = ABSOLUTE(LENGTH(FLASH));
+  __ram_d1_base = ABSOLUTE(ORIGIN(RAM_D1));
+  __ram_d1_size = ABSOLUTE(LENGTH(RAM_D1));
+  __ram_d2_base = ABSOLUTE(ORIGIN(RAM_D2));
+  __ram_d2_size = ABSOLUTE(LENGTH(RAM_D2));
+  __ram_d3_base = ABSOLUTE(ORIGIN(RAM_D3));
+  __ram_d3_size = ABSOLUTE(LENGTH(RAM_D3));
+  __peripheral_base = 0x40000000;
+  __peripheral_size = 0x20000000; /* 512MB */
 
   /* The startup code goes first into FLASH */
   .isr_vector :
@@ -138,7 +138,7 @@ SECTIONS
   .mpu_ram_d1_nc :
   {
     . = ALIGN(32);
-    PROVIDE(__mpu_d1_nc_start = .);
+    __mpu_d1_nc_start = ABSOLUTE(.);
     
     /* New MPU system buffers */
     *(.mpu_ram_d1_nc.buffer)
@@ -161,7 +161,7 @@ SECTIONS
   _d1_pad = (_d1_size + _d1_sub - 1) / _d1_sub * _d1_sub;
   /* Advance current pointer to reserve this space */
   . = __mpu_d1_nc_start + _d1_pad;
-  PROVIDE(__mpu_d1_nc_end = .);
+  __mpu_d1_nc_end = ABSOLUTE(.);
 
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
@@ -223,7 +223,7 @@ SECTIONS
   .mpu_ram_d2_nc :
   {
     . = ALIGN(32);
-    PROVIDE(__mpu_d2_nc_start = .);
+    __mpu_d2_nc_start = ABSOLUTE(.);
     
     /* ETH Descriptors - Must be aligned */
     *(.RxDecripSection) 
@@ -244,13 +244,13 @@ SECTIONS
   _d2_sub = _d2_p2 / 8;
   _d2_pad = (_d2_size + _d2_sub - 1) / _d2_sub * _d2_sub;
   . = __mpu_d2_nc_start + _d2_pad;
-  PROVIDE(__mpu_d2_nc_end = .);
+  __mpu_d2_nc_end = ABSOLUTE(.);
 
   /* MPU D3 Non-Cached Section */
   .mpu_ram_d3_nc :
   {
     . = ALIGN(32);
-    PROVIDE(__mpu_d3_nc_start = .);
+    __mpu_d3_nc_start = ABSOLUTE(.);
     
     /* New MPU system buffers */
     *(.mpu_ram_d3_nc.buffer)
@@ -271,7 +271,7 @@ SECTIONS
   _d3_sub = _d3_p2 / 8;
   _d3_pad = (_d3_size + _d3_sub - 1) / _d3_sub * _d3_sub;
   . = __mpu_d3_nc_start + _d3_pad;
-  PROVIDE(__mpu_d3_nc_end = .);
+  __mpu_d3_nc_end = ABSOLUTE(.);
 
   /* Code running in ITCM RAM (0 Wait States, Instruction Bus) */
   .ram_code :
@@ -300,9 +300,6 @@ SECTIONS
   {
     . = ALIGN(32);
     
-    /* Legacy MPUManager allocations (if any) */
-    *(.ram_d1.legacy)
-    
     /* User manual allocations via D1_C macro */
     *(.ram_d1.user)
     
@@ -315,9 +312,6 @@ SECTIONS
   {
     . = ALIGN(32);
     
-    /* Legacy MPUManager allocations (if any) */
-    *(.ram_d2.legacy)
-    
     /* User manual allocations via D2_C macro */
     *(.ram_d2.user)
     
@@ -329,9 +323,6 @@ SECTIONS
   .ram_d3 :
   {
     . = ALIGN(32);
-    
-    /* Legacy MPUManager allocations (if any) */
-    *(.ram_d3.legacy)
     
     /* User manual allocations via D3_C macro */
     *(.ram_d3.user)

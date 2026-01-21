@@ -54,28 +54,28 @@
 #define RAM_CODE __attribute__((section(".ram_code")))
 
 // Memory Bank Symbols from Linker
-extern "C" uint32_t __itcm_base;
-extern "C" uint32_t __itcm_size;
-extern "C" uint32_t __dtcm_base;
-extern "C" uint32_t __dtcm_size;
-extern "C" uint32_t __flash_base;
-extern "C" uint32_t __flash_size;
-extern "C" uint32_t __ram_d1_base;
-extern "C" uint32_t __ram_d1_size;
-extern "C" uint32_t __ram_d2_base;
-extern "C" uint32_t __ram_d2_size;
-extern "C" uint32_t __ram_d3_base;
-extern "C" uint32_t __ram_d3_size;
-extern "C" uint32_t __peripheral_base;
-extern "C" uint32_t __peripheral_size;
+extern "C" const uintptr_t __itcm_base;
+extern "C" const size_t __itcm_size;
+extern "C" const uintptr_t __dtcm_base;
+extern "C" const size_t __dtcm_size;
+extern "C" const uintptr_t __flash_base;
+extern "C" const size_t __flash_size;
+extern "C" const uintptr_t __ram_d1_base;
+extern "C" const size_t __ram_d1_size;
+extern "C" const uintptr_t __ram_d2_base;
+extern "C" const size_t __ram_d2_size;
+extern "C" const uintptr_t __ram_d3_base;
+extern "C" const size_t __ram_d3_size;
+extern "C" const uintptr_t __peripheral_base;
+extern "C" const size_t __peripheral_size;
 
 // MPU Non-Cached Section Symbols from Linker
-extern "C" uint32_t __mpu_d1_nc_start;
-extern "C" uint32_t __mpu_d1_nc_end;
-extern "C" uint32_t __mpu_d2_nc_start;
-extern "C" uint32_t __mpu_d2_nc_end;
-extern "C" uint32_t __mpu_d3_nc_start;
-extern "C" uint32_t __mpu_d3_nc_end;
+extern "C" const uintptr_t __mpu_d1_nc_start;
+extern "C" const uintptr_t __mpu_d1_nc_end;
+extern "C" const uintptr_t __mpu_d2_nc_start;
+extern "C" const uintptr_t __mpu_d2_nc_end;
+extern "C" const uintptr_t __mpu_d3_nc_start;
+extern "C" const uintptr_t __mpu_d3_nc_end;
 
 
 template <typename T>
@@ -288,9 +288,9 @@ struct MPUDomain {
             configure_static_regions();
 
             // Dynamic Configuration based on Linker Symbols
-            configure_dynamic_region((uint32_t)&__mpu_d1_nc_start, (uint32_t)&__mpu_d1_nc_end, MPU_REGION_NUMBER3);
-            configure_dynamic_region((uint32_t)&__mpu_d2_nc_start, (uint32_t)&__mpu_d2_nc_end, MPU_REGION_NUMBER5);
-            configure_dynamic_region((uint32_t)&__mpu_d3_nc_start, (uint32_t)&__mpu_d3_nc_end, MPU_REGION_NUMBER7);
+            configure_dynamic_region((uintptr_t)__mpu_d1_nc_start, (uintptr_t)__mpu_d1_nc_end, MPU_REGION_NUMBER3);
+            configure_dynamic_region((uintptr_t)__mpu_d2_nc_start, (uintptr_t)__mpu_d2_nc_end, MPU_REGION_NUMBER5);
+            configure_dynamic_region((uintptr_t)__mpu_d3_nc_start, (uintptr_t)__mpu_d3_nc_end, MPU_REGION_NUMBER7);
 
             // Assign pointers
             uint8_t* bases_nc[3] = { &d1_nc_buffer[0], &d2_nc_buffer[0], &d3_nc_buffer[0] };
@@ -321,7 +321,7 @@ struct MPUDomain {
    private:
     static constexpr std::size_t alignments[6] = {32, 16, 8, 4, 2, 1};
 
-    static void configure_dynamic_region(uint32_t start, uint32_t end, uint8_t region_num) {
+    static void configure_dynamic_region(uintptr_t start, uintptr_t end, uint8_t region_num) {
         if (end <= start) return; 
         configure_region(start, end - start, region_num, 
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
@@ -348,47 +348,47 @@ struct MPUDomain {
 
         // Peripherals (Device, Buffered)
         // Guarded against speculative execution and cache
-        configure_region((uint32_t)&__peripheral_base, (uint32_t)&__peripheral_size, MPU_REGION_NUMBER8,
+        configure_region(__peripheral_base, __peripheral_size, MPU_REGION_NUMBER8,
                          MPU_TEX_LEVEL0, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_SHAREABLE, MPU_ACCESS_NOT_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // Flash (Normal, Cacheable)
         // TEX=1, C=1, B=0: Normal, Write-Through (Read optimized)
         // Not Shareable to allow full caching
-        configure_region((uint32_t)&__flash_base, (uint32_t)&__flash_size, MPU_REGION_NUMBER1,
+        configure_region(__flash_base, __flash_size, MPU_REGION_NUMBER1,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_NOT_BUFFERABLE);
 
         // DTCM (Normal, Cacheable)
         // Uses Normal memory attributes. TCM access is uncached by hardware, but "Normal" allows unaligned access.
-        configure_region((uint32_t)&__dtcm_base, (uint32_t)&__dtcm_size, MPU_REGION_NUMBER10,
+        configure_region(__dtcm_base, __dtcm_size, MPU_REGION_NUMBER10,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // ITCM (Normal, Cacheable)
-        configure_region((uint32_t)&__itcm_base, (uint32_t)&__itcm_size, MPU_REGION_NUMBER11,
+        configure_region(__itcm_base, __itcm_size, MPU_REGION_NUMBER11,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // D1 RAM Cached (Normal, WBWA)
         // TEX=1, C=1, B=1: Normal, Write-Back, Write-Allocate
         // Not Shareable ensures strict L1 utilization.
-        configure_region((uint32_t)&__ram_d1_base, (uint32_t)&__ram_d1_size, MPU_REGION_NUMBER2,
+        configure_region(__ram_d1_base, __ram_d1_size, MPU_REGION_NUMBER2,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // D2 RAM Cached (Normal, WBWA)
-        configure_region((uint32_t)&__ram_d2_base, (uint32_t)&__ram_d2_size, MPU_REGION_NUMBER4,
+        configure_region(__ram_d2_base, __ram_d2_size, MPU_REGION_NUMBER4,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // D3 RAM Cached (Normal, WBWA)
-        configure_region((uint32_t)&__ram_d3_base, (uint32_t)&__ram_d3_size, MPU_REGION_NUMBER6,
+        configure_region(__ram_d3_base, __ram_d3_size, MPU_REGION_NUMBER6,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
     }
 
-    static void configure_region(uint32_t base, uint32_t size, uint8_t region_num, 
+    static void configure_region(uintptr_t base, size_t size, uint8_t region_num, 
                                  uint8_t tex, uint8_t access, uint8_t no_exec, 
                                  uint8_t shareable, uint8_t cacheable, uint8_t bufferable) {
         if (size == 0) return;
@@ -400,7 +400,7 @@ struct MPUDomain {
         if (size > 32) {
             // Calculate ceil(log2(size)) - 1
             // __builtin_clz(x) returns leading zeros. For 32, it's 26: 31 - 26 = 5
-            mpu_size = 31 - __builtin_clz(size - 1);
+            mpu_size = (sizeof(size) * 8 - 1) - __builtin_clz(size - 1);
         }
 
         // Calculate SubRegion Disable (SRD)
@@ -414,7 +414,7 @@ struct MPUDomain {
         MPU_Region_InitTypeDef MPU_InitStruct = {0};
         MPU_InitStruct.Enable = MPU_REGION_ENABLE;
         MPU_InitStruct.Number = region_num;
-        MPU_InitStruct.BaseAddress = base;
+        MPU_InitStruct.BaseAddress = static_cast<decltype(MPU_InitStruct.BaseAddress)>(base); // Should be uint32_t, but may be different when mocking, so this is just to make sure it accepts it
         MPU_InitStruct.Size = mpu_size;
         MPU_InitStruct.SubRegionDisable = srd;
         MPU_InitStruct.TypeExtField = tex;
