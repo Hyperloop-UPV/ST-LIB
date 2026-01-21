@@ -11,7 +11,7 @@ public:
 	};
 	static OrderProtocol* informer_socket;
 	static uint16_t state_orders_ids_size;
-	static vector<uint16_t>* state_orders_ids;
+	static std::span<uint16_t> state_orders_ids;
 	static StackOrder<0,uint16_t, std::span<uint16_t>> add_state_orders_order;
 	static StackOrder<0,uint16_t, std::span<uint16_t>> remove_state_orders_order;
 
@@ -23,8 +23,8 @@ public:
 		if(informer_socket == nullptr) {
 			ErrorHandler("Informer Socket has not been set");
 			return;
-		}
-		add_state_orders_order.set_pointer(1, &new_ids);
+		};
+		state_orders_ids = new_ids;
 		state_orders_ids_size = new_ids.size();
 		informer_socket->send_order(add_state_orders_order);
 	}
@@ -34,7 +34,7 @@ public:
 			ErrorHandler("Informer Socket has not been set");
 			return;
 		}
-		remove_state_orders_order.set_pointer(1, &old_ids);
+		state_orders_ids = old_ids;
 		state_orders_ids_size = old_ids.size();
 		informer_socket->send_order(remove_state_orders_order);
 	}

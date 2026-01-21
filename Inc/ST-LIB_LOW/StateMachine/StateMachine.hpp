@@ -20,6 +20,9 @@ using ms = std::chrono::milliseconds;
 using us = std::chrono::microseconds;
 using s = std::chrono::seconds;
 
+template<class StateEnum>
+concept IsEnum = std::is_enum_v<StateEnum>;
+
 using Callback = void (*)();
 using Guard = bool (*)();
 
@@ -59,6 +62,7 @@ public:
         if (size_ >= Capacity) 
         {
             ErrorHandler("StaticVector capacity exceeded");
+            return;
         }        
         data[size_] = value;
         size_++;
@@ -70,7 +74,7 @@ public:
     constexpr auto end() const { return data.begin() + size_; } 
     
     constexpr const std::array<T, Capacity>& get_array() const { return data; }
-    constexpr const size_t size() const { return size_; }
+    constexpr size_t size() const { return size_; }
     constexpr T* get_data() { return data.data(); }
     constexpr const T* get_data() const { return data.data(); }
     constexpr  T& operator[](size_t i) { return data[i]; }
@@ -90,7 +94,7 @@ public:
 template <typename T, size_t Capacity>
 using FixedVector = StaticVector<T, Capacity>;
 
-template <class StateEnum>
+template <IsEnum StateEnum>
 struct Transition {
     StateEnum target;
     Guard predicate;
@@ -100,7 +104,8 @@ struct Transition {
 template <class StateEnum, typename... T>
 concept are_transitions = (std::same_as<T, Transition<StateEnum>> && ...);
 
-template <class StateEnum, size_t NTransitions,size_t Number_of_state_orders=0>
+
+template <IsEnum StateEnum, size_t NTransitions,size_t Number_of_state_orders=0>
 class State { 
 private:
   FixedVector<TimedAction,NUMBER_OF_ACTIONS> cyclic_actions = {};
@@ -245,7 +250,7 @@ private:
       Time::unregister_high_precision_alarm(timed_action->id);
       break;
     default:
-      ErrorHandler("Cannot unregister timed action with erroneus alarm precision, Alarm Precision Type: %d", timed_action->alarm_precision);
+      ErrorHandler("Cannot unregister timed action with erroneous alarm precision, Alarm Precision Type: %d", timed_action->alarm_precision);
       return;
       break;
     }
@@ -323,10 +328,7 @@ class IStateMachine {
 
 template <class StateEnum, size_t NStates, size_t NTransitions>
 class StateMachine : public IStateMachine {
-private:
-  using Transitions = FixedVector<Transition<StateEnum>, NTransitions>;
-  using TAssocs = std::array<std::pair<size_t, size_t>, NStates>;
-  
+private:  
   struct NestedPair 
   {
       StateEnum state;
@@ -345,9 +347,15 @@ public:
       { 
         return;
       }
+      #ifdef STLIB_ETH
+      remove_state_orders();
+      #endif
       exit();
       current_state = new_state;
       enter();
+      #ifdef STLIB_ETH
+      refresh_state_orders();
+      #endif
   }
 
   size_t get_current_state_id() const override
@@ -363,13 +371,14 @@ public:
 
 private:
   FixedVector<State<StateEnum, NTransitions>, NStates> states;
-  Transitions transitions = {};
-  TAssocs transitions_assoc ={};
+  FixedVector<Transition<StateEnum>, NTransitions> transitions = {};
+  std::array<std::pair<size_t, size_t>, NStates> transitions_assoc ={};
   FixedVector<NestedPair, NStates> nested_state_machine = {};
 
   constexpr bool operator==(const StateMachine&) const = default;
 
-  consteval void process_state(auto state, size_t offset) 
+  template <typename State>
+  consteval void process_state(const State& state, size_t offset) 
   {
         for (const auto& t : state.get_transitions()) 
         {
@@ -420,10 +429,14 @@ public:
             if (t.predicate()) 
             {
                 exit();
+                #ifdef STLIB_ETH
                 remove_state_orders();
+                #endif
                 current_state = t.target;
                 enter();
+                #ifdef STLIB_ETH
                 refresh_state_orders();
+                #endif
                 break;
             }
         }
@@ -595,4 +608,3 @@ template <typename StateEnum, typename... Transitions>
 
     return StateMachine<StateEnum, number_of_states, number_of_transitions>(initial_state, states...);
   }
-  
