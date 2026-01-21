@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <utility>
 #include <unordered_map>
+#include <algorithm>
 
 #ifdef STLIB_ETH
 #include "StateMachine/StateOrder.hpp"
@@ -23,19 +24,22 @@ using s = std::chrono::seconds;
 template<class StateEnum>
 concept IsEnum = std::is_enum_v<StateEnum>;
 
+template<class T>
+concept ValidTime = std::same_as<T, std::chrono::milliseconds> || std::same_as<T, std::chrono::microseconds>;
+
 using Callback = void (*)();
 using Guard = bool (*)();
 
 
 static constexpr size_t NUMBER_OF_ACTIONS = 20;
 
-enum AlarmType { LOW_PRECISION, MID_PRECISION, HIGH_PRECISION };
+enum AlarmType { Miliseconds = 0, Microseconds = 1 };
 
 class TimedAction {
 public:
   Callback action = nullptr;
   uint32_t period = 0;
-  AlarmType alarm_precision = LOW_PRECISION;
+  AlarmType alarm_precision = Miliseconds;
   uint8_t id = 255;
   bool is_on = false;
 
@@ -128,6 +132,18 @@ private:
 
   consteval State() = default;
 
+  template <size_t N, size_t O>
+  consteval State(const State<StateEnum, N, O>& other){
+      state = other.get_state();
+      for(const auto& t : other.get_transitions()) transitions.push_back(t);
+      for(const auto& a : other.get_cyclic_actions()) cyclic_actions.push_back(a);
+      for(const auto& a : other.get_enter_actions()) on_enter_actions.push_back(a);
+      for(const auto& a : other.get_exit_actions()) on_exit_actions.push_back(a);
+      #ifdef STLIB_ETH
+      for(const auto& id : other.state_orders_ids) state_orders_ids.push_back(id);
+      #endif
+  }
+
   constexpr bool operator==(const State&) const = default;
     
   
@@ -175,22 +191,7 @@ private:
       if(timed_action.action == nullptr){continue;}
       if(!timed_action.is_on){ continue;}
 
-      switch(timed_action.alarm_precision)
-      {
-      case LOW_PRECISION:
-        Time::unregister_low_precision_alarm(timed_action.id);
-        break;
-      case MID_PRECISION:
-        Time::unregister_mid_precision_alarm(timed_action.id);
-        break;
-      case HIGH_PRECISION:
-        Time::unregister_high_precision_alarm(timed_action.id);
-        break;
-      default:
-        ErrorHandler("Cannot unregister timed action with erroneus alarm precision, Alarm Precision Type: %d", timed_action.alarm_precision);
-        return;
-        break;
-      }
+      Scheduler::unregister_task(timed_action.id);
       timed_action.is_on = false;
     }
   }
@@ -204,16 +205,15 @@ private:
 
       switch(timed_action.alarm_precision)
       {
-      case LOW_PRECISION:
-        timed_action.id = Time::register_low_precision_alarm(timed_action.period, timed_action.action);
+      case Miliseconds:
+        timed_action.id = Scheduler::register_task((timed_action.period * 1000), timed_action.action);
         break;
-      case MID_PRECISION:
-        timed_action.id = Time::register_mid_precision_alarm(timed_action.period, timed_action.action);
+      case Microseconds:
+        timed_action.id = Scheduler::register_task(timed_action.period, timed_action.action);
         break;
-      case HIGH_PRECISION:
-        timed_action.id = Time::register_high_precision_alarm(timed_action.period, timed_action.action);
-        break;
+
       default:
+        ErrorHandler("Invalid Alarm Precision");
         return;
         break;
       }
@@ -238,22 +238,7 @@ private:
 
   void unregister_timed_action(TimedAction* timed_action)
   {
-    switch(timed_action->alarm_precision)
-    {
-    case LOW_PRECISION:
-      Time::unregister_low_precision_alarm(timed_action->id);
-      break;
-    case MID_PRECISION:
-      Time::unregister_mid_precision_alarm(timed_action->id);
-      break;
-    case HIGH_PRECISION:
-      Time::unregister_high_precision_alarm(timed_action->id);
-      break;
-    default:
-      ErrorHandler("Cannot unregister timed action with erroneous alarm precision, Alarm Precision Type: %d", timed_action->alarm_precision);
-      return;
-      break;
-    }
+    Scheduler::unregister_task(timed_action->id);
     timed_action->is_on = false;
   }
 
@@ -262,47 +247,30 @@ private:
     state_orders_ids.push_back(id);
   }
 
-  template <class TimeUnit>
+  template <ValidTime TimeUnit>
   consteval TimedAction * 
-  add_low_precision_cyclic_action(Callback action,
-                                  chrono::duration<int64_t, TimeUnit> period){
+  add_cyclic_action(Callback action,
+                                  TimeUnit period){
     TimedAction timed_action = {};
-    timed_action.alarm_precision = LOW_PRECISION;
-    timed_action.action = action;
-    uint32_t miliseconds = chrono::duration_cast<chrono::milliseconds>(period).count();
-    timed_action.period = miliseconds;
+    if constexpr (std::is_same_v<TimeUnit, std::chrono::milliseconds>){
+        timed_action.alarm_precision = Miliseconds;
+        timed_action.period = period.count();
+    }
+
+    else if constexpr (std::is_same_v<TimeUnit, std::chrono::microseconds>){
+        timed_action.alarm_precision = Microseconds;
+        timed_action.period = period.count();
+    }
+
+    else {
+        ErrorHandler("Invalid Time Unit");
+    }
     
+    timed_action.action = action;
     cyclic_actions.push_back(timed_action);
     return &cyclic_actions[cyclic_actions.size() - 1];
   }
 
-  template <class TimeUnit>
-  consteval TimedAction *
-  add_mid_precision_cyclic_action(Callback action,
-                                  chrono::duration<int64_t, TimeUnit> period){
-    TimedAction timed_action = {};
-    timed_action.alarm_precision = MID_PRECISION;
-    timed_action.action = action;
-    uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
-    timed_action.period = microseconds;
-    
-    cyclic_actions.push_back(timed_action);
-    return &cyclic_actions[cyclic_actions.size() - 1];
-  }
-
-  template <class TimeUnit>
-  consteval TimedAction *
-  add_high_precision_cyclic_action(Callback action,
-                                   chrono::duration<int64_t, TimeUnit> period){
-    TimedAction timed_action = {};
-    timed_action.alarm_precision = HIGH_PRECISION;
-    timed_action.action = action;
-    uint32_t microseconds = chrono::duration_cast<chrono::microseconds>(period).count();
-    timed_action.period = microseconds;
-    
-    cyclic_actions.push_back(timed_action);
-    return &cyclic_actions[cyclic_actions.size() - 1];
-  }
 
 };
 
@@ -313,12 +281,16 @@ struct is_state : std::false_type {};
 template <class StateEnum, size_t N>
 struct is_state<State<StateEnum, N>, StateEnum> : std::true_type {}; 
 
+template <typename T, class StateEnum>
+concept IsState = is_state<T, StateEnum>::value;
+
 template <class StateEnum, typename... Ts>
-concept are_states = (is_state<Ts, StateEnum>::value && ...);
+concept are_states = (IsState<Ts, StateEnum> && ...);
 
 /// Interface for State Machines to allow other classes to interact with the state machine without knowing its implementation
 class IStateMachine {
     public:
+    virtual constexpr ~IStateMachine() = default;
     virtual void check_transitions() = 0;
     virtual void set_on(bool is_on) = 0;
     virtual void force_change_state(size_t state) = 0;
@@ -339,6 +311,8 @@ private:
 public:
   using state_id = StateEnum;
   StateEnum current_state;
+
+  constexpr ~StateMachine() override = default;
 
   void force_change_state(size_t state) override 
   {
@@ -406,16 +380,35 @@ private:
 
 public:
 
-  template <typename... S>
-        requires are_states<StateEnum, S...>
+  template <IsState<StateEnum>... S>
     consteval StateMachine(StateEnum initial_state, S... states) 
     : current_state(initial_state),
-      states{states...}
+    // Initialize states with copy of states passed to constructor by using the copy constructor
+    states{State<StateEnum, NTransitions>(states)...}
      {        
+        //Sort states by their enum value
+        using StateType = State<StateEnum, NTransitions>;
+        std::array<StateType, sizeof...(S)> sorted_states = {StateType(states)...};
+        std::sort(sorted_states.begin(), sorted_states.end(), [](const auto& a, const auto& b){
+            return a.get_state() < b.get_state();
+        });
+        
+        //Check that states are contiguous and start from 0
+        for(size_t i = 0; i < sorted_states.size(); i++) {
+            if(static_cast<size_t>(sorted_states[i].get_state()) != i){
+                ErrorHandler("States Enum must be contiguous and start from 0");
+            }
+        }
+
+        for(size_t i = 0; i < sorted_states.size(); i++) {
+            this->states[i] = sorted_states[i];
+        }
+
         size_t offset = 0;
-        ((process_state(states, offset),
-          offset += states.get_transitions().size()),
-         ...);
+        for(const auto& s : sorted_states) {
+             process_state(s, offset);
+             offset += s.get_transitions().size();
+        }
     }
 
     
@@ -460,45 +453,18 @@ public:
         enter();
     }
   
-template <class TimeUnit, size_t N, size_t O>
+
+
+  template <ValidTime TimeUnit, size_t N, size_t O>
   consteval TimedAction * 
-  add_low_precision_cyclic_action(Callback action,
-                                  chrono::duration<int64_t, TimeUnit> period,const State<StateEnum, N, O>& state){
+  add_cyclic_action(Callback action,
+                                  TimeUnit period,const State<StateEnum, N, O>& state)
+  {
     for(size_t i = 0; i < states.size(); ++i)
     {
         if(states[i].get_state() == state.get_state())
         {
-            return states[i].add_low_precision_cyclic_action(action, period);
-        }
-    }
-    ErrorHandler("Error: The state is not added to the state machine");
-    return nullptr;
-  }
-
-  template <class TimeUnit, size_t N, size_t O>
-  consteval TimedAction *
-  add_mid_precision_cyclic_action(Callback action,
-                                  chrono::duration<int64_t, TimeUnit> period,const State<StateEnum, N, O>& state){
-    for(size_t i = 0; i < states.size(); ++i)
-    {
-        if(states[i].get_state() == state.get_state())
-        {
-            return states[i].add_mid_precision_cyclic_action(action, period);
-        }
-    }
-    ErrorHandler("Error: The state is not added to the state machine");
-    return nullptr;
-  }
-
-  template <class TimeUnit, size_t N, size_t O>
-  consteval TimedAction *
-  add_high_precision_cyclic_action(Callback action,
-                                   chrono::duration<int64_t, TimeUnit> period,const State<StateEnum, N, O>& state){
-    for(size_t i = 0; i < states.size(); ++i)
-    {
-        if(states[i].get_state() == state.get_state())
-        {
-            return states[i].add_high_precision_cyclic_action(action, period);
+            return states[i].add_cyclic_action(action, period);
         }
     }
     ErrorHandler("Error: The state is not added to the state machine");
@@ -506,7 +472,8 @@ template <class TimeUnit, size_t N, size_t O>
   }
 
   template <size_t N, size_t O>
-  consteval void remove_cyclic_action(TimedAction *timed_action, const State<StateEnum, N, O>& state){
+  consteval void remove_cyclic_action(TimedAction *timed_action, const State<StateEnum, N, O>& state)
+  {
     for(size_t i = 0; i < states.size(); ++i)
     {
         if(states[i].get_state() == state.get_state())
@@ -519,7 +486,8 @@ template <class TimeUnit, size_t N, size_t O>
   }
 
   template <size_t N, size_t O>
-  consteval void add_enter_action(Callback action, const State<StateEnum, N, O>& state){
+  consteval void add_enter_action(Callback action, const State<StateEnum, N, O>& state)
+  {
     for(size_t i = 0; i < states.size(); ++i)
     {
         if(states[i].get_state() == state.get_state())
@@ -532,7 +500,8 @@ template <class TimeUnit, size_t N, size_t O>
   }
 
   template <size_t N, size_t O>
-  consteval void add_exit_action(Callback action, const State<StateEnum, N, O>& state){
+  consteval void add_exit_action(Callback action, const State<StateEnum, N, O>& state)
+  {
     for(size_t i = 0; i < states.size(); ++i)
     {
         if(states[i].get_state() == state.get_state())
@@ -545,12 +514,13 @@ template <class TimeUnit, size_t N, size_t O>
   }
 
   template <size_t N, size_t O>
-  constexpr void add_state_machine(IStateMachine& state_machine, const State<StateEnum, N, O>& state) {
+  constexpr void add_state_machine(IStateMachine& state_machine, const State<StateEnum, N, O>& state)
+  {
       for(auto& nested : nested_state_machine)
       {
         if(nested.state == state.get_state())
         {
-          ErrorHandler("Only one Nested State Machine can be added per state, tried to add to state: %d", state);
+          ErrorHandler("Only one Nested State Machine can be added per state, tried to add to state: %d", static_cast<int>(state.get_state()));
           return;
         }
       }
