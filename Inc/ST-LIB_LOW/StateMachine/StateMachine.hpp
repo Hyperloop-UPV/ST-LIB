@@ -33,13 +33,13 @@ using Guard = bool (*)();
 
 static constexpr size_t NUMBER_OF_ACTIONS = 20;
 
-enum AlarmType { Miliseconds = 0, Microseconds = 1 };
+enum AlarmType { Milliseconds = 0, Microseconds = 1 };
 
 class TimedAction {
 public:
   Callback action = nullptr;
   uint32_t period = 0;
-  AlarmType alarm_precision = Miliseconds;
+  AlarmType alarm_precision = Milliseconds;
   uint8_t id = 255;
   bool is_on = false;
 
@@ -205,7 +205,7 @@ private:
 
       switch(timed_action.alarm_precision)
       {
-      case Miliseconds:
+      case Milliseconds:
         timed_action.id = Scheduler::register_task((timed_action.period * 1000), timed_action.action);
         break;
       case Microseconds:
@@ -253,7 +253,7 @@ private:
                                   TimeUnit period){
     TimedAction timed_action = {};
     if constexpr (std::is_same_v<TimeUnit, std::chrono::milliseconds>){
-        timed_action.alarm_precision = Miliseconds;
+        timed_action.alarm_precision = Milliseconds;
         timed_action.period = period.count();
     }
 
@@ -460,10 +460,20 @@ public:
     void force_change_state(const State<StateEnum, N, O>& state)
     {
       StateEnum new_state = state.get_state();
-      if(current_state == new_state) return;
+      if(current_state == new_state)
+      {
+       return;
+      }
+        
         exit();
+        #ifdef STLIB_ETH
+        remove_state_orders();
+        #endif
         current_state = new_state;
         enter();
+        #ifdef STLIB_ETH
+        refresh_state_orders();
+        #endif
     }
   
 
