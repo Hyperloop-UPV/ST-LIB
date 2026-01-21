@@ -89,6 +89,7 @@ template <typename T>
 concept mpu_buffer_payload =
     std::is_standard_layout_v<T> && std::is_trivially_destructible_v<T>;
 
+extern void compile_error(const char *msg);
 struct MPUDomain {
 
     enum class MemoryDomain : uint8_t {
