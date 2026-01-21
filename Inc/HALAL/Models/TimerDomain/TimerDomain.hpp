@@ -7,8 +7,11 @@
 
 #pragma once
 
+#ifndef TESTING_ENV
 #include "stm32h7xx_hal.h"
-//#include "stm32h7xx_hal_tim.h"
+#else
+#include "MockedDrivers/stm32h7xx_hal_wrapper.h"
+#endif
 
 #ifdef HAL_TIM_MODULE_ENABLED
 
@@ -195,12 +198,6 @@ struct TimerDomain {
         CENTER_ALIGNED_INTERRUPT_BOTH = 4,
     };
 
-    enum Kind : uint8_t {
-        Basic,
-        GeneralPurpose,
-        Advanced,
-    };
-    
     struct Entry {
         std::array<char, 8> name; /* max length = 7 */
         TimerRequest request;
@@ -213,8 +210,6 @@ struct TimerDomain {
     };
 
     struct Config {
-        char name[8]; /* "Timerxx\0" */
-        TimerDomain::Kind kind;
         uint16_t timer_idx;
         TimerDomain::CountingMode counting_mode;
         uint32_t deadtime;
@@ -235,6 +230,9 @@ struct TimerDomain {
         &htim1, &htim8
     };
 
+#ifdef TESTING_ENV
+    static TIM_TypeDef *cmsis_timers[16];
+#else
     static constexpr TIM_TypeDef *cmsis_timers[16] = {
         // general purpose timers
         TIM2, TIM3, TIM4, TIM5, TIM23, TIM24,
@@ -247,6 +245,7 @@ struct TimerDomain {
         // advanced control timers
         TIM1, TIM8
     };
+#endif
 
     static constexpr IRQn_Type timer_irqn[] = {
         // general purpose timers 1
@@ -277,21 +276,6 @@ struct TimerDomain {
 
     static constexpr Config DoTimer(const Entry request, int reqint, int reqidx) {
         Config cfg;
-        if(request.name[0] == '\0') {
-            /* "Timer" + tostring(reqint) */
-            cfg.name[0] = 'T';
-            cfg.name[1] = 'i';
-            cfg.name[2] = 'm';
-            cfg.name[3] = 'e';
-            cfg.name[4] = 'r';
-            cfg.name[5] = (reqint/10) + '0';
-            cfg.name[6] = (reqint%10) + '0';
-            cfg.name[7] = '\0';
-        } else {
-            for(int si = 0; si < 8; si++) {
-                cfg.name[si] = request.name[si];
-            }
-        }
         cfg.timer_idx = timer_idxmap[reqint];
         cfg.deadtime = request.deadtime;
         cfg.polarity = request.polarity;
@@ -305,26 +289,6 @@ struct TimerDomain {
             if(request.counting_mode != CountingMode::UP) {
                 ST_LIB::compile_error("Error: Timers other than {Advanced{TIM1, TIM8}, TIM2, TIM3, TIM4, TIM5, TIM23, TIM24} only support upcounting");
             }
-        }
-
-        if(request.request == Basic_6 || request.request == Basic_7) {
-            // basic timers
-            cfg.kind = TimerDomain::Kind::Basic;
-        } else if(request.request == Advanced_1 || request.request == Advanced_8) {
-            // advanced timers
-            cfg.kind = TimerDomain::Kind::Advanced;
-        } else {
-            if(cfg.timer_idx >= 0 && cfg.timer_idx <= 5) {
-                // general purpose timers 1
-            } else if(cfg.timer_idx >= 6 && cfg.timer_idx <= 8) {
-                // general purpose timers 2
-            } else if(cfg.timer_idx >= 9 && cfg.timer_idx <= 11) {
-                // general purpose timers 3
-            } else {
-                ST_LIB::compile_error("Unknown timer idx");
-            }
-
-            cfg.kind = TimerDomain::Kind::GeneralPurpose;
         }
 
         return cfg;
@@ -510,10 +474,8 @@ struct TimerDomain {
 
     // Runtime object
     struct Instance {
-        char name[8];
         TIM_TypeDef *tim;
         TIM_HandleTypeDef *hal_tim;
-        TimerDomain::Kind kind;
         uint16_t timer_idx;
     };
 
@@ -558,15 +520,6 @@ struct TimerDomain {
                 Instance *inst = &instances[i];
                 inst->tim = tim;
                 inst->hal_tim = handle;
-                inst->name[0] = e.name[0];
-                inst->name[1] = e.name[1];
-                inst->name[2] = e.name[2];
-                inst->name[3] = e.name[3];
-                inst->name[4] = e.name[4];
-                inst->name[5] = e.name[5];
-                inst->name[6] = e.name[6];
-                inst->name[7] = e.name[7];
-                inst->kind = e.kind;
                 inst->timer_idx = e.timer_idx;
                 __NOP();
             }

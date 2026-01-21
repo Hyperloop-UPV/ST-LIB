@@ -2,7 +2,16 @@
 
 #include <iostream>
 
-INSTANTIATE_TIMER(TIM2)
+#define TIM1_IRQn TIM1_UP_IRQn
+#define TIM6_IRQn TIM6_DAC_IRQn
+#define TIM8_IRQn TIM8_UP_TIM13_IRQn
+#define TIM12_IRQn TIM8_BRK_TIM12_IRQn
+#define TIM13_IRQn TIM8_UP_TIM13_IRQn
+#define TIM14_IRQn TIM8_TRG_COM_TIM14_IRQn
+
+#define X(n, ignore) INSTANTIATE_TIMER(n)
+TimerXList
+#undef X
 
 void TIM_TypeDef::generate_update() {
         active_PSC = PSC;

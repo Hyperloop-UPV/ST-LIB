@@ -7,6 +7,12 @@
 
 #pragma once
 
+#ifndef TESTING_ENV
+#include "stm32h7xx_hal.h"
+#else
+#include "MockedDrivers/stm32h7xx_hal_wrapper.h"
+#endif
+
 #ifdef HAL_TIM_MODULE_ENABLED
 
 #include "HALAL/Models/TimerDomain/TimerDomain.hpp"
@@ -14,8 +20,6 @@
 #include "HALAL/Models/GPIO.hpp"
 
 #include "ErrorHandler/ErrorHandler.hpp"
-
-#include "stm32h7xx_hal.h"
 
 #define get_timer_instance(board, timer_type) \
     ST_LIB::TimerWrapper<timer_type>(board::instance_of<timer_type>())
