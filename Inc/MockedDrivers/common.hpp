@@ -5,6 +5,9 @@
 #define glue(a,b) glue_(a,b)
 #endif
 
+#undef __I
+#undef __I
+
 /* following defines should be used for structure members */
 
 #define IS_FUNCTIONAL_STATE(STATE) (((STATE) == DISABLE) || ((STATE) == ENABLE))

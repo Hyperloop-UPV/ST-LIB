@@ -6,6 +6,7 @@
 #include "MockedDrivers/NVIC.hpp"
 #include "MockedDrivers/Register.hpp"
 #include <stdio.h>
+
 enum class TimReg {
     Reg_CR1, Reg_CR2, Reg_SMCR, Reg_DIER, Reg_SR, Reg_EGR, 
     Reg_CCMR1, Reg_CCMR2, Reg_CCER, Reg_CNT, Reg_PSC, Reg_ARR, Reg_RCR,

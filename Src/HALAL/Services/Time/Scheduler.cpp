@@ -5,27 +5,21 @@
  *     Author: Victor (coauthor Stephan)
  */
 #include "HALAL/Services/Time/Scheduler.hpp"
+#include "HALAL/Models/TimerDomain/TimerDomain.hpp"
+#include "ErrorHandler/ErrorHandler.hpp"
 
-#ifndef TESTING_ENV
-    // This is needed to register a TimerPeripheral
-    #include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
-#endif
-#include <algorithm>
-#include <limits>
-
+#include <stdint.h>
 
 /* NOTE(vic): Pido perdón a Boris pero es la mejor manera que se me ha ocurrido hacer esto */
 #define SCHEDULER_RCC_TIMER_ENABLE \
     glue(glue(RCC_APB1LENR_TIM, SCHEDULER_TIMER_IDX), EN)
 #define SCHEDULER_GLOBAL_TIMER_IRQn \
     glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQn))
-#define SCHEDULER_GLOBAL_TIMER_CALLBACK() \
-    extern "C" void glue(TIM, glue(SCHEDULER_TIMER_IDX, _IRQHandler))(void)
 
 #define Scheduler_global_timer ((TIM_TypeDef*)SCHEDULER_TIMER_BASE)
 namespace {
 constexpr uint64_t kMaxIntervalUs =
-    static_cast<uint64_t>(std::numeric_limits<uint32_t>::max())/2 + 1ULL;
+    static_cast<uint64_t>(UINT32_MAX)/2 + 1ULL;
 }
 
 std::array<Scheduler::Task, Scheduler::kMaxTasks> Scheduler::tasks_{};
@@ -70,6 +64,12 @@ inline void Scheduler::global_timer_enable() {
 }
 
 // ----------------------------
+void scheduler_global_timer_callback(void *raw) {
+    (void)raw;
+    Scheduler::on_timer_update();
+}
+// ----------------------------
+
 void Scheduler::start() {
     static_assert((Scheduler::FREQUENCY % 1'000'000) == 0u, "frequenct must be a multiple of 1MHz");
 
@@ -114,20 +114,15 @@ void Scheduler::start() {
 
     // TODO: Fault when any of the next 2 static asserts happen (needs to be runtime bcos of SystemCoreClock)
     if(prescaler == 0 || prescaler > 0xFFFF) {
-        // error here
+        ErrorHandler("Invalid prescaler value: %u", prescaler);
     }
 
     //static_assert(prescaler < 0xFFFF, "Prescaler is 16 bit, so it must be in that range");
     //static_assert(prescaler != 0, "Prescaler must be in the range [1, 65535]");
 #ifndef TESTING_ENV
-
-    // Register a TimerPeripheral so it's not used anywhere else
-    // hopefully we can move to something better than TimerPeripheral
-    TimerPeripheral::InitData init_data(TimerPeripheral::BASE);
-    TimerPeripheral perif_reserve(&SCHEDULER_HAL_TIM, std::move(init_data), (std::string)"timer2");
-
     RCC->APB1LENR |= SCHEDULER_RCC_TIMER_ENABLE;
 #endif
+
     Scheduler_global_timer->PSC = (uint16_t)prescaler;
     Scheduler_global_timer->ARR = 0;
     Scheduler_global_timer->DIER |= LL_TIM_DIER_UIE;
@@ -136,17 +131,15 @@ void Scheduler::start() {
     // LL_TIM_DisableExternalClock(Scheduler_global_timer);
     //  |-> does this: Scheduler_global_timer->SMCR &= ~TIM_SMCR_ECE; /* Disable external clock */
 
+    // Temporary solution for TimerDomain
+    ST_LIB::TimerDomain::callbacks[ST_LIB::timer_idxmap[SCHEDULER_TIMER_IDX]] = scheduler_global_timer_callback;
+
     Scheduler_global_timer->CNT = 0; /* Clear counter value */
 
     NVIC_EnableIRQ(SCHEDULER_GLOBAL_TIMER_IRQn);
     CLEAR_BIT(Scheduler_global_timer->SR, LL_TIM_SR_UIF); /* clear update interrupt flag */
 
     Scheduler::schedule_next_interval();
-}
-
-SCHEDULER_GLOBAL_TIMER_CALLBACK() {
-    CLEAR_BIT(Scheduler_global_timer->SR, TIM_SR_UIF);
-    Scheduler::on_timer_update();
 }
 
 void Scheduler::update() {

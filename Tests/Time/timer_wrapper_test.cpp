@@ -1,8 +1,28 @@
 #include <gtest/gtest.h>
-#include <thread>
-#include <chrono>
+//#include <thread>
+//#include <chrono>
 
+#include "HALAL/Models/TimerDomain/TimerDomain.hpp"
 #include "HALAL/Services/Time/TimerWrapper.hpp"
+
+TIM_TypeDef *ST_LIB::TimerDomain::cmsis_timers[16] = {
+    [0] = TIM2_BASE,
+    [1] = TIM3_BASE,
+    [2] = TIM4_BASE,
+    [3] = TIM5_BASE,
+    [4] = TIM23_BASE,
+    [5] = TIM24_BASE,
+    [6] = TIM12_BASE,
+    [7] = TIM13_BASE,
+    [8] = TIM14_BASE,
+    [9] = TIM15_BASE,
+    [10] = TIM16_BASE,
+    [11] = TIM17_BASE,
+    [12] = TIM6_BASE,
+    [13] = TIM7_BASE,
+    [14] = TIM1_BASE,
+    [15] = TIM8_BASE,
+};
 
 class TimerWrapperTests : public ::testing::Test {
 protected:
@@ -14,22 +34,6 @@ protected:
         TIM1_BASE->CR1 = 0;
         TIM1_BASE->DIER = 0;
 
-        ST_LIB::TimerDomain::cmsis_timers[0] = TIM2_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[1] = TIM3_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[2] = TIM4_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[3] = TIM5_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[4] = TIM23_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[5] = TIM24_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[6] = TIM12_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[7] = TIM13_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[8] = TIM14_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[9] = TIM15_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[10] = TIM16_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[11] = TIM17_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[12] = TIM6_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[13] = TIM7_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[14] = TIM1_BASE;
-        ST_LIB::TimerDomain::cmsis_timers[15] = TIM8_BASE;
     }
 };
 

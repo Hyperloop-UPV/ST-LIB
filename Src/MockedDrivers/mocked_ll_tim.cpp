@@ -1,6 +1,6 @@
 #include "MockedDrivers/mocked_ll_tim.hpp"
 
-#include <iostream>
+#include <stdio.h>
 
 TIM_TypeDef __htim2{TIM2_IRQHandler, TIM2_IRQn};
 TIM_TypeDef *TIM2_BASE = &__htim2;
@@ -58,7 +58,7 @@ void simulate_ticks(TIM_TypeDef* tim){
 
     // Check for Overflow
     if (tim->CNT > current_limit) {
-        std::cout<<"timer overflow\n";
+        printf("timer overflow\n");
         tim->CNT = 0; // Rollover main counter
 
         // 4. Repetition Counter & Update Event Logic
