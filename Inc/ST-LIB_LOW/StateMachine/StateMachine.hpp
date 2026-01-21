@@ -450,6 +450,12 @@ public:
         }
     }
 
+    void start()
+    {
+      enter();
+    }
+
+
     template <size_t N, size_t O>
     void force_change_state(const State<StateEnum, N, O>& state)
     {
