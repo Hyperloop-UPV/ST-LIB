@@ -38,7 +38,6 @@ public:
 	static void update();
 
 private:
-	static void mpu_start();
 };
 
 #endif
