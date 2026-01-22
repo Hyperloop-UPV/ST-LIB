@@ -432,130 +432,130 @@ void SPI::init(SPI::Instance* spi) {
     spi->initialized = true;
 }
 
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
-    if (!SPI::registered_spi_by_handler.contains(hspi)) {
-        ErrorHandler("Used SPI protocol without the HALAL SPI interface");
-        return;
-    }
+// void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
+//     if (!SPI::registered_spi_by_handler.contains(hspi)) {
+//         ErrorHandler("Used SPI protocol without the HALAL SPI interface");
+//         return;
+//     }
 
-    SPI::Instance* spi = SPI::registered_spi_by_handler[hspi];
-    switch (spi->state) {
-        case SPI::IDLE:
-            // Does nothing as there is no Order handling on a direct send
-            break;
-        case SPI::STARTING_ORDER: {
-            SPIBaseOrder* Order =
-                SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
-            if (spi->mode ==
-                SPI_MODE_MASTER) {  // checks if the Order is ready on slave
-                if (*(spi->available_end) == *(spi->SPIOrderID)) {
-                    spi->state = SPI::PROCESSING_ORDER;
-                    Order->master_prepare_buffer(spi->tx_buffer);
-                    SPI::turn_off_chip_select(spi);
+//     SPI::Instance* spi = SPI::registered_spi_by_handler[hspi];
+//     switch (spi->state) {
+//         case SPI::IDLE:
+//             // Does nothing as there is no Order handling on a direct send
+//             break;
+//         case SPI::STARTING_ORDER: {
+//             SPIBaseOrder* Order =
+//                 SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
+//             if (spi->mode ==
+//                 SPI_MODE_MASTER) {  // checks if the Order is ready on slave
+//                 if (*(spi->available_end) == *(spi->SPIOrderID)) {
+//                     spi->state = SPI::PROCESSING_ORDER;
+//                     Order->master_prepare_buffer(spi->tx_buffer);
+//                     SPI::turn_off_chip_select(spi);
 
-                    SPI::spi_communicate_order_data(
-                        spi, spi->tx_buffer, spi->rx_buffer,
-                        Order->payload_size - PAYLOAD_OVERHEAD);
-                } else {
-                    spi->try_count++;
-                    switch (*(spi->available_end)) {
-                        case NO_ORDER_ID: {
-                            spi->last_end_check = Time::get_global_tick();
-                            SPI::turn_on_chip_select(spi);
-                        } break;
-                        default:
-                        case ERROR_ORDER_ID: {
-                            spi->last_end_check = Time::get_global_tick();
-                            spi->error_count++;
-                            SPI::turn_on_chip_select(spi);
-                        } break;
-                    }
-                }
-            } else {
-                ErrorHandler("Used master transmit Order on a slave spi");
-            }
-            break;
-        }
-        case SPI::WAITING_ORDER: {
-            SPIBaseOrder* Order =
-                SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
-            if (Order == 0x0) {
-                SPI::spi_recover(spi, hspi);
-                return;
-            } else if (spi->mode ==
-                       SPI_MODE_SLAVE) {  // prepares the Order on the slave
-                Order->slave_prepare_buffer(spi->tx_buffer);
-                SPI::spi_communicate_order_data(
-                    spi, spi->tx_buffer, spi->rx_buffer, Order->payload_size);
-                SPI::mark_slave_ready(spi);
-                spi->state = SPI::PROCESSING_ORDER;
-            } else {
-                ErrorHandler("Used slave process Orders on a master spi");
-            }
-            break;
-        }
-        case SPI::PROCESSING_ORDER: {
-            SPIBaseOrder* Order =
-                SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
+//                     SPI::spi_communicate_order_data(
+//                         spi, spi->tx_buffer, spi->rx_buffer,
+//                         Order->payload_size - PAYLOAD_OVERHEAD);
+//                 } else {
+//                     spi->try_count++;
+//                     switch (*(spi->available_end)) {
+//                         case NO_ORDER_ID: {
+//                             spi->last_end_check = Time::get_global_tick();
+//                             SPI::turn_on_chip_select(spi);
+//                         } break;
+//                         default:
+//                         case ERROR_ORDER_ID: {
+//                             spi->last_end_check = Time::get_global_tick();
+//                             spi->error_count++;
+//                             SPI::turn_on_chip_select(spi);
+//                         } break;
+//                     }
+//                 }
+//             } else {
+//                 ErrorHandler("Used master transmit Order on a slave spi");
+//             }
+//             break;
+//         }
+//         case SPI::WAITING_ORDER: {
+//             SPIBaseOrder* Order =
+//                 SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
+//             if (Order == 0x0) {
+//                 SPI::spi_recover(spi, hspi);
+//                 return;
+//             } else if (spi->mode ==
+//                        SPI_MODE_SLAVE) {  // prepares the Order on the slave
+//                 Order->slave_prepare_buffer(spi->tx_buffer);
+//                 SPI::spi_communicate_order_data(
+//                     spi, spi->tx_buffer, spi->rx_buffer, Order->payload_size);
+//                 SPI::mark_slave_ready(spi);
+//                 spi->state = SPI::PROCESSING_ORDER;
+//             } else {
+//                 ErrorHandler("Used slave process Orders on a master spi");
+//             }
+//             break;
+//         }
+//         case SPI::PROCESSING_ORDER: {
+//             SPIBaseOrder* Order =
+//                 SPIBaseOrder::SPIOrdersByID[*(spi->SPIOrderID)];
 
-            if (spi->mode == SPI_MODE_MASTER) {  // ends communication
-                if (*(uint16_t*)&spi
-                         ->rx_buffer[Order->CRC_index - PAYLOAD_OVERHEAD] !=
-                    *spi->SPIOrderID) {
-                    spi->state = SPI::STARTING_ORDER;
-                    SPI::master_check_available_end(spi);
-                    return;
-                }
-                spi->Order_count++;
-                SPI::turn_on_chip_select(spi);
-                Order->master_process_callback(spi->rx_buffer);
-                spi->state = SPI::IDLE;
-            } else {  // prepares the next received Order
-                if (*(uint16_t*)&spi->rx_buffer[Order->CRC_index] !=
-                    *spi->SPIOrderID) {
-                    SPI::spi_recover(spi, hspi);
-                    return;
-                }
-                spi->Order_count++;
-                SPI::mark_slave_waiting(spi);
-                *(spi->SPIOrderID) = NO_ORDER_ID;
-                *(spi->available_end) = NO_ORDER_ID;
-                Order->slave_process_callback(spi->rx_buffer);
-                SPI::slave_check_packet_ID(spi);
-                spi->state = SPI::WAITING_ORDER;
-            }
-            break;
-        }
-        case SPI::ERROR_RECOVERY: {
-            if (spi->mode == SPI_MODE_MASTER) {
-                // TODO
-            } else {
-                SPI::mark_slave_waiting(spi);
-                spi->state =
-                    SPI::WAITING_ORDER;  // prepares the next received Order
-                *(spi->SPIOrderID) = NO_ORDER_ID;
-                *(spi->available_end) = NO_ORDER_ID;
-                SPI::slave_check_packet_ID(spi);
-            }
-            break;
-        }
-        default:
-            ErrorHandler("Unknown spi state: %d", spi->state);
-            break;
-    }
-}
+//             if (spi->mode == SPI_MODE_MASTER) {  // ends communication
+//                 if (*(uint16_t*)&spi
+//                          ->rx_buffer[Order->CRC_index - PAYLOAD_OVERHEAD] !=
+//                     *spi->SPIOrderID) {
+//                     spi->state = SPI::STARTING_ORDER;
+//                     SPI::master_check_available_end(spi);
+//                     return;
+//                 }
+//                 spi->Order_count++;
+//                 SPI::turn_on_chip_select(spi);
+//                 Order->master_process_callback(spi->rx_buffer);
+//                 spi->state = SPI::IDLE;
+//             } else {  // prepares the next received Order
+//                 if (*(uint16_t*)&spi->rx_buffer[Order->CRC_index] !=
+//                     *spi->SPIOrderID) {
+//                     SPI::spi_recover(spi, hspi);
+//                     return;
+//                 }
+//                 spi->Order_count++;
+//                 SPI::mark_slave_waiting(spi);
+//                 *(spi->SPIOrderID) = NO_ORDER_ID;
+//                 *(spi->available_end) = NO_ORDER_ID;
+//                 Order->slave_process_callback(spi->rx_buffer);
+//                 SPI::slave_check_packet_ID(spi);
+//                 spi->state = SPI::WAITING_ORDER;
+//             }
+//             break;
+//         }
+//         case SPI::ERROR_RECOVERY: {
+//             if (spi->mode == SPI_MODE_MASTER) {
+//                 // TODO
+//             } else {
+//                 SPI::mark_slave_waiting(spi);
+//                 spi->state =
+//                     SPI::WAITING_ORDER;  // prepares the next received Order
+//                 *(spi->SPIOrderID) = NO_ORDER_ID;
+//                 *(spi->available_end) = NO_ORDER_ID;
+//                 SPI::slave_check_packet_ID(spi);
+//             }
+//             break;
+//         }
+//         default:
+//             ErrorHandler("Unknown spi state: %d", spi->state);
+//             break;
+//     }
+// }
 
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi) {}
+// // void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi) {}
 
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi) {}
+// // void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi) {}
 
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi) {
-    if ((hspi->ErrorCode & HAL_SPI_ERROR_UDR) != 0) {
-        SPI::spi_recover(SPI::registered_spi_by_handler[hspi], hspi);
-    } else {
-        ErrorHandler("SPI error number %u", hspi->ErrorCode);
-    }
-}
+// // void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi) {
+// //     if ((hspi->ErrorCode & HAL_SPI_ERROR_UDR) != 0) {
+// //         SPI::spi_recover(SPI::registered_spi_by_handler[hspi], hspi);
+// //     } else {
+// //         ErrorHandler("SPI error number %u", hspi->ErrorCode);
+// //     }
+// // }
 
 void SPI::spi_communicate_order_data(SPI::Instance* spi, uint8_t* value_to_send,
                                      uint8_t* value_to_receive,

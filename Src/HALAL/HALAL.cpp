@@ -34,7 +34,7 @@ static void common_start(UART::Peripheral &printf_peripheral) {
 #endif
 
 #ifdef HAL_DMA_MODULE_ENABLED
-  DMA::start();
+  // DMA::start();
 #endif
 
 #ifdef HAL_FMAC_MODULE_ENABLED

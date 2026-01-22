@@ -332,7 +332,7 @@ namespace ST_LIB {
             static inline std::array<Instances_, N> instances{};
 
             static void init(std::span<const Config, N> cfgs) {
-                static_assert(N > 0);
+                if (N == 0) return;
                 __HAL_RCC_DMA1_CLK_ENABLE();
 	            __HAL_RCC_DMA2_CLK_ENABLE();
                 for (std::size_t i = 0; i < N; ++i) {
