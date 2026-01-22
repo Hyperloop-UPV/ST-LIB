@@ -361,7 +361,7 @@ namespace ST_LIB {
 
 
         
-        struct Instances_ {
+        struct Instance {
             DMA_HandleTypeDef dma;
 
             void start(uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength){
@@ -371,7 +371,7 @@ namespace ST_LIB {
 
         
         template <std::size_t N> struct Init {
-            static inline std::array<Instances_, N> instances{};
+            static inline std::array<Instance, N> instances{};
 
             static void init(std::span<const Config, N> cfgs) {
                 static_assert(N > 0);
