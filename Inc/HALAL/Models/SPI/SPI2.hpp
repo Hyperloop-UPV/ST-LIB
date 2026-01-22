@@ -35,6 +35,7 @@ extern "C" {
 }
 
 namespace ST_LIB {
+extern void compile_error(const char *msg);
 
 struct SPIDomain {
 
