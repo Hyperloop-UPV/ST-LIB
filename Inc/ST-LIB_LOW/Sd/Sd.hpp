@@ -119,33 +119,27 @@ struct SdDomain {
     
 
         template <class Ctx>
-        consteval void inscribe(Ctx &ctx) const {
+        consteval std::size_t inscribe(Ctx &ctx) const {
             Entry local_e = e;
 
             local_e.mpu_buffer0_idx = ctx.template add<MPUDomain>(buffer0.e, this);
             local_e.mpu_buffer1_idx = ctx.template add<MPUDomain>(buffer1.e, this);
 
             if (cd.has_value()) {
-                auto& di = cd.value().first;
-                auto gpio_idx = ctx.template add<GPIODomain>(di.gpio.e);
-                DigitalInputDomain::Entry di_entry{gpio_idx};
-                local_e.cd_pin_idx = {ctx.template add<DigitalInputDomain>(di_entry), cd.value().second};
+                local_e.cd_pin_idx = {cd.value().first.inscribe(ctx), cd.value().second};
             }
             if (wp.has_value()) {
-                auto& di = wp.value().first;
-                auto gpio_idx = ctx.template add<GPIODomain>(di.gpio.e);
-                DigitalInputDomain::Entry di_entry{gpio_idx};
-                local_e.wp_pin_idx = {ctx.template add<DigitalInputDomain>(di_entry), wp.value().second};
+                local_e.wp_pin_idx = {wp.value().first.inscribe(ctx), wp.value().second};
             }
 
-            local_e.cmd_pin_idx = ctx.template add<GPIODomain>(cmd.e, this);
-            local_e.ck_pin_idx = ctx.template add<GPIODomain>(ck.e, this);
-            local_e.d0_pin_idx = ctx.template add<GPIODomain>(d0.e, this);
-            local_e.d1_pin_idx = ctx.template add<GPIODomain>(d1.e, this);
-            local_e.d2_pin_idx = ctx.template add<GPIODomain>(d2.e, this);
-            local_e.d3_pin_idx = ctx.template add<GPIODomain>(d3.e, this);
+            local_e.cmd_pin_idx = cmd.inscribe(ctx);
+            local_e.ck_pin_idx = ck.inscribe(ctx);
+            local_e.d0_pin_idx = d0.inscribe(ctx);
+            local_e.d1_pin_idx = d1.inscribe(ctx);
+            local_e.d2_pin_idx = d2.inscribe(ctx);
+            local_e.d3_pin_idx = d3.inscribe(ctx);
 
-            ctx.template add<SdDomain>(local_e, this);
+            return ctx.template add<SdDomain>(local_e, this);
         }
     };
 
@@ -389,21 +383,20 @@ struct SdDomain {
                 inst.hsd.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
                 inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_4B;
                 inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-                inst.hsd.Init.ClockDiv = 2;
-
+                uint32_t target_freq = 25000000; // Target frequency 25 MHz
 
                 #ifdef SD_DEBUG_ENABLE
-                // Doesn't really work in this moment, need to actually get the PLL1 frequency somehow
-                inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_1B;
-                // Get a 400 kHz clock for debugging
-                //uint32_t pll1_freq = HAL_RCCEx_GetPLL1ClockFreq(); // SDMMC clock source is PLL1
-                uint32_t pll1_freq = 480000000; // Assume PLL1 is at 480 MHz
-                uint32_t sdmmc_clk = pll1_freq / 2; // SDMMC clock before divider
-                uint32_t target_div = sdmmc_clk / 400000; // Target divider
+                inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_1B; // For debugging, use 1-bit bus
+                target_freq = 400000; // For debugging, use 400 kHz
+                #endif // SD_DEBUG_ENABLE
+
+                PLL1_ClocksTypeDef pll1_clock = HAL_RCCEx_GetPLL1ClockFreq();
+                uint32_t sdmmc_clk = pll1_clock.PLL1_Q / 2; // SDMMC clock before divider
+                uint32_t target_div = sdmmc_clk / target_freq; // Target divider
                 if (target_div < 2) target_div = 2; // Minimum divider is 2
                 if (target_div > 256) target_div = 256; // Maximum divider is 256
+
                 inst.hsd.Init.ClockDiv = target_div - 2; // ClockDiv is (divider - 2)
-                #endif // SD_DEBUG_ENABLE
 
                 if (cfg.peripheral == Peripheral::sdmmc1) {
                     g_sdmmc1_handle = &inst.hsd;
