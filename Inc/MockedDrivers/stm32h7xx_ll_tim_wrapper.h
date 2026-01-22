@@ -5,8 +5,6 @@
 
 #include "MockedDrivers/stm32h723xx_wrapper.h"
 
-#include "stm32h7xx.h"
-
 #include "MockedDrivers/mocked_ll_tim.hpp"
 
 #define uint32_t size_t

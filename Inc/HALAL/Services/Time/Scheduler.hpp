@@ -22,8 +22,10 @@
 # define SCHEDULER_TIMER_IDX 2
 #endif
 
+#ifndef glue
 #define glue_(a,b) a ## b
 #define glue(a,b) glue_(a,b)
+#endif
 #define SCHEDULER_TIMER_BASE glue(TIM, glue(SCHEDULER_TIMER_IDX, _BASE))
 
 // Used to reserve a TimerPeripheral
