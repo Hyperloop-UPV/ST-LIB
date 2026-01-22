@@ -20,7 +20,6 @@ static void common_start(UART::Peripheral &printf_peripheral) {
   Watchdog::check_reset_flag();
 #endif
 
-  MPUManager::start();
   HAL_Init();
   HALconfig::system_clock();
   HALconfig::peripheral_clock();

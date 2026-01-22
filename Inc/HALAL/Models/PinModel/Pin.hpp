@@ -112,7 +112,7 @@ struct hash<Pin> {
         using std::string;
 
         return ((hash<uint16_t>()(k.gpio_pin) ^
-                 (hash<uint32_t>()((uint32_t)(k.port)) << 1)) >>
+                 (hash<uint32_t>()((size_t)(k.port)) << 1)) >>
                 1);
     }
 };

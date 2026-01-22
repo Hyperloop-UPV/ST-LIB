@@ -1,11 +1,12 @@
 #pragma once
-#include <cstdint>
+#include <stdint.h>
 #include "MockedDrivers/stm32h723xx_wrapper.h"
 #include "stm32h7xx.h"
 #include "MockedDrivers/common.hpp"
 #include "MockedDrivers/NVIC.hpp"
 #include "MockedDrivers/Register.hpp"
-#include <iostream>
+#include <stdio.h>
+
 enum class TimReg {
     Reg_CR1, Reg_CR2, Reg_SMCR, Reg_DIER, Reg_SR, Reg_EGR, 
     Reg_CCMR1, Reg_CCMR2, Reg_CCER, Reg_CNT, Reg_PSC, Reg_ARR, Reg_RCR,
@@ -14,15 +15,12 @@ enum class TimReg {
 };
 using enum TimReg;
 
-
-
 template<TimReg Reg>
 class TimerRegister : public RegisterBase<TimReg, Reg> {
 public:
     using RegisterBase<TimReg, Reg>::RegisterBase;
     using RegisterBase<TimReg, Reg>::operator=;
 };
-
 
 static_assert(sizeof(TimerRegister<Reg_CR1>) == sizeof(uint32_t) );
 
@@ -96,7 +94,7 @@ struct TIM_TypeDef{
 
         // 1. Check if Counter is Enabled
         if (!(CR1 & CR1_CEN)) {
-            std::cout<<"TIMER IS NOT ENABLED!!\n";
+            printf("TIMER IS NOT ENABLED!!\n");
             return false; 
         }
         // 2. Prescaler Logic
@@ -134,16 +132,53 @@ struct RegisterTraits<TimReg,TimReg::Reg_CNT> {
 };
 */
 
-#define DECLARE_TIMER(TIM_IDX) \
-    extern TIM_TypeDef*  TIM_IDX##_BASE; \
-    extern "C"{ \
-    void  TIM_IDX##_IRQHandler(void); \
-    } 
-#define INSTANTIATE_TIMER(TIM_IDX) \
-    TIM_TypeDef __htim##TIM_IDX{TIM_IDX##_IRQHandler,TIM_IDX##_IRQn}; \
-    TIM_TypeDef*  TIM_IDX##_BASE = &__htim##TIM_IDX;
-
-#undef TIM1_BASE
-DECLARE_TIMER(TIM1)
 #undef TIM2_BASE
-DECLARE_TIMER(TIM2)
+#undef TIM3_BASE
+#undef TIM4_BASE
+#undef TIM5_BASE
+#undef TIM6_BASE
+#undef TIM7_BASE
+#undef TIM12_BASE
+#undef TIM13_BASE
+#undef TIM14_BASE
+#undef TIM23_BASE
+#undef TIM24_BASE
+#undef TIM1_BASE
+#undef TIM8_BASE
+#undef TIM15_BASE
+#undef TIM16_BASE
+#undef TIM17_BASE
+
+extern TIM_TypeDef* TIM2_BASE;
+extern "C"{ void TIM2_IRQHandler(void); }
+extern TIM_TypeDef* TIM3_BASE;
+extern "C"{ void TIM3_IRQHandler(void); }
+extern TIM_TypeDef* TIM4_BASE;
+extern "C"{ void TIM4_IRQHandler(void); }
+extern TIM_TypeDef* TIM5_BASE;
+extern "C"{ void TIM5_IRQHandler(void); }
+extern TIM_TypeDef* TIM6_BASE;
+extern "C"{ void TIM6_DAC_IRQHandler(void); }
+extern TIM_TypeDef* TIM7_BASE;
+extern "C"{ void TIM7_IRQHandler(void); }
+
+extern TIM_TypeDef* TIM12_BASE;
+extern "C"{ void TIM8_BRK_TIM12_IRQHandler(void); }
+extern TIM_TypeDef* TIM13_BASE;
+extern TIM_TypeDef* TIM14_BASE;
+extern "C"{ void TIM8_TRG_COM_TIM14_IRQHandler(void); }
+
+extern TIM_TypeDef* TIM23_BASE;
+extern "C"{ void TIM23_IRQHandler(void); }
+extern TIM_TypeDef* TIM24_BASE;
+extern "C"{ void TIM24_IRQHandler(void); }
+extern TIM_TypeDef* TIM1_BASE;
+extern "C"{ void TIM1_UP_IRQHandler(void); }
+extern TIM_TypeDef* TIM8_BASE;
+extern "C"{ void TIM8_UP_TIM13_IRQHandler(void); }
+extern TIM_TypeDef* TIM15_BASE;
+extern "C"{ void TIM15_IRQHandler(void); }
+extern TIM_TypeDef* TIM16_BASE;
+extern "C"{ void TIM16_IRQHandler(void); }
+extern TIM_TypeDef* TIM17_BASE;
+extern "C"{ void TIM17_IRQHandler(void); }

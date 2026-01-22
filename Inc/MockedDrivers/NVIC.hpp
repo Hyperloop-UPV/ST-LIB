@@ -4,12 +4,34 @@
 #include "MockedDrivers/common.hpp"
 #include "MockedDrivers/compiler_specific.hpp"
 
+#include "MockedDrivers/Register.hpp"
+
+enum class NVICReg {
+    Reg_ISER, Reg_ICER, Reg_ISPR, Reg_ICPR, Reg_IABR, Reg_IP,
+};
+
+template<NVICReg Reg>
+class NVICRegister : public RegisterBase<NVICReg, Reg> {
+public:
+    using RegisterBase<NVICReg, Reg>::RegisterBase;
+    using RegisterBase<NVICReg, Reg>::operator=;
+};
+
+
 class NVIC_Type
 {
+    struct ICER_Register : public RegisterBase<NVICReg, NVICReg::Reg_ICER> {
+        ICER_Register& operator=(uint32_t val) {
+            volatile uint32_t *ISER_offset = (volatile uint32_t*)((volatile uint8_t*)&this->reg - offsetof(NVIC_Type, ICER));
+            *ISER_offset = *ISER_offset & ~val;
+            return *this;
+        }
+    };
+
     public:
     volatile uint32_t ISER[8U];               /*!< Offset: 0x000 (R/W)  Interrupt Set Enable Register */
              uint32_t RESERVED0[24U];
-    volatile uint32_t ICER[8U];               /*!< Offset: 0x080 (R/W)  Interrupt Clear Enable Register */
+    ICER_Register ICER[8U];          /*!< Offset: 0x080 (R/W)  Interrupt Clear Enable Register */
              uint32_t RESERVED1[24U];
     volatile uint32_t ISPR[8U];               /*!< Offset: 0x100 (R/W)  Interrupt Set Pending Register */
              uint32_t RESERVED2[24U];
