@@ -225,6 +225,54 @@ struct SPIDomain {
             validate_spi_pins(peripheral, sck_pin, miso_pin, mosi_pin);
         }
 
+        template <class Ctx>
+        consteval std::size_t inscribe(Ctx &ctx) const {
+            // Convert spix to DMA_Domain::Instance
+            DMA_Domain::Instance dma_instance;
+            switch (peripheral) {
+                case SPIPeripheral::spi1:
+                    dma_instance = DMA_Domain::Instance::spi1;
+                    break;
+                case SPIPeripheral::spi2:
+                    dma_instance = DMA_Domain::Instance::spi2;
+                    break;
+                case SPIPeripheral::spi3:
+                    dma_instance = DMA_Domain::Instance::spi3;
+                    break;
+                case SPIPeripheral::spi4:
+                    dma_instance = DMA_Domain::Instance::spi4;
+                    break;
+                case SPIPeripheral::spi5:
+                    dma_instance = DMA_Domain::Instance::spi5;
+                    break;
+                default:
+                    compile_error("Invalid SPI peripheral for DMA mapping");
+            }
+            DMA_Domain::DMA<dma_rx_stream, dma_tx_stream> dma_rx_tx(dma_instance);
+            auto dma_indices = dma_rx_tx.inscribe(ctx);
+            
+            // Conditionally add NSS GPIO if provided
+            std::optional<std::size_t> nss_idx = std::nullopt;
+            if (nss_gpio.has_value()) {
+                nss_idx = nss_gpio.value().inscribe(ctx);
+            }
+            
+            Entry e{
+                .peripheral = peripheral,
+                .mode = mode,
+                .sck_gpio_idx = sck_gpio.inscribe(ctx),
+                .miso_gpio_idx = miso_gpio.inscribe(ctx),
+                .mosi_gpio_idx = mosi_gpio.inscribe(ctx),
+                .nss_gpio_idx = nss_idx,
+                .dma_rx_idx = dma_indices[0],
+                .dma_tx_idx = dma_indices[1],
+                .max_baudrate = max_baudrate,
+                .config = config
+            };
+
+            return ctx.template add<SPIDomain>(e, this);
+        }
+
     private:
         // Helper function to validate SPI pins (SCK, MISO, MOSI only)
         static consteval void validate_spi_pins(SPIPeripheral peripheral, 
@@ -390,54 +438,6 @@ struct SPIDomain {
             default:
                 compile_error("Invalid SPI peripheral specified in SPIDomain::Device");
             }
-        }
-
-        template <class Ctx>
-        consteval std::size_t inscribe(Ctx &ctx) const {
-            // Convert spix to DMA_Domain::Instance
-            DMA_Domain::Instance dma_instance;
-            switch (peripheral) {
-                case SPIPeripheral::spi1:
-                    dma_instance = DMA_Domain::Instance::spi1;
-                    break;
-                case SPIPeripheral::spi2:
-                    dma_instance = DMA_Domain::Instance::spi2;
-                    break;
-                case SPIPeripheral::spi3:
-                    dma_instance = DMA_Domain::Instance::spi3;
-                    break;
-                case SPIPeripheral::spi4:
-                    dma_instance = DMA_Domain::Instance::spi4;
-                    break;
-                case SPIPeripheral::spi5:
-                    dma_instance = DMA_Domain::Instance::spi5;
-                    break;
-                default:
-                    compile_error("Invalid SPI peripheral for DMA mapping");
-            }
-            DMA_Domain::DMA<dma_rx_stream, dma_tx_stream> dma_rx_tx(dma_instance);
-            auto dma_indices = dma_rx_tx.inscribe(ctx);
-            
-            // Conditionally add NSS GPIO if provided
-            std::optional<std::size_t> nss_idx = std::nullopt;
-            if (nss_gpio.has_value()) {
-                nss_idx = ctx.template add<GPIODomain>(nss_gpio.value().e);
-            }
-            
-            Entry e{
-                .peripheral = peripheral,
-                .mode = mode,
-                .sck_gpio_idx = ctx.template add<GPIODomain>(sck_gpio.e),
-                .miso_gpio_idx = ctx.template add<GPIODomain>(miso_gpio.e),
-                .mosi_gpio_idx = ctx.template add<GPIODomain>(mosi_gpio.e),
-                .nss_gpio_idx = nss_idx,
-                .dma_rx_idx = dma_indices[0],
-                .dma_tx_idx = dma_indices[1],
-                .max_baudrate = max_baudrate,
-                .config = config
-            };
-
-            return ctx.template add<SPIDomain>(e);
         }
     };
 
