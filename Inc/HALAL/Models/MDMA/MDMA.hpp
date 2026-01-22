@@ -4,12 +4,15 @@
 #include "stm32h7xx_hal.h"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
+#include "HALAL/Models/MPU.hpp"
 #include <array>
 #include <tuple>
 #include <vector>
 #include <unordered_map>
 #include <type_traits>
 #include <utility>
+
+
 
 #ifdef MDMA
 #undef MDMA
@@ -141,24 +144,26 @@ private:
 };
 
     private:
+    static D1_NC MDMA_LinkNodeTypeDef internal_nodes[8];
+
     struct Instance{
     public:
         MDMA_HandleTypeDef handle;
         uint8_t id;
         volatile bool* done;
-        MDMA_LinkNodeTypeDef transfer_node;
+        MDMA_LinkNodeTypeDef* transfer_node;
 
         Instance()
             : handle{}
             , id(0U)
             , done(nullptr)
-            , transfer_node{}
+            , transfer_node(nullptr)
         {}
 
         Instance(MDMA_HandleTypeDef handle_,
                  uint8_t id_,
                  volatile bool* done_,
-                 MDMA_LinkNodeTypeDef transfer_node_)
+                 MDMA_LinkNodeTypeDef* transfer_node_)
             : handle(handle_)
             , id(id_)
             , done(done_)

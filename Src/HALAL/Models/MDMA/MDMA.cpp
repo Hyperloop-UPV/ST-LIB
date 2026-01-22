@@ -1,5 +1,7 @@
 #include "HALAL/Models/MDMA/MDMA.hpp"
 
+D1_NC MDMA_LinkNodeTypeDef MDMA::internal_nodes[8];
+
 #include <algorithm>
 
 std::bitset<8> MDMA::instance_free_map{};
@@ -97,7 +99,7 @@ void MDMA::inscribe(Instance& instance,uint8_t id)
     mdma_handle.Init.DestBlockAddressOffset = 0;
 
     MDMA_LinkNodeConfTypeDef nodeConfig{};
-    MDMA_LinkNodeTypeDef transfer_node{};
+    MDMA_LinkNodeTypeDef* transfer_node = &internal_nodes[id];
 
     nodeConfig.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
     nodeConfig.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
@@ -118,7 +120,7 @@ void MDMA::inscribe(Instance& instance,uint8_t id)
     nodeConfig.SrcAddress = reinterpret_cast<uint32_t>(nullptr);
     nodeConfig.DstAddress = reinterpret_cast<uint32_t>(nullptr);
 
-    const HAL_StatusTypeDef status = HAL_MDMA_LinkedList_CreateNode(&transfer_node, &nodeConfig);
+    const HAL_StatusTypeDef status = HAL_MDMA_LinkedList_CreateNode(transfer_node, &nodeConfig);
     if (status != HAL_OK)
     {
         ErrorHandler("Error creating linked list in MDMA");
@@ -218,11 +220,11 @@ void MDMA::transfer_data(uint8_t* source_address, uint8_t* destination_address, 
             Instance& instance = get_instance(i);
             instance.done = done;
 
-            instance.transfer_node.CSAR = reinterpret_cast<uint32_t>(source_address);
-            instance.transfer_node.CBNDTR = data_length;
-            instance.transfer_node.CDAR = reinterpret_cast<uint32_t>(destination_address);
+            instance.transfer_node->CSAR = reinterpret_cast<uint32_t>(source_address);
+            instance.transfer_node->CBNDTR = data_length;
+            instance.transfer_node->CDAR = reinterpret_cast<uint32_t>(destination_address);
 
-            prepare_transfer(instance, &instance.transfer_node);
+            prepare_transfer(instance, instance.transfer_node);
             return;
         }
         if(done)
