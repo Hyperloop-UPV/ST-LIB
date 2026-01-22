@@ -71,6 +71,7 @@ struct GPIODomain {
       return GPIO_SPEED_FREQ_VERY_HIGH;
     }
   }
+  // Note: AF mapping is inverted: AF0 -> 15, AF1 -> 14, ..., AF15 -> 0, it is staticly casted and inverted later
   enum class AlternateFunction : uint8_t {
     NO_AF = 20,
     AF0 = 15,
@@ -159,6 +160,14 @@ struct GPIODomain {
         return true;
       return ((1 << static_cast<uint8_t>(af)) & afs) != 0;
     }
+
+    constexpr bool operator==(const Pin &other) const {
+      return (port == other.port) && (pin == other.pin);
+    }
+
+    constexpr bool operator!=(const Pin &other) const {
+      return !(*this == other);
+    }
   };
 
   struct Entry {
@@ -181,10 +190,14 @@ struct GPIODomain {
       if (!pin.valid_af(af)) {
         compile_error("Alternate function not valid for this pin");
       }
+
+      if ((mode == OperationMode::ALT_PP || mode == OperationMode::ALT_OD) && af == AlternateFunction::NO_AF) {
+        compile_error("Alternate function must be specified for alternate modes");
+      }
     }
 
-    template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-      ctx.template add<GPIODomain>(e, this);
+    template <class Ctx> consteval std::size_t inscribe(Ctx &ctx) const {
+      return ctx.template add<GPIODomain>(e, this);
     }
   };
 
@@ -213,7 +226,7 @@ struct GPIODomain {
       GPIO_InitStruct.Pull = to_hal_pull(e.pull);
       GPIO_InitStruct.Speed = to_hal_speed(e.speed);
       if (e.mode == OperationMode::ALT_PP || e.mode == OperationMode::ALT_OD) {
-        GPIO_InitStruct.Alternate = static_cast<uint32_t>(e.af);
+        GPIO_InitStruct.Alternate = 15 - static_cast<uint32_t>(e.af); // AF mapping inversion
       }
 
       cfgs[i].init_data = std::make_tuple(e.port, GPIO_InitStruct);
@@ -246,7 +259,6 @@ struct GPIODomain {
     static inline std::array<Instance, N> instances{};
 
     static void init(std::span<const Config, N> cfgs) {
-      static_assert(N > 0);
       for (std::size_t i = 0; i < N; ++i) {
         const auto &e = cfgs[i];
         auto [port, gpio_init] = e.init_data;

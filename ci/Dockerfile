@@ -19,7 +19,7 @@ RUN echo "deb http://security.ubuntu.com/ubuntu focal-security main universe" > 
 # Install cubeclt (STM32CubeCLT)
 WORKDIR /tmp
 
-RUN git clone --depth 1 https://github.com/HyperloopUPV-H8/cubeclt.git && \
+RUN git clone --depth 1 https://github.com/Hyperloop-UPV/cubeclt.git && \
     cd cubeclt && \
     git lfs pull && \
     chmod +x ${CUBECLT_INSTALLER} && \

@@ -7,9 +7,10 @@
     "C_Cpp.clang_format_sortIncludes": true,
     "C_Cpp.intelliSenseCacheSize": 0,
     "files.associations": {
-      "mem.h": "c",
-      "tinydir.h": "c",
-      "dirent.h": "c"
+        "*.embeddedhtml": "html",
+        "mem.h": "c",
+        "tinydir.h": "c",
+        "dirent.h": "c",
+        "initializer_list": "cpp"
     }
-  }
-  
+}

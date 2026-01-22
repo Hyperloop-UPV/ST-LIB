@@ -4,6 +4,7 @@ else()
     set(STLIB_TEST_EXECUTABLE st-lib-test)
 endif()
 
+project( ${STLIB_TEST_EXECUTABLE})
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -14,7 +15,9 @@ FetchContent_MakeAvailable(googletest)
 message(STATUS "Generating test executable for ST-LIB")
 
 add_executable(${STLIB_TEST_EXECUTABLE}
-    # ${CMAKE_CURRENT_LIST_DIR}/Time/scheduler_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Time/scheduler_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Time/timer_wrapper_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Time/common_tests.cpp
 )
 
 set_target_properties(${STLIB_TEST_EXECUTABLE} PROPERTIES
@@ -29,6 +32,10 @@ target_link_libraries(
     GTest::gtest_main
     ${STLIB_LIBRARY}
 )
+
+if(MINGW OR CYGWIN)
+    target_link_options(${STLIB_TEST_EXECUTABLE} PRIVATE -static)
+endif()
 
 if(MINGW OR CYGWIN)
     target_link_options(${STLIB_TEST_EXECUTABLE} PRIVATE -static)

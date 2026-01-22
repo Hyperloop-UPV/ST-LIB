@@ -42,7 +42,7 @@ class ProtectionManager {
 
     static void set_id(Boards::ID id);
 
-    static void link_state_machine(StateMachine& general_state_machine,
+    static void link_state_machine(IStateMachine& general_state_machine,
                                    state_id fault_id);
 
     template <class Type, ProtectionType... Protector,
@@ -84,7 +84,7 @@ class ProtectionManager {
     static Boards::ID board_id;
     static vector<Protection> low_frequency_protections;
     static vector<Protection> high_frequency_protections;
-    static StateMachine* general_state_machine;
+    static IStateMachine* general_state_machine;
     static state_id fault_state_id;
 
     static Notification fault_notification;

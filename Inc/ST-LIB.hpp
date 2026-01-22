@@ -84,8 +84,12 @@ template <typename... Domains> struct BuildCtx {
 };
 
 using DomainsCtx = BuildCtx<GPIODomain, DigitalOutputDomain,
-                            DigitalInputDomain, MPUDomain, SdDomain 
+                            DigitalInputDomain, MPUDomain,
                             /*, ADCDomain, PWMDomain, ...*/>;
+using DomainsCtx = BuildCtx<MPUDomain, GPIODomain, TimerDomain,
+                            DigitalOutputDomain,
+                            DigitalInputDomain,
+                            SdDomain /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {
@@ -102,6 +106,7 @@ template <auto &...devs> struct Board {
 
   static consteval auto build() {
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
+    constexpr std::size_t timN = domain_size<TimerDomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mpuN = domain_size<MPUDomain>();
@@ -110,6 +115,7 @@ template <auto &...devs> struct Board {
 
     struct ConfigBundle {
       std::array<GPIODomain::Config, gpioN> gpio_cfgs;
+      std::array<TimerDomain::Config, timN> tim_cfgs;
       std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
       std::array<DigitalInputDomain::Config, dinN> din_cfgs;
       std::array<MPUDomain::Config, mpuN> mpu_cfgs;
@@ -120,6 +126,8 @@ template <auto &...devs> struct Board {
     return ConfigBundle{
         .gpio_cfgs =
             GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
+        .tim_cfgs =
+            TimerDomain::template build<timN>(ctx.template span<TimerDomain>()),
         .dout_cfgs = DigitalOutputDomain::template build<doutN>(
             ctx.template span<DigitalOutputDomain>()),
         .din_cfgs = DigitalInputDomain::template build<dinN>(
@@ -136,6 +144,7 @@ template <auto &...devs> struct Board {
 
   static void init() {
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
+    constexpr std::size_t timN = domain_size<TimerDomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mpuN = domain_size<MPUDomain>();
@@ -143,6 +152,7 @@ template <auto &...devs> struct Board {
     // ...
 
     GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
+    TimerDomain::Init<timN>::init(cfg.tim_cfgs);
     DigitalOutputDomain::Init<doutN>::init(cfg.dout_cfgs,
                                            GPIODomain::Init<gpioN>::instances);
     DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
