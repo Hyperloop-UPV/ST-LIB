@@ -22,6 +22,7 @@
 #include "HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 
 #include "HALAL/Services/Time/Time.hpp"
+#include "HALAL/Services/Time/Scheduler.hpp"
 #include "HALAL/Services/Time/RTC.hpp"
 
 #include "HALAL/Services/InputCapture/InputCapture.hpp"
