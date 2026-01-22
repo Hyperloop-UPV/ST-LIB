@@ -2,7 +2,7 @@
 
 #include "Protections/Notification.hpp"
 
-StateMachine* ProtectionManager::general_state_machine = nullptr;
+IStateMachine* ProtectionManager::general_state_machine = nullptr;
 Notification ProtectionManager::fault_notification = {
     ProtectionManager::fault_id, nullptr};
 Notification ProtectionManager::warning_notification = {
@@ -37,7 +37,7 @@ void ProtectionManager::set_id(Boards::ID board_id) {
     ProtectionManager::board_id = board_id;
 }
 
-void ProtectionManager::link_state_machine(StateMachine& general_state_machine,
+void ProtectionManager::link_state_machine(IStateMachine& general_state_machine,
                                            state_id fault_id) {
     ProtectionManager::general_state_machine = &general_state_machine;
     ProtectionManager::fault_state_id = fault_id;
@@ -49,13 +49,13 @@ void ProtectionManager::tcp_to_fault() {
 }
 
 void ProtectionManager::to_fault() {
-    if (general_state_machine->current_state != fault_state_id) {
+    if (general_state_machine->get_current_state_id() != fault_state_id) {
         fault_and_propagate();
     }
 }
 
 void ProtectionManager::external_to_fault() {
-    if (general_state_machine->current_state != fault_state_id) {
+    if (general_state_machine->get_current_state_id() != fault_state_id) {
         external_trigger = true;
         fault_and_propagate();
     }
