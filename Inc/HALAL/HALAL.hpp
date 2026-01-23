@@ -1,5 +1,8 @@
 #pragma once
 
+#include "HALAL/Models/GPIO.hpp"
+#include "HALAL/Models/Pin.hpp"
+
 #include "HALAL/Models/HALconfig/HALconfig.hpp"
 #include "HALAL/Models/DMA/DMA.hpp"
 
@@ -17,7 +20,8 @@
 #include "HALAL/Services/PWM/PhasedPWM/PhasedPWM.hpp"
 #include "HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 
-#include "HALAL/Services/Time/Time.hpp"
+#include "HALAL/Services/Time/TimerWrapper.hpp"
+#include "HALAL/Services/Time/Scheduler.hpp"
 #include "HALAL/Services/Time/RTC.hpp"
 
 #include "HALAL/Services/InputCapture/InputCapture.hpp"
@@ -33,10 +37,9 @@
 #include "HALAL/Services/FMAC/FMAC.hpp"
 
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
+#include "HALAL/Models/MPU.hpp"
 #include "HALAL/Services/InfoWarning/InfoWarning.hpp"
 #include "HALAL/Services/Watchdog/Watchdog.hpp"
-
-#include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
 
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"

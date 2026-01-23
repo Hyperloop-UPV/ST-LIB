@@ -8,6 +8,8 @@
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"
+
+#ifndef TESTING_ENV
 #ifndef SIM_ON
 #include "HALAL/Services/Time/Time.hpp"
 #include "HALAL/Services/Communication/UART/UART.hpp"
@@ -15,7 +17,8 @@
 #include "HALALMock/Services/Time/Time.hpp"
 #include "HALALMock/Services/Communication/UART/UART.hpp"
 #include "HALALMock/Services/Logger/Logger.hpp"
-#endif
+#endif // SIM_ON
+#endif // !defined(TESTING_ENV)
 
 class ErrorHandlerModel {
 private:
