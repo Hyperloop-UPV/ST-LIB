@@ -20,7 +20,6 @@
 
 #include <span>
 #include <array>
-#include <initializer_list>
 
 #include "ErrorHandler/ErrorHandler.hpp"
 
@@ -296,11 +295,11 @@ struct TimerDomain {
 
     static constexpr std::array<char, 8> EMPTY_TIMER_NAME = {0,0,0,0, 0,0,0,0};
 
-    template <typename... T>
     struct Timer {
         using domain = TimerDomain;
         Entry e;
 
+        template <typename... T>
         consteval Timer(TimerRequest request = TimerRequest::AnyGeneralPurpose, 
             TimerDomain::CountingMode counting_mode = CountingMode::UP, 
             std::array<char, 8> name = EMPTY_TIMER_NAME, uint32_t deadtime = 0, 
@@ -317,15 +316,21 @@ struct TimerDomain {
             e.polarity = polarity;
             e.negated_polarity = negated_polarity;
 
-            e.pin_count = sizeof...(pinargs);
-            if(e.pin_count > 4) {
+            if(sizeof...(pinargs) > 4) {
                 ST_LIB::compile_error("Max 4 pins per timer");
             }
+
             int i = 0;
-            ((e.pins[i++] = pinargs), ...);
+            ((this->e.pins[i++] = pinargs), ...);
+            for(; i < 4; i++) {
+                this->e.pins[i] = {
+                    .af = ST_LIB::TimerAF::None,
+                };
+            }
         }
 
-        // anything not initialized will be 0
+        // anything uninitialized will be 0
+        template <typename... T>
         consteval Timer(Entry e, T... pinargs) {
             static_assert((std::is_same_v<T, TimerPin> && ...), 
                   "All template arguments must be of type TimerPin");
@@ -336,16 +341,22 @@ struct TimerDomain {
             this->e.deadtime = e.deadtime;
             this->e.polarity = e.polarity;
             this->e.negated_polarity = e.negated_polarity;
-            e.pin_count = sizeof...(pinargs);
-            if(e.pin_count == 0) {
+            this->e.pin_count = sizeof...(pinargs);
+            if(sizeof...(pinargs) == 0) {
                 this->e.pin_count = e.pin_count;
                 this->e.pins = e.pins;
             } else {
-                if(e.pin_count > 4) {
+                if(sizeof...(pinargs) > 4) {
                     ST_LIB::compile_error("Max 4 pins per timer");
                 }
+
                 int i = 0;
-                ((e.pins[i++] = pinargs), ...);
+                ((this->e.pins[i++] = pinargs), ...);
+                for(; i < 4; i++) {
+                    this->e.pins[i] = {
+                        .af = ST_LIB::TimerAF::None,
+                    };
+                }
             }
         }
         
