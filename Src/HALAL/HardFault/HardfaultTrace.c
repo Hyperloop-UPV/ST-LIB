@@ -40,7 +40,7 @@ void Hard_fault_check(void){
         volatile HardFaultLog log;
         memcpy(&log,(void*)HF_FLASH_ADDR,sizeof(HardFaultLog));
         #ifdef DEBUG
-            __asm("bkpt 1");
+            __asm__ __volatile__("bkpt 1");
         #endif
         LED_init();
         while(1){
