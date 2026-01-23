@@ -54,28 +54,28 @@
 #define RAM_CODE __attribute__((section(".ram_code")))
 
 // Memory Bank Symbols from Linker
-extern "C" const uintptr_t __itcm_base;
-extern "C" const size_t __itcm_size;
-extern "C" const uintptr_t __dtcm_base;
-extern "C" const size_t __dtcm_size;
-extern "C" const uintptr_t __flash_base;
-extern "C" const size_t __flash_size;
-extern "C" const uintptr_t __ram_d1_base;
-extern "C" const size_t __ram_d1_size;
-extern "C" const uintptr_t __ram_d2_base;
-extern "C" const size_t __ram_d2_size;
-extern "C" const uintptr_t __ram_d3_base;
-extern "C" const size_t __ram_d3_size;
-extern "C" const uintptr_t __peripheral_base;
-extern "C" const size_t __peripheral_size;
+extern "C" const char __itcm_base;
+extern "C" const char __itcm_size;
+extern "C" const char __dtcm_base;
+extern "C" const char __dtcm_size;
+extern "C" const char __flash_base;
+extern "C" const char __flash_size;
+extern "C" const char __ram_d1_base;
+extern "C" const char __ram_d1_size;
+extern "C" const char __ram_d2_base;
+extern "C" const char __ram_d2_size;
+extern "C" const char __ram_d3_base;
+extern "C" const char __ram_d3_size;
+extern "C" const char __peripheral_base;
+extern "C" const char __peripheral_size;
 
 // MPU Non-Cached Section Symbols from Linker
-extern "C" const uintptr_t __mpu_d1_nc_start;
-extern "C" const uintptr_t __mpu_d1_nc_end;
-extern "C" const uintptr_t __mpu_d2_nc_start;
-extern "C" const uintptr_t __mpu_d2_nc_end;
-extern "C" const uintptr_t __mpu_d3_nc_start;
-extern "C" const uintptr_t __mpu_d3_nc_end;
+extern "C" const char __mpu_d1_nc_start;
+extern "C" const char __mpu_d1_nc_end;
+extern "C" const char __mpu_d2_nc_start;
+extern "C" const char __mpu_d2_nc_end;
+extern "C" const char __mpu_d3_nc_start;
+extern "C" const char __mpu_d3_nc_end;
 
 
 template <typename T>
@@ -366,42 +366,42 @@ struct MPUDomain {
 
         // Peripherals (Device, Buffered)
         // Guarded against speculative execution and cache
-        configure_region(__peripheral_base, __peripheral_size, MPU_REGION_NUMBER8,
+        configure_region(reinterpret_cast<uintptr_t>(&__peripheral_base), reinterpret_cast<size_t>(&__peripheral_size), MPU_REGION_NUMBER8,
                          MPU_TEX_LEVEL0, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_SHAREABLE, MPU_ACCESS_NOT_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // Flash (Normal, Cacheable)
         // TEX=1, C=1, B=0: Normal, Write-Through (Read optimized)
         // Not Shareable to allow full caching
-        configure_region(__flash_base, __flash_size, MPU_REGION_NUMBER1,
+        configure_region(reinterpret_cast<uintptr_t>(&__flash_base), reinterpret_cast<size_t>(&__flash_size), MPU_REGION_NUMBER1,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_NOT_BUFFERABLE);
 
         // DTCM (Normal, Cacheable)
         // Uses Normal memory attributes. TCM access is uncached by hardware, but "Normal" allows unaligned access.
-        configure_region(__dtcm_base, __dtcm_size, MPU_REGION_NUMBER10,
+        configure_region(reinterpret_cast<uintptr_t>(&__dtcm_base), reinterpret_cast<size_t>(&__dtcm_size), MPU_REGION_NUMBER10,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // ITCM (Normal, Cacheable)
-        configure_region(__itcm_base, __itcm_size, MPU_REGION_NUMBER11,
+        configure_region(reinterpret_cast<uintptr_t>(&__itcm_base), reinterpret_cast<size_t>(&__itcm_size), MPU_REGION_NUMBER11,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // D1 RAM Cached (Normal, WBWA)
         // TEX=1, C=1, B=1: Normal, Write-Back, Write-Allocate
         // Not Shareable ensures strict L1 utilization.
-        configure_region(__ram_d1_base, __ram_d1_size, MPU_REGION_NUMBER2,
+        configure_region(reinterpret_cast<uintptr_t>(&__ram_d1_base), reinterpret_cast<size_t>(&__ram_d1_size), MPU_REGION_NUMBER2,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // D2 RAM Cached (Normal, WBWA)
-        configure_region(__ram_d2_base, __ram_d2_size, MPU_REGION_NUMBER4,
+        configure_region(reinterpret_cast<uintptr_t>(&__ram_d2_base), reinterpret_cast<size_t>(&__ram_d2_size), MPU_REGION_NUMBER4,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // D3 RAM Cached (Normal, WBWA)
-        configure_region(__ram_d3_base, __ram_d3_size, MPU_REGION_NUMBER6,
+        configure_region(reinterpret_cast<uintptr_t>(&__ram_d3_base), reinterpret_cast<size_t>(&__ram_d3_size), MPU_REGION_NUMBER6,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
     }
