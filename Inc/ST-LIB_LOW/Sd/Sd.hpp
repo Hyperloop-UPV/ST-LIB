@@ -390,13 +390,14 @@ struct SdDomain {
                 target_freq = 400000; // For debugging, use 400 kHz
                 #endif // SD_DEBUG_ENABLE
 
-                PLL1_ClocksTypeDef pll1_clock = HAL_RCCEx_GetPLL1ClockFreq();
-                uint32_t sdmmc_clk = pll1_clock.PLL1_Q / 2; // SDMMC clock before divider
+                PLL1_ClocksTypeDef pll1_clock;
+                HAL_RCCEx_GetPLL1ClockFreq(&pll1_clock);
+                uint32_t sdmmc_clk = pll1_clock.PLL1_Q_Frequency / 2; // SDMMC clock before divider
                 uint32_t target_div = sdmmc_clk / target_freq; // Target divider
                 if (target_div < 2) target_div = 2; // Minimum divider is 2
-                if (target_div > 256) target_div = 256; // Maximum divider is 256
+                if (target_div > 2046) target_div = 2046; // Maximum divider is 2046
 
-                inst.hsd.Init.ClockDiv = target_div - 2; // ClockDiv is (divider - 2)
+                inst.hsd.Init.ClockDiv = target_div / 2;
 
                 if (cfg.peripheral == Peripheral::sdmmc1) {
                     g_sdmmc1_handle = &inst.hsd;

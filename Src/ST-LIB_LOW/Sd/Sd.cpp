@@ -1,5 +1,9 @@
 #include "ST-LIB_LOW/Sd/Sd.hpp"
 
+SD_HandleTypeDef* g_sdmmc1_handle = nullptr;
+SD_HandleTypeDef* g_sdmmc2_handle = nullptr;
+void* g_sdmmc1_instance_ptr = nullptr;
+void* g_sdmmc2_instance_ptr = nullptr;
 
 using namespace ST_LIB;
 
