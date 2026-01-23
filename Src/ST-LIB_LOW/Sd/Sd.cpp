@@ -230,12 +230,6 @@ HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(uin
 }
 
 
-SD_HandleTypeDef* g_sdmmc1_handle = nullptr;
-SD_HandleTypeDef* g_sdmmc2_handle = nullptr;
-
-void* g_sdmmc1_instance_ptr = nullptr;
-void* g_sdmmc2_instance_ptr = nullptr;
-
 extern "C" {
 
 void HAL_SD_MspInit(SD_HandleTypeDef* hsd) {
