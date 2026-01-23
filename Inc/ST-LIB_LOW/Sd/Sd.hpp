@@ -8,10 +8,11 @@
 #ifndef SD_HPP
 #define SD_HPP
 
+#include "stm32h7xx_hal.h"
+
+#include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/HALAL.hpp"
 #include "ST-LIB_LOW/DigitalInput2.hpp"
-#include "stm32h7xx_hal.h"
-#include "ErrorHandler/ErrorHandler.hpp"
 
 using ST_LIB::DigitalInputDomain;
 using ST_LIB::GPIODomain;
