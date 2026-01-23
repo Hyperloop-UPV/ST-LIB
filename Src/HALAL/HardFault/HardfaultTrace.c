@@ -1,4 +1,4 @@
-#include "HALAL/Benchmarking_toolkit/HardfaultTrace.h"
+#include "HALAL/HardFault/HardfaultTrace.h"
 #ifdef NUCLEO
 #define REPS 200000
 #endif
