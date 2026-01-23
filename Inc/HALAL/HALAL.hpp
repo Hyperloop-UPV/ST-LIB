@@ -37,6 +37,7 @@
 #include "HALAL/Services/FMAC/FMAC.hpp"
 
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
+#include "HALAL/Models/MPU.hpp"
 #include "HALAL/Services/InfoWarning/InfoWarning.hpp"
 #include "HALAL/Services/Watchdog/Watchdog.hpp"
 
