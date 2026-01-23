@@ -738,8 +738,6 @@ struct SPIDomain {
                     spi_number = 6;
                 }
 
-                spi_instances[spi_number - 1] = &instances[i];
-
                 auto& hspi = instances[i].hspi;
                 hspi.Instance = instances[i].instance;
 
@@ -753,6 +751,10 @@ struct SPIDomain {
                 // Link back from DMA to SPI (required by HAL)
                 dma_rx.dma.Parent = &hspi;
                 dma_tx.dma.Parent = &hspi;
+
+                HAL_DMA_Init(hspi.hdmarx);
+                HAL_DMA_Init(hspi.hdmatx);
+
                 auto& init = hspi.Init;
                 if (e.mode == SPIMode::MASTER) {
                     init.Mode = SPI_MODE_MASTER;
@@ -820,6 +822,21 @@ struct SPIDomain {
                 } else if (peripheral == SPIPeripheral::spi6) {
                     HAL_NVIC_SetPriority(SPI6_IRQn, 1, 0);
                     HAL_NVIC_EnableIRQ(SPI6_IRQn);
+                }
+
+                // Map instance pointer
+                if (peripheral == SPIPeripheral::spi1) {
+                    spi_instances[0] = &instances[i];
+                } else if (peripheral == SPIPeripheral::spi2) {
+                    spi_instances[1] = &instances[i];
+                } else if (peripheral == SPIPeripheral::spi3) {
+                    spi_instances[2] = &instances[i];
+                } else if (peripheral == SPIPeripheral::spi4) {
+                    spi_instances[3] = &instances[i];
+                } else if (peripheral == SPIPeripheral::spi5) {
+                    spi_instances[4] = &instances[i];
+                } else if (peripheral == SPIPeripheral::spi6) {
+                    spi_instances[5] = &instances[i];
                 }
             }
         }

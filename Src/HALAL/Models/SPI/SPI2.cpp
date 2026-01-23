@@ -13,8 +13,6 @@ uint32_t ST_LIB::SPIDomain::calculate_prescaler(uint32_t src_freq, uint32_t max_
     return get_prescaler_flag(prescaler);
 }
 
-ST_LIB::SPIDomain::Instance* spi_instances[ST_LIB::SPIDomain::max_instances];
-
 extern "C" {
 
 /**
@@ -80,6 +78,8 @@ void SPI6_IRQHandler(void) {
  */
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
+    auto& spi_instances = ST_LIB::SPIDomain::spi_instances;
+
     ST_LIB::SPIDomain::Instance* inst = nullptr;
     if (spi_instances[0] != nullptr && hspi == &spi_instances[0]->hspi) {
         inst = spi_instances[0];
@@ -112,6 +112,8 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 }
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
+    auto& spi_instances = ST_LIB::SPIDomain::spi_instances;
+
     uint32_t error_code = hspi->ErrorCode;
     uint32_t inst_idx = 0;
     if (spi_instances[0] != nullptr && hspi == &spi_instances[0]->hspi) {
