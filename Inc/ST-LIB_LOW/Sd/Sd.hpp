@@ -383,8 +383,8 @@ struct SdDomain {
                 inst.hsd.Init.ClockEdge = SDMMC_CLOCK_EDGE_FALLING;
                 inst.hsd.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
                 inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_4B;
-                inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-                uint32_t target_freq = 25000000; // Target frequency 25 MHz
+                inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_ENABLE;
+                uint32_t target_freq = 50000000; // Target frequency 50 MHz
 
                 #ifdef SD_DEBUG_ENABLE
                 inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_1B; // For debugging, use 1-bit bus
@@ -393,12 +393,17 @@ struct SdDomain {
 
                 PLL1_ClocksTypeDef pll1_clock;
                 HAL_RCCEx_GetPLL1ClockFreq(&pll1_clock);
-                uint32_t sdmmc_clk = pll1_clock.PLL1_Q_Frequency / 2; // SDMMC clock before divider
-                uint32_t target_div = sdmmc_clk / target_freq; // Target divider
-                if (target_div < 2) target_div = 2; // Minimum divider is 2
-                if (target_div > 2046) target_div = 2046; // Maximum divider is 2046
+                uint32_t sdmmc_clk = pll1_clock.PLL1_Q_Frequency;
+                uint32_t target_div = (sdmmc_clk + target_freq - 1) / target_freq; // Target divider rounded up (target_freq is the maximum frequency)
+                uint32_t translated_clock_div; // sdmmc_ker_ck / [2 * CLKDIV]
+                if (target_div == 0) translated_clock_div = 0; // Special case for 0 (no division)
+                else translated_clock_div = (target_div+1) / 2; // Round up to ensure frequency is not higher than target
 
-                inst.hsd.Init.ClockDiv = target_div / 2;
+                if (translated_clock_div > 1023) {
+                    ErrorHandler("SDMMC clock divider too high, cannot achieve target frequency with current PLL1 Q clock");
+                }
+
+                inst.hsd.Init.ClockDiv = translated_clock_div;
 
                 if (cfg.peripheral == Peripheral::sdmmc1) {
                     g_sdmmc1_handle = &inst.hsd;
