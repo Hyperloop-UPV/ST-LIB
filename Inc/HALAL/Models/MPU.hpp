@@ -341,6 +341,9 @@ struct MPUDomain {
 
     static void configure_dynamic_region(uintptr_t start, uintptr_t end, uint8_t region_num) {
         if (end <= start) return; 
+        // Dx NC (Normal, Non-Cacheable)
+        // TEX=1, C=0, B=0: Normal, Non-Cacheable
+        // Shareable since it can be accessed by multiple masters (CPU, DMA, etc)
         configure_region(start, end - start, region_num, 
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_SHAREABLE, MPU_ACCESS_NOT_CACHEABLE, MPU_ACCESS_NOT_BUFFERABLE);
@@ -371,39 +374,44 @@ struct MPUDomain {
                          MPU_ACCESS_SHAREABLE, MPU_ACCESS_NOT_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // Flash (Normal, Cacheable)
-        // TEX=1, C=1, B=0: Normal, Write-Through (Read optimized)
+        // TEX=0, C=1, B=0: Normal, Write-Through, No Read-Allocate (Read optimized)
         // Not Shareable to allow full caching
         configure_region(reinterpret_cast<uintptr_t>(&__flash_base), reinterpret_cast<size_t>(&__flash_size), MPU_REGION_NUMBER1,
-                         MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
+                         MPU_TEX_LEVEL0, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_NOT_BUFFERABLE);
 
         // DTCM (Normal, Cacheable)
-        // Uses Normal memory attributes. TCM access is uncached by hardware, but "Normal" allows unaligned access.
+        // TEX=1, C=1, B=1: Normal, Write-Back, Write and Read Allocate
         configure_region(reinterpret_cast<uintptr_t>(&__dtcm_base), reinterpret_cast<size_t>(&__dtcm_size), MPU_REGION_NUMBER10,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
                          MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // ITCM (Normal, Cacheable)
+        // TEX=0, C=1, B=0: Normal, Write-Through, No Read-Allocate (Read optimized)
         configure_region(reinterpret_cast<uintptr_t>(&__itcm_base), reinterpret_cast<size_t>(&__itcm_size), MPU_REGION_NUMBER11,
-                         MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
-                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
+                         MPU_TEX_LEVEL0, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_ENABLE,
+                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_NOT_BUFFERABLE);
 
         // D1 RAM Cached (Normal, WBWA)
         // TEX=1, C=1, B=1: Normal, Write-Back, Write-Allocate
-        // Not Shareable ensures strict L1 utilization.
+        // Shareable since it can be accessed by multiple masters (CPU, DMA, etc)
         configure_region(reinterpret_cast<uintptr_t>(&__ram_d1_base), reinterpret_cast<size_t>(&__ram_d1_size), MPU_REGION_NUMBER2,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
-                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
+                         MPU_ACCESS_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // D2 RAM Cached (Normal, WBWA)
+        // TEX=1, C=1, B=1: Normal, Write-Back, Write-Allocate
+        // Shareable since it can be accessed by multiple masters (CPU, DMA, etc)
         configure_region(reinterpret_cast<uintptr_t>(&__ram_d2_base), reinterpret_cast<size_t>(&__ram_d2_size), MPU_REGION_NUMBER4,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
-                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
+                         MPU_ACCESS_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
 
         // D3 RAM Cached (Normal, WBWA)
+        // TEX=1, C=1, B=1: Normal, Write-Back, Write-Allocate
+        // Shareable since it can be accessed by multiple masters (CPU, DMA, etc)
         configure_region(reinterpret_cast<uintptr_t>(&__ram_d3_base), reinterpret_cast<size_t>(&__ram_d3_size), MPU_REGION_NUMBER6,
                          MPU_TEX_LEVEL1, MPU_REGION_FULL_ACCESS, MPU_INSTRUCTION_ACCESS_DISABLE,
-                         MPU_ACCESS_NOT_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
+                         MPU_ACCESS_SHAREABLE, MPU_ACCESS_CACHEABLE, MPU_ACCESS_BUFFERABLE);
     }
 
     static void configure_region(uintptr_t base, size_t size, uint8_t region_num, 
