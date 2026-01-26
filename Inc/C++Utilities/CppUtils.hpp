@@ -3,7 +3,6 @@
 #include "CppImports.hpp"
 #include "RingBuffer.hpp"
 #include "Stack.hpp"
-#include "Pool.hpp"
 
 
 namespace chrono = std::chrono;
