@@ -50,10 +50,10 @@ class MDMA{
             return;
         }
         
-        if (destination_address >= 0x24000000 && destination_address < 0x24050000) {
-            node.CTBR &= ~MDMA_CTBR_DBUS;
-        } else {
+        if (destination_address >= 0x40000000 && destination_address < 0x60000000) {
             node.CTBR |= MDMA_CTBR_DBUS;
+        } else {
+            node.CTBR &= ~MDMA_CTBR_DBUS;
         }
     }
     void set_source(void* source) { 
@@ -65,10 +65,10 @@ class MDMA{
             return;
         }
 
-        if (source_address >= 0x24000000 && source_address < 0x24050000) {
-            node.CTBR &= ~MDMA_CTBR_SBUS;
+        if (source_address >= 0x40000000 && source_address < 0x60000000) {
+            node.CTBR |= MDMA_CTBR_SBUS;
         } else {
-             node.CTBR |= MDMA_CTBR_SBUS;
+             node.CTBR &= ~MDMA_CTBR_SBUS;
         }
     }
     auto get_node() -> MDMA_LinkNodeTypeDef* { return &node; }
