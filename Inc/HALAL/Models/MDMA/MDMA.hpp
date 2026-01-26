@@ -105,7 +105,12 @@ private:
         uint32_t source_inc;
         uint32_t dest_inc;
 
-        switch(static_cast<uint32_t>(size)) {
+        size_t effective_size = size;
+        if (effective_size == 2 && ((reinterpret_cast<uintptr_t>(src) | reinterpret_cast<uintptr_t>(dst)) & 1)) effective_size = 1; // Odd address, so fallback to byte-wise
+        else if (effective_size == 4 && ((reinterpret_cast<uintptr_t>(src) | reinterpret_cast<uintptr_t>(dst)) & 3)) effective_size = 1; // Not word-aligned, so fallback to byte-wise
+        else if (effective_size == 8 && ((reinterpret_cast<uintptr_t>(src) | reinterpret_cast<uintptr_t>(dst)) & 7)) effective_size = 1; // Not doubleword-aligned, so fallback to byte-wise
+
+        switch(static_cast<uint32_t>(effective_size)) {
             case 2:
                 source_data_size = MDMA_SRC_DATASIZE_HALFWORD;
                 dest_data_size = MDMA_DEST_DATASIZE_HALFWORD;
