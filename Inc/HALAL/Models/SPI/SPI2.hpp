@@ -493,53 +493,155 @@ struct SPIDomain {
         /**
          * @brief Sends data over SPI in blocking mode.
          */
-        bool send(span<const uint8_t> data) {
-            auto error_code = HAL_SPI_Transmit(&spi_instance.hspi, data.data(), data.size(), 10);
+        template <typename E, size_t S>
+        bool send(span<E, S> data) {
+            auto error_code = HAL_SPI_Transmit(&spi_instance.hspi, (uint8_t*)data.data(), data.size(), 10);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends a trivially copyable data type over SPI in blocking mode.
+         */
+        template <typename T>
+        bool send(const T& data) requires std::is_trivially_copyable_v<T> {
+            auto error_code = HAL_SPI_Transmit(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&data), sizeof(T), 10);
             return check_error_code(error_code);
         }
         
         /**
          * @brief Receives data over SPI in blocking mode.
          */
-        bool receive(span<uint8_t> data) {
-            auto error_code = HAL_SPI_Receive(&spi_instance.hspi, data.data(), data.size(), 10);
+        template <typename E, size_t S>
+        bool receive(span<E, S> data) {
+            auto error_code = HAL_SPI_Receive(&spi_instance.hspi, (uint8_t*)data.data(), data.size(), 10);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Receives a trivially copyable data type over SPI in blocking mode.
+         */
+        template <typename T>
+        bool receive(T& data) requires std::is_trivially_copyable_v<T> {
+            auto error_code = HAL_SPI_Receive(&spi_instance.hspi, reinterpret_cast<uint8_t*>(&data), sizeof(T), 10);
             return check_error_code(error_code);
         }
 
         /**
          * @brief Sends and receives data over SPI in blocking mode.
          */
-        bool transceive(span<const uint8_t> tx_data, span<uint8_t> rx_data) {
-            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, tx_data.data(), rx_data.data(), tx_data.size(), 10);
+        template <typename E1, size_t S1, typename E2, size_t S2>
+        bool transceive(span<E1, S1> tx_data, span<E2, S2> rx_data) {
+            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, (uint8_t*)tx_data.data(), (uint8_t*)rx_data.data(), std::min(tx_data.size(), rx_data.size()), 10);
             return check_error_code(error_code);
         }
 
+        /**
+         * @brief Sends and receives a trivially copyable data type over SPI in blocking mode.
+         */
+        template <typename E, size_t S, typename T>
+        bool transceive(span<E, S> tx_data, T& rx_data) requires std::is_trivially_copyable_v<T> {
+            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, (uint8_t*)tx_data.data(), reinterpret_cast<uint8_t*>(&rx_data), std::min(tx_data.size(), sizeof(T)), 10);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends and receives a trivially copyable data type over SPI in blocking mode.
+         */
+        template <typename T, typename E, size_t S>
+        bool transceive(const T& tx_data, span<E, S> rx_data) requires std::is_trivially_copyable_v<T> {
+            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), (uint8_t*)rx_data.data(), std::min(sizeof(T), rx_data.size()), 10);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends and receives a trivially copyable data type over SPI in blocking mode.
+         */
+        template <typename T1, typename T2>
+        bool transceive(const T1& tx_data, T2& rx_data) requires (std::is_trivially_copyable_v<T1> && std::is_trivially_copyable_v<T2>) {
+            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), reinterpret_cast<uint8_t*>(&rx_data), std::min(sizeof(T1), sizeof(T2)), 10);
+            return check_error_code(error_code);
+        }
 
         /**
          * @brief Sends data over SPI using DMA, uses an optional operation flag to signal completion.
          */
-        bool send_DMA(span<const uint8_t> data, volatile bool* operation_flag = nullptr) {
+        template <typename E, size_t S>
+        bool send_DMA(span<E, S> data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
-            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, data.data(), data.size());
+            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, (uint8_t*)data.data(), data.size());
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends a trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         */
+        template <typename T>
+        bool send_DMA(const T& data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+            spi_instance.operation_flag = operation_flag;
+            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&data), sizeof(T));
             return check_error_code(error_code);
         }
 
         /**
          * @brief Receives data over SPI using DMA, uses an optional operation flag to signal completion.
          */
-        bool receive_DMA(span<uint8_t> data, volatile bool* operation_flag = nullptr) {
+        template <typename E, size_t S>
+        bool receive_DMA(span<E, S> data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
-            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, data.data(), data.size());
+            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, (uint8_t*)data.data(), data.size());
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Receives a trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         */
+        template <typename T>
+        bool receive_DMA(T& data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+            spi_instance.operation_flag = operation_flag;
+            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, reinterpret_cast<uint8_t*>(&data), sizeof(T));
             return check_error_code(error_code);
         }
 
         /**
          * @brief Sends and receives data over SPI using DMA, uses an optional operation flag to signal completion.
          */
-        bool transceive_DMA(span<const uint8_t> tx_data, span<uint8_t> rx_data, volatile bool* operation_flag = nullptr) {
+        template <typename E1, size_t S1, typename E2, size_t S2>
+        bool transceive_DMA(span<E1, S1> tx_data, span<E2, S2> rx_data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(tx_data.size(), rx_data.size());
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, tx_data.data(), rx_data.data(), size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), (uint8_t*)rx_data.data(), size);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends a span and receives a trivially copyable type over SPI using DMA, uses an optional operation flag to signal completion.
+         */
+        template <typename E, size_t S, typename T>
+        bool transceive_DMA(span<E, S> tx_data, T& rx_data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+            spi_instance.operation_flag = operation_flag;
+            auto size = std::min(tx_data.size(), sizeof(T));
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), reinterpret_cast<uint8_t*>(&rx_data), size);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends a trivially copyable type and receives a span over SPI using DMA, uses an optional operation flag to signal completion.
+         */
+        template <typename T, typename E, size_t S>
+        bool transceive_DMA(const T& tx_data, span<E, S> rx_data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+            spi_instance.operation_flag = operation_flag;
+            auto size = std::min(sizeof(T), rx_data.size());
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), (uint8_t*)rx_data.data(), size);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends and receives a trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         */
+        template <typename T1, typename T2>
+        bool transceive_DMA(const T1& tx_data, T2& rx_data, volatile bool* operation_flag = nullptr) requires (std::is_trivially_copyable_v<T1> && std::is_trivially_copyable_v<T2>) {
+            spi_instance.operation_flag = operation_flag;
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), reinterpret_cast<uint8_t*>(&rx_data), std::min(sizeof(T1), sizeof(T2)));
             return check_error_code(error_code);
         }
 
@@ -567,28 +669,84 @@ struct SPIDomain {
         /**
          * @brief Listens for data over SPI using DMA, uses an optional operation flag to signal completion.
          */
-        bool listen(span<uint8_t> data, volatile bool* operation_flag = nullptr) {
+        template <typename E, size_t S>
+        bool listen(span<E, S> data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
-            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, data.data(), data.size());
+            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, (uint8_t*)data.data(), data.size());
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Listens for trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         */
+        template <typename T>
+        bool listen(T& data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+            spi_instance.operation_flag = operation_flag;
+            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, reinterpret_cast<uint8_t*>(&data), sizeof(T));
             return check_error_code(error_code);
         }
 
         /**
          * @brief Arms the SPI to send data over DMA when requested, uses an optional operation flag to signal completion.
          */
-        bool arm(span<const uint8_t> tx_data, volatile bool* operation_flag = nullptr) {
+        template <typename E, size_t S>
+        bool arm(span<E, S> tx_data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
-            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, tx_data.data(), tx_data.size());
+            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), tx_data.size());
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Arms the SPI to send a trivially copyable data type over DMA when requested, uses an optional operation flag to signal completion.
+         */
+        template <typename T>
+        bool arm(const T& data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+            spi_instance.operation_flag = operation_flag;
+            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&data), sizeof(T));
             return check_error_code(error_code);
         }
 
         /**
          * @brief Sends and receives data over SPI using DMA, uses an optional operation flag to signal completion.
          */
-        bool transceive(span<const uint8_t> tx_data, span<uint8_t> rx_data, volatile bool* operation_flag = nullptr) {
+        template <typename E1, size_t S1, typename E2, size_t S2>
+        bool transceive(span<E1, S1> tx_data, span<E2, S2> rx_data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(tx_data.size(), rx_data.size());
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, tx_data.data(), rx_data.data(), size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), (uint8_t*)rx_data.data(), size);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends a span and receives a trivially copyable type over SPI using DMA, uses an optional operation flag to signal completion.
+         */
+        template <typename E, size_t S, typename T>
+        bool transceive(span<E, S> tx_data, T& rx_data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+            spi_instance.operation_flag = operation_flag;
+            auto size = std::min(tx_data.size(), sizeof(T));
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), reinterpret_cast<uint8_t*>(&rx_data), size);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends a trivially copyable type and receives a span over SPI using DMA, uses an optional operation flag to signal completion.
+         */
+        template <typename T, typename E, size_t S>
+        bool transceive(const T& tx_data, span<E, S> rx_data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+            spi_instance.operation_flag = operation_flag;
+            auto size = std::min(sizeof(T), rx_data.size());
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), (uint8_t*)rx_data.data(), size);
+            return check_error_code(error_code);
+        }
+
+        /**
+         * @brief Sends and receives a trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         */
+        template <typename T1, typename T2>
+        bool transceive(const T1& tx_data, T2& rx_data, volatile bool* operation_flag = nullptr) requires (std::is_trivially_copyable_v<T1> && std::is_trivially_copyable_v<T2>) {
+            spi_instance.operation_flag = operation_flag;
+            auto size = std::min(sizeof(T1), sizeof(T2));
+            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), reinterpret_cast<uint8_t*>(&rx_data), size);
             return check_error_code(error_code);
         }
 
