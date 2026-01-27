@@ -288,7 +288,7 @@ struct TimerDomain {
             switch(af) {
                 case TimerAF::None: return GPIODomain::OperationMode::INPUT;
 
-                case TimerAF::PWM: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
+                case TimerAF::PWM: return GPIODomain::OperationMode::ALT_PP;
                 case TimerAF::InputCapture: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
                 
                 case TimerAF::BreakInput: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
@@ -300,13 +300,13 @@ struct TimerDomain {
         static consteval GPIODomain::Pull get_pull(ST_LIB::TimerAF af)
         {
             switch(af) {
-                case TimerAF::None: return GPIODomain::Pull::Up;
+                case TimerAF::None: return GPIODomain::Pull::None;
 
-                case TimerAF::PWM: return GPIODomain::Pull::Up;
+                case TimerAF::PWM: return GPIODomain::Pull::None;
                 case TimerAF::InputCapture: return GPIODomain::Pull::Up;
                 
-                case TimerAF::BreakInput: return GPIODomain::Pull::Up;
-                case TimerAF::BreakInputCompare: return GPIODomain::Pull::Up;
+                case TimerAF::BreakInput: return GPIODomain::Pull::None;
+                case TimerAF::BreakInputCompare: return GPIODomain::Pull::None;
             }
         }
 
@@ -316,7 +316,7 @@ struct TimerDomain {
             switch(af) {
                 case TimerAF::None: return GPIODomain::Speed::Low;
 
-                case TimerAF::PWM: return GPIODomain::Speed::High;
+                case TimerAF::PWM: return GPIODomain::Speed::Medium;
                 case TimerAF::InputCapture: return GPIODomain::Speed::High;
                 
                 case TimerAF::BreakInput: return GPIODomain::Speed::Medium;
