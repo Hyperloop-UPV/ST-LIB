@@ -741,6 +741,14 @@ struct SPIDomain {
 
         SPIWrapper(Instance &instance) : spi_instance{instance} {}
 
+        void set_software_nss(bool selected) requires (device_request.config.nss_mode == SPIConfigTypes::NSSMode::SOFTWARE) {
+            if (selected) {
+               CLEAR_BIT(spi_instance.instance->CR1, SPI_CR1_SSI);
+            } else {
+               SET_BIT(spi_instance.instance->CR1, SPI_CR1_SSI);
+            }
+        }
+
         /**
          * @brief Listens for data over SPI using DMA, uses an optional operation flag to signal completion.
          */
