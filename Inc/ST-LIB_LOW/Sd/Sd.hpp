@@ -123,8 +123,8 @@ struct SdDomain {
         consteval std::size_t inscribe(Ctx &ctx) const {
             Entry local_e = e;
 
-            local_e.mpu_buffer0_idx = ctx.template add<MPUDomain>(buffer0.e, this);
-            local_e.mpu_buffer1_idx = ctx.template add<MPUDomain>(buffer1.e, this);
+            local_e.mpu_buffer0_idx = buffer0.inscribe(ctx);
+            local_e.mpu_buffer1_idx = buffer1.inscribe(ctx);
 
             if (cd.has_value()) {
                 local_e.cd_pin_idx = {cd.value().first.inscribe(ctx), cd.value().second};
