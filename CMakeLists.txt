@@ -12,7 +12,7 @@ if (NOT PROJECT_IS_TOP_LEVEL)
 endif()
 
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
-option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
+option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" ON)
 
 message(STATUS "${PROJECT_NAME} Ethernet: ${USE_ETHERNET}")
 message(STATUS "${PROJECT_NAME} Nucleo:   ${TARGET_NUCLEO}")
