@@ -393,18 +393,21 @@ struct TimerWrapper {
         } else ST_LIB::compile_error("Unknown timer channel, there are only 6 channels [1..6]");
     }
 
-    static consteval size_t get_CCR_offset(const ST_LIB::TimerChannel ch) {
-        switch(ch) {
-            case TimerChannel::CHANNEL_1: return offsetof(TIM_TypeDef, CCR1);
-            case TimerChannel::CHANNEL_2: return offsetof(TIM_TypeDef, CCR2);
-            case TimerChannel::CHANNEL_3: return offsetof(TIM_TypeDef, CCR3);
-            case TimerChannel::CHANNEL_4: return offsetof(TIM_TypeDef, CCR4);
-            case TimerChannel::CHANNEL_5: return offsetof(TIM_TypeDef, CCR5);
-            case TimerChannel::CHANNEL_6: return offsetof(TIM_TypeDef, CCR6);
-
-            default: ST_LIB::compile_error("unreachable"); 
-                return 0;
-        }
+    template<ST_LIB::TimerChannel ch>
+    inline void set_capture_compare(uint16_t val) {
+        if constexpr (ch == TimerChannel::CHANNEL_1) {
+            instance.tim->CCR1 = val;
+        } else if constexpr(ch == TimerChannel::CHANNEL_2) {
+            instance.tim->CCR2 = val;
+        } else if constexpr(ch == TimerChannel::CHANNEL_3) {
+            instance.tim->CCR3 = val;
+        } else if constexpr(ch == TimerChannel::CHANNEL_4) {
+            instance.tim->CCR4 = val;
+        } else if constexpr(ch == TimerChannel::CHANNEL_5) {
+            instance.tim->CCR5 = val;
+        } else if constexpr(ch == TimerChannel::CHANNEL_6) {
+            instance.tim->CCR6 = val;
+        } else ST_LIB::compile_error("Unknown timer channel, there are only 6 channels [1..6]");
     }
 
     // leftover from old TimerPeripheral, maybe this was useful?

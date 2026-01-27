@@ -113,6 +113,20 @@ public:
             timer->counter_enable();
         }
 
+        if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_1) {
+            SET_BIT(timer->instance.tim->CCER, TIM_CCER_CC1E);
+        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_2) {
+            SET_BIT(timer->instance.tim->CCER, TIM_CCER_CC2E);
+        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_3) {
+            SET_BIT(timer->instance.tim->CCER, TIM_CCER_CC3E);
+        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_4) {
+            SET_BIT(timer->instance.tim->CCER, TIM_CCER_CC4E);
+        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_5) {
+            SET_BIT(timer->instance.tim->CCER, TIM_CCER_CC5E);
+        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_6) {
+            SET_BIT(timer->instance.tim->CCER, TIM_CCER_CC6E);
+        }
+
         this->is_on = true;
     }
 
@@ -146,7 +160,7 @@ public:
     void set_duty_cycle(float duty_cycle) {
         uint16_t raw_duty = (uint16_t)((float)timer->instance.tim->ARR / 200.0f * duty_cycle);
         //__HAL_TIM_SET_COMPARE(timer->instance.hal_tim, pin.channel, raw_duty);
-        *(uint16_t*)((uint8_t*)(timer->instance.tim) + timer->get_CCR_offset(pin.channel)) = raw_duty;
+        timer->template set_capture_compare<pin.channel>(raw_duty);
         this->duty_cycle = duty_cycle;
     }
 
@@ -170,7 +184,7 @@ public:
         //set_duty_cycle(duty_cycle);
         uint16_t raw_duty = (uint16_t)((float)timer->instance.tim->ARR / 200.0f * duty_cycle);
         //__HAL_TIM_SET_COMPARE(timer->instance.hal_tim, pin.channel, raw_duty);
-        *(uint16_t*)((uint8_t*)(timer->instance.tim) + timer->get_CCR_offset(pin.channel)) = raw_duty;
+        timer->template set_capture_compare<pin.channel>(raw_duty);
         this->duty_cycle = duty_cycle;
     }
 
