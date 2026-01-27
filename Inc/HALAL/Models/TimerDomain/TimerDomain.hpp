@@ -550,6 +550,8 @@ struct TimerDomain {
 
                 rcc_enable_timer(tim);
 
+                tim->PSC = 5; // was default in TimerPeripheral.cpp
+
                 Instance *inst = &instances[i];
                 inst->tim = tim;
                 inst->hal_tim = handle;
