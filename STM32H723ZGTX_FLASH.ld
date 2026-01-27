@@ -35,6 +35,7 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
+_sstack = ORIGIN(DTCMRAM);
 _estack = ORIGIN(DTCMRAM) + LENGTH(DTCMRAM);    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM/DTCM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
@@ -82,6 +83,8 @@ SECTIONS
   .text :
   {
     . = ALIGN(4);
+    _stext = .;
+
     *(.text)           /* .text sections (code) */
     *(.text*)          /* .text* sections (code) */
     *(.glue_7)         /* glue arm to thumb code */
@@ -103,6 +106,14 @@ SECTIONS
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
     . = ALIGN(4);
   } >FLASH
+
+  .hardfault_stack (NOLOAD) : /*Stack memory to avoid memfault inside hardfault handler*/
+  {
+    . = ALIGN(8);
+    _hf_stack_start = .;
+    . += 0x400;        /* 1 KB */
+    _hf_stack_end = .;
+  } >DTCMRAM
 
   .ARM.extab (READONLY): { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
   .ARM (READONLY): {
@@ -184,6 +195,13 @@ SECTIONS
     the sections below it would try to be placed afterwards
     thus overflowing the FLASH
   */
+
+  .hardfault_log 0x080C0000 :
+  {
+    KEEP(*(.hardfault_log))
+    . = . + 0x200;
+  } >FLASH
+
   .metadata_pool :
   {
   	. = ABSOLUTE(0x080DFD00);
@@ -192,6 +210,7 @@ SECTIONS
     KEEP(*(.metadata_pool))
     . += 0x100;
   } >FLASH
+
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss (NOLOAD) :
