@@ -208,13 +208,6 @@ SECTIONS
     __bss_end__ = _ebss;
   } >DTCMRAM
 
-  .mpu_ram_d1_nc :
-  {
-    . = ALIGN(32);
-    *(.mpu_ram_d1_nc)
-    . = ALIGN(32);
-  } >RAM_D1
-
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
   {
