@@ -282,7 +282,6 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<COMPILE_LANGUAGE:C>:-w>
 
   $<$<COMPILE_LANGUAGE:CXX>:-Wall>
-  $<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>
   $<$<COMPILE_LANGUAGE:CXX>:-Werror>
   $<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-zero-variadic-macro-arguments>
   $<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>
