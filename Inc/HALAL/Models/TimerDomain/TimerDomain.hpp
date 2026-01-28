@@ -864,9 +864,6 @@ TimerDomain::Timer::get_gpio_af(ST_LIB::TimerRequest req, ST_LIB::TimerPin pin)
             (tim_pins[(int)req].pins[j].use == BreakInputCompare_1 || tim_pins[(int)req].pins[j].use == BreakInputCompare_2)))
         {
             found = true;
-            // TODO: GPIO operation mode
-            // TODO: GPIO Pull
-            // TODO: GPIO Speed
             return tim_pins[(int)req].pins[j].af;
         }
     }
