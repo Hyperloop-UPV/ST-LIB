@@ -163,7 +163,7 @@ public:
         this->duty_cycle = duty_cycle;
     }
 
-    void set_frequency(uint32_t frequency) {
+    void set_frequency_quick(uint32_t frequency) {
         if(is_center_aligned) {
             frequency = 2*frequency;
         }
@@ -171,6 +171,10 @@ public:
         timer->instance.tim->ARR = (timer->get_frequency() / (timer->instance.tim->PSC + 1)) / frequency;
         
         set_duty_cycle(duty_cycle);
+    }
+
+    void set_frequency(uint32_t frequency) {
+        
     }
 
     void configure(uint32_t frequency, float duty_cycle)
