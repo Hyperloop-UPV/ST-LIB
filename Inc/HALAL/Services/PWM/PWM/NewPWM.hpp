@@ -155,7 +155,7 @@ public:
         }
         this->frequency = frequency;
         timer->instance.tim->ARR = (timer->get_clock_frequency() / (timer->instance.tim->PSC + 1)) / frequency;
-        
+
         set_duty_cycle(duty_cycle);
     }
 
@@ -169,9 +169,8 @@ public:
          * b = (psc + 1) * frequency
          * arr = (a - b/2) / b
          */
-        uint64_t psc_plus_1_mul_freq = (uint64_t)(timer->instance.tim->PSC + 1) * (uint64_t)frequency;
-        uint64_t tim_frequency_round = (uint64_t)timer->get_clock_frequency() - (psc_plus_1_mul_freq / 2);
-        timer->instance.tim->ARR = (uint32_t)(tim_frequency_round / psc_plus_1_mul_freq);
+        float psc_plus_1_mul_freq = (float)(timer->instance.tim->PSC + 1) * (float)frequency;
+        timer->instance.tim->ARR = (uint32_t)((float)timer->get_clock_frequency() / psc_plus_1_mul_freq - 0.5f);
 
         set_duty_cycle(duty_cycle);
     }
