@@ -119,27 +119,27 @@ struct TimerWrapper {
     template<TimerPin pin>
     inline PWM<dev, pin> get_pwm(uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCNPOLARITY_HIGH) {
         static_assert(dev.e.pin_count > 0, "Need at least one pin to get a pwm");
+        
         if constexpr(dev.e.pins[0].pin == pin.pin && dev.e.pins[0].channel == pin.channel) {
-            static_assert(dev.e.pins[0].af == TimerAF::PWM, "Pin must be configured in TimerWrapper as a PWM");
+            static_assert(dev.e.pins[0].af == TimerAF::PWM, "Pin must be configured in TimerDomain as a PWM");
+            return PWM<dev, pin>(this, polarity, negated_polarity);
+        } else if constexpr(dev.e.pin_count > 1 &&
+            dev.e.pins[1].pin == pin.pin && dev.e.pins[1].channel == pin.channel)
+        {
+            static_assert(dev.e.pins[1].af == TimerAF::PWM, "Pin must be configured in TimerDomain as a PWM");
+            return PWM<dev, pin>(this, polarity, negated_polarity);
+        } else if constexpr(dev.e.pin_count > 2 &&
+            dev.e.pins[2].pin == pin.pin && dev.e.pins[2].channel == pin.channel)
+        {
+            static_assert(dev.e.pins[2].af == TimerAF::PWM, "Pin must be configured in TimerDomain as a PWM");
+            return PWM<dev, pin>(this, polarity, negated_polarity);
+        } else if constexpr(dev.e.pin_count == 4 &&
+            dev.e.pins[3].pin == pin.pin && dev.e.pins[3].channel == pin.channel)
+        {
+            static_assert(dev.e.pins[3].af == TimerAF::PWM, "Pin must be configured in TimerDomain as a PWM");
             return PWM<dev, pin>(this, polarity, negated_polarity);
         } else {
-            static_assert(dev.e.pin_count > 1, "No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
-            if constexpr(dev.e.pins[1].pin == pin.pin && dev.e.pins[1].channel == pin.channel) {
-                static_assert(dev.e.pins[1].af == TimerAF::PWM, "Pin must be configured in TimerWrapper as a PWM");
-                return PWM<dev, pin>(this, polarity, negated_polarity);
-            } else {
-                static_assert(dev.e.pin_count > 2, "No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
-                if constexpr(dev.e.pins[2].pin == pin.pin && dev.e.pins[2].channel == pin.channel) {
-                    static_assert(dev.e.pins[2].af == TimerAF::PWM, "Pin must be configured in TimerWrapper as a PWM");
-                    return PWM<dev, pin>(this, polarity, negated_polarity);
-                } else {
-                    static_assert(dev.e.pin_count == 4, "No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
-                    if constexpr(dev.e.pins[3].pin == pin.pin && dev.e.pins[3].channel == pin.channel) {
-                        static_assert(dev.e.pins[3].af == TimerAF::PWM, "Pin must be configured in TimerWrapper as a PWM");
-                        return PWM<dev, pin>(this, polarity, negated_polarity);
-                    }
-                }
-            }
+            static_assert(false, "No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
         }
     }
 
