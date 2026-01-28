@@ -100,7 +100,7 @@ struct TimerWrapper {
         return false;
     }
 
-    inline uint32_t get_frequency() {
+    inline uint32_t get_clock_frequency() {
         uint32_t result;
         if constexpr(this->is_on_APB1) {
             result = HAL_RCC_GetPCLK1Freq();
@@ -121,28 +121,28 @@ struct TimerWrapper {
         static_assert(dev.e.pin_count > 0, "Need at least one pin to get a pwm");
         
         if constexpr(dev.e.pins[0].pin == pin.pin && dev.e.pins[0].channel == pin.channel) {
-            if constexpr(dev.e.pins[0].af == TimerAF::PWM) {
+            if constexpr(dev.e.pins[0].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity);
         } else if constexpr(dev.e.pin_count > 1 &&
             dev.e.pins[1].pin == pin.pin && dev.e.pins[1].channel == pin.channel)
         {
-            if constexpr(dev.e.pins[1].af == TimerAF::PWM) {
+            if constexpr(dev.e.pins[1].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity);
         } else if constexpr(dev.e.pin_count > 2 &&
             dev.e.pins[2].pin == pin.pin && dev.e.pins[2].channel == pin.channel)
         {
-            if constexpr(dev.e.pins[2].af == TimerAF::PWM) {
+            if constexpr(dev.e.pins[2].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity);
         } else if constexpr(dev.e.pin_count == 4 &&
             dev.e.pins[3].pin == pin.pin && dev.e.pins[3].channel == pin.channel)
         {
-            if constexpr(dev.e.pins[3].af == TimerAF::PWM) {
+            if constexpr(dev.e.pins[3].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity);

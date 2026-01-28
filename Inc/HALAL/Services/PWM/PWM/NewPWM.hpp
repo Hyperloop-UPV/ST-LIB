@@ -15,17 +15,6 @@ namespace ST_LIB {
 template<const TimerDomain::Timer &dev>
 struct TimerWrapper;
 
-enum PWM_MODE : uint8_t {
-    NORMAL = 0,
-    PHASED = 1,
-    CENTER_ALIGNED = 2,
-};
-
-struct PWMData {
-    uint32_t channel;
-    PWM_MODE mode;
-};
-
 template<const TimerDomain::Timer &dev, const ST_LIB::TimerPin pin>
 class PWM {
     static consteval uint8_t get_channel_state_idx(const ST_LIB::TimerChannel ch) {
@@ -56,9 +45,6 @@ class PWM {
                 return 0;
         }
     }
-
-    static constexpr float CLOCK_FREQ_MHZ_WITHOUT_PRESCALER = 275.0f;
-    static constexpr float clock_period_ns = (1.0f/CLOCK_FREQ_MHZ_WITHOUT_PRESCALER)*1000.0f;
 
     TimerWrapper<dev> *timer;
     uint32_t frequency;
@@ -168,26 +154,31 @@ public:
             frequency = 2*frequency;
         }
         this->frequency = frequency;
-        timer->instance.tim->ARR = (timer->get_frequency() / (timer->instance.tim->PSC + 1)) / frequency;
+        timer->instance.tim->ARR = (timer->get_clock_frequency() / (timer->instance.tim->PSC + 1)) / frequency;
         
         set_duty_cycle(duty_cycle);
     }
 
     void set_frequency(uint32_t frequency) {
-        
-    }
-
-    void configure(uint32_t frequency, float duty_cycle)
-    {
         if(is_center_aligned) {
             frequency = 2*frequency;
         }
         this->frequency = frequency;
-        timer->instance.tim->ARR = (timer->get_frequency() / (timer->instance.tim->PSC + 1)) / frequency;
-        
-        uint16_t raw_duty = (uint16_t)((float)(timer->instance.tim->ARR + 1) / 100.0f * duty_cycle);
-        timer->template set_capture_compare<pin.channel>(raw_duty);
+
+        /* a = timer clock frequency 
+         * b = (psc + 1) * frequency
+         * arr = (a - b/2) / b
+         */
+        uint64_t psc_plus_1_mul_freq = (uint64_t)(timer->instance.tim->PSC + 1) * (uint64_t)frequency;
+        uint64_t tim_frequency_round = (uint64_t)timer->get_clock_frequency() - (psc_plus_1_mul_freq / 2);
+        timer->instance.tim->ARR = (uint32_t)(tim_frequency_round / psc_plus_1_mul_freq);
+
+        set_duty_cycle(duty_cycle);
+    }
+
+    void configure(uint32_t frequency, float duty_cycle) {
         this->duty_cycle = duty_cycle;
+        set_frequency(frequency);
     }
 
     void set_dead_time(int64_t dead_time_ns) {
@@ -195,6 +186,7 @@ public:
 
         int64_t time = dead_time_ns;
 
+        float clock_period_ns = 1000.0f / (float)timer->get_clock_frequency();
         if(time <= 127 * clock_period_ns) {
             sBreakDeadTimeConfig.DeadTime = time / clock_period_ns;
         } else if(time <= (2 * clock_period_ns * 127)) {
