@@ -100,6 +100,22 @@ struct TimerWrapper {
         return false;
     }
 
+    inline uint32_t get_frequency() {
+        uint32_t result;
+        if constexpr(this->is_on_APB1) {
+            result = HAL_RCC_GetPCLK1Freq();
+            if((RCC->D2CFGR & RCC_D2CFGR_D2PPRE1) != RCC_HCLK_DIV1) {
+                result *= 2;
+            }
+        } else {
+            result = HAL_RCC_GetPCLK2Freq();
+            if((RCC->D2CFGR & RCC_D2CFGR_D2PPRE2) != RCC_HCLK_DIV1) {
+                result *= 2;
+            }
+        }
+        return result;
+    }
+
     template<TimerPin pin>
     inline PWM<dev, pin> get_pwm(uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCNPOLARITY_HIGH) {
         static_assert(dev.e.pin_count > 0, "Need at least one pin to get a pwm");
