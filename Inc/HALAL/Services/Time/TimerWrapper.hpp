@@ -68,6 +68,17 @@ struct TimerWrapper {
         dev.e.request == TimerRequest::GeneralPurpose_16 ||
         dev.e.request == TimerRequest::GeneralPurpose_17
     );
+    static constexpr bool is_on_APB1 = (
+        dev.e.request == TimerRequest::GeneralPurpose32bit_2 ||
+        dev.e.request == TimerRequest::GeneralPurpose_3 ||
+        dev.e.request == TimerRequest::GeneralPurpose_4 ||
+        dev.e.request == TimerRequest::GeneralPurpose32bit_5 ||
+        dev.e.request == TimerRequest::Basic_6 ||
+        dev.e.request == TimerRequest::Basic_7 ||
+        dev.e.request == TimerRequest::SlaveTimer_12 ||
+        dev.e.request == TimerRequest::SlaveTimer_13 ||
+        dev.e.request == TimerRequest::SlaveTimer_14
+    );
 
     /* returns if the channel can be negated or not {See TimerDomain get_gpio_af()} */
     static consteval bool is_ccxn_instance(ST_LIB::TimerChannel ch) {

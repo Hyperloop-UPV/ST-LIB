@@ -158,8 +158,7 @@ public:
     }
 
     void set_duty_cycle(float duty_cycle) {
-        uint16_t raw_duty = (uint16_t)((float)timer->instance.tim->ARR / 200.0f * duty_cycle);
-        //__HAL_TIM_SET_COMPARE(timer->instance.hal_tim, pin.channel, raw_duty);
+        uint16_t raw_duty = (uint16_t)((float)(timer->instance.tim->ARR + 1) / 100.0f * duty_cycle);
         timer->template set_capture_compare<pin.channel>(raw_duty);
         this->duty_cycle = duty_cycle;
     }
@@ -169,7 +168,21 @@ public:
             frequency = 2*frequency;
         }
         this->frequency = frequency;
-        timer->instance.tim->ARR = (HAL_RCC_GetPCLK1Freq() * 2 / (timer->instance.tim->PSC + 1)) / frequency;
+
+        uint32_t tmparr;
+        if constexpr(timer->is_on_APB1) {
+            tmparr = HAL_RCC_GetPCLK1Freq();
+            if((RCC->D2CFGR & RCC_D2CFGR_D2PPRE1) != RCC_HCLK_DIV1) {
+                tmparr *= 2;
+            }
+        } else {
+            tmparr = HAL_RCC_GetPCLK2Freq();
+            if((RCC->D2CFGR & RCC_D2CFGR_D2PPRE2) != RCC_HCLK_DIV1) {
+                tmparr *= 2;
+            }
+        }
+        timer->instance.tim->ARR = (tmparr / (timer->instance.tim->PSC + 1)) / frequency - 1;
+        
         set_duty_cycle(duty_cycle);
     }
 
@@ -179,11 +192,22 @@ public:
             frequency = 2*frequency;
         }
         this->frequency = frequency;
-        timer->instance.tim->ARR = (HAL_RCC_GetPCLK1Freq() * 2 / (timer->instance.tim->PSC + 1)) / frequency;
         
-        //set_duty_cycle(duty_cycle);
-        uint16_t raw_duty = (uint16_t)((float)timer->instance.tim->ARR / 200.0f * duty_cycle);
-        //__HAL_TIM_SET_COMPARE(timer->instance.hal_tim, pin.channel, raw_duty);
+        uint32_t tmparr;
+        if constexpr(timer->is_on_APB1) {
+            tmparr = HAL_RCC_GetPCLK1Freq();
+            if((RCC->D2CFGR & RCC_D2CFGR_D2PPRE1) != RCC_HCLK_DIV1) {
+                tmparr *= 2;
+            }
+        } else {
+            tmparr = HAL_RCC_GetPCLK2Freq();
+            if((RCC->D2CFGR & RCC_D2CFGR_D2PPRE2) != RCC_HCLK_DIV1) {
+                tmparr *= 2;
+            }
+        }
+        timer->instance.tim->ARR = (tmparr / (timer->instance.tim->PSC + 1)) / frequency - 1;
+        
+        uint16_t raw_duty = (uint16_t)((float)(timer->instance.tim->ARR + 1) / 100.0f * duty_cycle);
         timer->template set_capture_compare<pin.channel>(raw_duty);
         this->duty_cycle = duty_cycle;
     }
