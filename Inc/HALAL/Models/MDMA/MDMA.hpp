@@ -45,12 +45,8 @@ class MDMA{
         uint32_t destination_address = reinterpret_cast<uint32_t>(destination);
         node.CDAR = destination_address;
         
+        // TCM memories are accessed by AHBS bus
         if ((destination_address < 0x00010000) || (destination_address >= 0x20000000 && destination_address < 0x20020000)) {
-            ErrorHandler("Error: MDMA destination address is inside ITCM or DTCM, which are not accessible.");
-            return;
-        }
-        
-        if (destination_address >= 0x40000000 && destination_address < 0x60000000) {
             node.CTBR |= MDMA_CTBR_DBUS;
         } else {
             node.CTBR &= ~MDMA_CTBR_DBUS;
@@ -60,15 +56,11 @@ class MDMA{
         uint32_t source_address = reinterpret_cast<uint32_t>(source); 
         node.CSAR = source_address;
     
+        // TCM memories are accessed by AHBS bus
         if ((source_address < 0x00010000) || (source_address >= 0x20000000 && source_address < 0x20020000)) {
-            ErrorHandler("Error: MDMA source address is inside ITCM or DTCM, which are not accessible.");
-            return;
-        }
-
-        if (source_address >= 0x40000000 && source_address < 0x60000000) {
             node.CTBR |= MDMA_CTBR_SBUS;
         } else {
-             node.CTBR &= ~MDMA_CTBR_SBUS;
+            node.CTBR &= ~MDMA_CTBR_SBUS;
         }
     }
     auto get_node() -> MDMA_LinkNodeTypeDef* { return &node; }
