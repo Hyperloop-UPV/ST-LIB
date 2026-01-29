@@ -409,6 +409,15 @@ struct TimerDomain {
             {
                 ST_LIB::compile_error("Invalid TimerRequest value for timer");
             }
+
+            uint32_t used_channels = 0;
+            for(uint16_t pi = 0; pi < requests[i].pin_count; pi++) {
+                uint32_t channel_bit = (1 << static_cast<uint32_t>(requests[i].pins[pi].channel));
+                if(used_channels & channel_bit) {
+                    ST_LIB::compile_error("Only one pin per channel for each timer");
+                }
+                used_channels |= channel_bit;
+            }
         }
 
         // First find any that have requested a specific timer
