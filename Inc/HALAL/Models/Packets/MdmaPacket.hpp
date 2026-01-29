@@ -22,19 +22,16 @@ struct MdmaPacketDomain {
     struct Entry {
         size_t packet_mpu_index;
         size_t nodes_mpu_index;
-        size_t id_mpu_index;
     };
 
     struct Config {
         size_t packet_mpu_index;
         size_t nodes_mpu_index;
-        size_t id_mpu_index;
     };
 
     struct Instance {
         uint8_t* packet_buffer;
         MDMA::LinkedListNode* nodes;
-        uint16_t* id;
     };
 
     static constexpr size_t max_instances = MDMA_PACKET_MAX_INSTANCES;
@@ -45,7 +42,6 @@ struct MdmaPacketDomain {
         for (std::size_t i = 0; i < N; i++) {
             cfgs[i].packet_mpu_index = entries[i].packet_mpu_index;
             cfgs[i].nodes_mpu_index = entries[i].nodes_mpu_index;
-            cfgs[i].id_mpu_index = entries[i].id_mpu_index;
         }
         return cfgs;
     }
@@ -59,7 +55,6 @@ struct MdmaPacketDomain {
             for (std::size_t i = 0; i < N; i++) {
                 instances[i].packet_buffer = static_cast<uint8_t*>(mpu_instances[cfgs[i].packet_mpu_index].ptr);
                 instances[i].nodes = static_cast<MDMA::LinkedListNode*>(mpu_instances[cfgs[i].nodes_mpu_index].ptr);
-                instances[i].id = static_cast<uint16_t*>(mpu_instances[cfgs[i].id_mpu_index].ptr);
             }
         }
     };
@@ -78,7 +73,7 @@ struct MdmaPacketDomain {
     template<class... Types>
     class MdmaPacket : public MdmaPacketBase {
     public:
-        uint16_t* id;
+        uint16_t id;
         uint8_t* buffer;
         size_t size;
         std::tuple<uint16_t*, Types*...> value_pointers;
@@ -94,32 +89,27 @@ struct MdmaPacketDomain {
 
             using PacketMem = std::array<uint8_t, packet_size_bytes>;
             using NodesMem = std::array<MDMA::LinkedListNode, nodes_size>;
-            using IdMem = uint16_t;
 
             MPUDomain::Buffer<PacketMem> packet_req;
             MPUDomain::Buffer<NodesMem> nodes_req;
-            MPUDomain::Buffer<IdMem> id_req;
 
             consteval Request() : 
                 packet_req(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1),
-                nodes_req(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1),
-                id_req(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1)
+                nodes_req(MPUDomain::MemoryType::NonCached, MPUDomain::MemoryDomain::D1)
             {}
 
             template <class Ctx>
             consteval void inscribe(Ctx &ctx) const {
                 size_t p_idx = packet_req.inscribe(ctx);
                 size_t n_idx = nodes_req.inscribe(ctx);
-                size_t i_idx = id_req.inscribe(ctx);
-                ctx.template add<MdmaPacketDomain>({p_idx, n_idx, i_idx}, this);
+                ctx.template add<MdmaPacketDomain>({p_idx, n_idx}, this);
             }
         };
 
         MdmaPacket(Instance& instance, uint16_t id, Types*... values) 
-            : id(instance.id), size((sizeof(Types) + ...) + sizeof(uint16_t)) , value_pointers(this->id, values...) {
+            : id(id), size((sizeof(Types) + ...) + sizeof(uint16_t)) , value_pointers(&this->id, values...) {
             
-            *this->id = id;
-            packets[*this->id] = this;
+            packets[this->id] = this;
             this->buffer = instance.packet_buffer;
             MDMA::LinkedListNode* nodes = instance.nodes;
 
@@ -228,7 +218,7 @@ struct MdmaPacketDomain {
         }
 
         uint16_t get_id() override {
-            return *id;
+            return id;
         }
 
         // Just for interface compliance, this is not efficient for MdmaPacket as it is.
