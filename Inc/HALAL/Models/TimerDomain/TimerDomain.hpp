@@ -333,7 +333,11 @@ struct TimerDomain {
 #define GetPinFromIdx(pinargs, idx) \
     sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx] : empty_pin
 #define GetGPIOFromIdx(pinargs, request, idx) \
-    sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].pin : ST_LIB::PA0, get_operation_mode(sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].af : TimerAF::None), get_pull(sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].af : TimerAF::None), get_speed(sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].af : TimerAF::None), (sizeof...(pinargs) > idx ? get_gpio_af(request, (ST_LIB::TimerPin[]){pinargs...}[idx]) : GPIODomain::AlternateFunction::NO_AF)
+    sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].pin : ST_LIB::PA0,                      \
+    get_operation_mode(sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].af : TimerAF::None), \
+    get_pull(sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].af : TimerAF::None),           \
+    get_speed(sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].af : TimerAF::None),          \
+    (sizeof...(pinargs) > idx ? get_gpio_af(request, (ST_LIB::TimerPin[]){pinargs...}[idx]) : GPIODomain::AlternateFunction::NO_AF)
 
         template <typename... T>
         consteval Timer(TimerRequest request = TimerRequest::AnyGeneralPurpose, 
