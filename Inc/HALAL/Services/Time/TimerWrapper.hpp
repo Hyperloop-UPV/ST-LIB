@@ -268,7 +268,6 @@ struct TimerWrapper {
 
     ///////////////////////////////////////
 
-    // TODO: should this be inline?
     template<ST_LIB::TimerChannel ch>
     inline void config_output_compare_channel(const TIM_OC_InitTypeDef *OC_Config)
     {
