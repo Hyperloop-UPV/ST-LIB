@@ -316,7 +316,7 @@ struct TimerDomain {
             switch(af) {
                 case TimerAF::None: return GPIODomain::Speed::Low;
 
-                case TimerAF::PWM: return GPIODomain::Speed::Medium;
+                case TimerAF::PWM: return GPIODomain::Speed::Low;
                 case TimerAF::InputCapture: return GPIODomain::Speed::High;
                 
                 case TimerAF::BreakInput: return GPIODomain::Speed::Medium;
