@@ -1,9 +1,9 @@
 #include "ST-LIB_LOW/Sd/Sd.hpp"
 
-SD_HandleTypeDef* g_sdmmc1_handle = nullptr;
-SD_HandleTypeDef* g_sdmmc2_handle = nullptr;
-void* g_sdmmc1_instance_ptr = nullptr;
-void* g_sdmmc2_instance_ptr = nullptr;
+SD_HandleTypeDef *g_sdmmc1_handle = nullptr;
+SD_HandleTypeDef *g_sdmmc2_handle = nullptr;
+void *g_sdmmc1_instance_ptr = nullptr;
+void *g_sdmmc2_instance_ptr = nullptr;
 
 using namespace ST_LIB;
 
@@ -232,7 +232,7 @@ HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(uin
 
 extern "C" {
 
-void HAL_SD_MspInit(SD_HandleTypeDef* hsd) {
+void HAL_SD_MspInit(SD_HandleTypeDef *hsd) {
     if (hsd->Instance == SDMMC1) {
         __HAL_RCC_SDMMC1_CLK_ENABLE();
         __HAL_RCC_SDMMC1_FORCE_RESET();
@@ -260,19 +260,19 @@ void SDMMC2_IRQHandler(void) {
     }
 }
 
-void HAL_SD_TxCpltCallback(SD_HandleTypeDef* hsd) {
+void HAL_SD_TxCpltCallback(SD_HandleTypeDef *hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
         sd_instance->on_dma_write_complete();
     }
 }
 
-void HAL_SD_RxCpltCallback(SD_HandleTypeDef* hsd) {
+void HAL_SD_RxCpltCallback(SD_HandleTypeDef *hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
         sd_instance->on_dma_read_complete();
     }
 }
 
-void HAL_SD_AbortCallback(SD_HandleTypeDef* hsd) {
+void HAL_SD_AbortCallback(SD_HandleTypeDef *hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
         sd_instance->on_abort();
     } else {
@@ -280,7 +280,7 @@ void HAL_SD_AbortCallback(SD_HandleTypeDef* hsd) {
     }
 }
 
-void HAL_SD_ErrorCallback(SD_HandleTypeDef* hsd) {
+void HAL_SD_ErrorCallback(SD_HandleTypeDef *hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
         sd_instance->on_error();
     } else {

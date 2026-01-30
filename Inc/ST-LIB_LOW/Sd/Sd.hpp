@@ -17,10 +17,10 @@
 using ST_LIB::DigitalInputDomain;
 using ST_LIB::GPIODomain;
 
-extern SD_HandleTypeDef* g_sdmmc1_handle;
-extern SD_HandleTypeDef* g_sdmmc2_handle;
-extern void* g_sdmmc1_instance_ptr;
-extern void* g_sdmmc2_instance_ptr;
+extern SD_HandleTypeDef *g_sdmmc1_handle;
+extern SD_HandleTypeDef *g_sdmmc2_handle;
+extern void *g_sdmmc1_instance_ptr;
+extern void *g_sdmmc2_instance_ptr;
 
 namespace ST_LIB {
 struct SdDomain {
@@ -208,7 +208,7 @@ struct SdDomain {
         template <auto &> friend struct SdCardWrapper;
         template <std::size_t N> friend struct Init;
 
-        bool* operation_flag = nullptr; // External flag to indicate that an operation has finished. Only public so that it can be set in the public handlers below.
+        bool *operation_flag = nullptr; // External flag to indicate that an operation has finished. Only public so that it can be set in the public handlers below.
 
        // Public handlers called from C HAL callbacks. Don't use them, don't even think about using them.
        void on_dma_read_complete();
@@ -219,8 +219,8 @@ struct SdDomain {
        private:
         SD_HandleTypeDef hsd;
 
-        MPUDomain::Instance* mpu_buffer0_instance;
-        MPUDomain::Instance* mpu_buffer1_instance;
+        MPUDomain::Instance *mpu_buffer0_instance;
+        MPUDomain::Instance *mpu_buffer1_instance;
 
         std::optional<std::pair<DigitalInputDomain::Instance*, GPIO_PinState>> cd_instance;
         std::optional<std::pair<DigitalInputDomain::Instance*, GPIO_PinState>> wp_instance;
@@ -272,7 +272,7 @@ struct SdDomain {
             return instance.card_initialized;
         }
 
-        bool read_blocks(uint32_t start_block, uint32_t num_blocks, bool* operation_complete_flag) {
+        bool read_blocks(uint32_t start_block, uint32_t num_blocks, bool *operation_complete_flag) {
             check_cd_wp();
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
@@ -298,7 +298,7 @@ struct SdDomain {
             return true;
         }
 
-        bool write_blocks(uint32_t start_block, uint32_t num_blocks, bool* operation_complete_flag) {
+        bool write_blocks(uint32_t start_block, uint32_t num_blocks, bool *operation_complete_flag) {
             check_cd_wp();
             if (!instance.card_initialized) {
                 ErrorHandler("SD Card not initialized");
@@ -323,11 +323,11 @@ struct SdDomain {
             return true;
         }
 
-        auto* get_current_buffer() {
+        std::pair<uint8_t*, std::size_t> get_current_buffer() {
             if (instance.current_buffer == BufferSelect::Buffer0) {
-                return instance.mpu_buffer0_instance->template as<card_request.buffer0>();
+                return std::make_pair(reinterpret_cast<uint8_t*>(instance.mpu_buffer0_instance->ptr), instance.mpu_buffer0_instance->size);
             } else {
-                return instance.mpu_buffer1_instance->template as<card_request.buffer1>();
+                return std::make_pair(reinterpret_cast<uint8_t*>(instance.mpu_buffer1_instance->ptr), instance.mpu_buffer1_instance->size);
             }
         }
 
@@ -435,7 +435,7 @@ struct SdDomain {
     };
 };
 
-static inline SdDomain::Instance* get_sd_instance(SD_HandleTypeDef* hsd) {
+static inline SdDomain::Instance* get_sd_instance(SD_HandleTypeDef *hsd) {
     if (hsd == g_sdmmc1_handle) return static_cast<SdDomain::Instance*>(g_sdmmc1_instance_ptr);
     if (hsd == g_sdmmc2_handle) return static_cast<SdDomain::Instance*>(g_sdmmc2_instance_ptr);
     return nullptr;
