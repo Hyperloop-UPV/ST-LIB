@@ -47,9 +47,9 @@ class MDMA{
         
         // TCM memories are accessed by AHBS bus
         if ((destination_address < 0x00010000) || (destination_address >= 0x20000000 && destination_address < 0x20020000)) {
-            node.CTBR |= MDMA_CTBR_DBUS;
+            SET_BIT(node.CTBR, MDMA_CTBR_DBUS);
         } else {
-            node.CTBR &= ~MDMA_CTBR_DBUS;
+            CLEAR_BIT(node.CTBR, MDMA_CTBR_DBUS);
         }
     }
     void set_source(void* source) { 
@@ -58,9 +58,9 @@ class MDMA{
     
         // TCM memories are accessed by AHBS bus
         if ((source_address < 0x00010000) || (source_address >= 0x20000000 && source_address < 0x20020000)) {
-            node.CTBR |= MDMA_CTBR_SBUS;
+            SET_BIT(node.CTBR, MDMA_CTBR_SBUS);
         } else {
-            node.CTBR &= ~MDMA_CTBR_SBUS;
+            CLEAR_BIT(node.CTBR, MDMA_CTBR_SBUS);
         }
     }
     auto get_node() -> MDMA_LinkNodeTypeDef* { return &node; }
