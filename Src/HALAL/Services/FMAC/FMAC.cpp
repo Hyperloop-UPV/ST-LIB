@@ -32,9 +32,7 @@ void MultiplierAccelerator::IIR_software_in_software_out_inscribe(uint16_t input
 }
 
 void MultiplierAccelerator::inscribe(){
-	DMA::inscribe_stream(Instance.dma_preload);
-	DMA::inscribe_stream(Instance.dma_read);
-	DMA::inscribe_stream(Instance.dma_write);
+    //DMA::inscribe_stream<FMAC_BASE, DMA2_Stream0_BASE, DMA2_Stream1_BASE, DMA2_Stream2_BASE>(Instance.hfmac);
 }
 
 void MultiplierAccelerator::start(){

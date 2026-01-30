@@ -55,8 +55,7 @@ public:
 
         SPI_HandleTypeDef* hspi;  /**< HAL spi struct pin. */  
         SPI_TypeDef* instance; /**< HAL spi instance. */
-        DMA::Stream hdma_tx; /**< HAL DMA handler for writting */
-        DMA::Stream hdma_rx; /**< HAL DMA handler for reading */
+
 
         uint32_t baud_rate_prescaler; /**< SPI baud prescaler.*/
         uint32_t mode = SPI_MODE_MASTER; /**< SPI mode. */

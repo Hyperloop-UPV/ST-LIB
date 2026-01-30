@@ -55,12 +55,12 @@ jobs:
           cmake --build --preset ${{ inputs.preset }}
         shell: bash
 
-      - name: Upload Build
-        id: upload-build-artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.preset }}
-          path: out/build/${{ inputs.preset }}/libst-lib.a
-          retention-days: 7
-          compression-level: 0
-          if-no-files-found: error
+      # - name: Upload Build
+      #   id: upload-build-artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ inputs.preset }}
+      #     path: out/build/${{ inputs.preset }}/libst-lib.a
+      #     retention-days: 7
+      #     compression-level: 0
+      #     if-no-files-found: error
