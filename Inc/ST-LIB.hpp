@@ -87,7 +87,7 @@ using DomainsCtx = BuildCtx<MPUDomain, GPIODomain, TimerDomain,
                             DigitalOutputDomain,
                             DigitalInputDomain,
                             MdmaPacketDomain,
-                            SdDomain, /*, ADCDomain, PWMDomain, ...*/>;
+                            SdDomain /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {
