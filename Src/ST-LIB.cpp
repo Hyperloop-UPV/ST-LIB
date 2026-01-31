@@ -39,6 +39,7 @@ void STLIB::update() {
   Ethernet::update();
   Server::update_servers();
 #endif
-
-  ErrorHandlerModel::ErrorHandlerUpdate();
+    ErrorHandlerModel::ErrorHandlerUpdate();
+    MDMA::update();
+	
 }

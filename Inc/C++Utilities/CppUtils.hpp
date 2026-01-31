@@ -2,6 +2,7 @@
 
 #include "CppImports.hpp"
 #include "RingBuffer.hpp"
+#include "Stack.hpp"
 
 
 namespace chrono = std::chrono;
