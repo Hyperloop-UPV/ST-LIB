@@ -107,7 +107,8 @@ TEST_F(TimerWrapperTests, ConfigureTimer) {
 
 #define PRESCALER_VAL 200
 #define PERIOD 1000
-    tim1.configure16bit<PRESCALER_VAL>(callback, 0, PERIOD);
+    tim1.set_prescaler(PRESCALER_VAL);
+    tim1.configure16bit(callback, 0, PERIOD);
     EXPECT_EQ(TIM1_BASE->PSC, PRESCALER_VAL); /* set prescaler */
     EXPECT_EQ(TIM1_BASE->ARR, PERIOD); /* set period */
     EXPECT_EQ(TIM1_BASE->CR1 & TIM_CR1_CEN, TIM_CR1_CEN); /* set counter enable */

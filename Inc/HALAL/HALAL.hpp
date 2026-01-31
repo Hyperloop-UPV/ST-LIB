@@ -46,6 +46,8 @@
 #include "HALAL/Models/MDMA/MDMA.hpp"
 #include "HALAL/Models/Packets/MdmaPacket.hpp"
 
+#include "HALAL/HardFault/HardfaultTrace.h"
+#include "HALAL/Benchmarking_toolkit/DataWatchpointTrace/DataWatchpointTrace.hpp"
 #ifdef STLIB_ETH
 #include "HALAL/Models/Packets/Packet.hpp"
 #include "HALAL/Models/Packets/Order.hpp"

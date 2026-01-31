@@ -20,7 +20,6 @@
 
 #include <span>
 #include <array>
-#include <initializer_list>
 
 #include "ErrorHandler/ErrorHandler.hpp"
 
@@ -51,6 +50,11 @@
 TimerXList
 #undef X
 
+#if !defined(glue)
+#define glue_(a,b) a##b
+#define glue(a,b) glue_(a,b)
+#endif // !defined(glue)
+
 /* Tim1 & Tim8 are advanced-control timers
  *  their ARR & prescaler are 16bit
  *  they have up to 6 independent channels for:
@@ -65,7 +69,6 @@ TimerXList
  * Timers 12, 13, 14 are also general-purpose timers (but separate in the ref manual)
  * Timers 15, 16, 17 are also general purpose timers (but separate in the ref manual)
  */
-
 
 /* Tim6 & Tim7 are basic timers. Features:
  - 16-bit ARR upcounter
@@ -151,8 +154,8 @@ struct TimerPin {
     ST_LIB::TimerChannel channel;
 };
 
-constexpr std::array<int, 25> create_timer_idxmap() {
-    std::array<int, 25> result{};
+constexpr std::array<uint8_t, 25> create_timer_idxmap() {
+    std::array<uint8_t, 25> result{};
     
     // invalid timers that don't exist
     result[0] = -1;
@@ -178,7 +181,7 @@ constexpr std::array<int, 25> create_timer_idxmap() {
     return result;
 }
 
-static constexpr std::array<int, 25> timer_idxmap = create_timer_idxmap();
+static constexpr std::array<uint8_t, 25> timer_idxmap = create_timer_idxmap();
 
 struct TimerDomain {
     // There are 16 timers
@@ -201,20 +204,12 @@ struct TimerDomain {
     struct Entry {
         std::array<char, 8> name; /* max length = 7 */
         TimerRequest request;
-        TimerDomain::CountingMode counting_mode;
-        uint32_t deadtime;
-        uint32_t polarity;
-        uint32_t negated_polarity;
         uint8_t pin_count;
-        std::array<TimerPin, 4> pins;
+        std::array<TimerPin, 4> pins; /* this won't be read in Timer constructor */
     };
 
     struct Config {
-        uint16_t timer_idx;
-        TimerDomain::CountingMode counting_mode;
-        uint32_t deadtime;
-        uint32_t polarity;
-        uint32_t negated_polarity;
+        uint8_t timer_idx;
     };
 
     static constexpr TIM_HandleTypeDef *hal_handles[16] = {
@@ -274,83 +269,122 @@ struct TimerDomain {
 #undef X
     }
 
-    static constexpr Config DoTimer(const Entry request, int reqint, int reqidx) {
-        Config cfg;
-        cfg.timer_idx = timer_idxmap[reqint];
-        cfg.deadtime = request.deadtime;
-        cfg.polarity = request.polarity;
-        cfg.negated_polarity = request.negated_polarity;
-
-        // Do any compile time checks needed for the timers...
-        if(!(reqint == 1 || reqint == 8 ||
-            reqint == 2 || reqint == 5 || reqint == 23 || reqint == 24 || 
-            reqint == 3 || reqint == 4))
-        {
-            if(request.counting_mode != CountingMode::UP) {
-                ST_LIB::compile_error("Error: Timers other than {Advanced{TIM1, TIM8}, TIM2, TIM3, TIM4, TIM5, TIM23, TIM24} only support upcounting");
-            }
-        }
-
-        return cfg;
-    }
-
     static constexpr std::array<char, 8> EMPTY_TIMER_NAME = {0,0,0,0, 0,0,0,0};
 
     struct Timer {
         using domain = TimerDomain;
+        //GPIODomain::GPIO gpios[4];
         Entry e;
+        GPIODomain::GPIO gpio0;
+        GPIODomain::GPIO gpio1;
+        GPIODomain::GPIO gpio2;
+        GPIODomain::GPIO gpio3;
 
-        consteval Timer(TimerRequest request = TimerRequest::AnyGeneralPurpose, 
-            TimerDomain::CountingMode counting_mode = CountingMode::UP, 
-            std::array<char, 8> name = EMPTY_TIMER_NAME, uint32_t deadtime = 0, 
-            uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCPOLARITY_HIGH,
-            std::initializer_list<TimerPin> pinargs = {})
+        static consteval GPIODomain::AlternateFunction get_gpio_af(ST_LIB::TimerRequest req, ST_LIB::TimerPin pin);
+
+        // TODO: check what this really needs to be for each
+        static consteval GPIODomain::OperationMode get_operation_mode(ST_LIB::TimerAF af)
         {
-            e.name = name;
-            e.request = request;
-            e.counting_mode = counting_mode;
-            e.deadtime = deadtime;
-            e.polarity = polarity;
-            e.negated_polarity = negated_polarity;
-            
-            e.pin_count = pinargs.size();
-            if(pinargs.size() > 4) {
-                ST_LIB::compile_error("Max 4 pins per timer");
-            }
-            int i = 0;
-            for(TimerPin p : pinargs) {
-                e.pins[i] = p;
-                i++;
+            switch(af) {
+                case TimerAF::None: return GPIODomain::OperationMode::INPUT;
+
+                case TimerAF::PWM: return GPIODomain::OperationMode::ALT_PP;
+                case TimerAF::InputCapture: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
+                
+                case TimerAF::BreakInput: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
+                case TimerAF::BreakInputCompare: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
             }
         }
 
-        // anything not initialized will be 0
-        consteval Timer(Entry e, std::initializer_list<TimerPin> pinargs = {}) {
-            this->e.name = e.name;
-            this->e.request = e.request;
-            this->e.counting_mode = e.counting_mode;
-            this->e.deadtime = e.deadtime;
-            this->e.polarity = e.polarity;
-            this->e.negated_polarity = e.negated_polarity;
-            if(pinargs.size() == 0) {
-                this->e.pin_count = e.pin_count;
-                this->e.pins = e.pins;
-            } else {
-                e.pin_count = pinargs.size();
-                if(pinargs.size() > 4) {
-                    ST_LIB::compile_error("Max 4 pins per timer");
-                }
-                int i = 0;
-                for(TimerPin p : pinargs) {
-                    e.pins[i] = p;
-                    i++;
-                }
+        // TODO: check what this really needs to be for each
+        static consteval GPIODomain::Pull get_pull(ST_LIB::TimerAF af)
+        {
+            switch(af) {
+                case TimerAF::None: return GPIODomain::Pull::None;
+
+                case TimerAF::PWM: return GPIODomain::Pull::None;
+                case TimerAF::InputCapture: return GPIODomain::Pull::Up;
+                
+                case TimerAF::BreakInput: return GPIODomain::Pull::None;
+                case TimerAF::BreakInputCompare: return GPIODomain::Pull::None;
+            }
+        }
+
+        // TODO: check what this really needs to be for each
+        static consteval GPIODomain::Speed get_speed(ST_LIB::TimerAF af)
+        {
+            switch(af) {
+                case TimerAF::None: return GPIODomain::Speed::Low;
+
+                case TimerAF::PWM: return GPIODomain::Speed::Low;
+                case TimerAF::InputCapture: return GPIODomain::Speed::High;
+                
+                case TimerAF::BreakInput: return GPIODomain::Speed::Medium;
+                case TimerAF::BreakInputCompare: return GPIODomain::Speed::Medium;
+            }
+        }
+
+        static constexpr ST_LIB::TimerPin empty_pin = {
+            .af = TimerAF::None,
+            .pin = ST_LIB::PA0,
+            .channel = TimerChannel::CHANNEL_1,
+        };
+
+#define GetPinFromIdx(pinargs, idx) \
+    sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx] : empty_pin
+#define GetGPIOFromIdx(pinargs, request, idx) \
+    sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].pin : ST_LIB::PA0,                      \
+    get_operation_mode(sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].af : TimerAF::None), \
+    get_pull(sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].af : TimerAF::None),           \
+    get_speed(sizeof...(pinargs) > idx ? (ST_LIB::TimerPin[]){pinargs...}[idx].af : TimerAF::None),          \
+    (sizeof...(pinargs) > idx ? get_gpio_af(request, (ST_LIB::TimerPin[]){pinargs...}[idx]) : GPIODomain::AlternateFunction::NO_AF)
+
+        template <typename... T>
+        consteval Timer(TimerRequest request = TimerRequest::AnyGeneralPurpose, 
+            std::array<char, 8> name = EMPTY_TIMER_NAME, T... pinargs) :
+            e(name, request, sizeof...(pinargs), std::array<TimerPin, 4>({GetPinFromIdx(pinargs, 0), GetPinFromIdx(pinargs, 1), GetPinFromIdx(pinargs, 2), GetPinFromIdx(pinargs, 3)})),
+            gpio0(GetGPIOFromIdx(pinargs, request, 0)),
+            gpio1(GetGPIOFromIdx(pinargs, request, 1)),
+            gpio2(GetGPIOFromIdx(pinargs, request, 2)),
+            gpio3(GetGPIOFromIdx(pinargs, request, 3))
+        {
+            static_assert((std::is_same_v<T, TimerPin> && ...), 
+                  "All template arguments must be of type TimerPin");
+            if(sizeof...(pinargs) > 4) {
+                ST_LIB::compile_error("Max 4 pins per timer");
+            }
+        }
+
+        // anything uninitialized will be 0
+        template <typename... T>
+        consteval Timer(Entry ent, T... pinargs) :
+            e(ent.name, ent.request, sizeof...(pinargs), std::array<TimerPin, 4>({GetPinFromIdx(pinargs, 0), GetPinFromIdx(pinargs, 1), GetPinFromIdx(pinargs, 2), GetPinFromIdx(pinargs, 3)})),
+            gpio0(GetGPIOFromIdx(pinargs, ent.request, 0)),
+            gpio1(GetGPIOFromIdx(pinargs, ent.request, 1)),
+            gpio2(GetGPIOFromIdx(pinargs, ent.request, 2)),
+            gpio3(GetGPIOFromIdx(pinargs, ent.request, 3))
+        {
+            static_assert((std::is_same_v<T, TimerPin> && ...), 
+                  "All template arguments must be of type TimerPin");
+            if(sizeof...(pinargs) > 4) {
+                ST_LIB::compile_error("Max 4 pins per timer");
             }
         }
         
         template<class Ctx>
         consteval void inscribe(Ctx &ctx) const {
-            ctx.template add<TimerDomain>(e, this);
+            if(e.pin_count > 0) { gpio0.inscribe(ctx); }
+            if(e.pin_count > 1) { gpio1.inscribe(ctx); }
+            if(e.pin_count > 2) { gpio2.inscribe(ctx); }
+            if(e.pin_count > 3) { gpio3.inscribe(ctx); }
+
+            TimerDomain::Entry local_entry = {
+                .name = e.name,
+                .request = e.request,
+                .pin_count = e.pin_count,
+                .pins = e.pins,
+            };
+            ctx.template add<TimerDomain>(local_entry, this);
         }
     };
 
@@ -364,8 +398,6 @@ struct TimerDomain {
             ST_LIB::compile_error("too many Timer requests, there are only 16 timers");
         }
 
-        check_pins(requests);
-
         int remaining_requests[max_instances] = {};
         int count_remaining_requests = (int)requests.size();
         for(int i = 0; i < (int)requests.size(); i++) remaining_requests[i] = i;
@@ -376,6 +408,15 @@ struct TimerDomain {
                (requests[i].request > 17 && requests[i].request < 23)))
             {
                 ST_LIB::compile_error("Invalid TimerRequest value for timer");
+            }
+
+            uint32_t used_channels = 0;
+            for(uint16_t pi = 0; pi < requests[i].pin_count; pi++) {
+                uint32_t channel_bit = (1 << static_cast<uint32_t>(requests[i].pins[pi].channel));
+                if(used_channels & channel_bit) {
+                    ST_LIB::compile_error("Only one pin per channel for each timer");
+                }
+                used_channels |= channel_bit;
             }
         }
 
@@ -390,7 +431,9 @@ struct TimerDomain {
                 }
                 used_timers[reqint] = true;
 
-                Config cfg = DoTimer(requests[i], reqint, i);
+                Config cfg = {
+                    .timer_idx = timer_idxmap[reqint],
+                };
                 cfgs[cfg_idx++] = cfg;
 
                 // unordered remove (remaining requests is not used here so these are ordered)
@@ -418,7 +461,9 @@ struct TimerDomain {
                 }
     
                 uint8_t reqint = remaining_32bit_timers[count_32bit_requests];
-                Config cfg = DoTimer(requests[i], reqint, i);
+                Config cfg = {
+                    .timer_idx = timer_idxmap[reqint],
+                };
                 cfgs[cfg_idx++] = cfg;
 
                 // unordered remove
@@ -465,7 +510,9 @@ struct TimerDomain {
                 ST_LIB::compile_error("This only processes TimerRequest::AnyGeneralPurpose");
             }
             uint8_t reqint = remaining_timers[i];
-            Config cfg = DoTimer(requests[i], reqint, i);
+            Config cfg = {
+                .timer_idx = timer_idxmap[reqint],
+            };
             cfgs[cfg_idx++] = cfg;
         }
 
@@ -476,7 +523,7 @@ struct TimerDomain {
     struct Instance {
         TIM_TypeDef *tim;
         TIM_HandleTypeDef *hal_tim;
-        uint16_t timer_idx;
+        uint8_t timer_idx;
     };
 
     static void (*callbacks[TimerDomain::max_instances])(void*);
@@ -489,7 +536,7 @@ struct TimerDomain {
             for(std::size_t i = 0; i < N; i++) {
                 const Config &e = cfgs[i];
 
-                TIM_HandleTypeDef *handle = (TIM_HandleTypeDef*)&hal_handles[e.timer_idx];
+                TIM_HandleTypeDef *handle = hal_handles[e.timer_idx];
                 TIM_TypeDef *tim = cmsis_timers[e.timer_idx];
                 handle->Instance = tim;
                 handle->Init.Period = 0;
@@ -499,375 +546,355 @@ struct TimerDomain {
                 handle->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
                 handle->Init.RepetitionCounter = 0;
 
-                /* if(e.counting_mode == CountingMode::UP) {
-                    CLEAR_BIT(tim->CR1, TIM_CR1_DIR); // upcounter
-                } else */
-                if(e.counting_mode == CountingMode::DOWN) {
-                    SET_BIT(tim->CR1, TIM_CR1_DIR); // downcounter
-                } else if(e.counting_mode == CountingMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
-                    MODIFY_REG(tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
-                } else if(e.counting_mode == CountingMode::CENTER_ALIGNED_INTERRUPT_UP) {
-                    MODIFY_REG(tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_1);
-                } else if(e.counting_mode == CountingMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
-                    MODIFY_REG(tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
-                }
+                handle->ChannelState[0] = HAL_TIM_CHANNEL_STATE_READY;
+                handle->ChannelState[1] = HAL_TIM_CHANNEL_STATE_READY;
+                handle->ChannelState[2] = HAL_TIM_CHANNEL_STATE_READY;
+                handle->ChannelState[3] = HAL_TIM_CHANNEL_STATE_READY;
+                handle->ChannelState[4] = HAL_TIM_CHANNEL_STATE_READY;
+                handle->ChannelState[5] = HAL_TIM_CHANNEL_STATE_READY;
+                
+                handle->ChannelNState[0] = HAL_TIM_CHANNEL_STATE_READY;
+                handle->ChannelNState[1] = HAL_TIM_CHANNEL_STATE_READY;
+                handle->ChannelNState[2] = HAL_TIM_CHANNEL_STATE_READY;
+                handle->ChannelNState[3] = HAL_TIM_CHANNEL_STATE_READY;
+                handle->DMABurstState = HAL_DMA_BURST_STATE_READY;
+                handle->Lock = HAL_UNLOCKED;
+                handle->State = HAL_TIM_STATE_READY;
 
                 rcc_enable_timer(tim);
-
-                // InputCapture stuff should be dome somewhere else..
-                // PWM stuff should be done somewhere else..
 
                 Instance *inst = &instances[i];
                 inst->tim = tim;
                 inst->hal_tim = handle;
                 inst->timer_idx = e.timer_idx;
-                __NOP();
             }
         }
     };
+};
 
-    static consteval void check_pins(std::span<const Entry> requests)
+consteval GPIODomain::AlternateFunction 
+TimerDomain::Timer::get_gpio_af(ST_LIB::TimerRequest req, ST_LIB::TimerPin pin)
+{
+    enum TimerAF_Use {
+        Channel_1 = 1,
+        Channel_2 = 2,
+        Channel_3 = 3,
+        Channel_4 = 4,
+        ExternalTriggerFilter, /* ETR */
+        BreakInput_1,
+        BreakInput_2,
+        BreakInputCompare_1,
+        BreakInputCompare_2,
+    };
+
+    struct TimerPossiblePin {
+        ST_LIB::GPIODomain::Pin pin;
+        ST_LIB::GPIODomain::AlternateFunction af;
+        TimerAF_Use use;
+    };
+
+    // 4 capture-compare channels
+    // complementary output
+#define Tim1PinsMacro \
+    {ST_LIB::PE6, ST_LIB::GPIODomain::AlternateFunction::AF1, BreakInput_2},            \
+    {ST_LIB::PE6, ST_LIB::GPIODomain::AlternateFunction::AF12, BreakInputCompare_2},    \
+                                                                                      \
+    {ST_LIB::PA6, ST_LIB::GPIODomain::AlternateFunction::AF1, BreakInput_1},            \
+    {ST_LIB::PA6, ST_LIB::GPIODomain::AlternateFunction::AF11, BreakInputCompare_1},    \
+                                                                                      \
+    {ST_LIB::PA7, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1}, /* negated */ \
+    {ST_LIB::PB0, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_2}, /* negated */ \
+    {ST_LIB::PB1, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_3}, /* negated */ \
+    {ST_LIB::PE7, ST_LIB::GPIODomain::AlternateFunction::AF1, ExternalTriggerFilter},   \
+    {ST_LIB::PE8, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1}, /* negated */ \
+    {ST_LIB::PE9, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1},               \
+    {ST_LIB::PE10, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_2}, /* negated */\
+    {ST_LIB::PE11, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_2},              \
+    {ST_LIB::PE12, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_3}, /* negated */\
+    {ST_LIB::PE13, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_3},              \
+    {ST_LIB::PE14, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_4},              \
+                                                                                      \
+    {ST_LIB::PE15, ST_LIB::GPIODomain::AlternateFunction::AF1, BreakInput_1},           \
+    {ST_LIB::PE15, ST_LIB::GPIODomain::AlternateFunction::AF13, BreakInputCompare_1},   \
+                                                                                      \
+    {ST_LIB::PB12, ST_LIB::GPIODomain::AlternateFunction::AF1, BreakInput_1},           \
+    {ST_LIB::PB12, ST_LIB::GPIODomain::AlternateFunction::AF13, BreakInputCompare_1},   \
+                                                                                      \
+    {ST_LIB::PB13, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1}, /* negated */\
+    {ST_LIB::PB14, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_2}, /* negated */\
+    {ST_LIB::PB15, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_3}, /* negated */\
+                                                                                      \
+    {ST_LIB::PG4, ST_LIB::GPIODomain::AlternateFunction::AF1, BreakInput_2},            \
+    {ST_LIB::PG4, ST_LIB::GPIODomain::AlternateFunction::AF11, BreakInputCompare_2},    \
+                                                                                      \
+    {ST_LIB::PG5, ST_LIB::GPIODomain::AlternateFunction::AF1, ExternalTriggerFilter},   \
+                                                                                      \
+    {ST_LIB::PA8, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1},               \
+    {ST_LIB::PA9, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_2},               \
+    {ST_LIB::PA10, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_3},              \
+    {ST_LIB::PA11, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_4},              \
+                                                                                      \
+    {ST_LIB::PA12, ST_LIB::GPIODomain::AlternateFunction::AF1, ExternalTriggerFilter},  \
+    {ST_LIB::PA12, ST_LIB::GPIODomain::AlternateFunction::AF12, BreakInput_2},
+
+    // 4 capture-compare channels
+#define Tim2PinsMacro \
+    {ST_LIB::PA0, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1},              \
+    {ST_LIB::PA0, ST_LIB::GPIODomain::AlternateFunction::AF1, ExternalTriggerFilter},  \
+    {ST_LIB::PA1, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_2},              \
+    {ST_LIB::PA2, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_3},              \
+    {ST_LIB::PA3, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_4},              \
+                                                                                     \
+    {ST_LIB::PA5, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1},              \
+    {ST_LIB::PA5, ST_LIB::GPIODomain::AlternateFunction::AF1, ExternalTriggerFilter},  \
+                                                                                     \
+    {ST_LIB::PA15, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1},             \
+    {ST_LIB::PA15, ST_LIB::GPIODomain::AlternateFunction::AF1, ExternalTriggerFilter}, \
+    {ST_LIB::PB3, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_2},              \
+    {ST_LIB::PB10, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_3},             \
+    {ST_LIB::PB11, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_4},
+
+    // 4 capture-compare channels
+#define Tim3PinsMacro \
+    {ST_LIB::PA6, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_1}, \
+    {ST_LIB::PA7, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_2}, \
+    {ST_LIB::PB0, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_3}, \
+    {ST_LIB::PB1, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_4}, \
+                                                                        \
+    {ST_LIB::PB4, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_1}, \
+    {ST_LIB::PB5, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_2}, \
+                                                                        \
+    {ST_LIB::PC6, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_1}, \
+    {ST_LIB::PC7, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_2}, \
+    {ST_LIB::PC8, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_3}, \
+    {ST_LIB::PC9, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_4}, \
+                                                                        \
+    {ST_LIB::PD2, ST_LIB::GPIODomain::AlternateFunction::AF2, ExternalTriggerFilter},
+
+    // 4 capture-compare channels
+#define Tim4PinsMacro \
+    {ST_LIB::PB6, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_1},  \
+    {ST_LIB::PB7, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_2},  \
+    {ST_LIB::PB8, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_3},  \
+    {ST_LIB::PB9, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_4},  \
+                                                                         \
+    {ST_LIB::PD12, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_1}, \
+    {ST_LIB::PD13, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_2}, \
+    {ST_LIB::PD14, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_3}, \
+    {ST_LIB::PD15, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_4}, \
+                                                                         \
+    {ST_LIB::PE0, ST_LIB::GPIODomain::AlternateFunction::AF2, ExternalTriggerFilter},
+
+    // 4 capture-compare channels
+#define Tim5PinsMacro \
+    {ST_LIB::PA0, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_1}, \
+    {ST_LIB::PA1, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_2}, \
+    {ST_LIB::PA2, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_3}, \
+    {ST_LIB::PA3, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_4}, \
+    {ST_LIB::PA4, ST_LIB::GPIODomain::AlternateFunction::AF2, ExternalTriggerFilter},
+
+    // anything invalid, this doesn't get checked for basic timers because they have no pins
+#define Tim6PinsMacro {ST_LIB::PA0, ST_LIB::GPIODomain::AlternateFunction::NO_AF, Channel_1}
+    // anything invalid, this doesn't get checked for basic timers because they have no pins
+#define Tim7PinsMacro {ST_LIB::PA0, ST_LIB::GPIODomain::AlternateFunction::NO_AF, Channel_1}
+
+    // 4 capture-compare channels
+    // complementary output
+#define Tim8PinsMacro \
+    {ST_LIB::PA0, ST_LIB::GPIODomain::AlternateFunction::AF3, ExternalTriggerFilter},   \
+    {ST_LIB::PA5, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_1}, /* negated */ \
+                                                                                      \
+    {ST_LIB::PA6, ST_LIB::GPIODomain::AlternateFunction::AF3, BreakInput_1},            \
+    {ST_LIB::PA6, ST_LIB::GPIODomain::AlternateFunction::AF10, BreakInputCompare_1},    \
+                                                                                      \
+    {ST_LIB::PA7, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_1}, /* negated */ \
+                                                                                      \
+    {ST_LIB::PA8, ST_LIB::GPIODomain::AlternateFunction::AF3, BreakInput_2},            \
+    {ST_LIB::PA8, ST_LIB::GPIODomain::AlternateFunction::AF12, BreakInputCompare_2},    \
+                                                                                      \
+    {ST_LIB::PB0, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_2}, /* negated */ \
+    {ST_LIB::PB1, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_3}, /* negated */ \
+    {ST_LIB::PB14, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_2}, /* negated */\
+    {ST_LIB::PB15, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_3}, /* negated */\
+                                                                                      \
+    {ST_LIB::PC6, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_1},               \
+    {ST_LIB::PC7, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_2},               \
+    {ST_LIB::PC8, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_3},               \
+    {ST_LIB::PC9, ST_LIB::GPIODomain::AlternateFunction::AF3, Channel_4},               \
+                                                                                      \
+    {ST_LIB::PG2, ST_LIB::GPIODomain::AlternateFunction::AF3, BreakInput_1},            \
+    {ST_LIB::PG2, ST_LIB::GPIODomain::AlternateFunction::AF11, BreakInputCompare_1},    \
+                                                                                      \
+    {ST_LIB::PG3, ST_LIB::GPIODomain::AlternateFunction::AF3, BreakInput_2},            \
+    {ST_LIB::PG3, ST_LIB::GPIODomain::AlternateFunction::AF11, BreakInputCompare_2},    \
+                                                                                      \
+    {ST_LIB::PG8, ST_LIB::GPIODomain::AlternateFunction::AF3, ExternalTriggerFilter},
+
+    // 2 capture-compare channels
+#define Tim12PinsMacro \
+    {ST_LIB::PB14, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_1}, \
+    {ST_LIB::PB15, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_2},
+
+    // 1 capture-compare channel
+#define Tim13PinsMacro \
+    {ST_LIB::PA6, ST_LIB::GPIODomain::AlternateFunction::AF9, Channel_1}, \
+    {ST_LIB::PF8, ST_LIB::GPIODomain::AlternateFunction::AF9, Channel_1},
+
+    // 1 capture-compare channel
+#define Tim14PinsMacro \
+    {ST_LIB::PA7, ST_LIB::GPIODomain::AlternateFunction::AF9, Channel_1}, \
+    {ST_LIB::PF9, ST_LIB::GPIODomain::AlternateFunction::AF9, Channel_1},
+
+    // 2 capture-compare channels
+#define Tim15PinsMacro \
+    {ST_LIB::PA0, ST_LIB::GPIODomain::AlternateFunction::AF4, BreakInput_1},            \
+                                                                                      \
+    {ST_LIB::PA1, ST_LIB::GPIODomain::AlternateFunction::AF4, Channel_1}, /* negated */ \
+    {ST_LIB::PA2, ST_LIB::GPIODomain::AlternateFunction::AF4, Channel_1},               \
+    {ST_LIB::PA3, ST_LIB::GPIODomain::AlternateFunction::AF4, Channel_2},               \
+                                                                                      \
+    {ST_LIB::PC12, ST_LIB::GPIODomain::AlternateFunction::AF2, Channel_1},              \
+    {ST_LIB::PD2, ST_LIB::GPIODomain::AlternateFunction::AF4, Channel_2},               \
+                                                                                      \
+    {ST_LIB::PE3, ST_LIB::GPIODomain::AlternateFunction::AF4, BreakInput_1},            \
+    {ST_LIB::PE4, ST_LIB::GPIODomain::AlternateFunction::AF4, BreakInput_1},            \
+                                                                                      \
+    {ST_LIB::PE4, ST_LIB::GPIODomain::AlternateFunction::AF4, Channel_1},               \
+    {ST_LIB::PE4, ST_LIB::GPIODomain::AlternateFunction::AF4, Channel_2},
+
+    // 1 capture-compare channel
+#define Tim16PinsMacro \
+    {ST_LIB::PF6, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1},               \
+    {ST_LIB::PF8, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1}, /* negated */ \
+    {ST_LIB::PF10, ST_LIB::GPIODomain::AlternateFunction::AF1, BreakInput_1},
+
+    // 1 capture-compare channel
+#define Tim17PinsMacro \
+    {ST_LIB::PB5, ST_LIB::GPIODomain::AlternateFunction::AF1, BreakInput_1},            \
+    {ST_LIB::PB7, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1}, /* negated */ \
+    {ST_LIB::PB9, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1},               \
+    {ST_LIB::PF7, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1},               \
+    {ST_LIB::PF9, ST_LIB::GPIODomain::AlternateFunction::AF1, Channel_1}, /* negated */ \
+    {ST_LIB::PG6, ST_LIB::GPIODomain::AlternateFunction::AF1, BreakInput_1},
+
+    // 4 capture-compare channels
+#define Tim23PinsMacro \
+    {ST_LIB::PB2, ST_LIB::GPIODomain::AlternateFunction::AF13, ExternalTriggerFilter}, \
+    {ST_LIB::PF0, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_1},             \
+    {ST_LIB::PF1, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_2},             \
+    {ST_LIB::PF2, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_3},             \
+    {ST_LIB::PF3, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_4},             \
+                                                                                     \
+    {ST_LIB::PF6, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_1},             \
+    {ST_LIB::PF7, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_2},             \
+    {ST_LIB::PF8, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_3},             \
+    {ST_LIB::PF9, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_4},             \
+                                                                                     \
+    {ST_LIB::PG3, ST_LIB::GPIODomain::AlternateFunction::AF13, ExternalTriggerFilter}, \
+    {ST_LIB::PG12, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_1},            \
+    {ST_LIB::PG13, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_2},            \
+    {ST_LIB::PG14, ST_LIB::GPIODomain::AlternateFunction::AF13, Channel_3},
+
+    // 4 capture-compare channels
+#define Tim24PinsMacro \
+    {ST_LIB::PB3, ST_LIB::GPIODomain::AlternateFunction::AF14, ExternalTriggerFilter}, \
+    {ST_LIB::PF11, ST_LIB::GPIODomain::AlternateFunction::AF14, Channel_1},            \
+    {ST_LIB::PF12, ST_LIB::GPIODomain::AlternateFunction::AF14, Channel_2},            \
+    {ST_LIB::PF13, ST_LIB::GPIODomain::AlternateFunction::AF14, Channel_3},            \
+    {ST_LIB::PF14, ST_LIB::GPIODomain::AlternateFunction::AF14, Channel_4},            \
+    {ST_LIB::PG2, ST_LIB::GPIODomain::AlternateFunction::AF14, ExternalTriggerFilter},
+
+#define X(timx, ignore) \
+    constexpr TimerPossiblePin glue(tim, glue(timx, pins))[31] = { \
+        glue(Tim, glue(timx, PinsMacro))                           \
+    };                                                             \
+    constexpr std::size_t glue(tim, glue(timx, pin_count)) = ARRAY_LENGTH(glue(tim, glue(timx, pins)));
+
+    TimerXList
+
+#undef X
+
+    struct TimerPossPins {
+        TimerPossiblePin pins[31];
+        std::size_t pin_count;
+    };
+    constexpr TimerPossPins empty_pins = {
+        .pins = {},
+        .pin_count = 0
+    };
+    constexpr TimerPossPins tim_pins[25] = {
+        empty_pins,                         /* 0 */
+        {{Tim1PinsMacro}, tim1pin_count},   /* TIM1 */
+        {{Tim2PinsMacro}, tim2pin_count},   /* TIM2 */
+        {{Tim3PinsMacro}, tim3pin_count},   /* TIM3 */
+        {{Tim4PinsMacro}, tim4pin_count},   /* TIM4 */
+        {{Tim5PinsMacro}, tim5pin_count},   /* TIM5 */
+        {{Tim6PinsMacro}, tim6pin_count},   /* TIM6 - won't get checked since they have no associated pins */
+        {{Tim7PinsMacro}, tim7pin_count},   /* TIM7 - won't get checked since they have no associated pins */
+        {{Tim8PinsMacro}, tim8pin_count},   /* TIM8 */
+        empty_pins,                         /* 9 */
+        empty_pins,                         /* 10 */
+        empty_pins,                         /* 11 */
+        {{Tim12PinsMacro}, tim12pin_count}, /* TIM12 */
+        {{Tim13PinsMacro}, tim13pin_count}, /* TIM13 */
+        {{Tim14PinsMacro}, tim14pin_count}, /* TIM14 */
+        {{Tim15PinsMacro}, tim15pin_count}, /* TIM15 */
+        {{Tim16PinsMacro}, tim16pin_count}, /* TIM16 */
+        {{Tim17PinsMacro}, tim17pin_count}, /* TIM17 */
+        empty_pins,                         /* 18 */
+        empty_pins,                         /* 19 */
+        empty_pins,                         /* 20 */
+        empty_pins,                         /* 21 */
+        empty_pins,                         /* 22 */
+        {{Tim23PinsMacro}, tim23pin_count}, /* TIM23 */
+        {{Tim24PinsMacro}, tim24pin_count}, /* TIM24 */
+    };
+
+    if(req == TimerRequest::AnyGeneralPurpose || 
+        req == TimerRequest::Any32bit)
     {
-        enum TimerAF_Use {
-            Channel_1 = 1,
-            Channel_2 = 2,
-            Channel_3 = 3,
-            Channel_4 = 4,
-            ExternalTriggerFilter, /* ETR */
-            BreakInput_1,
-            BreakInput_2,
-            BreakInputCompare_1,
-            BreakInputCompare_2,
-        };
+        ST_LIB::compile_error("Any* timers can't use pins");
+    }
+    if(req == TimerRequest::Basic_6 || 
+        req == TimerRequest::Basic_7)
+    {
+        ST_LIB::compile_error("Basic timers can't use pins");
+    }
 
-        struct TimerPossiblePin {
-            ST_LIB::GPIODomain::Pin pin;
-            ST_LIB::GPIODomain::AlternateFunction af;
-            TimerAF_Use use;
-        };
-        TimerPossiblePin tim1pins[] = {
-            // 4 capture-compare channels
-            // complementary output
-            {ST_LIB::PE6, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_2},
-            {ST_LIB::PE6, (ST_LIB::GPIODomain::AlternateFunction)12, BreakInputCompare_2},
+    bool found = false;
+    for(std::size_t j = 0; j < tim_pins[(int)req].pin_count; j++) {
+        if(pin.af == ST_LIB::TimerAF::None) {
+            ST_LIB::compile_error("Error: Timers with pins must have associated TimerAF (alternate functions)");
+        } else if(((pin.af == ST_LIB::TimerAF::InputCapture || pin.af == ST_LIB::TimerAF::PWM) && 
+            (static_cast<uint8_t>(pin.channel) == static_cast<uint8_t>(tim_pins[(int)req].pins[j].use))) ||
 
-            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
-            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)11, BreakInputCompare_1},
+            ((pin.af == ST_LIB::TimerAF::BreakInput) &&
+            (tim_pins[(int)req].pins[j].use == BreakInput_1 || tim_pins[(int)req].pins[j].use == BreakInput_2)) ||
 
-            {ST_LIB::PA7, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
-            {ST_LIB::PB0, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2}, /* negated */
-            {ST_LIB::PB1, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3}, /* negated */
-            {ST_LIB::PE7, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
-            {ST_LIB::PE8, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
-            {ST_LIB::PE9, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
-            {ST_LIB::PE10, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2}, /* negated */
-            {ST_LIB::PE11, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2},
-            {ST_LIB::PE12, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3}, /* negated */
-            {ST_LIB::PE13, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3},
-            {ST_LIB::PE14, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_4},
-            
-            {ST_LIB::PE15, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
-            {ST_LIB::PE15, (ST_LIB::GPIODomain::AlternateFunction)13, BreakInputCompare_1},
-
-            {ST_LIB::PB12, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
-            {ST_LIB::PB12, (ST_LIB::GPIODomain::AlternateFunction)13, BreakInputCompare_1},
-
-            {ST_LIB::PB13, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
-            {ST_LIB::PB14, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2}, /* negated */
-            {ST_LIB::PB15, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3}, /* negated */
-
-            {ST_LIB::PG4, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_2},
-            {ST_LIB::PG4, (ST_LIB::GPIODomain::AlternateFunction)11, BreakInputCompare_2},
-
-            {ST_LIB::PG5, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
-            
-            {ST_LIB::PA8, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
-            {ST_LIB::PA9, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2},
-            {ST_LIB::PA10, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3},
-            {ST_LIB::PA11, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_4},
-
-            {ST_LIB::PA12, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
-            {ST_LIB::PA12, (ST_LIB::GPIODomain::AlternateFunction)12, BreakInput_2}, // comprobar
-        };
-        TimerPossiblePin tim2pins[] = {
-            // 4 capture-compare channels
-            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
-            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
-            {ST_LIB::PA1, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2},
-            {ST_LIB::PA2, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3},
-            {ST_LIB::PA3, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_4},
-            
-            {ST_LIB::PA5, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
-            {ST_LIB::PA5, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
-            
-            {ST_LIB::PA15, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
-            {ST_LIB::PA15, (ST_LIB::GPIODomain::AlternateFunction)1, ExternalTriggerFilter},
-            {ST_LIB::PB3, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_2},
-            {ST_LIB::PB10, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_3},
-            {ST_LIB::PB11, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_4},
-        };
-        TimerPossiblePin tim3pins[] = {
-            // 4 capture-compare channels
-            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
-            {ST_LIB::PA7, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
-            {ST_LIB::PB0, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
-            {ST_LIB::PB1, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
-            
-            {ST_LIB::PB4, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
-            {ST_LIB::PB5, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
-            
-            {ST_LIB::PC6, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
-            {ST_LIB::PC7, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
-            {ST_LIB::PC8, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
-            {ST_LIB::PC9, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
-            
-            {ST_LIB::PD2, (ST_LIB::GPIODomain::AlternateFunction)2, ExternalTriggerFilter},
-        };
-        TimerPossiblePin tim4pins[] = {
-            // 4 capture-compare channels
-            {ST_LIB::PB6, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
-            {ST_LIB::PB7, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
-            {ST_LIB::PB8, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
-            {ST_LIB::PB9, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
-            
-            {ST_LIB::PD12, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
-            {ST_LIB::PD13, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
-            {ST_LIB::PD14, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
-            {ST_LIB::PD15, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
-
-            {ST_LIB::PE0, (ST_LIB::GPIODomain::AlternateFunction)2, ExternalTriggerFilter},
-        };
-        TimerPossiblePin tim5pins[] = {
-            // 4 capture-compare channels
-            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
-            {ST_LIB::PA1, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
-            {ST_LIB::PA2, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_3},
-            {ST_LIB::PA3, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_4},
-            {ST_LIB::PA4, (ST_LIB::GPIODomain::AlternateFunction)2, ExternalTriggerFilter},
-        };
-        TimerPossiblePin tim8pins[] = {
-            // 4 capture-compare channels
-            // complementary output
-            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)3, ExternalTriggerFilter},
-            {ST_LIB::PA5, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_1}, /* negated */
-
-            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)3, BreakInput_1},
-            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)10, BreakInputCompare_1},
-
-            {ST_LIB::PA7, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_1}, /* negated */
-            
-            {ST_LIB::PA8, (ST_LIB::GPIODomain::AlternateFunction)3, BreakInput_2},
-            {ST_LIB::PA8, (ST_LIB::GPIODomain::AlternateFunction)12, BreakInputCompare_2},
-
-            {ST_LIB::PB0, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_2}, /* negated */
-            {ST_LIB::PB1, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_3}, /* negated */
-            {ST_LIB::PB14, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_2}, /* negated */
-            {ST_LIB::PB15, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_3}, /* negated */
-
-            {ST_LIB::PC6, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_1},
-            {ST_LIB::PC7, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_2},
-            {ST_LIB::PC8, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_3},
-            {ST_LIB::PC9, (ST_LIB::GPIODomain::AlternateFunction)3, Channel_4},
-
-            {ST_LIB::PG2, (ST_LIB::GPIODomain::AlternateFunction)3, BreakInput_1},
-            {ST_LIB::PG2, (ST_LIB::GPIODomain::AlternateFunction)11, BreakInputCompare_1},
-
-            {ST_LIB::PG3, (ST_LIB::GPIODomain::AlternateFunction)3, BreakInput_2},
-            {ST_LIB::PG3, (ST_LIB::GPIODomain::AlternateFunction)11, BreakInputCompare_2},
-            
-            {ST_LIB::PG8, (ST_LIB::GPIODomain::AlternateFunction)3, ExternalTriggerFilter},
-        };
-        TimerPossiblePin tim12pins[] = {
-            // 2 capture-compare channels
-            {ST_LIB::PB14, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
-            {ST_LIB::PB15, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_2},
-        };
-        TimerPossiblePin tim13pins[] = {
-            // 1 capture-compare channel
-            {ST_LIB::PA6, (ST_LIB::GPIODomain::AlternateFunction)9, Channel_1},
-            {ST_LIB::PF8, (ST_LIB::GPIODomain::AlternateFunction)9, Channel_1},
-        };
-        TimerPossiblePin tim14pins[] = {
-            // 1 capture-compare channel
-            {ST_LIB::PA7, (ST_LIB::GPIODomain::AlternateFunction)9, Channel_1},
-            {ST_LIB::PF9, (ST_LIB::GPIODomain::AlternateFunction)9, Channel_1},
-        };
-        TimerPossiblePin tim15pins[] = {
-            // 2 capture-compare channels
-            {ST_LIB::PA0, (ST_LIB::GPIODomain::AlternateFunction)4, BreakInput_1},
-
-            {ST_LIB::PA1, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_1}, /* negated */
-            {ST_LIB::PA2, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_1},
-            {ST_LIB::PA3, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_2},
-            
-            {ST_LIB::PC12, (ST_LIB::GPIODomain::AlternateFunction)2, Channel_1},
-            {ST_LIB::PD2, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_2},
-
-            {ST_LIB::PE3, (ST_LIB::GPIODomain::AlternateFunction)4, BreakInput_1},
-            {ST_LIB::PE4, (ST_LIB::GPIODomain::AlternateFunction)4, BreakInput_1},
-            
-            {ST_LIB::PE4, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_1},
-            {ST_LIB::PE4, (ST_LIB::GPIODomain::AlternateFunction)4, Channel_2},
-        };
-        TimerPossiblePin tim16pins[] = {
-            // 1 capture-compare channel
-            {ST_LIB::PF6, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
-            {ST_LIB::PF8, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
-            {ST_LIB::PF10, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
-        };
-        TimerPossiblePin tim17pins[] = {
-            // 1 capture-compare channel
-            {ST_LIB::PB5, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
-            {ST_LIB::PB7, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
-            {ST_LIB::PB9, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
-            {ST_LIB::PF7, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1},
-            {ST_LIB::PF9, (ST_LIB::GPIODomain::AlternateFunction)1, Channel_1}, /* negated */
-            {ST_LIB::PG6, (ST_LIB::GPIODomain::AlternateFunction)1, BreakInput_1},
-        };
-        TimerPossiblePin tim23pins[] = {
-            // 4 capture-compare channels
-            {ST_LIB::PB2, (ST_LIB::GPIODomain::AlternateFunction)13, ExternalTriggerFilter},
-            {ST_LIB::PF0, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_1},
-            {ST_LIB::PF1, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_2},
-            {ST_LIB::PF2, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_3},
-            {ST_LIB::PF3, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_4},
-
-            {ST_LIB::PF6, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_1},
-            {ST_LIB::PF7, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_2},
-            {ST_LIB::PF8, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_3},
-            {ST_LIB::PF9, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_4},
-            
-            {ST_LIB::PG3, (ST_LIB::GPIODomain::AlternateFunction)13, ExternalTriggerFilter},
-            {ST_LIB::PG12, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_1},
-            {ST_LIB::PG13, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_2},
-            {ST_LIB::PG14, (ST_LIB::GPIODomain::AlternateFunction)13, Channel_3},
-        };
-        TimerPossiblePin tim24pins[] = {
-            // 4 capture-compare channels
-            {ST_LIB::PB3, (ST_LIB::GPIODomain::AlternateFunction)14, ExternalTriggerFilter},
-            {ST_LIB::PF11, (ST_LIB::GPIODomain::AlternateFunction)14, Channel_1},
-            {ST_LIB::PF12, (ST_LIB::GPIODomain::AlternateFunction)14, Channel_2},
-            {ST_LIB::PF13, (ST_LIB::GPIODomain::AlternateFunction)14, Channel_3},
-            {ST_LIB::PF14, (ST_LIB::GPIODomain::AlternateFunction)14, Channel_4},
-            {ST_LIB::PG2, (ST_LIB::GPIODomain::AlternateFunction)14, ExternalTriggerFilter},
-        };
-
-        std::span<TimerPossiblePin> tim_pins[25];
-        tim_pins[TimerRequest::Advanced_1] = std::span<TimerPossiblePin>(tim1pins);
-        tim_pins[TimerRequest::GeneralPurpose32bit_2] = std::span<TimerPossiblePin>(tim2pins);
-        tim_pins[TimerRequest::GeneralPurpose_3] = std::span<TimerPossiblePin>(tim3pins);
-        tim_pins[TimerRequest::GeneralPurpose_4] = std::span<TimerPossiblePin>(tim4pins);
-        tim_pins[TimerRequest::GeneralPurpose32bit_5] = std::span<TimerPossiblePin>(tim5pins);
-        /* TIM6, TIM7 have no associated pins */        
-        tim_pins[TimerRequest::Advanced_8] = std::span<TimerPossiblePin>(tim8pins);
-        tim_pins[TimerRequest::SlaveTimer_12] = std::span<TimerPossiblePin>(tim12pins);
-        tim_pins[TimerRequest::SlaveTimer_13] = std::span<TimerPossiblePin>(tim13pins);
-        tim_pins[TimerRequest::SlaveTimer_14] = std::span<TimerPossiblePin>(tim14pins);
-        tim_pins[TimerRequest::GeneralPurpose_15] = std::span<TimerPossiblePin>(tim15pins);
-        tim_pins[TimerRequest::GeneralPurpose_16] = std::span<TimerPossiblePin>(tim16pins);
-        tim_pins[TimerRequest::GeneralPurpose_17] = std::span<TimerPossiblePin>(tim17pins);
-        tim_pins[TimerRequest::GeneralPurpose32bit_23] = std::span<TimerPossiblePin>(tim23pins);
-        tim_pins[TimerRequest::GeneralPurpose32bit_24] = std::span<TimerPossiblePin>(tim24pins);
-
-        /* good luck n_n */
-        for(std::size_t i = 0; i < requests.size(); i++) {
-            const Entry &e = requests[i];
-            if(e.pin_count == 0) continue;
-            if(e.request == TimerRequest::AnyGeneralPurpose || 
-               e.request == TimerRequest::Any32bit)
-            {
-                ST_LIB::compile_error("Any* timers can't use pins");
-            }
-            if(e.request == TimerRequest::Basic_6 || 
-               e.request == TimerRequest::Basic_7)
-            {
-                ST_LIB::compile_error("Basic timers can't use pins");
-            }
-
-            std::span<TimerPossiblePin> curr_pins = tim_pins[(int)e.request];
-            for(int j = 0; j < e.pin_count; j++) {
-                ST_LIB::TimerPin pin = e.pins[j];
-                bool found = false;
-                for(TimerPossiblePin p : curr_pins) {
-                    if(pin.af == ST_LIB::TimerAF::None) {
-                        ST_LIB::compile_error("Error: Timers with pins must have associated TimerAF (alternate functions)");
-                    } else if(pin.af == ST_LIB::TimerAF::InputCapture || pin.af == ST_LIB::TimerAF::PWM) {
-                        if((static_cast<uint8_t>(pin.channel) == static_cast<uint8_t>(p.use))) {
-                            found = true;
-                            break;
-                        }
-                    } else if(pin.af == ST_LIB::TimerAF::BreakInput) {
-                        if(p.use == BreakInput_1 || p.use == BreakInput_2) {
-                            found = true;
-                            break;
-                        }
-                    } else if(pin.af == ST_LIB::TimerAF::BreakInputCompare) {
-                        if(p.use == BreakInputCompare_1 || p.use == BreakInputCompare_2) {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-                if(!found) {
-                    ST_LIB::compile_error("Error: Couldn't find any pins with the requested alternate function");
-                }
-            }
+            ((pin.af == ST_LIB::TimerAF::BreakInputCompare) &&
+            (tim_pins[(int)req].pins[j].use == BreakInputCompare_1 || tim_pins[(int)req].pins[j].use == BreakInputCompare_2)))
+        {
+            found = true;
+            return tim_pins[(int)req].pins[j].af;
         }
     }
-};
+    if(!found) {
+        ST_LIB::compile_error("Error: Couldn't find any pins with the requested alternate function");
+    }
+
+    return GPIODomain::AlternateFunction::NO_AF;
+}
+
 } // namespace ST_LIB
 
 #endif // HAL_TIM_MODULE_ENABLED
 
 /* Old init code from TimerPeripheral.cpp, some might be recycled
 
-                TIM_MasterConfigTypeDef sMasterConfig = {0};
-                TIM_IC_InitTypeDef sConfigIC = {0};
-                TIM_OC_InitTypeDef sConfigOC = {0};
-                TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
-
-                TIM_HandleTypeDef *handle = &hal_handles[e.timer_idx];
-                handle->Instance = cmsis_timers[e.timer_idx];
-                handle->Init.Prescaler = e.prescaler;
-                handle->Init.CounterMode = TIM_COUNTERMODE_UP;
-                handle->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-                // PWM stuff should be done somewhere else..
-                handle->Init.Period = e.period;
-                handle->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-                handle->Init.RepetitionCounter = 0;
-                
-                if(e.type == TIM_TYPE::BASE) {
-                    if(HAL_TIM_Base_Init(handle) != HAL_OK) {
-                        // NOTE: In TimerPeripheral.cpp this is %d for a string ???
-                        ErrorHandler("Unable to init base timer on %s", e.name);
-                    }
-                }
-
-                // InputCapture stuff should be dome somewhere else..
-                // PWM stuff should be done somewhere else..
-                
-                sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-                sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
-                sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-                if(HAL_TIMEx_MasterConfigSynchronization(handle, &sMasterConfig) != HAL_OK) {
-                    ErrorHandler("Unable to configure master synch on %s", e.name);
-                }
-
-                // InputCapture stuff should be dome somewhere else..
-                // PWM stuff should be done somewhere else..
-
-                sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
-                sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
-                sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-                sBreakDeadTimeConfig.DeadTime = e.deadtime;
-                sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
-                sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
-                sBreakDeadTimeConfig.BreakFilter = 0;
-                sBreakDeadTimeConfig.Break2State = TIM_BREAK2_DISABLE;
-                sBreakDeadTimeConfig.Break2Polarity = TIM_BREAK2POLARITY_HIGH;
-                sBreakDeadTimeConfig.Break2Filter = 0;
-                sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
-                if(HAL_TIMEx_ConfigBreakDeadTime(handle, &sBreakDeadTimeConfig) != HAL_OK) {
-                    ErrorHandler("Unable to configure break dead time on %s", e.name);
-                }
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if(HAL_TIMEx_MasterConfigSynchronization(handle, &sMasterConfig) != HAL_OK) {
+        ErrorHandler("Unable to configure master synch on %s", e.name);
+    }
 */
