@@ -86,6 +86,7 @@ template <typename... Domains> struct BuildCtx {
 using DomainsCtx = BuildCtx<MPUDomain, GPIODomain, TimerDomain,
                             DigitalOutputDomain,
                             DigitalInputDomain,
+                            MdmaPacketDomain,
                             SdDomain /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
@@ -107,6 +108,7 @@ template <auto &...devs> struct Board {
     constexpr std::size_t timN = domain_size<TimerDomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
+    constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
     constexpr std::size_t sdN = domain_size<SdDomain>();
     // ...
 
@@ -116,6 +118,7 @@ template <auto &...devs> struct Board {
       std::array<TimerDomain::Config, timN> tim_cfgs;
       std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
       std::array<DigitalInputDomain::Config, dinN> din_cfgs;
+      std::array<MdmaPacketDomain::Config, mdmaPacketN> mdma_packet_cfgs;
       std::array<SdDomain::Config, sdN> sd_cfgs;
       // ...
     };
@@ -131,6 +134,8 @@ template <auto &...devs> struct Board {
             ctx.template span<DigitalOutputDomain>()),
         .din_cfgs = DigitalInputDomain::template build<dinN>(
             ctx.template span<DigitalInputDomain>()),
+        .mdma_packet_cfgs = MdmaPacketDomain::template build<mdmaPacketN>(
+            ctx.template span<MdmaPacketDomain>())
         .sd_cfgs = SdDomain::template build<sdN>(
             ctx.template span<SdDomain>()),
         // ...
@@ -145,6 +150,7 @@ template <auto &...devs> struct Board {
     constexpr std::size_t timN = domain_size<TimerDomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
+    constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
     constexpr std::size_t sdN = domain_size<SdDomain>();
     // ...
 
@@ -155,6 +161,8 @@ template <auto &...devs> struct Board {
                                            GPIODomain::Init<gpioN>::instances);
     DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
                                          GPIODomain::Init<gpioN>::instances);
+    MdmaPacketDomain::Init<mdmaPacketN>::init(cfg.mdma_packet_cfgs,
+                                              MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances);
     SdDomain::Init<sdN>::init(cfg.sd_cfgs,
                               MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances,
                               DigitalInputDomain::Init<dinN>::instances);
