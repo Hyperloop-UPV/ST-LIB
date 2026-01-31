@@ -26,7 +26,7 @@ namespace ST_LIB {
     extern void compile_error(const char *msg);
     struct DMA_Domain {
         
-        enum class Instance : uint8_t {none, adc1, adc2, adc3, 
+        enum class Peripheral : uint8_t {none, adc1, adc2, adc3, 
                                         i2c1, i2c2, i2c3, i2c5,  
                                         spi1, spi2, spi3, spi4, spi5,
                                         fmac};
@@ -62,7 +62,7 @@ namespace ST_LIB {
         }
         
         struct Entry {
-            Instance instance;
+            Peripheral instance;
             Stream stream;
             IRQn_Type irqn;
             uint8_t id;
@@ -75,7 +75,7 @@ namespace ST_LIB {
             std::array<Entry, sizeof...(Ss)> e{};
 
             
-            consteval DMA(Instance instance) {
+            consteval DMA(Peripheral instance) {
                 static_assert(sizeof...(Ss) <= 3, "Máximo 3 streams");
 
                 Stream streams[] = { Ss... };
@@ -129,69 +129,69 @@ namespace ST_LIB {
             else compile_error("No tiene que llegar aqui nunca, creo");
         }
 
-        static constexpr inline bool is_one_of(Instance instance, auto... bases) {
+        static constexpr inline bool is_one_of(Peripheral instance, auto... bases) {
             return ((instance == bases) || ...);
         }
 
-        static constexpr inline bool is_spi(Instance instance) {
-            return is_one_of(instance, Instance::spi1, Instance::spi2,
-                            Instance::spi3, Instance::spi4, Instance::spi5);
+        static constexpr inline bool is_spi(Peripheral instance) {
+            return is_one_of(instance, Peripheral::spi1, Peripheral::spi2,
+                            Peripheral::spi3, Peripheral::spi4, Peripheral::spi5);
         }
 
-        static constexpr inline bool is_i2c(Instance instance) {
-            return is_one_of(instance, Instance::i2c1, Instance::i2c2,
-                            Instance::i2c3, Instance::i2c5);
+        static constexpr inline bool is_i2c(Peripheral instance) {
+            return is_one_of(instance, Peripheral::i2c1, Peripheral::i2c2,
+                            Peripheral::i2c3, Peripheral::i2c5);
         }
 
-        static constexpr inline bool is_adc(Instance instance) {
-            return is_one_of(instance, Instance::adc1, Instance::adc2, Instance::adc3);
+        static constexpr inline bool is_adc(Peripheral instance) {
+            return is_one_of(instance, Peripheral::adc1, Peripheral::adc2, Peripheral::adc3);
         }
 
-        static constexpr inline bool is_fmac(Instance instance) {
-            return instance == Instance::fmac;
+        static constexpr inline bool is_fmac(Peripheral instance) {
+            return instance == Peripheral::fmac;
         }
 
-        static constexpr inline bool is_none(Instance instance){
-            return instance == Instance::none;
+        static constexpr inline bool is_none(Peripheral instance){
+            return instance == Peripheral::none;
         }
 
-        static consteval inline uint32_t get_Request(Instance instance, uint8_t i) {
-            if (instance == Instance::none) return DMA_REQUEST_MEM2MEM;
+        static consteval inline uint32_t get_Request(Peripheral instance, uint8_t i) {
+            if (instance == Peripheral::none) return DMA_REQUEST_MEM2MEM;
 
-            if (instance == Instance::adc1) return DMA_REQUEST_ADC1;
-            if (instance == Instance::adc2) return DMA_REQUEST_ADC2;
-            if (instance == Instance::adc3) return DMA_REQUEST_ADC3;
+            if (instance == Peripheral::adc1) return DMA_REQUEST_ADC1;
+            if (instance == Peripheral::adc2) return DMA_REQUEST_ADC2;
+            if (instance == Peripheral::adc3) return DMA_REQUEST_ADC3;
 
-            if (instance == Instance::i2c1 && i == 0) return DMA_REQUEST_I2C1_RX;
-            if (instance == Instance::i2c1 && i == 1) return DMA_REQUEST_I2C1_TX;
-            if (instance == Instance::i2c2 && i == 0) return DMA_REQUEST_I2C2_RX;
-            if (instance == Instance::i2c2 && i == 1) return DMA_REQUEST_I2C2_TX;
-            if (instance == Instance::i2c3 && i == 0) return DMA_REQUEST_I2C3_RX;
-            if (instance == Instance::i2c3 && i == 1) return DMA_REQUEST_I2C3_TX;
-            if (instance == Instance::i2c5 && i == 0) return DMA_REQUEST_I2C5_RX; 
-            if (instance == Instance::i2c5 && i == 1) return DMA_REQUEST_I2C5_TX;
+            if (instance == Peripheral::i2c1 && i == 0) return DMA_REQUEST_I2C1_RX;
+            if (instance == Peripheral::i2c1 && i == 1) return DMA_REQUEST_I2C1_TX;
+            if (instance == Peripheral::i2c2 && i == 0) return DMA_REQUEST_I2C2_RX;
+            if (instance == Peripheral::i2c2 && i == 1) return DMA_REQUEST_I2C2_TX;
+            if (instance == Peripheral::i2c3 && i == 0) return DMA_REQUEST_I2C3_RX;
+            if (instance == Peripheral::i2c3 && i == 1) return DMA_REQUEST_I2C3_TX;
+            if (instance == Peripheral::i2c5 && i == 0) return DMA_REQUEST_I2C5_RX; 
+            if (instance == Peripheral::i2c5 && i == 1) return DMA_REQUEST_I2C5_TX;
 
-            if (instance == Instance::spi1 && i == 0) return DMA_REQUEST_SPI1_RX;
-            if (instance == Instance::spi1 && i == 1) return DMA_REQUEST_SPI1_TX;
-            if (instance == Instance::spi2 && i == 0) return DMA_REQUEST_SPI2_RX;
-            if (instance == Instance::spi2 && i == 1) return DMA_REQUEST_SPI2_TX;
-            if (instance == Instance::spi3 && i == 0) return DMA_REQUEST_SPI3_RX;
-            if (instance == Instance::spi3 && i == 1) return DMA_REQUEST_SPI3_TX;
-            if (instance == Instance::spi4 && i == 0) return DMA_REQUEST_SPI4_RX;
-            if (instance == Instance::spi4 && i == 1) return DMA_REQUEST_SPI4_TX;
-            if (instance == Instance::spi5 && i == 0) return DMA_REQUEST_SPI5_RX;
-            if (instance == Instance::spi5 && i == 1) return DMA_REQUEST_SPI5_TX; 
+            if (instance == Peripheral::spi1 && i == 0) return DMA_REQUEST_SPI1_RX;
+            if (instance == Peripheral::spi1 && i == 1) return DMA_REQUEST_SPI1_TX;
+            if (instance == Peripheral::spi2 && i == 0) return DMA_REQUEST_SPI2_RX;
+            if (instance == Peripheral::spi2 && i == 1) return DMA_REQUEST_SPI2_TX;
+            if (instance == Peripheral::spi3 && i == 0) return DMA_REQUEST_SPI3_RX;
+            if (instance == Peripheral::spi3 && i == 1) return DMA_REQUEST_SPI3_TX;
+            if (instance == Peripheral::spi4 && i == 0) return DMA_REQUEST_SPI4_RX;
+            if (instance == Peripheral::spi4 && i == 1) return DMA_REQUEST_SPI4_TX;
+            if (instance == Peripheral::spi5 && i == 0) return DMA_REQUEST_SPI5_RX;
+            if (instance == Peripheral::spi5 && i == 1) return DMA_REQUEST_SPI5_TX; 
             
-            if (instance == Instance::fmac && i == 0) return DMA_REQUEST_MEM2MEM;
-            if (instance == Instance::fmac && i == 1) return DMA_REQUEST_FMAC_WRITE;
-            if (instance == Instance::fmac && i == 2) return DMA_REQUEST_FMAC_READ;
+            if (instance == Peripheral::fmac && i == 0) return DMA_REQUEST_MEM2MEM;
+            if (instance == Peripheral::fmac && i == 1) return DMA_REQUEST_FMAC_WRITE;
+            if (instance == Peripheral::fmac && i == 2) return DMA_REQUEST_FMAC_READ;
 
             compile_error("Invalid DMA request configuration");
             return 0;
         }
 
-        static consteval inline uint32_t get_Direction(Instance instance, uint8_t i) {
-            if ((is_fmac(instance) && i == 0) || instance == Instance::none) {
+        static consteval inline uint32_t get_Direction(Peripheral instance, uint8_t i) {
+            if ((is_fmac(instance) && i == 0) || instance == Peripheral::none) {
                     return DMA_MEMORY_TO_MEMORY;
                 }
             else if  ((is_i2c(instance) && i == 1) ||
@@ -202,21 +202,21 @@ namespace ST_LIB {
             return DMA_PERIPH_TO_MEMORY;
         }
 
-        static consteval inline uint32_t get_PeriphInc(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_PeriphInc(Peripheral instance, uint8_t i) {
             if  ((is_fmac(instance) && i == 0) || is_none(instance)){
                 return DMA_PINC_ENABLE;
             }
             return DMA_PINC_DISABLE;
         }
 
-        static consteval inline uint32_t get_MemInc(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_MemInc(Peripheral instance, uint8_t i) {
             if  (is_fmac(instance) && i == 0){
                 return DMA_MINC_DISABLE;
             }
             return DMA_MINC_ENABLE;
         }
 
-        static consteval inline uint32_t get_PeriphDataAlignment(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_PeriphDataAlignment(Peripheral instance, uint8_t i) {
             if  (is_spi(instance) || is_i2c(instance)){
                 return DMA_PDATAALIGN_BYTE; 
             }
@@ -226,7 +226,7 @@ namespace ST_LIB {
             return DMA_PDATAALIGN_HALFWORD;
         }
 
-        static consteval inline uint32_t get_MemDataAlignment(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_MemDataAlignment(Peripheral instance, uint8_t i) {
             if  (is_i2c(instance)){
                 return DMA_MDATAALIGN_WORD;
             }
@@ -237,7 +237,7 @@ namespace ST_LIB {
             return DMA_MDATAALIGN_HALFWORD;
         }
 
-        static consteval inline uint32_t get_Mode(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_Mode(Peripheral instance, uint8_t i) {
             if  (is_spi(instance) || is_fmac(instance) || is_none(instance)){
                 return DMA_NORMAL;
             }
@@ -245,7 +245,7 @@ namespace ST_LIB {
             return DMA_CIRCULAR;
         }    
 
-        static consteval inline uint32_t get_Priority(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_Priority(Peripheral instance, uint8_t i) {
             if  (is_fmac(instance)){
                 return DMA_PRIORITY_HIGH;
             }
@@ -253,30 +253,30 @@ namespace ST_LIB {
             return DMA_PRIORITY_LOW;
         }
         
-        static consteval inline uint32_t get_FIFOMode(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_FIFOMode(Peripheral instance, uint8_t i) {
             if (is_fmac(instance)){
                 return DMA_FIFOMODE_ENABLE;
             }
             return DMA_FIFOMODE_DISABLE;
         }
 
-        static consteval inline uint32_t get_FIFOThreshold(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_FIFOThreshold(Peripheral instance, uint8_t i) {
             if  (is_spi(instance)){
                 return DMA_FIFO_THRESHOLD_FULL;
             }
             return DMA_FIFO_THRESHOLD_HALFFULL;
         }
 
-        static consteval inline uint32_t get_MemBurst(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_MemBurst(Peripheral instance, uint8_t i) {
             return DMA_MBURST_SINGLE;
         }
 
-        static consteval inline uint32_t get_PeriphBurst(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_PeriphBurst(Peripheral instance, uint8_t i) {
             return DMA_PBURST_SINGLE;
         }
 
         struct Config {
-            std::tuple<Instance, 
+            std::tuple<Peripheral, 
                     DMA_InitTypeDef, 
                     Stream, 
                     IRQn_Type,
