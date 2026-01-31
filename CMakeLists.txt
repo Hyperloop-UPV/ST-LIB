@@ -96,6 +96,7 @@ if(CMAKE_CROSSCOMPILING)
     # SD
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd.c
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd_ex.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_ll_sdmmc.c
 
     # CAN / FDCAN
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_fdcan.c
