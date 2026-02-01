@@ -100,44 +100,22 @@ public:
             timer->counter_enable();
         }
 
-        if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_1) {
-            SET_BIT(timer->instance->tim->CCER, TIM_CCER_CC1E);
-        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_2) {
-            SET_BIT(timer->instance->tim->CCER, TIM_CCER_CC2E);
-        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_3) {
-            SET_BIT(timer->instance->tim->CCER, TIM_CCER_CC3E);
-        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_4) {
-            SET_BIT(timer->instance->tim->CCER, TIM_CCER_CC4E);
-        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_5) {
-            SET_BIT(timer->instance->tim->CCER, TIM_CCER_CC5E);
-        } else if constexpr(pin.channel == ST_LIB::TimerChannel::CHANNEL_6) {
-            SET_BIT(timer->instance->tim->CCER, TIM_CCER_CC6E);
-        }
-
         this->is_on = true;
     }
 
     void turn_off() {
         if(!this->is_on) return;
-        // if(HAL_TIM_PWM_Stop(timer->instance->hal_tim, channel) != HAL_OK) { ErrorHandler("", 0); }
 
-        SET_BIT(timer->tim->CCER, (uint32_t)(TIM_CCx_DISABLE << (get_channel_mul4(pin.channel) & 0x1FU)));
-
-        if constexpr(timer->is_break_instance) {
-            // Disable Main Output Enable (MOE)
-            CLEAR_BIT(timer->tim->BDTR, TIM_BDTR_MOE);
-        }
+        CLEAR_BIT(timer->tim->CCER, (uint32_t)(TIM_CCER_CC1E << (get_channel_mul4(pin.channel) & 0x1FU)));
 
         HAL_TIM_ChannelStateTypeDef *state = &timer->instance->hal_tim.ChannelState[get_channel_state_idx(pin.channel)];
         *state = HAL_TIM_CHANNEL_STATE_READY;
 
-        if(timer->instance->hal_tim->ChannelState[0] == HAL_TIM_CHANNEL_STATE_READY &&
-           timer->instance->hal_tim->ChannelState[1] == HAL_TIM_CHANNEL_STATE_READY &&
-           timer->instance->hal_tim->ChannelState[2] == HAL_TIM_CHANNEL_STATE_READY &&
-           timer->instance->hal_tim->ChannelState[3] == HAL_TIM_CHANNEL_STATE_READY &&
-           timer->instance->hal_tim->ChannelState[4] == HAL_TIM_CHANNEL_STATE_READY &&
-           timer->instance->hal_tim->ChannelState[5] == HAL_TIM_CHANNEL_STATE_READY)
-        {
+        if(timer->are_all_channels_free()) {
+            if constexpr(timer->is_break_instance) {
+                // Disable Main Output Enable (MOE)
+                CLEAR_BIT(timer->tim->BDTR, TIM_BDTR_MOE);
+            }
             timer->counter_disable();
         }
 

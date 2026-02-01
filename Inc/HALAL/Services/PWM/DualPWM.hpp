@@ -71,7 +71,6 @@ public:
         };
 
         timer->template config_output_compare_channel<pin.channel>(&sConfigOC);
-        //timer->template config_output_compare_negated_channel<negated_pin.channel>(&sConfigOC);
         timer->template set_output_compare_preload_enable<pin.channel>();
     }
 
@@ -149,7 +148,6 @@ public:
 
     void turn_off_positive() {
         if(!this->is_on_positive) return;
-        // if(HAL_TIM_PWM_Stop(timer->instance->hal_tim, channel) != HAL_OK) { ErrorHandler("", 0); }
 
         CLEAR_BIT(timer->tim->CCER, (uint32_t)(TIM_CCER_CC1E << (get_channel_mul4(pin.channel) & 0x1FU)));
 
