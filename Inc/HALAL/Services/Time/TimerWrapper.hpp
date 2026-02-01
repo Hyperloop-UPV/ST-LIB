@@ -202,6 +202,7 @@ struct TimerWrapper {
 
         // NOTE: No voy a comprobar todo esto, no hará falta comprobarlo con la siguiente versión del pwm, dualpwm
         static_assert((static_cast<uint8_t>(pin.channel) | static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) == static_cast<uint8_t>(negated_pin.channel));
+        static_assert(pin.af == TimerAF::PWM && negated_pin.af == TimerAF::PWM);
         return DualPWM<dev, pin, negated_pin>(this, polarity, negated_polarity);
     }
 
