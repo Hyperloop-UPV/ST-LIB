@@ -352,8 +352,8 @@ struct TimerDomain {
         {
             static_assert((std::is_same_v<T, TimerPin> && ...), 
                   "All template arguments must be of type TimerPin");
-            if(sizeof...(pinargs) > 9) {
-                ST_LIB::compile_error("Max 9 pins per timer");
+            if(sizeof...(pinargs) > 7) {
+                ST_LIB::compile_error("Max 7 pins per timer");
             }
         }
 
@@ -375,8 +375,8 @@ struct TimerDomain {
         {
             static_assert((std::is_same_v<T, TimerPin> && ...), 
                   "All template arguments must be of type TimerPin");
-            if(sizeof...(pinargs) > 9) {
-                ST_LIB::compile_error("Max 9 pins per timer");
+            if(sizeof...(pinargs) > 7) {
+                ST_LIB::compile_error("Max 7 pins per timer");
             }
         }
         
