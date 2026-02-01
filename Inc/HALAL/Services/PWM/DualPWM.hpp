@@ -236,13 +236,24 @@ public:
 
         float clock_period_ns = 1000'000'000.0f / (float)timer->get_clock_frequency();
         if(time <= 127 * clock_period_ns) {
+            /* range 1: DTG[7] = 0; DTG[6:0] = [0..127]) */
             sBreakDeadTimeConfig.DeadTime = time / clock_period_ns;
         } else if(time <= (2 * clock_period_ns * 127)) {
-            sBreakDeadTimeConfig.DeadTime = time / (2 * clock_period_ns) - 64 + 128;
-        } else if(time <= (8 * clock_period_ns * 127)) {
-            sBreakDeadTimeConfig.DeadTime = time / (8 * clock_period_ns) -32 + 192;
-        } else if(time <= (16 * clock_period_ns * 127)) {
-            sBreakDeadTimeConfig.DeadTime = time / (16 * clock_period_ns) -32 + 224;
+            /* range 2: DTG[7:6] = 0b10; DTG[5:0] = 2*(64 + [0..63]) */
+            sBreakDeadTimeConfig.DeadTime = 
+                0b1000'0000 | (uint32_t)((float)time / (2 * clock_period_ns) - 64);
+        } else if(time <= (8 * clock_period_ns * 63)) {
+            /* range 3: DTG[7:5] = 0b110; DTG[4:0] = 8*(32 + [0..31]) */
+            int64_t min = (8 * clock_period_ns * 32);
+            if(time < min) { time = min; }
+            sBreakDeadTimeConfig.DeadTime = 
+                0b1100'0000 | (uint32_t)((float)time / (8 * clock_period_ns) - 32);
+        } else if(time <= (16 * clock_period_ns * 63)) {
+            /* range 4: DTG[7:5] = 0b111; DTG[4:0] = 16*(32 + [0..31]) */
+            int64_t min = (16 * clock_period_ns * 32);
+            if(time < min) { time = min; }
+            sBreakDeadTimeConfig.DeadTime = 
+                0b1110'0000 | (uint32_t)((float)time / (16 * clock_period_ns) - 32);
         } else {
             ErrorHandler("Invalid dead time configuration");
         }
