@@ -168,7 +168,7 @@ template <auto &...devs> struct Board {
 
 #define X(domain, inst, is_templated, ...) \
     if constexpr(is_templated) { \
-        domain::Init<inst##N, cfg.inst##_cfgs>::init(__VA_ARGS__); \
+        domain::Init<inst##N, cfg.inst##_cfgs>::init(##__VA_ARGS__); \
     } else { \
         domain::Init<inst##N>::init(cfg.inst##_cfgs, ##__VA_ARGS__); \
     }
