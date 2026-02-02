@@ -1,5 +1,5 @@
 /*
- * Encoder.hpp
+ * NewEncoder.hpp
  *
  *  Created on: 2 jan. 2026
  *      Author: Victor
@@ -16,8 +16,7 @@ struct Encoder {
     static_assert(dev.e.pins[0].af == TimerAF::Encoder, "Pin 0 must be declared as encoder");
     static_assert(dev.e.pins[1].af == TimerAF::Encoder, "Pin 1 must be declared as encoder");
 
-    TimerWrapper<dev> *timer;
-
+    static TimerWrapper<dev> *timer;
     static void init(TimerWrapper<dev> *timer, uint16_t prescaler, uint32_t period);
 
     static void turn_on();

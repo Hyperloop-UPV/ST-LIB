@@ -25,7 +25,8 @@
 #include "HALAL/Services/Time/RTC.hpp"
 
 #include "HALAL/Services/InputCapture/InputCapture.hpp"
-#include "HALAL/Services/Encoder/Encoder.hpp"
+//#include "HALAL/Services/Encoder/Encoder.hpp"
+#include "HALAL/Services/Encoder/NewEncoder.hpp"
 #include "HALAL/Services/EXTI/EXTI.hpp"
 
 #include "HALAL/Services/Communication/SPI/SPI.hpp"

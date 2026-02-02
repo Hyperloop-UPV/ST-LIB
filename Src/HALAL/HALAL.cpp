@@ -73,7 +73,7 @@ static void common_start(UART::Peripheral &printf_peripheral) {
 #endif
 
 #ifdef HAL_TIM_MODULE_ENABLED
-  Encoder::start();
+  //Encoder::start();
   Global_RTC::start_rtc();
   //TimerPeripheral::start();
   //Time::start();

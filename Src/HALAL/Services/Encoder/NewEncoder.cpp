@@ -2,6 +2,9 @@
 
 namespace ST_LIB {
 
+#define NANO_SECOND 1000000000.0
+#define CLOCK_MAX_VALUE 4294967295 //here goes the tim23 counter period
+
 template<const TimerDomain::Timer &dev>
 void Encoder<dev>::init(TimerWrapper<dev> *tim, uint16_t prescaler, uint32_t period) {
     if constexpr(!tim->is_32bit_instance) {
@@ -10,7 +13,7 @@ void Encoder<dev>::init(TimerWrapper<dev> *tim, uint16_t prescaler, uint32_t per
             return;
         }
     }
-    this->timer = tim;
+    timer = tim;
 
     TIM_Encoder_InitTypeDef sConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
@@ -30,12 +33,12 @@ void Encoder<dev>::init(TimerWrapper<dev> *tim, uint16_t prescaler, uint32_t per
     sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
     sConfig.IC2Filter = 0;
 
-    if(HAL_TIM_Encoder_Init(encoder->handle, &sConfig) != HAL_OK) {
+    if(HAL_TIM_Encoder_Init(timer->instance->hal_tim, &sConfig) != HAL_OK) {
         ErrorHandler("Unable to init encoder");
     }
     sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
     sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    if(HAL_TIMEx_MasterConfigSynchronization(encoder->handle,
+    if(HAL_TIMEx_MasterConfigSynchronization(timer->instance->hal_tim,
                                               &sMasterConfig) != HAL_OK) {
         ErrorHandler("Unable to config master synchronization in encoder");
     }
@@ -53,7 +56,7 @@ void Encoder<dev>::turn_on() {
         return;
     }
 
-    this->reset();
+    reset();
 }
 
 template<const TimerDomain::Timer &dev>
