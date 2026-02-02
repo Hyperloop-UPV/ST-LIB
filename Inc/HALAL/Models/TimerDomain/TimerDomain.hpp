@@ -134,6 +134,7 @@ enum TimerRequest : uint8_t {
 enum class TimerAF {
     None,
     PWM,
+    Encoder,
     InputCapture,
     BreakInput,
     BreakInputCompare,
@@ -282,27 +283,31 @@ struct TimerDomain {
 
         static consteval GPIODomain::AlternateFunction get_gpio_af(ST_LIB::TimerRequest req, ST_LIB::TimerPin pin);
 
-        // TODO: check what this really needs to be for each
         static consteval GPIODomain::OperationMode get_operation_mode(ST_LIB::TimerAF af)
         {
             switch(af) {
                 case TimerAF::None: return GPIODomain::OperationMode::INPUT;
 
                 case TimerAF::PWM: return GPIODomain::OperationMode::ALT_PP;
+                case TimerAF::Encoder: return GPIODomain::OperationMode::INPUT; /* might be wrong */
+
+                // TODO: check what this really needs to be for each
                 case TimerAF::InputCapture: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
-                
+
                 case TimerAF::BreakInput: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
                 case TimerAF::BreakInputCompare: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
             }
         }
 
-        // TODO: check what this really needs to be for each
         static consteval GPIODomain::Pull get_pull(ST_LIB::TimerAF af)
         {
             switch(af) {
                 case TimerAF::None: return GPIODomain::Pull::None;
 
                 case TimerAF::PWM: return GPIODomain::Pull::None;
+                case TimerAF::Encoder: return GPIODomain::Pull::Up; /* might be wrong */
+
+                // TODO: check what this really needs to be for each
                 case TimerAF::InputCapture: return GPIODomain::Pull::Up;
                 
                 case TimerAF::BreakInput: return GPIODomain::Pull::None;
@@ -310,17 +315,19 @@ struct TimerDomain {
             }
         }
 
-        // TODO: check what this really needs to be for each
         static consteval GPIODomain::Speed get_speed(ST_LIB::TimerAF af)
         {
             switch(af) {
                 case TimerAF::None: return GPIODomain::Speed::Low;
 
                 case TimerAF::PWM: return GPIODomain::Speed::Low;
-                case TimerAF::InputCapture: return GPIODomain::Speed::High;
+                case TimerAF::Encoder: return GPIODomain::Speed::Low;
+
+                // TODO: check what this really needs to be for each
+                case TimerAF::InputCapture: return GPIODomain::Speed::Low;
                 
-                case TimerAF::BreakInput: return GPIODomain::Speed::Medium;
-                case TimerAF::BreakInputCompare: return GPIODomain::Speed::Medium;
+                case TimerAF::BreakInput: return GPIODomain::Speed::Low;
+                case TimerAF::BreakInputCompare: return GPIODomain::Speed::Low;
             }
         }
 

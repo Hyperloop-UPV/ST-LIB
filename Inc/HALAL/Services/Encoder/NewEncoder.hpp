@@ -12,6 +12,10 @@ namespace ST_LIB {
 
 template<const TimerDomain::Timer &dev>
 struct Encoder {
+    static_assert(dev.e.pin_count == 2, "Encoder must have exactly 2 encoder pins, as it uses the whole timer");
+    static_assert(dev.e.pins[0].af == TimerAF::Encoder, "Pin 0 must be declared as encoder");
+    static_assert(dev.e.pins[1].af == TimerAF::Encoder, "Pin 1 must be declared as encoder");
+
     TimerWrapper<dev> *timer;
 
     static void init(TimerWrapper<dev> *timer, uint16_t prescaler, uint32_t period);
