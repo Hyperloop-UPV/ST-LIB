@@ -140,7 +140,7 @@ template <auto &...devs> struct Board {
         .dma_cfgs = DMA_Domain::template build<dmaN>(
             ctx.template span<DMA_Domain>()),
         .mdma_packet_cfgs = MdmaPacketDomain::template build<mdmaPacketN>(
-            ctx.template span<MdmaPacketDomain>())
+            ctx.template span<MdmaPacketDomain>()),
         .sd_cfgs = SdDomain::template build<sdN>(
             ctx.template span<SdDomain>()),
         // ...
