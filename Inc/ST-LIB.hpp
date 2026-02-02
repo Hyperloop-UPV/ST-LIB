@@ -167,12 +167,12 @@ template <auto &...devs> struct Board {
 #undef X
 
 #define X(domain, inst, is_templated, ...) \
-    if constexpr(is_templated) { \
-        domain::Init<inst##N, cfg.inst##_cfgs>::init(); \
-    } else { \
+    if constexpr(!is_templated) { \
         domain::Init<inst##N>::init(cfg.inst##_cfgs, ##__VA_ARGS__); \
     }
 
+    /* Any templated go here since I couldn't get it to compile otherwise */
+    MPUDomain::Init<mpuN, cfg.mpu_cfgs>::init();
     DomainXList;
 
 #undef NEXT
