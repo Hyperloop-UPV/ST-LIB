@@ -180,8 +180,31 @@ template <auto &...devs> struct Board {
   }
 
   template <typename Domain, auto &Target, std::size_t I = 0>
-  static consteval std::size_t owner_index_of() {
-    constexpr auto owners = ctx.template owners_span<Domain>();
+  static consteval std::size_t domain_index_of_impl() {
+    std::size_t idx = 0;
+    bool found = false;
+
+    (
+        [&] {
+          using DevT = std::remove_cvref_t<decltype(devs)>;
+          if constexpr (std::is_same_v<typename DevT::domain, Domain>) {
+            if (!found) {
+              if (&devs == &Target) {
+                found = true;
+              } else {
+                ++idx;
+              }
+            }
+          }
+        }(),
+        ...);
+
+    if (!found) {
+      compile_error("Device not found for domain");
+    }
+
+    return idx;
+  }
 
     if constexpr (I >= owners.size()) {
       compile_error("Device not registered in domain");

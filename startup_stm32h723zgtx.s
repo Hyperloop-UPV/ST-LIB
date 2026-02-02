@@ -79,24 +79,6 @@ LoopCopyDataInit:
   adds r4, r0, r3
   cmp r4, r1
   bcc CopyDataInit
-
-/* Copy the ram_code segment initializers from flash to ITCM */
-  ldr r0, =_sram_code
-  ldr r1, =_eram_code
-  ldr r2, =_siram_code
-  movs r3, #0
-  b LoopCopyRamCodeInit
-
-CopyRamCodeInit:
-  ldr r4, [r2, r3]
-  str r4, [r0, r3]
-  adds r3, r3, #4
-
-LoopCopyRamCodeInit:
-  adds r4, r0, r3
-  cmp r4, r1
-  bcc CopyRamCodeInit
-
 /* Zero fill the bss segment. */
   ldr r2, =_sbss
   ldr r4, =_ebss

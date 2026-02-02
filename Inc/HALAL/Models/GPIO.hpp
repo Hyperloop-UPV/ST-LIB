@@ -190,10 +190,6 @@ struct GPIODomain {
       if (!pin.valid_af(af)) {
         compile_error("Alternate function not valid for this pin");
       }
-
-      if ((mode == OperationMode::ALT_PP || mode == OperationMode::ALT_OD) && af == AlternateFunction::NO_AF) {
-        compile_error("Alternate function must be specified for alternate modes");
-      }
     }
 
     template <class Ctx> consteval std::size_t inscribe(Ctx &ctx) const {

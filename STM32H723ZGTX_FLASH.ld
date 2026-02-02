@@ -35,9 +35,8 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_sstack = ORIGIN(DTCMRAM);
-_estack = ORIGIN(DTCMRAM) + LENGTH(DTCMRAM);    /* end of RAM */
-/* Generate a link error if heap and stack don't fit into RAM/DTCM */
+_estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);    /* end of RAM */
+/* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
 _Min_Stack_Size = 0x400; /* required amount of stack */
 
@@ -55,22 +54,6 @@ MEMORY
 /* Define output sections */
 SECTIONS
 {
-  /* Export Memory Layout Information for MPU Configuration */
-  __itcm_base = ABSOLUTE(ORIGIN(ITCMRAM));
-  __itcm_size = ABSOLUTE(LENGTH(ITCMRAM));
-  __dtcm_base = ABSOLUTE(ORIGIN(DTCMRAM));
-  __dtcm_size = ABSOLUTE(LENGTH(DTCMRAM));
-  __flash_base = ABSOLUTE(ORIGIN(FLASH));
-  __flash_size = ABSOLUTE(LENGTH(FLASH));
-  __ram_d1_base = ABSOLUTE(ORIGIN(RAM_D1));
-  __ram_d1_size = ABSOLUTE(LENGTH(RAM_D1));
-  __ram_d2_base = ABSOLUTE(ORIGIN(RAM_D2));
-  __ram_d2_size = ABSOLUTE(LENGTH(RAM_D2));
-  __ram_d3_base = ABSOLUTE(ORIGIN(RAM_D3));
-  __ram_d3_size = ABSOLUTE(LENGTH(RAM_D3));
-  __peripheral_base = 0x40000000;
-  __peripheral_size = 0x20000000; /* 512MB */
-
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
@@ -83,8 +66,6 @@ SECTIONS
   .text :
   {
     . = ALIGN(4);
-    _stext = .;
-
     *(.text)           /* .text sections (code) */
     *(.text*)          /* .text* sections (code) */
     *(.glue_7)         /* glue arm to thumb code */
@@ -106,14 +87,6 @@ SECTIONS
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
     . = ALIGN(4);
   } >FLASH
-
-  .hardfault_stack (NOLOAD) : /*Stack memory to avoid memfault inside hardfault handler*/
-  {
-    . = ALIGN(8);
-    _hf_stack_start = .;
-    . += 0x400;        /* 1 KB */
-    _hf_stack_end = .;
-  } >DTCMRAM
 
   .ARM.extab (READONLY): { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
   .ARM (READONLY): {
@@ -145,35 +118,6 @@ SECTIONS
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >FLASH
 
-  /* MPU D1 Non-Cached Section: Placed at start of RAM_D1 for alignment */
-  .mpu_ram_d1_nc :
-  {
-    . = ALIGN(32);
-    __mpu_d1_nc_start = ABSOLUTE(.);
-    
-    /* New MPU system buffers */
-    *(.mpu_ram_d1_nc.buffer)
-    
-    /* User manual allocations via D1_NC macro */
-    *(.mpu_ram_d1_nc.user)
-    
-    /* Ethernet Rx Pool */
-    . = ALIGN(32);
-    *(.Rx_PoolSection)
-  } >RAM_D1
-
-  /* CALCULATE PADDING FOR MPU SUBREGIONS (D1) */
-  _d1_size = SIZEOF(.mpu_ram_d1_nc);
-  /* Find next power of 2 (up to 512KB for 320KB RAM) */
-  _d1_p2 = (1 << LOG2CEIL(MAX(32, _d1_size)));
-  /* Subregion size is RegionSize / 8 */
-  _d1_sub = _d1_p2 / 8;
-  /* Align effective size to the subregion granularity */
-  _d1_pad = (_d1_size + _d1_sub - 1) / _d1_sub * _d1_sub;
-  /* Advance current pointer to reserve this space */
-  . = __mpu_d1_nc_start + _d1_pad;
-  __mpu_d1_nc_end = ABSOLUTE(.);
-
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
 
@@ -184,10 +128,12 @@ SECTIONS
     _sdata = .;        /* create a global symbol at data start */
     *(.data)           /* .data sections */
     *(.data*)          /* .data* sections */
+    *(.RamFunc)        /* .RamFunc sections */
+    *(.RamFunc*)       /* .RamFunc* sections */
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-  } >DTCMRAM AT> FLASH
+  } >RAM_D1 AT> FLASH
   /*
     this needs to be the last thing in FLASH
     because the preceeding sections are appended after the one preceeding them
@@ -195,13 +141,6 @@ SECTIONS
     the sections below it would try to be placed afterwards
     thus overflowing the FLASH
   */
-
-  .hardfault_log 0x080C0000 :
-  {
-    KEEP(*(.hardfault_log))
-    . = . + 0x200;
-  } >FLASH
-
   .metadata_pool :
   {
   	. = ABSOLUTE(0x080DFD00);
@@ -210,7 +149,6 @@ SECTIONS
     KEEP(*(.metadata_pool))
     . += 0x100;
   } >FLASH
-
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss (NOLOAD) :
@@ -222,10 +160,15 @@ SECTIONS
     *(.bss*)
     *(COMMON)
 
+    /* ETH_CODE: add placement of RX buffer. STM32H72x/H73x has small D2 RAM, so we need to put it there.
+     * (NOLOAD) attribute used for .bss section to avoid linker warning (.bss initialized by startup code)
+     */
+    . = ALIGN(32);
+    *(.Rx_PoolSection)
     . = ALIGN(4);
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
-  } >DTCMRAM
+  } >RAM_D1
 
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
@@ -236,74 +179,24 @@ SECTIONS
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
-  } >DTCMRAM
+  } >RAM_D1
 
-  /* MPU D2 Non-Cached Section: Contains Ethernet Descriptors and Generic Buffers */
-  .mpu_ram_d2_nc :
+  /* ETH_CODE: add placement of DMA descriptors, rest is used by RX_POOL */
+  .lwip_sec (NOLOAD) :
   {
-    . = ALIGN(32);
-    __mpu_d2_nc_start = ABSOLUTE(.);
-    
-    /* ETH Descriptors - Must be aligned */
+    . = ABSOLUTE(0x30000000);
     *(.RxDecripSection) 
+    
+    . = ABSOLUTE(0x30000100);
     *(.TxDecripSection)
     
-    /* New MPU system buffers */
-    *(.mpu_ram_d2_nc.buffer)
-
-    /* User manual allocations via D2_NC macro */
-    *(.mpu_ram_d2_nc.user)
-    
   } >RAM_D2
-
-  /* CALCULATE PADDING FOR MPU SUBREGIONS (D2) */
-  _d2_size = SIZEOF(.mpu_ram_d2_nc);
-  /* Find next power of 2 (up to 64KB for 32KB RAM to catch overflow logic if needed) */
-  _d2_p2 = (1 << LOG2CEIL(MAX(32, _d2_size)));
-  _d2_sub = _d2_p2 / 8;
-  _d2_pad = (_d2_size + _d2_sub - 1) / _d2_sub * _d2_sub;
-  . = __mpu_d2_nc_start + _d2_pad;
-  __mpu_d2_nc_end = ABSOLUTE(.);
-
-  /* MPU D3 Non-Cached Section */
-  .mpu_ram_d3_nc :
+ .stlib_no_cache_ram_pool :
   {
-    . = ALIGN(32);
-    __mpu_d3_nc_start = ABSOLUTE(.);
-    
-    /* New MPU system buffers */
-    *(.mpu_ram_d3_nc.buffer)
-
-    /* Legacy MPUManager allocations */
-    *(.mpu_ram_d3_nc.legacy)
-    
-    /* User manual allocations via D3_NC macro */
-    *(.mpu_ram_d3_nc.user)
-    
-
+  	. = ABSOLUTE(0x38000000);
+  	_no_cached_ram_start = .;
+  	
   } >RAM_D3
-
-  /* CALCULATE PADDING FOR MPU SUBREGIONS (D3) */
-  _d3_size = SIZEOF(.mpu_ram_d3_nc);
-  /* Find next power of 2 (up to 32KB for 16KB RAM) */
-  _d3_p2 = (1 << LOG2CEIL(MAX(32, _d3_size)));
-  _d3_sub = _d3_p2 / 8;
-  _d3_pad = (_d3_size + _d3_sub - 1) / _d3_sub * _d3_sub;
-  . = __mpu_d3_nc_start + _d3_pad;
-  __mpu_d3_nc_end = ABSOLUTE(.);
-
-  /* Code running in ITCM RAM (0 Wait States, Instruction Bus) */
-  .ram_code :
-  {
-  	. = ALIGN(4);
-  	_sram_code = .; 
-    *(.ram_code)
-    *(.ram_code*)
-    . = ALIGN(4);
-    _eram_code = .;
-  } >ITCMRAM AT> FLASH
-  _siram_code = LOADADDR(.ram_code);
-
   /* Remove information from the standard libraries */
   /DISCARD/ :
   {
@@ -313,40 +206,4 @@ SECTIONS
   }
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
-
-  /* MPU D1 Cached Section */
-  .ram_d1 :
-  {
-    . = ALIGN(32);
-    
-    /* User manual allocations via D1_C macro */
-    *(.ram_d1.user)
-    
-    /* New MPU system buffers */
-    *(.ram_d1.buffer)
-  } >RAM_D1
-
-  /* MPU D2 Cached Section */
-  .ram_d2 :
-  {
-    . = ALIGN(32);
-    
-    /* User manual allocations via D2_C macro */
-    *(.ram_d2.user)
-    
-    /* New MPU system buffers */
-    *(.ram_d2.buffer)
-  } >RAM_D2
-
-  /* MPU D3 Cached Section */
-  .ram_d3 :
-  {
-    . = ALIGN(32);
-    
-    /* User manual allocations via D3_C macro */
-    *(.ram_d3.user)
-    
-    /* New MPU system buffers */
-    *(.ram_d3.buffer)
-  } >RAM_D3
 }

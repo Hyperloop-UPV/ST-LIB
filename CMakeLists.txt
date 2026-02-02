@@ -21,19 +21,6 @@ message(STATUS "${PROJECT_NAME} Ethernet: ${USE_ETHERNET}")
 message(STATUS "${PROJECT_NAME} Nucleo:   ${TARGET_NUCLEO}")
 message(STATUS "${PROJECT_NAME} Crosscompiling: ${CMAKE_CROSSCOMPILING}")
 
-if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers)
-  execute_process(
-    COMMAND git submodule update --init --depth 1
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-  )
-endif()
-
-if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include)
-  execute_process(
-    COMMAND git submodule update --init --depth 1 Drivers/CMSIS/Device/ST/STM32H7xx Drivers/STM32H7xx_HAL_Driver
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
-  )
-endif()
 
 if(NOT CMAKE_CROSSCOMPILING)
   message(STATUS "Compiling for simulator")
@@ -244,13 +231,6 @@ add_library(${STLIB_LIBRARY} STATIC
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_HIGH_CPP_ETH}>
 
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB.cpp>
-
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/Scheduler.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/TimerDomain/TimerDomain.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_ll_tim.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_system_stm32h7xx.c>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/stm32h723xx_wrapper.c>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/NVIC.cpp>
 )
 
 set_target_properties(${STLIB_LIBRARY} PROPERTIES
@@ -279,6 +259,7 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-specs=nosys.specs>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-ffunction-sections>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fdata-sections>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fno-exceptions>
 
   -Wno-psabi
 
@@ -286,8 +267,8 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
 
   $<$<COMPILE_LANGUAGE:CXX>:-Wall>
   $<$<COMPILE_LANGUAGE:CXX>:-Werror>
-  # $<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-zero-variadic-macro-arguments>
-  # $<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>
+  $<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-zero-variadic-macro-arguments>
+  $<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>
   $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
   $<$<COMPILE_LANGUAGE:CXX>:-Wno-address-of-packed-member>
