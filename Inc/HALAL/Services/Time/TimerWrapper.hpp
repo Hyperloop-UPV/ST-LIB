@@ -16,20 +16,36 @@
 #ifdef HAL_TIM_MODULE_ENABLED
 
 #include "HALAL/Models/TimerDomain/TimerDomain.hpp"
-#include "HALAL/Services/PWM/PWM/NewPWM.hpp"
+#include "HALAL/Services/PWM/DualPWM.hpp"
+#include "HALAL/Services/PWM/PWM.hpp"
 #include "HALAL/Models/GPIO.hpp"
 
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #define get_timer_instance(board, timer_type) \
-    ST_LIB::TimerWrapper<timer_type>(board::instance_of<timer_type>())
+    ST_LIB::TimerWrapper<timer_type>(&board::instance_of<timer_type>())
 
 namespace ST_LIB {
 
 template<const TimerDomain::Timer &dev>
 struct TimerWrapper {
-    TimerDomain::Instance& instance;
-    TimerWrapper(TimerDomain::Instance& inst) : instance(inst) {}
+    TimerDomain::Instance *instance = nullptr;
+    TimerWrapper() = default;
+    TimerWrapper(TimerDomain::Instance *inst) : instance(inst) {}
+
+    enum CountingMode : uint8_t {
+        UP = 0,
+        DOWN = 1,
+        /* center-aligned = counter counts up and down alternatively */
+        /* Output compare interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are
+           set only when the counter is counting down */
+        CENTER_ALIGNED_INTERRUPT_DOWN = 2,
+        /* Output compare interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are
+           set only when the counter is counting up */
+        CENTER_ALIGNED_INTERRUPT_UP = 3,
+        /* both up and down */
+        CENTER_ALIGNED_INTERRUPT_BOTH = 4,
+    };
 
     static constexpr bool is_32bit_instance = (
         dev.e.request == TimerRequest::GeneralPurpose32bit_2 ||
@@ -85,14 +101,14 @@ struct TimerWrapper {
         switch(dev.e.request) {
             case TimerRequest::Advanced_1:
             case TimerRequest::Advanced_8:
-                return (ch == TimerChannel::CHANNEL_1) || 
-                       (ch == TimerChannel::CHANNEL_2) || 
-                       (ch == TimerChannel::CHANNEL_3);
+                return (ch == TimerChannel::CHANNEL_1) || (ch == TimerChannel::CHANNEL_1_NEGATED) ||
+                       (ch == TimerChannel::CHANNEL_2) || (ch == TimerChannel::CHANNEL_2_NEGATED) ||
+                       (ch == TimerChannel::CHANNEL_3) || (ch == TimerChannel::CHANNEL_3_NEGATED);
 
             case TimerRequest::GeneralPurpose_15:
             case TimerRequest::GeneralPurpose_16:
             case TimerRequest::GeneralPurpose_17:
-                return ch == TimerChannel::CHANNEL_1;
+                return (ch == TimerChannel::CHANNEL_1) || (ch == TimerChannel::CHANNEL_1_NEGATED);
             
             default:
                 return false;
@@ -139,10 +155,38 @@ struct TimerWrapper {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity);
-        } else if constexpr(dev.e.pin_count == 4 &&
+        } else if constexpr(dev.e.pin_count > 3 &&
             dev.e.pins[3].pin == pin.pin && dev.e.pins[3].channel == pin.channel)
         {
             if constexpr(dev.e.pins[3].af != TimerAF::PWM) {
+                ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
+            }
+            return PWM<dev, pin>(this, polarity, negated_polarity);
+        } else if constexpr(dev.e.pin_count > 4 &&
+            dev.e.pins[4].pin == pin.pin && dev.e.pins[4].channel == pin.channel)
+        {
+            if constexpr(dev.e.pins[4].af != TimerAF::PWM) {
+                ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
+            }
+            return PWM<dev, pin>(this, polarity, negated_polarity);
+        } else if constexpr(dev.e.pin_count > 5 &&
+            dev.e.pins[5].pin == pin.pin && dev.e.pins[5].channel == pin.channel)
+        {
+            if constexpr(dev.e.pins[5].af != TimerAF::PWM) {
+                ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
+            }
+            return PWM<dev, pin>(this, polarity, negated_polarity);
+        } else if constexpr(dev.e.pin_count > 6 &&
+            dev.e.pins[6].pin == pin.pin && dev.e.pins[6].channel == pin.channel)
+        {
+            if constexpr(dev.e.pins[6].af != TimerAF::PWM) {
+                ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
+            }
+            return PWM<dev, pin>(this, polarity, negated_polarity);
+        } else if constexpr(dev.e.pin_count == 7 &&
+            dev.e.pins[7].pin == pin.pin && dev.e.pins[7].channel == pin.channel)
+        {
+            if constexpr(dev.e.pins[7].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity);
@@ -151,31 +195,42 @@ struct TimerWrapper {
         }
     }
 
+    template<TimerPin pin, TimerPin negated_pin>
+    inline DualPWM<dev, pin, negated_pin> get_dual_pwm(uint32_t polarity = TIM_OCPOLARITY_HIGH, uint32_t negated_polarity = TIM_OCNPOLARITY_HIGH)
+    {
+        static_assert(dev.e.pin_count > 1, "Need at least two pins on one timer to get a dual pwm");
+
+        // NOTE: No voy a comprobar todo esto, no hará falta comprobarlo con la siguiente versión del pwm, dualpwm
+        static_assert((static_cast<uint8_t>(pin.channel) | static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) == static_cast<uint8_t>(negated_pin.channel));
+        static_assert(pin.af == TimerAF::PWM && negated_pin.af == TimerAF::PWM);
+        return DualPWM<dev, pin, negated_pin>(this, polarity, negated_polarity);
+    }
+
     inline void counter_enable() {
-        SET_BIT(instance.tim->CR1, TIM_CR1_CEN);
+        SET_BIT(instance->tim->CR1, TIM_CR1_CEN);
     }
     inline void counter_disable() {
-        CLEAR_BIT(instance.tim->CR1, TIM_CR1_CEN);
+        CLEAR_BIT(instance->tim->CR1, TIM_CR1_CEN);
     }
 
     inline void clear_update_interrupt_flag() {
-        CLEAR_BIT(instance.tim->SR, TIM_SR_UIF);
+        CLEAR_BIT(instance->tim->SR, TIM_SR_UIF);
     }
 
     /* Disabled by default */
     inline void enable_update_interrupt() {
-        SET_BIT(instance.tim->DIER, TIM_DIER_UIE);
+        SET_BIT(instance->tim->DIER, TIM_DIER_UIE);
     }
     inline void disable_update_interrupt() {
-        CLEAR_BIT(instance.tim->DIER, TIM_DIER_UIE);
+        CLEAR_BIT(instance->tim->DIER, TIM_DIER_UIE);
     }
 
     /* Disabled by default */
     inline void enable_nvic() {
-        NVIC_EnableIRQ(TimerDomain::timer_irqn[instance.timer_idx]);
+        NVIC_EnableIRQ(TimerDomain::timer_irqn[instance->timer_idx]);
     }
     inline void disable_nvic() {
-        NVIC_DisableIRQ(TimerDomain::timer_irqn[instance.timer_idx]);
+        NVIC_DisableIRQ(TimerDomain::timer_irqn[instance->timer_idx]);
     }
 
     /* Enable UEV. The Update (UEV) event is generated by one of the following events:
@@ -185,84 +240,84 @@ struct TimerWrapper {
      * Enabled by default
      */
     inline void enable_update_event() {
-        CLEAR_BIT(instance.tim->CR1, TIM_CR1_UDIS);
+        CLEAR_BIT(instance->tim->CR1, TIM_CR1_UDIS);
     }
     /* Disable UEV. The Update event is not generated, shadow registers keep their value
      * (ARR, PSC, CCRx). However the counter and the prescaler are reinitialized if the UG bit
      * is set or if a hardware reset is received from the slave mode controller.
      */
     inline void disable_update_event() {
-        SET_BIT(instance.tim->CR1, TIM_CR1_UDIS);
+        SET_BIT(instance->tim->CR1, TIM_CR1_UDIS);
     }
 
     /* default: disabled */
     inline void break_interrupt_enable() {
         static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_8,
             "Error: Break interrupt enable only allowed in advanced timers {TIM1, TIM8}");
-        SET_BIT(instance.tim->DIER, TIM_DIER_BIE);
+        SET_BIT(instance->tim->DIER, TIM_DIER_BIE);
     }
     inline void break_interrupt_disable() {
         static_assert(dev.e.request == TimerRequest::Advanced_1 || dev.e.request == TimerRequest::Advanced_8,
             "Error: Break interrupt enable only allowed in advanced timers {TIM1, TIM8}");
-        CLEAR_BIT(instance.tim->DIER, TIM_DIER_BIE);
+        CLEAR_BIT(instance->tim->DIER, TIM_DIER_BIE);
     }
 
     /* interrupt gets called only once, counter needs to be reenabled */
     inline void set_one_pulse_mode() {
-        SET_BIT(instance.tim->CR1, TIM_CR1_OPM);
+        SET_BIT(instance->tim->CR1, TIM_CR1_OPM);
     }
     inline void set_multi_interrupt_mode() {
-        CLEAR_BIT(instance.tim->CR1, TIM_CR1_OPM);
+        CLEAR_BIT(instance->tim->CR1, TIM_CR1_OPM);
     }
 
     inline TIM_HandleTypeDef *get_hal_handle() {
-        return instance.hal_tim;
+        return instance->hal_tim;
     }
     inline TIM_TypeDef *get_cmsis_handle() {
-        return instance.tim;
+        return instance->tim;
     }
 
     inline void set_prescaler(uint16_t psc) {
-        instance.tim->PSC = psc;
+        instance->tim->PSC = psc;
     }
 
     inline void configure32bit(void (*callback)(void*), void *callback_data, uint32_t period)
     {
         static_assert(this->is_32bit_instance, "Only timers {TIM2, TIM5, TIM23, TIM24} have a 32-bit resolution");
 
-        instance.tim->ARR = period;
-        TimerDomain::callbacks[instance.timer_idx] = callback;
-        TimerDomain::callback_data[instance.timer_idx] = callback_data;
+        instance->tim->ARR = period;
+        TimerDomain::callbacks[instance->timer_idx] = callback;
+        TimerDomain::callback_data[instance->timer_idx] = callback_data;
         this->counter_enable();
     }
 
     inline void configure16bit(void (*callback)(void*), void *callback_data, uint16_t period)
     {
-        instance.tim->ARR = period;
-        TimerDomain::callbacks[instance.timer_idx] = callback;
-        TimerDomain::callback_data[instance.timer_idx] = callback_data;
+        instance->tim->ARR = period;
+        TimerDomain::callbacks[instance->timer_idx] = callback;
+        TimerDomain::callback_data[instance->timer_idx] = callback_data;
         this->counter_enable();
     }
 
     /* WARNING: The counter _must_ be disabled to switch from edge-aligned to center-aligned mode */
-    template<TimerDomain::CountingMode mode>
+    template<CountingMode mode>
     inline void set_counting_mode(void) {
         constexpr uint8_t reqint = static_cast<uint8_t>(dev.e.request);
         static_assert(!this->only_supports_upcounting,
             "Error: In request reqidx: Timers other than {Advanced{TIM1, TIM8}, TIM2, TIM3, TIM4, TIM5, TIM23, TIM24} only support upcounting");
 
-        if constexpr (mode == TimerDomain::CountingMode::UP) {
-            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, 0);
-            CLEAR_BIT(instance.tim->CR1, TIM_CR1_DIR); // upcounter
-        } else if constexpr (mode == TimerDomain::CountingMode::DOWN) {
-            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, 0);
-            SET_BIT(instance.tim->CR1, TIM_CR1_DIR); // downcounter
-        } else if constexpr (mode == TimerDomain::CountingMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
-            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
-        } else if constexpr (mode == TimerDomain::CountingMode::CENTER_ALIGNED_INTERRUPT_UP) {
-            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_1);
-        } else if constexpr (mode == TimerDomain::CountingMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
-            MODIFY_REG(instance.tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
+        if constexpr (mode == CountingMode::UP) {
+            MODIFY_REG(instance->tim->CR1, TIM_CR1_CMS, 0);
+            CLEAR_BIT(instance->tim->CR1, TIM_CR1_DIR); // upcounter
+        } else if constexpr (mode == CountingMode::DOWN) {
+            MODIFY_REG(instance->tim->CR1, TIM_CR1_CMS, 0);
+            SET_BIT(instance->tim->CR1, TIM_CR1_DIR); // downcounter
+        } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_DOWN) {
+            MODIFY_REG(instance->tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_0);
+        } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_UP) {
+            MODIFY_REG(instance->tim->CR1, TIM_CR1_CMS, TIM_CR1_CMS_1);
+        } else if constexpr (mode == CountingMode::CENTER_ALIGNED_INTERRUPT_BOTH) {
+            MODIFY_REG(instance->tim->CR1, TIM_CR1_CMS, (TIM_CR1_CMS_0 | TIM_CR1_CMS_1));
         }
     }
 
@@ -271,24 +326,31 @@ struct TimerWrapper {
     template<ST_LIB::TimerChannel ch>
     inline void config_output_compare_channel(const TIM_OC_InitTypeDef *OC_Config)
     {
+        if constexpr(!((ch == TimerChannel::CHANNEL_1) || (ch == TimerChannel::CHANNEL_2) ||
+                       (ch == TimerChannel::CHANNEL_3) || (ch == TimerChannel::CHANNEL_4) ||
+                       (ch == TimerChannel::CHANNEL_5) || (ch == TimerChannel::CHANNEL_6)))
+        {
+            ST_LIB::compile_error("config_output_compare_channel should only be called with channels [1..6] (not negated)");
+        }
+
         uint32_t tmpccmrx;
         uint32_t tmpccer;
         uint32_t tmpcr2;
 
-        tmpccer = instance.tim->CCER;
+        tmpccer = instance->tim->CCER;
 
-        tmpcr2 = instance.tim->CR2;
+        tmpcr2 = instance->tim->CR2;
         
         if constexpr(ch == TimerChannel::CHANNEL_1 || ch == TimerChannel::CHANNEL_2) {
-            tmpccmrx = instance.tim->CCMR1;
+            tmpccmrx = instance->tim->CCMR1;
         } else if constexpr(ch == TimerChannel::CHANNEL_3 || ch == TimerChannel::CHANNEL_4) {
-            tmpccmrx = instance.tim->CCMR2;
+            tmpccmrx = instance->tim->CCMR2;
         } else if constexpr(ch == TimerChannel::CHANNEL_5 || ch == TimerChannel::CHANNEL_6) {
-            tmpccmrx = instance.tim->CCMR3;
+            tmpccmrx = instance->tim->CCMR3;
         }
 
         if constexpr(ch == TimerChannel::CHANNEL_1) {
-            CLEAR_BIT(instance.tim->CCER, TIM_CCER_CC1E);
+            CLEAR_BIT(instance->tim->CCER, TIM_CCER_CC1E);
 
             CLEAR_BIT(tmpccmrx, TIM_CCMR1_OC1M);
             CLEAR_BIT(tmpccmrx, TIM_CCMR1_CC1S);
@@ -297,7 +359,7 @@ struct TimerWrapper {
             CLEAR_BIT(tmpccer, TIM_CCER_CC1P);
             SET_BIT(tmpccer, OC_Config->OCPolarity);
         } else if constexpr(ch == TimerChannel::CHANNEL_2) {
-            CLEAR_BIT(instance.tim->CCER, TIM_CCER_CC2E);
+            CLEAR_BIT(instance->tim->CCER, TIM_CCER_CC2E);
 
             CLEAR_BIT(tmpccmrx, TIM_CCMR1_OC2M);
             CLEAR_BIT(tmpccmrx, TIM_CCMR1_CC2S);
@@ -306,7 +368,7 @@ struct TimerWrapper {
             CLEAR_BIT(tmpccer, TIM_CCER_CC2P);
             SET_BIT(tmpccer, OC_Config->OCPolarity << 4U);
         } else if constexpr(ch == TimerChannel::CHANNEL_3) {
-            CLEAR_BIT(instance.tim->CCER, TIM_CCER_CC3E);
+            CLEAR_BIT(instance->tim->CCER, TIM_CCER_CC3E);
 
             CLEAR_BIT(tmpccmrx, TIM_CCMR2_OC3M);
             CLEAR_BIT(tmpccmrx, TIM_CCMR2_CC3S);
@@ -315,7 +377,7 @@ struct TimerWrapper {
             CLEAR_BIT(tmpccer, TIM_CCER_CC3P);
             SET_BIT(tmpccer, OC_Config->OCPolarity << 8U);
         } else if constexpr(ch == TimerChannel::CHANNEL_4) {
-            CLEAR_BIT(instance.tim->CCER, TIM_CCER_CC4E);
+            CLEAR_BIT(instance->tim->CCER, TIM_CCER_CC4E);
 
             CLEAR_BIT(tmpccmrx, TIM_CCMR2_OC4M);
             CLEAR_BIT(tmpccmrx, TIM_CCMR2_CC4S);
@@ -324,7 +386,7 @@ struct TimerWrapper {
             CLEAR_BIT(tmpccer, TIM_CCER_CC4P);
             SET_BIT(tmpccer, OC_Config->OCPolarity << 12U);
         } else if constexpr(ch == TimerChannel::CHANNEL_5) {
-            CLEAR_BIT(instance.tim->CCER, TIM_CCER_CC5E);
+            CLEAR_BIT(instance->tim->CCER, TIM_CCER_CC5E);
 
             CLEAR_BIT(tmpccmrx, TIM_CCMR3_OC5M);
 
@@ -332,7 +394,7 @@ struct TimerWrapper {
             CLEAR_BIT(tmpccer, TIM_CCER_CC5P);
             SET_BIT(tmpccer, OC_Config->OCPolarity << 16U);
         } else if constexpr(ch == TimerChannel::CHANNEL_6) {
-            CLEAR_BIT(instance.tim->CCER, TIM_CCER_CC6E);
+            CLEAR_BIT(instance->tim->CCER, TIM_CCER_CC6E);
 
             CLEAR_BIT(tmpccmrx, TIM_CCMR3_OC6M);
 
@@ -390,66 +452,71 @@ struct TimerWrapper {
             }
         }
 
-        instance.tim->CR2 = tmpcr2;
+        instance->tim->CR2 = tmpcr2;
         if constexpr(ch == TimerChannel::CHANNEL_1 || ch == TimerChannel::CHANNEL_2) {
-            instance.tim->CCMR1 = tmpccmrx;
+            instance->tim->CCMR1 = tmpccmrx;
         } else if constexpr(ch == TimerChannel::CHANNEL_3 || ch == TimerChannel::CHANNEL_4) {
-            instance.tim->CCMR2 = tmpccmrx;
+            instance->tim->CCMR2 = tmpccmrx;
         } else if constexpr(ch == TimerChannel::CHANNEL_5 || ch == TimerChannel::CHANNEL_6) {
-            instance.tim->CCMR3 = tmpccmrx;
+            instance->tim->CCMR3 = tmpccmrx;
         }
 
-        if constexpr(ch == TimerChannel::CHANNEL_1)      instance.tim->CCR1 = OC_Config->Pulse;
-        else if constexpr(ch == TimerChannel::CHANNEL_2) instance.tim->CCR2 = OC_Config->Pulse;
-        else if constexpr(ch == TimerChannel::CHANNEL_3) instance.tim->CCR3 = OC_Config->Pulse;
-        else if constexpr(ch == TimerChannel::CHANNEL_4) instance.tim->CCR4 = OC_Config->Pulse;
-        else if constexpr(ch == TimerChannel::CHANNEL_5) instance.tim->CCR5 = OC_Config->Pulse;
-        else if constexpr(ch == TimerChannel::CHANNEL_6) instance.tim->CCR6 = OC_Config->Pulse;
+        if constexpr(ch == TimerChannel::CHANNEL_1)      instance->tim->CCR1 = OC_Config->Pulse;
+        else if constexpr(ch == TimerChannel::CHANNEL_2) instance->tim->CCR2 = OC_Config->Pulse;
+        else if constexpr(ch == TimerChannel::CHANNEL_3) instance->tim->CCR3 = OC_Config->Pulse;
+        else if constexpr(ch == TimerChannel::CHANNEL_4) instance->tim->CCR4 = OC_Config->Pulse;
+        else if constexpr(ch == TimerChannel::CHANNEL_5) instance->tim->CCR5 = OC_Config->Pulse;
+        else if constexpr(ch == TimerChannel::CHANNEL_6) instance->tim->CCR6 = OC_Config->Pulse;
 
-        instance.tim->CCER = tmpccer;
+        instance->tim->CCER = tmpccer;
     }
 
     template<ST_LIB::TimerChannel ch>
     inline void set_output_compare_preload_enable()
     {
-        if constexpr (ch == TimerChannel::CHANNEL_1) {
-            SET_BIT(instance.tim->CCMR1, TIM_CCMR1_OC1PE);
-        } else if constexpr(ch == TimerChannel::CHANNEL_2) {
-            SET_BIT(instance.tim->CCMR1, TIM_CCMR1_OC2PE);
-        } else if constexpr(ch == TimerChannel::CHANNEL_3) {
-            SET_BIT(instance.tim->CCMR2, TIM_CCMR2_OC3PE);
+        if constexpr((ch == TimerChannel::CHANNEL_1) || (ch == TimerChannel::CHANNEL_1_NEGATED)) {
+            SET_BIT(instance->tim->CCMR1, TIM_CCMR1_OC1PE);
+        } else if constexpr((ch == TimerChannel::CHANNEL_2) || (ch == TimerChannel::CHANNEL_2_NEGATED)) {
+            SET_BIT(instance->tim->CCMR1, TIM_CCMR1_OC2PE);
+        } else if constexpr((ch == TimerChannel::CHANNEL_3) || (ch == TimerChannel::CHANNEL_3_NEGATED)) {
+            SET_BIT(instance->tim->CCMR2, TIM_CCMR2_OC3PE);
         } else if constexpr(ch == TimerChannel::CHANNEL_4) {
-            SET_BIT(instance.tim->CCMR2, TIM_CCMR2_OC4PE);
+            SET_BIT(instance->tim->CCMR2, TIM_CCMR2_OC4PE);
         } else if constexpr(ch == TimerChannel::CHANNEL_5) {
-            SET_BIT(instance.tim->CCMR3, TIM_CCMR3_OC5PE);
+            SET_BIT(instance->tim->CCMR3, TIM_CCMR3_OC5PE);
         } else if constexpr(ch == TimerChannel::CHANNEL_6) {
-            SET_BIT(instance.tim->CCMR3, TIM_CCMR3_OC6PE);
+            SET_BIT(instance->tim->CCMR3, TIM_CCMR3_OC6PE);
         } else ST_LIB::compile_error("Unknown timer channel, there are only 6 channels [1..6]");
     }
 
     template<ST_LIB::TimerChannel ch>
     inline void set_capture_compare(uint16_t val) {
-        if constexpr (ch == TimerChannel::CHANNEL_1) {
-            instance.tim->CCR1 = val;
-        } else if constexpr(ch == TimerChannel::CHANNEL_2) {
-            instance.tim->CCR2 = val;
-        } else if constexpr(ch == TimerChannel::CHANNEL_3) {
-            instance.tim->CCR3 = val;
+        if constexpr((ch == TimerChannel::CHANNEL_1) || (ch == TimerChannel::CHANNEL_1_NEGATED)) {
+            instance->tim->CCR1 = val;
+        } else if constexpr((ch == TimerChannel::CHANNEL_2) || (ch == TimerChannel::CHANNEL_2_NEGATED)) {
+            instance->tim->CCR2 = val;
+        } else if constexpr((ch == TimerChannel::CHANNEL_3) || (ch == TimerChannel::CHANNEL_3_NEGATED)) {
+            instance->tim->CCR3 = val;
         } else if constexpr(ch == TimerChannel::CHANNEL_4) {
-            instance.tim->CCR4 = val;
+            instance->tim->CCR4 = val;
         } else if constexpr(ch == TimerChannel::CHANNEL_5) {
-            instance.tim->CCR5 = val;
+            instance->tim->CCR5 = val;
         } else if constexpr(ch == TimerChannel::CHANNEL_6) {
-            instance.tim->CCR6 = val;
+            instance->tim->CCR6 = val;
         } else ST_LIB::compile_error("Unknown timer channel, there are only 6 channels [1..6]");
+    }
+
+    inline bool are_all_channels_free() {
+        return ((instance->tim->CCER & TIM_CCER_CCxE_MASK) == 0) &&
+               ((instance->tim->CCER & TIM_CCER_CCxNE_MASK) == 0);
     }
 
     // leftover from old TimerPeripheral, maybe this was useful?
     inline uint16_t get_prescaler() {
-        return instance.tim->PSC;
+        return instance->tim->PSC;
     }
     inline uint32_t get_period() {
-        return instance.tim->ARR;
+        return instance->tim->ARR;
     }
 };
 } // namespace ST_LIB

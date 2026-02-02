@@ -47,7 +47,7 @@ ST_LIB::TimerDomain::Instance tim1_inst {
 };
 
 TEST_F(TimerWrapperTests, Counter_EnabledDisabled) {
-    ST_LIB::TimerWrapper<tim1_decl> tim1(tim1_inst);
+    ST_LIB::TimerWrapper<tim1_decl> tim1(&tim1_inst);
 
     tim1.counter_enable();
     EXPECT_EQ(TIM1_BASE->CR1 & TIM_CR1_CEN, TIM_CR1_CEN);
@@ -56,7 +56,7 @@ TEST_F(TimerWrapperTests, Counter_EnabledDisabled) {
 }
 
 TEST_F(TimerWrapperTests, UpdateInterrupt_EnabledDisabled) {
-    ST_LIB::TimerWrapper<tim1_decl> tim1(tim1_inst);
+    ST_LIB::TimerWrapper<tim1_decl> tim1(&tim1_inst);
 
     tim1.enable_update_interrupt();
     EXPECT_EQ(TIM1_BASE->DIER & TIM_DIER_UIE, TIM_DIER_UIE);
@@ -65,7 +65,7 @@ TEST_F(TimerWrapperTests, UpdateInterrupt_EnabledDisabled) {
 }
 
 TEST_F(TimerWrapperTests, NVIC_EnabledDisabled) {
-    ST_LIB::TimerWrapper<tim1_decl> tim1(tim1_inst);
+    ST_LIB::TimerWrapper<tim1_decl> tim1(&tim1_inst);
 
     tim1.enable_nvic();
     EXPECT_EQ(NVIC_GetEnableIRQ(TIM1_UP_IRQn), 1);
@@ -74,7 +74,7 @@ TEST_F(TimerWrapperTests, NVIC_EnabledDisabled) {
 }
 
 TEST_F(TimerWrapperTests, UpdateEvent_EnabledDisabled) {
-    ST_LIB::TimerWrapper<tim1_decl> tim1(tim1_inst);
+    ST_LIB::TimerWrapper<tim1_decl> tim1(&tim1_inst);
 
     tim1.enable_update_event();
     EXPECT_EQ(TIM1_BASE->CR1 & TIM_CR1_UDIS, 0);
@@ -83,7 +83,7 @@ TEST_F(TimerWrapperTests, UpdateEvent_EnabledDisabled) {
 }
 
 TEST_F(TimerWrapperTests, BreakInterrupt_EnabledDisabled) {
-    ST_LIB::TimerWrapper<tim1_decl> tim1(tim1_inst);
+    ST_LIB::TimerWrapper<tim1_decl> tim1(&tim1_inst);
 
     tim1.break_interrupt_enable();
     EXPECT_EQ(TIM1_BASE->DIER & TIM_DIER_BIE, TIM_DIER_BIE);
@@ -92,7 +92,7 @@ TEST_F(TimerWrapperTests, BreakInterrupt_EnabledDisabled) {
 }
 
 TEST_F(TimerWrapperTests, OnePulseMode_EnabledDisabled) {
-    ST_LIB::TimerWrapper<tim1_decl> tim1(tim1_inst);
+    ST_LIB::TimerWrapper<tim1_decl> tim1(&tim1_inst);
 
     tim1.set_one_pulse_mode();
     EXPECT_EQ(TIM1_BASE->CR1 & TIM_CR1_OPM, TIM_CR1_OPM);
@@ -103,7 +103,7 @@ TEST_F(TimerWrapperTests, OnePulseMode_EnabledDisabled) {
 void callback(void *raw) {}
 
 TEST_F(TimerWrapperTests, ConfigureTimer) {
-    ST_LIB::TimerWrapper<tim1_decl> tim1(tim1_inst);
+    ST_LIB::TimerWrapper<tim1_decl> tim1(&tim1_inst);
 
 #define PRESCALER_VAL 200
 #define PERIOD 1000
