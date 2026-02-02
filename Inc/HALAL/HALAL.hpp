@@ -21,6 +21,9 @@
 #include "HALAL/Services/PWM/PhasedPWM/PhasedPWM.hpp"
 #include "HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 
+#include "HALAL/Services/PWM/PWM.hpp"
+#include "HALAL/Services/PWM/DualPWM.hpp"
+
 #include "HALAL/Services/Time/TimerWrapper.hpp"
 #include "HALAL/Services/Time/Scheduler.hpp"
 #include "HALAL/Services/Time/RTC.hpp"
