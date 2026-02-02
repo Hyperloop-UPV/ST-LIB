@@ -97,7 +97,6 @@ struct TimerWrapper {
             default:
                 return false;
         }
-        return false;
     }
 
     inline uint32_t get_clock_frequency() {

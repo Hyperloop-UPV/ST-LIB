@@ -12,7 +12,9 @@ namespace ST_LIB {
 
 template<const TimerDomain::Timer &dev>
 struct Encoder {
-    static void start();
+    TimerWrapper<dev> *timer;
+
+    static void init(TimerWrapper<dev> *timer, uint16_t prescaler, uint32_t period);
 
     static void turn_on();
 
@@ -23,8 +25,6 @@ struct Encoder {
     static uint32_t get_counter();
 
     static bool get_direction();
-
-    static void init(TimerWrapper<dev> *timer);
 
     static uint32_t get_initial_counter_value();
 
