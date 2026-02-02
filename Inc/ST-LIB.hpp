@@ -103,7 +103,7 @@ template <typename... Domains> struct BuildCtx {
 #define NEXT ,
 #define X(domain, inst, ...) domain
 
-using DomainCtx = BuildCtx<DomainXList>;
+using DomainsCtx = BuildCtx<DomainXList>;
 
 #undef NEXT
 #undef X
