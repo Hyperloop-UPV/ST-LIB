@@ -18,10 +18,10 @@ struct DigitalInputDomain {
                            GPIODomain::Speed speed = GPIODomain::Speed::Low)
         : gpio{pin, GPIODomain::OperationMode::INPUT, pull, speed} {}
 
-    template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-      const auto gpio_idx = ctx.template add<GPIODomain>(gpio.e);
+    template <class Ctx> consteval std::size_t inscribe(Ctx &ctx) const {
+      const auto gpio_idx = gpio.inscribe(ctx);
       Entry e{.gpio_idx = gpio_idx};
-      ctx.template add<DigitalInputDomain>(e);
+      return ctx.template add<DigitalInputDomain>(e, this);
     }
   };
 

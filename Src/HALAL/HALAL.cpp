@@ -20,7 +20,6 @@ static void common_start(UART::Peripheral &printf_peripheral) {
   Watchdog::check_reset_flag();
 #endif
 
-  MPUManager::start();
   HAL_Init();
   HALconfig::system_clock();
   HALconfig::peripheral_clock();
@@ -35,6 +34,10 @@ static void common_start(UART::Peripheral &printf_peripheral) {
 
 #ifdef HAL_DMA_MODULE_ENABLED
   DMA::start();
+#endif
+
+#ifdef HAL_MDMA_MODULE_ENABLED
+    MDMA::start();
 #endif
 
 #ifdef HAL_FMAC_MODULE_ENABLED
@@ -72,8 +75,8 @@ static void common_start(UART::Peripheral &printf_peripheral) {
 #ifdef HAL_TIM_MODULE_ENABLED
   Encoder::start();
   Global_RTC::start_rtc();
-  TimerPeripheral::start();
-  Time::start();
+  //TimerPeripheral::start();
+  //Time::start();
 #endif
 
 #ifdef HAL_EXTI_MODULE_ENABLED

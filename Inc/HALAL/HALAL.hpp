@@ -20,7 +20,11 @@
 #include "HALAL/Services/PWM/PhasedPWM/PhasedPWM.hpp"
 #include "HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 
-#include "HALAL/Services/Time/Time.hpp"
+#include "HALAL/Services/PWM/PWM.hpp"
+#include "HALAL/Services/PWM/DualPWM.hpp"
+
+#include "HALAL/Services/Time/TimerWrapper.hpp"
+#include "HALAL/Services/Time/Scheduler.hpp"
 #include "HALAL/Services/Time/RTC.hpp"
 
 #include "HALAL/Services/InputCapture/InputCapture.hpp"
@@ -36,14 +40,17 @@
 #include "HALAL/Services/FMAC/FMAC.hpp"
 
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
+#include "HALAL/Models/MPU.hpp"
 #include "HALAL/Services/InfoWarning/InfoWarning.hpp"
 #include "HALAL/Services/Watchdog/Watchdog.hpp"
 
-#include "HALAL/Models/TimerPeripheral/TimerPeripheral.hpp"
-
 #include "HALAL/Models/BoardID/BoardID.hpp"
 #include "HALAL/Models/Concepts/Concepts.hpp"
+#include "HALAL/Models/MDMA/MDMA.hpp"
+#include "HALAL/Models/Packets/MdmaPacket.hpp"
 
+#include "HALAL/HardFault/HardfaultTrace.h"
+#include "HALAL/Benchmarking_toolkit/DataWatchpointTrace/DataWatchpointTrace.hpp"
 #ifdef STLIB_ETH
 #include "HALAL/Models/Packets/Packet.hpp"
 #include "HALAL/Models/Packets/Order.hpp"

@@ -26,10 +26,10 @@ struct DigitalOutputDomain {
         : gpio{pin, static_cast<GPIODomain::OperationMode>(mode), pull, speed} {
     }
 
-    template <class Ctx> consteval void inscribe(Ctx &ctx) const {
-      const auto gpio_idx = ctx.template add<GPIODomain>(gpio.e);
+    template <class Ctx> consteval std::size_t inscribe(Ctx &ctx) const {
+      const auto gpio_idx = gpio.inscribe(ctx);
       Entry e{.gpio_idx = gpio_idx};
-      ctx.template add<DigitalOutputDomain>(e);
+      return ctx.template add<DigitalOutputDomain>(e, this);
     }
   };
 
