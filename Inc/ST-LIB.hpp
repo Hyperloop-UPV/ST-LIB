@@ -86,22 +86,22 @@ template <typename... Domains> struct BuildCtx {
 /* DomainXList params:
  *  - First param: Domain name
  *  - Second param: instance name
- *  - Third param: true if it needs the nº of instances to be templated,
- *                 false otherwise (mainly for MPUdomain)
  *  - Rest: any dependencies on previous domains
  */
 #define DomainXList \
-    X(MPUDomain, mpu, true) NEXT                \
-    X(GPIODomain, gpio, false) NEXT             \
-    X(TimerDomain, tim, false) NEXT             \
-    X(DigitalOutputDomain, dout, false, GPIODomain::Init<gpioN>::instances) NEXT \
-    X(DigitalInputDomain, din, false, GPIODomain::Init<gpioN>::instances) NEXT \
-    X(MdmaPacketDomain, mdmaPacket, false, MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances) NEXT \
-    /* X(ADCDomain, adc, false) NEXT */         \
-    X(SdDomain, sd, false, MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances, DigitalInputDomain::Init<dinN>::instances)
+    X_TEMPLATED(MPUDomain, mpu) NEXT      \
+    X(GPIODomain, gpio) NEXT             \
+    X(TimerDomain, tim) NEXT             \
+    X(DigitalOutputDomain, dout, GPIODomain::Init<gpioN>::instances) NEXT \
+    X(DigitalInputDomain, din, GPIODomain::Init<gpioN>::instances) NEXT \
+    X(MdmaPacketDomain, mdmaPacket, MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances) NEXT \
+    /* X(ADCDomain, adc) NEXT */         \
+    X(SdDomain, sd, MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances, DigitalInputDomain::Init<dinN>::instances)
+
+#define X_TEMPLATED X
 
 #define NEXT ,
-#define X(domain, inst, is_templated, ...) domain
+#define X(domain, inst, ...) domain
 
 using DomainCtx = BuildCtx<DomainXList>;
 
@@ -124,7 +124,7 @@ template <auto &...devs> struct Board {
 
   static consteval auto build() {
 #define NEXT ;
-#define X(domain, inst, is_templated, ...) \
+#define X(domain, inst, ...) \
     constexpr std::size_t inst##N = domain_size<domain>();
     
     DomainXList;
@@ -134,7 +134,7 @@ template <auto &...devs> struct Board {
 
     struct ConfigBundle {
 #define NEXT ;
-#define X(domain, inst, is_templated, ...) \
+#define X(domain, inst, ...) \
     std::array<domain::Config, inst##N> inst##_cfgs
     
       DomainXList;
@@ -145,7 +145,7 @@ template <auto &...devs> struct Board {
 
     return ConfigBundle{
 #define NEXT ,
-#define X(domain, inst, is_templated, ...) \
+#define X(domain, inst, ...) \
     .inst##_cfgs = domain::template build<inst##N>(ctx.template span<domain>())
 
         DomainXList,
@@ -159,23 +159,23 @@ template <auto &...devs> struct Board {
 
   static void init() {
 #define NEXT ;
-#define X(domain, inst, is_templated, ...) \
+#define X(domain, inst, ...) \
     constexpr std::size_t inst##N = domain_size<domain>();
     
     DomainXList;
 
 #undef X
 
-#define X(domain, inst, is_templated, ...) \
-    if constexpr(!is_templated) { \
-        domain::Init<inst##N>::init(cfg.inst##_cfgs, ##__VA_ARGS__); \
-    }
+#undef X_TEMPLATED
+#define X_TEMPLATED(domain, inst, ...) \
+    domain::Init<inst##N, cfg.inst##_cfgs>::init(##__VA_ARGS__);
+#define X(domain, inst, ...) \
+    domain::Init<inst##N>::init(cfg.inst##_cfgs, ##__VA_ARGS__);
 
-    /* Any templated go here since I couldn't get it to compile otherwise */
-    MPUDomain::Init<mpuN, cfg.mpu_cfgs>::init();
     DomainXList;
 
 #undef NEXT
+#undef X_TEMPLATED
 #undef X
   }
 
