@@ -135,7 +135,7 @@ template <auto &...devs> struct Board {
         .din_cfgs = DigitalInputDomain::template build<dinN>(
             ctx.template span<DigitalInputDomain>()),
         .mdma_packet_cfgs = MdmaPacketDomain::template build<mdmaPacketN>(
-            ctx.template span<MdmaPacketDomain>())
+            ctx.template span<MdmaPacketDomain>()),
         .sd_cfgs = SdDomain::template build<sdN>(
             ctx.template span<SdDomain>()),
         // ...
