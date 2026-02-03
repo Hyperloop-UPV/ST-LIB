@@ -62,8 +62,8 @@
 #include "HALAL/Models/IPV4/IPV4.hpp"
 #include "HALAL/Models/MAC/MAC.hpp"
 
+#include "HALAL/NewEthernet.hpp"
 #include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
-#include "HALAL/Services/Communication/Ethernet/NewEthernet.hpp"
 #include "HALAL/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 #include "HALAL/Services/Communication/Ethernet/TCP/Socket.hpp"
 #include "HALAL/Services/Communication/Ethernet/UDP/DatagramSocket.hpp"
