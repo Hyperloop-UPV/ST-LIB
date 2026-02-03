@@ -170,6 +170,11 @@ private:
         return;
         break;
       }
+      if(timed_action.id == Scheduler::INVALID_ID)
+      {
+        ErrorHandler("Failed to register timed action");
+        return;
+      }
       timed_action.is_on = true;
     }
   }
@@ -447,7 +452,7 @@ public:
   }
 
   template <size_t N, size_t O>
-  consteval void remove_cyclic_action(TimedAction *timed_action, const State<StateEnum, N, O>& state)
+  void remove_cyclic_action(TimedAction *timed_action, const State<StateEnum, N, O>& state)
   {
     for(size_t i = 0; i < states.size(); ++i)
     {
