@@ -9,13 +9,13 @@
 #include "ethernetif.h"
 #include "lwip.h"
 
-namespace ST_LIB {
-extern void compile_error(const char *msg);
-
 extern uint32_t EthernetLinkTimer;
 extern struct netif gnetif;
 extern ip4_addr_t ipaddr, netmask, gw;
 extern uint8_t IP_ADDRESS[4], NETMASK_ADDRESS[4], GATEWAY_ADDRESS[4];
+
+namespace ST_LIB {
+extern void compile_error(const char *msg);
 
 struct EthernetDomain {
 
@@ -30,9 +30,9 @@ struct EthernetDomain {
     const GPIODomain::Pin &TX_EN;
     const GPIODomain::Pin &TXD0;
 
-    constexpr auto asArray() {
-      return std::array<const GPIODomain::Pin *, 9>{
-          &MDC, &REF_CLK, &MDIO, &CRS_DV, &RXD0, &RXD1, &TXD1, &TX_EN, &TXD0};
+    constexpr std::array<std::reference_wrapper<const GPIODomain::Pin>, 9>
+    asArray() const {
+      return {MDC, REF_CLK, MDIO, CRS_DV, RXD0, RXD1, TXD1, TX_EN, TXD0};
     }
   };
 
@@ -56,10 +56,10 @@ struct EthernetDomain {
                                            .TXD0 = PB12};
 
   struct Entry {
-    std::string local_mac;
-    std::string local_ip;
-    std::string subnet_mask;
-    std::string gateway;
+    const char *local_mac;
+    const char *local_ip;
+    const char *subnet_mask;
+    const char *gateway;
   };
 
   struct Ethernet {
@@ -68,15 +68,54 @@ struct EthernetDomain {
     EthernetPins pins;
     Entry e;
 
-    consteval Ethernet(EthernetPins pins, string local_mac, string local_ip,
-                       string subnet_mask, string gateway)
-        : pins{pins}, e{local_mac, local_ip, subnet_mask, gateway} {}
+    std::array<GPIODomain::GPIO, 9> gpios;
+
+    consteval Ethernet(EthernetPins pins, const char *local_mac,
+                       const char *local_ip,
+                       const char *subnet_mask = "255.255.0.0",
+                       const char *gateway = "192.168.1.1")
+        : pins{pins}, e{local_mac, local_ip, subnet_mask, gateway},
+          gpios{
+              GPIODomain::GPIO(pins.MDC, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+              GPIODomain::GPIO(pins.REF_CLK, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+              GPIODomain::GPIO(pins.MDIO, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+              GPIODomain::GPIO(pins.CRS_DV, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+              GPIODomain::GPIO(pins.RXD0, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+              GPIODomain::GPIO(pins.RXD1, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+              GPIODomain::GPIO(pins.TXD1, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+              GPIODomain::GPIO(pins.TX_EN, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+              GPIODomain::GPIO(pins.TXD0, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+          } {}
 
     template <class Ctx> consteval std::size_t inscribe(Ctx &ctx) const {
-      for (const auto &pin : pins.asArray()) {
-        auto gpio = GPIODomain::GPIO(
-            pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None,
-            GPIODomain::Speed::VeryHigh, GPIODomain::Alternate::AF11);
+      for (const auto &gpio : gpios) {
         gpio.inscribe(ctx);
       }
 
@@ -87,10 +126,10 @@ struct EthernetDomain {
   static constexpr std::size_t max_instances{1};
 
   struct Config {
-    std::string local_mac;
-    std::string local_ip;
-    std::string subnet_mask;
-    std::string gateway;
+    const char *local_mac;
+    const char *local_ip;
+    const char *subnet_mask;
+    const char *gateway;
   };
 
   template <size_t N>
