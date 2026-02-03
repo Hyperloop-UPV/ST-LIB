@@ -154,8 +154,6 @@ void Scheduler::update() {
     }
 }
 
-// void Scheduler::global_timer_callback() { on_timer_update(); }
-
 inline uint8_t Scheduler::allocate_slot() {
     uint32_t idx = __builtin_ffs(Scheduler::free_bitmap_) - 1;
     if(idx > static_cast<int>(Scheduler::kMaxTasks)) [[unlikely]]
@@ -260,23 +258,14 @@ void Scheduler::schedule_next_interval() {
     if (diff >= -1 && diff <= 1) [[unlikely]] {
         current_interval_us_ = 1;
         Scheduler_global_timer->ARR = 1;
-        Scheduler_global_timer->CNT = 1;
-        Scheduler::global_timer_enable();
     } else {
         if (diff < -1) [[unlikely]]{
             current_interval_us_ = static_cast<uint32_t>(0 - diff);
         } else {
             current_interval_us_ = static_cast<uint32_t>(diff);
         }
-        configure_timer_for_interval(current_interval_us_);
+        Scheduler_global_timer->ARR = static_cast<uint32_t>(current_interval_us_ - 1u);
     }
-}
-
-inline void Scheduler::configure_timer_for_interval(uint32_t microseconds) {
-    // NOTE(vic): disabling the timer _might_ be necessary to prevent the timer from firing in the middle of configuring it, highly unlikely since it has a period of at least 1 microsecond
-    // TODO(vic): Validation: check arr is set correctly here: https://github.com/HyperloopUPV-H8/ST-LIB/pull/534#pullrequestreview-3529132356
-    Scheduler_global_timer->ARR = static_cast<uint32_t>(microseconds - 1u);
-    Scheduler_global_timer->CNT = 0;
     Scheduler::global_timer_enable();
 }
 
