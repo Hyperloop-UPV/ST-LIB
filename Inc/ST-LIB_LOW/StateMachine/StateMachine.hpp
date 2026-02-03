@@ -507,6 +507,16 @@ public:
       nested_state_machine.push_back({state.get_state(), &state_machine});
   }
 
+  void get_current_state(StateEnum& state) const
+  {
+      state = current_state;
+  }
+
+  void get_current_state(uint8_t& state) const
+  {
+      state = static_cast<uint8_t>(current_state);
+  }
+
 
   inline void refresh_state_orders()
   {
