@@ -18,6 +18,9 @@
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 #endif
 
+class HeapStateOrder;
+class StackStateOrder;
+
 using ms = std::chrono::milliseconds;
 using us = std::chrono::microseconds;
 using s = std::chrono::seconds;
@@ -259,6 +262,9 @@ class IStateMachine {
 template <class StateEnum, size_t NStates, size_t NTransitions>
 class StateMachine : public IStateMachine {
 private:  
+  friend class HeapStateOrder;
+  friend class StackStateOrder;
+
   struct NestedPair 
   {
       StateEnum state;
