@@ -224,7 +224,7 @@ void Scheduler::remove_sorted(uint8_t id) {
     uint64_t pattern = pattern_32;
     ((uint32_t*)&pattern)[1] = pattern_32;
 
-    // diff becomes 0xid..id_0_id..id where 0 is the nibble where id is in sorted_task_ids
+    // diff becomes 0x..._0_... where 0 is the nibble where id is in sorted_task_ids
     uint64_t diff = Scheduler::sorted_task_ids_ ^ pattern;
     
     //https://stackoverflow.com/questions/79058066/finding-position-of-zero-nibble-in-64-bits
@@ -261,22 +261,14 @@ void Scheduler::schedule_next_interval() {
         current_interval_us_ = 1;
         Scheduler_global_timer->ARR = 1;
         Scheduler_global_timer->CNT = 1;
-        Scheduler::global_timer_enable();
     } else {
         if (diff < -1) [[unlikely]]{
             current_interval_us_ = static_cast<uint32_t>(0 - diff);
         } else {
             current_interval_us_ = static_cast<uint32_t>(diff);
         }
-        configure_timer_for_interval(current_interval_us_);
+        Scheduler_global_timer->ARR = static_cast<uint32_t>(current_interval_us_ - 1u);
     }
-}
-
-inline void Scheduler::configure_timer_for_interval(uint32_t microseconds) {
-    // NOTE(vic): disabling the timer _might_ be necessary to prevent the timer from firing in the middle of configuring it, highly unlikely since it has a period of at least 1 microsecond
-    // TODO(vic): Validation: check arr is set correctly here: https://github.com/HyperloopUPV-H8/ST-LIB/pull/534#pullrequestreview-3529132356
-    Scheduler_global_timer->ARR = static_cast<uint32_t>(microseconds - 1u);
-    Scheduler_global_timer->CNT = 0;
     Scheduler::global_timer_enable();
 }
 
@@ -314,7 +306,7 @@ uint16_t Scheduler::register_task(uint32_t period_us, callback_t func) {
     task.callback = func;
     task.period_us = period_us;
     task.repeating = true;
-    task.next_fire_us = static_cast<uint32_t>(global_tick_us_ + period_us);
+    task.next_fire_us = static_cast<uint32_t>(global_tick_us_ + Scheduler_global_timer->CNT + period_us);
     task.id = static_cast<uint32_t>(slot);
     insert_sorted(slot);
     schedule_next_interval();
