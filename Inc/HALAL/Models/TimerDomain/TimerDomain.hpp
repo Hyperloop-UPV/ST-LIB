@@ -897,7 +897,7 @@ TimerDomain::Timer::get_gpio_af(ST_LIB::TimerRequest req, ST_LIB::TimerPin pin)
     for(std::size_t j = 0; j < tim_pins[(int)req].pin_count; j++) {
         if(pin.af == ST_LIB::TimerAF::None) {
             ST_LIB::compile_error("Error: Timers with pins must have associated TimerAF (alternate functions)");
-        } else if(((pin.af == ST_LIB::TimerAF::InputCapture || pin.af == ST_LIB::TimerAF::PWM) && 
+        } else if(((pin.af == ST_LIB::TimerAF::InputCapture || pin.af == ST_LIB::TimerAF::PWM || pin.af == ST_LIB::TimerAF::Encoder) && 
             (static_cast<uint8_t>(pin.channel) == static_cast<uint8_t>(tim_pins[(int)req].pins[j].use))) ||
 
             ((pin.af == ST_LIB::TimerAF::BreakInput) &&
