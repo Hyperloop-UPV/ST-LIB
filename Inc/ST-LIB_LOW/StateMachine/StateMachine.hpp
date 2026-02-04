@@ -172,6 +172,14 @@ private:
       }
       if(timed_action.id == Scheduler::INVALID_ID)
       {
+        for(size_t j = 0; j < i; ++j)
+        {
+          TimedAction& prev_action = cyclic_actions[j];
+          if(prev_action.action == nullptr){ continue; }
+          if(!prev_action.is_on){ continue; }
+          Scheduler::unregister_task(prev_action.id);
+          prev_action.is_on = false;
+        }
         ErrorHandler("Failed to register timed action");
         return;
       }
