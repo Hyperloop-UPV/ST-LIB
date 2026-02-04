@@ -266,9 +266,9 @@ private:
       constexpr bool operator==(const NestedPair&) const = default;
   };
 
-public:
   StateEnum current_state;
 
+public:
   constexpr ~StateMachine() override = default;
 
   void force_change_state(size_t state) override 
