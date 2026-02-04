@@ -48,13 +48,14 @@ class PWM {
     }
 
     TimerWrapper<dev> *timer;
-    uint32_t frequency;
+    uint32_t *frequency;
     float *duty_cycle = nullptr;
     bool is_on = false;
 
 public:
-    PWM(TimerWrapper<dev> *tim, uint32_t polarity, uint32_t negated_polarity, float *duty_ptr) : timer(tim) {
+    PWM(TimerWrapper<dev> *tim, uint32_t polarity, uint32_t negated_polarity, float *duty_ptr, uint32_t *frequency_ptr) : timer(tim) {
         duty_cycle = duty_ptr;
+        frequency = frequency_ptr;
 
 		TIM_OC_InitTypeDef sConfigOC = {
             .OCMode = TIM_OCMODE_PWM1,
@@ -135,9 +136,16 @@ public:
         timer->set_pwm_frequency(frequency);
     }
 
-    void configure(uint32_t frequency, float duty_cycle) {
+    inline void configure(uint32_t frequency, float duty_cycle) {
         *(this->duty_cycle) = duty_cycle;
         this->set_timer_frequency(frequency);
+    }
+
+    inline uint32_t get_frequency() const {
+        return *(this->frequency);
+    }
+    inline float get_duty_cycle() const {
+        return *(this->duty_cycle);
     }
 };
 } // namespace ST_LIB

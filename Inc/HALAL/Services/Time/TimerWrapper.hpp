@@ -35,6 +35,7 @@ struct TimerWrapper {
 
     static constexpr int MAX_pwm_channel_duties = 4;
     float pwm_channel_duties[MAX_pwm_channel_duties] = {0.0f, 0.0f, 0.0f, 0.0f};
+    uint32_t pwm_frequency = 0;
 
     enum CountingMode : uint8_t {
         UP = 0,
@@ -145,7 +146,7 @@ struct TimerWrapper {
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
                                  &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)]);
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 1 &&
             dev.e.pins[1].pin == pin.pin && dev.e.pins[1].channel == pin.channel)
         {
@@ -154,7 +155,7 @@ struct TimerWrapper {
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
                                  &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)]);
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 2 &&
             dev.e.pins[2].pin == pin.pin && dev.e.pins[2].channel == pin.channel)
         {
@@ -163,7 +164,7 @@ struct TimerWrapper {
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
                                  &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)]);
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 3 &&
             dev.e.pins[3].pin == pin.pin && dev.e.pins[3].channel == pin.channel)
         {
@@ -172,7 +173,7 @@ struct TimerWrapper {
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
                                  &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)]);
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 4 &&
             dev.e.pins[4].pin == pin.pin && dev.e.pins[4].channel == pin.channel)
         {
@@ -181,7 +182,7 @@ struct TimerWrapper {
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
                                  &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)]);
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 5 &&
             dev.e.pins[5].pin == pin.pin && dev.e.pins[5].channel == pin.channel)
         {
@@ -190,7 +191,7 @@ struct TimerWrapper {
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
                                  &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)]);
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 6 &&
             dev.e.pins[6].pin == pin.pin && dev.e.pins[6].channel == pin.channel)
         {
@@ -199,7 +200,7 @@ struct TimerWrapper {
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
                                  &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)]);
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count == 7 &&
             dev.e.pins[7].pin == pin.pin && dev.e.pins[7].channel == pin.channel)
         {
@@ -208,7 +209,7 @@ struct TimerWrapper {
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
                                  &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)]);
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else {
             ST_LIB::compile_error("No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
         }
@@ -223,7 +224,7 @@ struct TimerWrapper {
         static_assert((static_cast<uint8_t>(pin.channel) | static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) == static_cast<uint8_t>(negated_pin.channel));
         static_assert(pin.af == TimerAF::PWM && negated_pin.af == TimerAF::PWM);
         return DualPWM<dev, pin, negated_pin>(this, polarity, negated_polarity, 
-            &pwm_channel_duties[static_cast<uint8_t>(pin.channel) - 1]);
+            &pwm_channel_duties[static_cast<uint8_t>(pin.channel) - 1], &pwm_frequency);
     }
 
     inline void counter_enable() {
@@ -349,6 +350,7 @@ struct TimerWrapper {
         if((instance->tim->CR1 & TIM_CR1_CMS) != 0) {
             frequency = 2*frequency;
         }
+        pwm_frequency = frequency;
         instance->tim->ARR = (this->get_clock_frequency() / (instance->tim->PSC + 1)) / frequency;
 
         if(pwm_channel_duties[0] != 0.0f) {
@@ -374,6 +376,7 @@ struct TimerWrapper {
         if((instance->tim->CR1 & TIM_CR1_CMS) != 0) {
             frequency = 2*frequency;
         }
+        pwm_frequency = frequency;
 
         /* a = timer clock frequency 
          * b = (psc + 1) * frequency

@@ -48,14 +48,15 @@ class DualPWM {
     }
 
     TimerWrapper<dev> *timer;
-    uint32_t frequency;
+    uint32_t *frequency;
     float *duty_cycle = nullptr;
     bool is_on_positive = false;
     bool is_on_negative = false;
 
 public:
-    DualPWM(TimerWrapper<dev> *tim, uint32_t polarity, uint32_t negated_polarity, float *duty_ptr) : timer(tim) {
+    DualPWM(TimerWrapper<dev> *tim, uint32_t polarity, uint32_t negated_polarity, float *duty_ptr, uint32_t *frequency_ptr) : timer(tim) {
         duty_cycle = duty_ptr;
+        frequency = frequency_ptr;
 
 		TIM_OC_InitTypeDef sConfigOC = {
             .OCMode = TIM_OCMODE_PWM1,
@@ -73,12 +74,12 @@ public:
         timer->template set_output_compare_preload_enable<pin.channel>();
     }
 
-    void turn_on() {
+    inline void turn_on() {
         turn_on_positive();
         turn_on_negative();
     }
 
-    void turn_off() {
+    inline void turn_off() {
         turn_off_positive();
         turn_off_negative();
     }
@@ -197,16 +198,16 @@ public:
         timer->set_pwm_frequency(frequency);
     }
 
-    void configure(uint32_t frequency, float duty_cycle, int64_t dead_time_ns) {
+    inline void configure(uint32_t frequency, float duty_cycle, int64_t dead_time_ns) {
         *(this->duty_cycle) = duty_cycle;
         this->set_timer_frequency(frequency);
         this->set_dead_time(dead_time_ns);
     }
 
-    uint32_t get_frequency() const {
-        return this->frequency;
+    inline uint32_t get_frequency() const {
+        return *(this->frequency);
     }
-    float get_duty_cycle() const {
+    inline float get_duty_cycle() const {
         return *(this->duty_cycle);
     }
 
