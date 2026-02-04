@@ -53,6 +53,7 @@
 
 #include "HALAL/Benchmarking_toolkit/DataWatchpointTrace/DataWatchpointTrace.hpp"
 #include "HALAL/HardFault/HardfaultTrace.h"
+#include "HALAL/Services/Communication/Ethernet/NewEthernet.hpp"
 #ifdef STLIB_ETH
 #include "HALAL/Models/Packets/ForwardOrder.hpp"
 #include "HALAL/Models/Packets/Order.hpp"
@@ -61,8 +62,6 @@
 
 #include "HALAL/Models/IPV4/IPV4.hpp"
 #include "HALAL/Models/MAC/MAC.hpp"
-
-#include "HALAL/NewEthernet.hpp"
 #include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
 #include "HALAL/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
 #include "HALAL/Services/Communication/Ethernet/TCP/Socket.hpp"

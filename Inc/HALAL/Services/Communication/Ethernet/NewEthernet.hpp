@@ -3,6 +3,8 @@
 #include "stm32h7xx_hal.h"
 
 #include "C++Utilities/CppUtils.hpp"
+
+#ifdef STLIB_ETH
 #include "HALAL/Models/MAC/MAC.hpp"
 #include "HALAL/Services/Communication/Ethernet/EthernetHelper.hpp"
 #include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
@@ -29,11 +31,6 @@ struct EthernetDomain {
     const GPIODomain::Pin &TXD1;
     const GPIODomain::Pin &TX_EN;
     const GPIODomain::Pin &TXD0;
-
-    constexpr std::array<std::reference_wrapper<const GPIODomain::Pin>, 9>
-    asArray() const {
-      return {MDC, REF_CLK, MDIO, CRS_DV, RXD0, RXD1, TXD1, TX_EN, TXD0};
-    }
   };
 
   constexpr static EthernetPins PINSET_H10{.MDC = PC1,
@@ -133,10 +130,10 @@ struct EthernetDomain {
   };
 
   template <size_t N>
-  static consteval array<Config, N> build(span<const Entry> pins) {
+  static consteval array<Config, N> build(span<const Entry> config) {
     array<Config, N> cfgs{};
     for (std::size_t i = 0; i < N; ++i) {
-      const auto &e = pins[i];
+      const auto &e = config[i];
       cfgs[i].local_mac = e.local_mac;
       cfgs[i].local_ip = e.local_ip;
       cfgs[i].subnet_mask = e.subnet_mask;
@@ -148,8 +145,6 @@ struct EthernetDomain {
 
   // Runtime object
   struct Instance {
-  private:
-  public:
     constexpr Instance() {}
     void update() {
       ethernetif_input(&gnetif);
@@ -214,3 +209,22 @@ struct EthernetDomain {
   };
 };
 } // namespace ST_LIB
+
+#else
+namespace ST_LIB {
+// Dummy EthernetDomain when STLIB_ETH is not defined
+struct EthernetDomain {
+  static constexpr std::size_t max_instances{0};
+  struct Entry {};
+  struct Config {};
+  template <size_t N>
+  static consteval array<Config, N> build(span<const Entry> config) {
+    return {};
+  }
+  struct Instance {};
+  template <std::size_t N> struct Init {
+    static void init(std::span<const Config, N> cfgs) {}
+  };
+};
+} // namespace ST_LIB
+#endif // STLIB_ETH
