@@ -18,9 +18,6 @@
 #include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
 #endif
 
-class HeapStateOrder;
-class StackStateOrder;
-
 using ms = std::chrono::milliseconds;
 using us = std::chrono::microseconds;
 using s = std::chrono::seconds;
@@ -262,9 +259,6 @@ class IStateMachine {
 template <class StateEnum, size_t NStates, size_t NTransitions>
 class StateMachine : public IStateMachine {
 private:  
-  friend class HeapStateOrder;
-  friend class StackStateOrder;
-
   struct NestedPair 
   {
       StateEnum state;
@@ -513,9 +507,9 @@ public:
       nested_state_machine.push_back({state.get_state(), &state_machine});
   }
 
-  void get_current_state(StateEnum& state) const
+  StateEnum get_current_state() const
   {
-      state = current_state;
+      return current_state;
   }
 
 
