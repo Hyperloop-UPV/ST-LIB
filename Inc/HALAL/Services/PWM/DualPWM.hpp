@@ -192,7 +192,7 @@ public:
         }
         
         if(duty_cycle > 100.0f) duty_cycle = 100.0f;
-        uint16_t raw_duty = (uint16_t)((float)(timer->instance->tim->ARR + 1) / (100.0f * duty_cycle));
+        uint16_t raw_duty = (uint16_t)((float)(timer->instance->tim->ARR + 1) * (duty_cycle / 100.0f));
         timer->template set_capture_compare<pin.channel>(raw_duty);
         *(this->duty_cycle) = duty_cycle;
     }
