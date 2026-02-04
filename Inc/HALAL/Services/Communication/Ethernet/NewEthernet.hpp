@@ -5,11 +5,14 @@
 #include "C++Utilities/CppUtils.hpp"
 
 #ifdef STLIB_ETH
+#include "DigitalOutput2.hpp"
 #include "HALAL/Models/MAC/MAC.hpp"
-#include "HALAL/Services/Communication/Ethernet/EthernetHelper.hpp"
-#include "HALAL/Services/Communication/Ethernet/EthernetNode.hpp"
+#include "HALAL/Services/Communication/Ethernet/LWIP/EthernetHelper.hpp"
+#include "HALAL/Services/Communication/Ethernet/LWIP/EthernetNode.hpp"
+extern "C" {
 #include "ethernetif.h"
 #include "lwip.h"
+}
 
 extern uint32_t EthernetLinkTimer;
 extern struct netif gnetif;
@@ -31,6 +34,7 @@ struct EthernetDomain {
     const GPIODomain::Pin &TXD1;
     const GPIODomain::Pin &TX_EN;
     const GPIODomain::Pin &TXD0;
+    const GPIODomain::Pin &PHY_RST;
   };
 
   constexpr static EthernetPins PINSET_H10{.MDC = PC1,
@@ -41,7 +45,8 @@ struct EthernetDomain {
                                            .RXD1 = PC5,
                                            .TXD1 = PB13,
                                            .TX_EN = PG11,
-                                           .TXD0 = PG13};
+                                           .TXD0 = PG13,
+                                           .PHY_RST = PG0};
   constexpr static EthernetPins PINSET_H11{.MDC = PC1,
                                            .REF_CLK = PA1,
                                            .MDIO = PA2,
@@ -50,13 +55,16 @@ struct EthernetDomain {
                                            .RXD1 = PC5,
                                            .TXD1 = PB13,
                                            .TX_EN = PB11,
-                                           .TXD0 = PB12};
+                                           .TXD0 = PB12,
+                                           .PHY_RST = PF14};
 
   struct Entry {
     const char *local_mac;
     const char *local_ip;
     const char *subnet_mask;
     const char *gateway;
+
+    size_t phy_reset_id;
   };
 
   struct Ethernet {
@@ -65,14 +73,15 @@ struct EthernetDomain {
     EthernetPins pins;
     Entry e;
 
-    std::array<GPIODomain::GPIO, 9> gpios;
+    std::array<GPIODomain::GPIO, 9> rmii_gpios;
+    DigitalOutputDomain::DigitalOutput phy_reset;
 
     consteval Ethernet(EthernetPins pins, const char *local_mac,
                        const char *local_ip,
                        const char *subnet_mask = "255.255.0.0",
                        const char *gateway = "192.168.1.1")
         : pins{pins}, e{local_mac, local_ip, subnet_mask, gateway},
-          gpios{
+          rmii_gpios{
               GPIODomain::GPIO(pins.MDC, GPIODomain::OperationMode::ALT_PP,
                                GPIODomain::Pull::None,
                                GPIODomain::Speed::VeryHigh,
@@ -81,8 +90,8 @@ struct EthernetDomain {
                                GPIODomain::Pull::None,
                                GPIODomain::Speed::VeryHigh,
                                GPIODomain::AlternateFunction::AF11),
-              GPIODomain::GPIO(pins.MDIO, GPIODomain::OperationMode::ALT_PP,
-                               GPIODomain::Pull::None,
+              GPIODomain::GPIO(pins.MDIO, GPIODomain::OperationMode::ALT_OD,
+                               GPIODomain::Pull::Up,
                                GPIODomain::Speed::VeryHigh,
                                GPIODomain::AlternateFunction::AF11),
               GPIODomain::GPIO(pins.CRS_DV, GPIODomain::OperationMode::ALT_PP,
@@ -108,15 +117,24 @@ struct EthernetDomain {
               GPIODomain::GPIO(pins.TXD0, GPIODomain::OperationMode::ALT_PP,
                                GPIODomain::Pull::None,
                                GPIODomain::Speed::VeryHigh,
-                               GPIODomain::AlternateFunction::AF11),
-          } {}
+                               GPIODomain::AlternateFunction::AF11)},
+          phy_reset{pins.PHY_RST} {}
 
     template <class Ctx> consteval std::size_t inscribe(Ctx &ctx) const {
-      for (const auto &gpio : gpios) {
+      for (const auto &gpio : rmii_gpios) {
         gpio.inscribe(ctx);
       }
 
-      return ctx.template add<EthernetDomain>(e, this);
+      const auto phy_reset_id = phy_reset.inscribe(ctx);
+      Entry entry{
+          .local_mac = this->e.local_mac,
+          .local_ip = this->e.local_ip,
+          .subnet_mask = this->e.subnet_mask,
+          .gateway = this->e.gateway,
+          .phy_reset_id = phy_reset_id,
+      };
+
+      return ctx.template add<EthernetDomain>(entry, this);
     }
   };
 
@@ -127,6 +145,8 @@ struct EthernetDomain {
     const char *local_ip;
     const char *subnet_mask;
     const char *gateway;
+
+    size_t phy_reset_id;
   };
 
   template <size_t N>
@@ -138,11 +158,11 @@ struct EthernetDomain {
       cfgs[i].local_ip = e.local_ip;
       cfgs[i].subnet_mask = e.subnet_mask;
       cfgs[i].gateway = e.gateway;
+      cfgs[i].phy_reset_id = e.phy_reset_id;
     }
 
     return cfgs;
   }
-
   // Runtime object
   struct Instance {
     constexpr Instance() {}
@@ -154,7 +174,7 @@ struct EthernetDomain {
         EthernetLinkTimer = HAL_GetTick();
         ethernet_link_check_state(&gnetif);
 
-        if (gnetif.flags == 15) {
+        if (netif_is_link_up(&gnetif) && !netif_is_up(&gnetif)) {
           netif_set_up(&gnetif);
         }
       }
@@ -164,17 +184,28 @@ struct EthernetDomain {
   template <std::size_t N> struct Init {
     static inline std::array<Instance, N> instances{};
 
-    static void init(std::span<const Config, N> cfgs) {
+    static void init(std::span<const Config, N> cfgs,
+                     std::span<DigitalOutputDomain::Instance> do_instances) {
       for (std::size_t i = 0; i < N; ++i) {
         const EthernetDomain::Config &e = cfgs[i];
 
+        /* --- RESET PHY (KSZ8041) --- */
+        // RESET_N pin low then high
+        do_instances[e.phy_reset_id].turn_off(); // RESET_N = 0
+        HAL_Delay(10);
+        do_instances[e.phy_reset_id].turn_on(); // RESET_N = 1
+        HAL_Delay(10);
+
+        /* --- CLOCKS ETH --- */
         __HAL_RCC_ETH1MAC_CLK_ENABLE();
         __HAL_RCC_ETH1TX_CLK_ENABLE();
         __HAL_RCC_ETH1RX_CLK_ENABLE();
 
+        /* --- NVIC --- */
         HAL_NVIC_SetPriority(ETH_IRQn, 0, 0);
         HAL_NVIC_EnableIRQ(ETH_IRQn);
 
+        /* --- IP / MAC --- */
         MAC local_mac{e.local_mac};
         IPV4 local_ip{e.local_ip};
         IPV4 subnet_mask{e.subnet_mask};
@@ -183,24 +214,31 @@ struct EthernetDomain {
         ipaddr = local_ip.address;
         netmask = subnet_mask.address;
         gw = gateway.address;
+
         IP_ADDRESS[0] = ipaddr.addr & 0xFF;
         IP_ADDRESS[1] = (ipaddr.addr >> 8) & 0xFF;
         IP_ADDRESS[2] = (ipaddr.addr >> 16) & 0xFF;
         IP_ADDRESS[3] = (ipaddr.addr >> 24) & 0xFF;
+
         NETMASK_ADDRESS[0] = netmask.addr & 0xFF;
         NETMASK_ADDRESS[1] = (netmask.addr >> 8) & 0xFF;
         NETMASK_ADDRESS[2] = (netmask.addr >> 16) & 0xFF;
         NETMASK_ADDRESS[3] = (netmask.addr >> 24) & 0xFF;
+
         GATEWAY_ADDRESS[0] = gw.addr & 0xFF;
         GATEWAY_ADDRESS[1] = (gw.addr >> 8) & 0xFF;
         GATEWAY_ADDRESS[2] = (gw.addr >> 16) & 0xFF;
         GATEWAY_ADDRESS[3] = (gw.addr >> 24) & 0xFF;
+
         gnetif.hwaddr[0] = local_mac.address[0];
         gnetif.hwaddr[1] = local_mac.address[1];
         gnetif.hwaddr[2] = local_mac.address[2];
         gnetif.hwaddr[3] = local_mac.address[3];
         gnetif.hwaddr[4] = local_mac.address[4];
         gnetif.hwaddr[5] = local_mac.address[5];
+        gnetif.hwaddr_len = 6;
+
+        /* --- LwIP / ETH init --- */
         MX_LWIP_Init();
 
         instances[i] = Instance{};

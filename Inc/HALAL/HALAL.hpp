@@ -62,10 +62,10 @@
 
 #include "HALAL/Models/IPV4/IPV4.hpp"
 #include "HALAL/Models/MAC/MAC.hpp"
-#include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
-#include "HALAL/Services/Communication/Ethernet/TCP/ServerSocket.hpp"
-#include "HALAL/Services/Communication/Ethernet/TCP/Socket.hpp"
-#include "HALAL/Services/Communication/Ethernet/UDP/DatagramSocket.hpp"
+#include "HALAL/Services/Communication/Ethernet/LWIP/Ethernet.hpp"
+#include "HALAL/Services/Communication/Ethernet/LWIP/TCP/ServerSocket.hpp"
+#include "HALAL/Services/Communication/Ethernet/LWIP/TCP/Socket.hpp"
+#include "HALAL/Services/Communication/Ethernet/LWIP/UDP/DatagramSocket.hpp"
 #include "HALAL/Services/Communication/SNTP/SNTP.hpp"
 #endif
 

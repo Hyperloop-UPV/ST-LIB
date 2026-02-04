@@ -17,6 +17,27 @@ enable_testing()
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
 
+# ============================
+# PHY selection (Ethernet)
+# ============================
+
+if(USE_ETHERNET)
+
+  if(TARGET_NUCLEO)
+    # Nucleo boards always use LAN8742
+    set(SELECTED_PHY "LAN8742")
+  else()
+    if(NOT DEFINED PHY_TYPE)
+      message(FATAL_ERROR
+        "USE_ETHERNET=ON and TARGET_NUCLEO=OFF but PHY_TYPE not set (KSZ8041 or LAN8742)")
+    endif()
+    set(SELECTED_PHY "${PHY_TYPE}")
+  endif()
+
+  message(STATUS "${PROJECT_NAME} PHY: ${SELECTED_PHY}")
+
+endif()
+
 message(STATUS "${PROJECT_NAME} Ethernet: ${USE_ETHERNET}")
 message(STATUS "${PROJECT_NAME} Nucleo:   ${TARGET_NUCLEO}")
 message(STATUS "${PROJECT_NAME} Crosscompiling: ${CMAKE_CROSSCOMPILING}")
@@ -133,8 +154,8 @@ if(CMAKE_CROSSCOMPILING)
   )
 
   if(USE_ETHERNET)
+
     set(LWIP_DIR ${STM32CUBEH7}/Middlewares/Third_Party/LwIP)
-    set(LAN8742_DIR ${STM32CUBEH7}/Drivers/BSP/Components/lan8742)
 
     file(GLOB LWIP_SOURCES
       ${LWIP_DIR}/src/core/*.c
@@ -143,11 +164,38 @@ if(CMAKE_CROSSCOMPILING)
       ${LWIP_DIR}/src/api/*.c
       ${LWIP_DIR}/src/netif/*.c
       ${LWIP_DIR}/system/*.c
-      ${LAN8742_DIR}/lan8742.c
     )
 
-    file(GLOB_RECURSE USER_LWIP_SOURCES ${CMAKE_CURRENT_LIST_DIR}/LWIP/*.c)
+    set(USER_LWIP_SOURCES
+      ${CMAKE_CURRENT_LIST_DIR}/LWIP/App/lwip.c
+      ${CMAKE_CURRENT_LIST_DIR}/LWIP/Target/ethernetif.c
+    )
+
+    # PHY-specific source (HALAL)
+    if(SELECTED_PHY STREQUAL "LAN8742")
+      set(PHY_SOURCES
+        ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/lan8742.c
+      )
+    elseif(SELECTED_PHY STREQUAL "KSZ8041")
+      set(PHY_SOURCES
+        ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/ksz8041.c
+      )
+    else()
+      message(FATAL_ERROR "Unknown PHY: ${SELECTED_PHY}")
+    endif()
+
+    list(APPEND LWIP_SOURCES
+      ${PHY_SOURCES}
+      ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/phy_select.c
+    )
+
+    file(GLOB_RECURSE USER_LWIP_SOURCES
+      ${CMAKE_CURRENT_LIST_DIR}/LWIP/*.c
+    )
+
   endif()
+
+  file(GLOB_RECURSE USER_LWIP_SOURCES ${CMAKE_CURRENT_LIST_DIR}/LWIP/*.c)
 endif()
 
 # ============================
@@ -156,19 +204,55 @@ endif()
 file(GLOB_RECURSE HALAL_C_ALL ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/*.c)
 file(GLOB_RECURSE HALAL_CPP_ALL ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/*.cpp)
 
-set(HALAL_ETH_REGEX ".*/HALAL/(Models/(IPV4|MAC)|Services/Communication/(Ethernet|SNTP))/.*")
+set(HALAL_ETH_CORE_REGEX
+  ".*/HALAL/Services/Communication/Ethernet/[^/]+\\.(c|cpp)$"
+)
 
-set(HALAL_C_ETH ${HALAL_C_ALL})
-list(FILTER HALAL_C_ETH INCLUDE REGEX "${HALAL_ETH_REGEX}")
+set(HALAL_C_ETH_CORE ${HALAL_C_ALL})
+list(FILTER HALAL_C_ETH_CORE INCLUDE REGEX "${HALAL_ETH_CORE_REGEX}")
 
-set(HALAL_CPP_ETH ${HALAL_CPP_ALL})
-list(FILTER HALAL_CPP_ETH INCLUDE REGEX "${HALAL_ETH_REGEX}")
+set(HALAL_CPP_ETH_CORE ${HALAL_CPP_ALL})
+list(FILTER HALAL_CPP_ETH_CORE INCLUDE REGEX "${HALAL_ETH_CORE_REGEX}")
+
+set(HALAL_ETH_LWIP_REGEX
+  ".*/HALAL/Services/Communication/Ethernet/LWIP/.*"
+)
+
+set(HALAL_C_ETH_LWIP ${HALAL_C_ALL})
+list(FILTER HALAL_C_ETH_LWIP INCLUDE REGEX "${HALAL_ETH_LWIP_REGEX}")
+
+set(HALAL_CPP_ETH_LWIP ${HALAL_CPP_ALL})
+list(FILTER HALAL_CPP_ETH_LWIP INCLUDE REGEX "${HALAL_ETH_LWIP_REGEX}")
+
+set(HALAL_C_ETH_PHY "")
+
+if(USE_ETHERNET)
+  list(APPEND HALAL_C_ETH_PHY
+    ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/phy_select.c
+  )
+
+  if(USE_PHY_LAN8742)
+    list(APPEND HALAL_C_ETH_PHY
+      ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/lan8742.c
+    )
+  endif()
+
+  if(USE_PHY_KSZ8041)
+    list(APPEND HALAL_C_ETH_PHY
+      ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/ksz8041.c
+    )
+  endif()
+endif()
 
 set(HALAL_C_NO_ETH ${HALAL_C_ALL})
-list(FILTER HALAL_C_NO_ETH EXCLUDE REGEX "${HALAL_ETH_REGEX}")
+list(FILTER HALAL_C_NO_ETH EXCLUDE REGEX
+  ".*/HALAL/Services/Communication/Ethernet/.*"
+)
 
 set(HALAL_CPP_NO_ETH ${HALAL_CPP_ALL})
-list(FILTER HALAL_CPP_NO_ETH EXCLUDE REGEX "${HALAL_ETH_REGEX}")
+list(FILTER HALAL_CPP_NO_ETH EXCLUDE REGEX
+  ".*/HALAL/Services/Communication/Ethernet/.*"
+)
 
 # ============================
 # C++ Utilities
@@ -225,10 +309,15 @@ add_library(${STLIB_LIBRARY} STATIC
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_SOURCES}>
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${USER_LWIP_SOURCES}>
 
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HALAL_C_NO_ETH}>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HALAL_CPP_NO_ETH}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HALAL_C_ETH}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HALAL_CPP_ETH}>
+  ${HALAL_C_NO_ETH}
+  ${HALAL_CPP_NO_ETH}
+
+  ${HALAL_C_ETH_CORE}
+  ${HALAL_CPP_ETH_CORE}
+
+  $<$<BOOL:${USE_ETHERNET}>:${HALAL_C_ETH_LWIP}>
+  $<$<BOOL:${USE_ETHERNET}>:${HALAL_CPP_ETH_LWIP}>
+  $<$<BOOL:${USE_ETHERNET}>:${HALAL_C_ETH_PHY}>
 
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CPP_UTILITIES_C}>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CPP_UTILITIES_CPP}>
@@ -263,6 +352,9 @@ set_target_properties(${STLIB_LIBRARY} PROPERTIES
 target_compile_definitions(${STLIB_LIBRARY} PUBLIC
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:USE_HAL_DRIVER>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:STM32H723xx>
+
+  $<$<AND:$<BOOL:${USE_ETHERNET}>,$<STREQUAL:${SELECTED_PHY},LAN8742>>:USE_PHY_LAN8742>
+  $<$<AND:$<BOOL:${USE_ETHERNET}>,$<STREQUAL:${SELECTED_PHY},KSZ8041>>:USE_PHY_KSZ8041>
 
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:TESTING_ENV>
 
@@ -322,7 +414,8 @@ target_include_directories(${STLIB_LIBRARY} PUBLIC
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/stdc>
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/system/arch>
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STM32CUBEH7}/Drivers/BSP/Components>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STM32CUBEH7}/Drivers/BSP/Components/lan8742>
+  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>,$<BOOL:${USE_PHY_LAN8742}>>:${STM32CUBEH7}/Drivers/BSP/Components/lan8742>
+  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet>
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/LWIP/App>
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/LWIP/Target>
 

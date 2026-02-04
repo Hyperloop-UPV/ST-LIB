@@ -157,6 +157,13 @@ template <auto &...devs> struct Board {
     constexpr std::size_t ethN = domain_size<EthernetDomain>();
     // ...
 
+#ifdef HAL_IWDG_MODULE_ENABLED
+    Watchdog::check_reset_flag();
+#endif
+    HAL_Init();
+    HALconfig::system_clock();
+    HALconfig::peripheral_clock();
+
     MPUDomain::Init<mpuN, cfg.mpu_cfgs>::init();
     GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
     TimerDomain::Init<timN>::init(cfg.tim_cfgs);
@@ -169,7 +176,8 @@ template <auto &...devs> struct Board {
     SdDomain::Init<sdN>::init(cfg.sd_cfgs,
                               MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances,
                               DigitalInputDomain::Init<dinN>::instances);
-    EthernetDomain::Init<ethN>::init(cfg.eth_cfgs);
+    EthernetDomain::Init<ethN>::init(
+        cfg.eth_cfgs, DigitalOutputDomain::Init<doutN>::instances);
     // ...
   }
 
