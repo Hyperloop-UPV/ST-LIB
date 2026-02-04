@@ -133,7 +133,7 @@ public:
         timer->template set_pwm_frequency<mode>(frequency);
     }
 
-    inline void configure(uint32_t frequency, float duty_cycle, int64_t dead_time_ns) {
+    inline void configure(uint32_t frequency, float duty_cycle) {
         *(this->duty_cycle) = duty_cycle;
         this->template set_timer_frequency<DEFAULT_PWM_FREQUENCY_MODE>(frequency);
     }
