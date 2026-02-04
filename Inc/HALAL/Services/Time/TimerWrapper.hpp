@@ -345,32 +345,7 @@ struct TimerWrapper {
     ///////////////////////////////////////////
     // Below are methods used by other objects
 
-    void set_pwm_frequency_quick(uint32_t frequency) {
-        /* If it's center aligned duplicate the frequency */
-        if((instance->tim->CR1 & TIM_CR1_CMS) != 0) {
-            frequency = 2*frequency;
-        }
-        pwm_frequency = frequency;
-        instance->tim->ARR = (this->get_clock_frequency() / (instance->tim->PSC + 1)) / frequency;
-
-        if(pwm_channel_duties[0] != 0.0f) {
-            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[0]);
-            instance->tim->CCR1 = raw_duty;
-        }
-        if(pwm_channel_duties[1] != 0.0f) {
-            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[1]);
-            instance->tim->CCR2 = raw_duty;
-        }
-        if(pwm_channel_duties[2] != 0.0f) {
-            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[2]);
-            instance->tim->CCR3 = raw_duty;
-        }
-        if(pwm_channel_duties[3] != 0.0f) {
-            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[3]);
-            instance->tim->CCR4 = raw_duty;
-        }
-    }
-
+    template<ST_LIB::PWM_Frequency_Mode mode = DEFAULT_PWM_FREQUENCY_MODE>
     void set_pwm_frequency(uint32_t frequency) {
         /* If it's center aligned duplicate the frequency */
         if((instance->tim->CR1 & TIM_CR1_CMS) != 0) {
@@ -378,12 +353,12 @@ struct TimerWrapper {
         }
         pwm_frequency = frequency;
 
-        /* a = timer clock frequency 
-         * b = (psc + 1) * frequency
-         * arr = (a - b/2) / b
-         */
-        float psc_plus_1_mul_freq = (float)(instance->tim->PSC + 1) * (float)frequency;
-        instance->tim->ARR = (uint32_t)((float)get_clock_frequency() / psc_plus_1_mul_freq - 0.5f);
+        if constexpr(mode == ST_LIB::PWM_Frequency_Mode::SPEED) {
+            instance->tim->ARR = (this->get_clock_frequency() / (instance->tim->PSC + 1)) / frequency;
+        } else if constexpr(mode == ST_LIB::PWM_Frequency_Mode::PRECISION) {
+            float psc_plus_1_mul_freq = (float)(instance->tim->PSC + 1) * (float)frequency;
+            instance->tim->ARR = (uint32_t)((float)get_clock_frequency() / psc_plus_1_mul_freq - 0.5f);
+        }
 
         if(pwm_channel_duties[0] != 0.0f) {
             uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[0]);

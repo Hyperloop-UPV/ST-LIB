@@ -190,17 +190,14 @@ public:
         *(this->duty_cycle) = duty_cycle;
     }
 
-    inline void set_timer_frequency_quick(uint32_t frequency) {
-        timer->set_pwm_frequency_quick(frequency);
-    }
-
+    template<ST_LIB::PWM_Frequency_Mode mode = DEFAULT_PWM_FREQUENCY_MODE>
     inline void set_timer_frequency(uint32_t frequency) {
-        timer->set_pwm_frequency(frequency);
+        timer->template set_pwm_frequency<mode>(frequency);
     }
 
     inline void configure(uint32_t frequency, float duty_cycle, int64_t dead_time_ns) {
         *(this->duty_cycle) = duty_cycle;
-        this->set_timer_frequency(frequency);
+        this->template set_timer_frequency<DEFAULT_PWM_FREQUENCY_MODE>(frequency);
         this->set_dead_time(dead_time_ns);
     }
 
