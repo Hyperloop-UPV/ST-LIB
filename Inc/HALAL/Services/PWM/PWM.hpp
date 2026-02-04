@@ -122,14 +122,14 @@ public:
         this->is_on = false;
     }
 
-    void set_duty_cycle(float duty_cycle) {
-        if(duty_cycle <= 0.0f) {
+    inline void set_duty_cycle(float duty_cycle) {
+        if(duty_cycle <= 0.0f) [[unlikely]] {
             timer->template set_capture_compare<pin.channel>(0);
             *(this->duty_cycle) = 0.0f;
             return;
         }
         
-        if(duty_cycle > 100.0f) duty_cycle = 100.0f;
+        if(duty_cycle > 100.0f) [[unlikely]] { duty_cycle = 100.0f; }
         uint16_t raw_duty = (uint16_t)((float)(timer->instance->tim->ARR + 1) / (100.0f * duty_cycle));
         timer->template set_capture_compare<pin.channel>(raw_duty);
         *(this->duty_cycle) = duty_cycle;
