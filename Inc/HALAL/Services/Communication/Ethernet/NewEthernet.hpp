@@ -3,9 +3,9 @@
 #include "stm32h7xx_hal.h"
 
 #include "C++Utilities/CppUtils.hpp"
+#include "DigitalOutput2.hpp"
 
 #ifdef STLIB_ETH
-#include "DigitalOutput2.hpp"
 #include "HALAL/Models/MAC/MAC.hpp"
 #include "HALAL/Services/Communication/Ethernet/LWIP/EthernetHelper.hpp"
 #include "HALAL/Services/Communication/Ethernet/LWIP/EthernetNode.hpp"
@@ -270,7 +270,7 @@ struct EthernetDomain {
   template <std::size_t N> struct Init {
     static void init(std::span<const Config, N> cfgs,
                      std::span<DigitalOutputDomain::Instance> do_instances) {};
-  }
+  };
 };
 } // namespace ST_LIB
 #endif // STLIB_ETH
