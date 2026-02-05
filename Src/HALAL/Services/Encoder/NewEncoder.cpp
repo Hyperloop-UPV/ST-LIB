@@ -18,6 +18,7 @@ void Encoder<dev>::turn_on() {
     }
     if (HAL_TIM_Encoder_Start(timer->instance->hal_tim, TIM_CHANNEL_ALL) != HAL_OK) {
         ErrorHandler("Unable to start encoder");
+        return;
     }
     is_on = true;
     reset();
