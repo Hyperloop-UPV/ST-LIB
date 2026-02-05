@@ -24,8 +24,8 @@ class Encoder {
     inline static bool is_on = false;
 
 public:
-    Encoder(TimerWrapper<dev>* tim) {
-         if (this->timer == nullptr) {
+    Encoder(TimerWrapper<dev> *tim) {
+         if (timer == nullptr) {
              init(tim);
          }
     }
