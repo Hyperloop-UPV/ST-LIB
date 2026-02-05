@@ -24,7 +24,7 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build out/build/simulator
+          cmake --build --preset simulator
 
       - name: Run tests (ctest)
         working-directory: out/build/simulator
