@@ -41,7 +41,8 @@ jobs:
 
       - name: Run tests (ctest)
         run: |
-          ctest --test-dir out/build/simulator --output-on-failure --output-junit out/build/simulator/junit.xml
+          ctest --test-dir out/build/simulator --no-tests=error --output-on-failure --output-junit out/build/simulator/junit.xml
+          test -f out/build/simulator/junit.xml
 
       - name: Test report
         if: always()
