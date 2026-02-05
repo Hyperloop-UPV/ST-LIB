@@ -22,6 +22,13 @@ extern uint8_t IP_ADDRESS[4], NETMASK_ADDRESS[4], GATEWAY_ADDRESS[4];
 namespace ST_LIB {
 extern void compile_error(const char *msg);
 
+#ifndef PHY_RESET_LOW_DELAY_MS
+#define PHY_RESET_LOW_DELAY_MS 10
+#endif
+#ifndef PHY_RESET_HIGH_DELAY_MS
+#define PHY_RESET_HIGH_DELAY_MS 10
+#endif
+
 struct EthernetDomain {
 
   struct EthernetPins {
@@ -189,12 +196,12 @@ struct EthernetDomain {
       for (std::size_t i = 0; i < N; ++i) {
         const EthernetDomain::Config &e = cfgs[i];
 
-        /* --- RESET PHY (KSZ8041) --- */
+        /* --- RESET PHY --- */
         // RESET_N pin low then high
         do_instances[e.phy_reset_id].turn_off(); // RESET_N = 0
-        HAL_Delay(10);
+        HAL_Delay(PHY_RESET_LOW_DELAY_MS);
         do_instances[e.phy_reset_id].turn_on(); // RESET_N = 1
-        HAL_Delay(10);
+        HAL_Delay(PHY_RESET_HIGH_DELAY_MS);
 
         /* --- CLOCKS ETH --- */
         __HAL_RCC_ETH1MAC_CLK_ENABLE();
@@ -261,8 +268,9 @@ struct EthernetDomain {
   }
   struct Instance {};
   template <std::size_t N> struct Init {
-    static void init(std::span<const Config, N> cfgs) {}
-  };
+    static void init(std::span<const Config, N> cfgs,
+                     std::span<DigitalOutputDomain::Instance> do_instances) {};
+  }
 };
 } // namespace ST_LIB
 #endif // STLIB_ETH

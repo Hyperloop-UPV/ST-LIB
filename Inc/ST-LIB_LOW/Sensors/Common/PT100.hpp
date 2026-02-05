@@ -1,9 +1,11 @@
 #pragma once
-#include "HALAL/HALAL.hpp"
-#include "Sensors/Sensor/Sensor.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
-#include "Control/ControlBlock.hpp"
+#include <cstddef>
+#include <cstdint>
+
 #include "Control/Blocks/MovingAverage.hpp"
+#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Services/ADC/ADC.hpp"
+#include "Sensors/Sensor/Sensor.hpp"
 
 
 template<size_t N>

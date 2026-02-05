@@ -10,9 +10,11 @@
 This NTC class is not generic. It is only for 10k Ohm, 1976Beta value NTCs.
 */
 #pragma once
-#include "HALAL/HALAL.hpp"
+#include <cstdint>
+
+#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Services/ADC/ADC.hpp"
 #include "Sensors/Sensor/Sensor.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
 
 class NTC{
 public:
@@ -501,4 +503,3 @@ private:
   float* value;
 	uint8_t id;
 };
-

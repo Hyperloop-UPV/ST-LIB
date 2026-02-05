@@ -1,9 +1,9 @@
 #pragma once
 
 #include "C++Utilities/CppUtils.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
-#include "HALAL/HALAL.hpp"
 #include "FlashVariable.hpp"
+#include "HALAL/Models/Concepts/Concepts.hpp"
+#include "HALAL/Services/Flash/Flash.hpp"
 
 #define FLASH_STORER_MAX_SIZE		((uint32_t)(1028*64))
 #define FLASH_STORER_START_ADDRESS	(FLASH_STORER_MAX_ADDRESS - FLASH_STORER_MAX_SIZE)
@@ -66,5 +66,4 @@ bool FlashStorer::add_variables(Type&... var){
 
 	return FlashStorer::total_size >= FLASH_STORER_MAX_SIZE;
 }
-
 

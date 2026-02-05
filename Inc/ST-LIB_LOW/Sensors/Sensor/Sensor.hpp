@@ -6,14 +6,13 @@
  */
 
 #pragma once
-#include "C++Utilities/CppUtils.hpp"
-#include "HALAL/HALAL.hpp"
+#include <cstdint>
+#include <vector>
 
 class Sensor{
 public:
 	static void start();
-	static vector<uint8_t> adc_id_list;
-	static vector<uint8_t> EXTI_id_list;
-	static vector<uint8_t> inputcapture_id_list;
+	static std::vector<uint8_t> adc_id_list;
+	static std::vector<uint8_t> EXTI_id_list;
+	static std::vector<uint8_t> inputcapture_id_list;
 };
-

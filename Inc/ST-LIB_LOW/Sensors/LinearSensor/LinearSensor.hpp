@@ -6,8 +6,11 @@
  */
 
 #pragma once
-#include "HALAL/HALAL.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
+#include <cstdint>
+#include <type_traits>
+
+#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Services/ADC/ADC.hpp"
 #include "Sensors/Sensor/Sensor.hpp"
 
 template <class Type>

@@ -259,3 +259,29 @@ void pbuf_free_custom(struct pbuf *p) {
 }
 
 u32_t sys_now(void) { return HAL_GetTick(); }
+
+/*******************************************************************************
+ * PHY IO (LAN8742)
+ ******************************************************************************/
+int32_t ETH_PHY_IO_Init(void) {
+  HAL_ETH_SetMDIOClockRange(&heth);
+  return 0;
+}
+
+int32_t ETH_PHY_IO_DeInit(void) { return 0; }
+
+int32_t ETH_PHY_IO_ReadReg(uint32_t DevAddr, uint32_t RegAddr,
+                           uint32_t *pRegVal) {
+  return (HAL_ETH_ReadPHYRegister(&heth, DevAddr, RegAddr, pRegVal) == HAL_OK)
+             ? 0
+             : -1;
+}
+
+int32_t ETH_PHY_IO_WriteReg(uint32_t DevAddr, uint32_t RegAddr,
+                            uint32_t RegVal) {
+  return (HAL_ETH_WritePHYRegister(&heth, DevAddr, RegAddr, RegVal) == HAL_OK)
+             ? 0
+             : -1;
+}
+
+int32_t ETH_PHY_IO_GetTick(void) { return HAL_GetTick(); }

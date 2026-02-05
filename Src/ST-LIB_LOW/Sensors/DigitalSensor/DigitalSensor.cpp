@@ -1,5 +1,6 @@
 #include "Sensors/DigitalSensor/DigitalSensor.hpp"
-#include "Sensors/Sensor/Sensor.hpp"
+
+#include "HALAL/Services/DigitalInputService/DigitalInputService.hpp"
 
 
 DigitalSensor::DigitalSensor(Pin &pin, PinState *value) : id(DigitalInput::inscribe(pin)), value(value){}

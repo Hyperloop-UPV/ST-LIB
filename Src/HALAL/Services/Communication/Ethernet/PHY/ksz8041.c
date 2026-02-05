@@ -4,11 +4,13 @@
 #ifdef USE_PHY_KSZ8041
 
 extern ETH_HandleTypeDef heth;
-#define PHY_ADDR 1
+#ifndef KSZ8041_PHY_ADDRESS
+#define KSZ8041_PHY_ADDRESS 1
+#endif
 
 static uint32_t phy_read(uint32_t reg) {
   uint32_t val;
-  HAL_ETH_ReadPHYRegister(&heth, PHY_ADDR, reg, &val);
+  HAL_ETH_ReadPHYRegister(&heth, KSZ8041_PHY_ADDRESS, reg, &val);
   return val;
 }
 
@@ -16,8 +18,8 @@ static phy_link_state_t ksz8041_get_link_state(void) {
   static uint8_t link_latched = 0;
 
   uint32_t bmsr;
-  HAL_ETH_ReadPHYRegister(&heth, PHY_ADDR, 1, &bmsr);
-  HAL_ETH_ReadPHYRegister(&heth, PHY_ADDR, 1, &bmsr);
+  HAL_ETH_ReadPHYRegister(&heth, KSZ8041_PHY_ADDRESS, 1, &bmsr);
+  HAL_ETH_ReadPHYRegister(&heth, KSZ8041_PHY_ADDRESS, 1, &bmsr);
 
   if (!(bmsr & (1 << 2))) {
     link_latched = 0;

@@ -7,8 +7,11 @@
  */
 
 #pragma once
-#include "ErrorHandler/ErrorHandler.hpp"
-#include "HALAL/HALAL.hpp"
+#include <cstdint>
+
+#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Services/InputCapture/InputCapture.hpp"
+#include "Sensors/Sensor/Sensor.hpp"
 template <class Type>
 class PWMSensor {
    protected:

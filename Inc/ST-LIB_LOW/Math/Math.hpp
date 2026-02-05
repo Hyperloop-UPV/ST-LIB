@@ -6,7 +6,8 @@
  */
 
 #pragma once
-#include "ST-LIB.hpp"
+#include <array>
+#include <cstdint>
 #define TG_DECIMAL_BITS 16
 #define SQ_DECIMAL_BITS 16
 #define MAX_INT 2147483647
@@ -31,5 +32,5 @@ public:
     static inline int32_t tg_to_unitary(int32_t tg_in);
     static inline int32_t unitary_to_tg(int32_t in);
 private:
-    static array<int32_t,4> pointers;
+    static std::array<int32_t,4> pointers;
 };

@@ -16,10 +16,16 @@ enable_testing()
 
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
+set(LAN8742_PHY_ADDRESS 0 CACHE STRING "LAN8742 PHY address (strap-dependent)")
+set(KSZ8041_PHY_ADDRESS 1 CACHE STRING "KSZ8041 PHY address (strap-dependent)")
 
 # ============================
 # PHY selection (Ethernet)
 # ============================
+
+set(SELECTED_PHY "")
+set(USE_PHY_LAN8742 OFF)
+set(USE_PHY_KSZ8041 OFF)
 
 if(USE_ETHERNET)
 
@@ -32,6 +38,14 @@ if(USE_ETHERNET)
         "USE_ETHERNET=ON and TARGET_NUCLEO=OFF but PHY_TYPE not set (KSZ8041 or LAN8742)")
     endif()
     set(SELECTED_PHY "${PHY_TYPE}")
+  endif()
+
+  if(SELECTED_PHY STREQUAL "LAN8742")
+    set(USE_PHY_LAN8742 ON)
+  elseif(SELECTED_PHY STREQUAL "KSZ8041")
+    set(USE_PHY_KSZ8041 ON)
+  else()
+    message(FATAL_ERROR "Unknown PHY: ${SELECTED_PHY}")
   endif()
 
   message(STATUS "${PROJECT_NAME} PHY: ${SELECTED_PHY}")
@@ -154,78 +168,135 @@ if(CMAKE_CROSSCOMPILING)
   )
 
   if(USE_ETHERNET)
-
     set(LWIP_DIR ${STM32CUBEH7}/Middlewares/Third_Party/LwIP)
 
-    file(GLOB LWIP_SOURCES
-      ${LWIP_DIR}/src/core/*.c
-      ${LWIP_DIR}/src/core/ipv4/*.c
-      ${LWIP_DIR}/src/core/ipv6/*.c
-      ${LWIP_DIR}/src/api/*.c
-      ${LWIP_DIR}/src/netif/*.c
-      ${LWIP_DIR}/system/*.c
+    set(LWIP_SOURCES
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/api_lib.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/api_msg.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/err.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/if_api.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/netbuf.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/netdb.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/netifapi.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/sockets.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/tcpip.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/altcp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/altcp_alloc.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/altcp_tcp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/def.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/dns.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/inet_chksum.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/init.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ip.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/autoip.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/dhcp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/etharp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/icmp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/igmp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_addr.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_frag.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/dhcp6.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/ethip6.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/icmp6.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/inet6.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/ip6.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/ip6_addr.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/ip6_frag.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/mld6.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/nd6.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/mem.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/memp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/netif.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/pbuf.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/raw.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/stats.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/sys.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/tcp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/tcp_in.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/tcp_out.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/timeouts.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/udp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/bridgeif.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/bridgeif_fdb.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/ethernet.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/lowpan6.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/lowpan6_ble.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/lowpan6_common.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/slipif.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/zepif.c
     )
 
     set(USER_LWIP_SOURCES
       ${CMAKE_CURRENT_LIST_DIR}/LWIP/App/lwip.c
       ${CMAKE_CURRENT_LIST_DIR}/LWIP/Target/ethernetif.c
     )
-
-    # PHY-specific source (HALAL)
-    if(SELECTED_PHY STREQUAL "LAN8742")
-      set(PHY_SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/lan8742.c
-      )
-    elseif(SELECTED_PHY STREQUAL "KSZ8041")
-      set(PHY_SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/ksz8041.c
-      )
-    else()
-      message(FATAL_ERROR "Unknown PHY: ${SELECTED_PHY}")
-    endif()
-
-    list(APPEND LWIP_SOURCES
-      ${PHY_SOURCES}
-      ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/phy_select.c
-    )
-
-    file(GLOB_RECURSE USER_LWIP_SOURCES
-      ${CMAKE_CURRENT_LIST_DIR}/LWIP/*.c
-    )
-
   endif()
-
-  file(GLOB_RECURSE USER_LWIP_SOURCES ${CMAKE_CURRENT_LIST_DIR}/LWIP/*.c)
 endif()
 
 # ============================
 # HALAL: ETH / NO_ETH
 # ============================
-file(GLOB_RECURSE HALAL_C_ALL ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/*.c)
-file(GLOB_RECURSE HALAL_CPP_ALL ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/*.cpp)
-
-set(HALAL_ETH_CORE_REGEX
-  ".*/HALAL/Services/Communication/Ethernet/[^/]+\\.(c|cpp)$"
+set(HALAL_C_NO_ETH
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/HardFault/HardfaultTrace.c
 )
 
-set(HALAL_C_ETH_CORE ${HALAL_C_ALL})
-list(FILTER HALAL_C_ETH_CORE INCLUDE REGEX "${HALAL_ETH_CORE_REGEX}")
-
-set(HALAL_CPP_ETH_CORE ${HALAL_CPP_ALL})
-list(FILTER HALAL_CPP_ETH_CORE INCLUDE REGEX "${HALAL_ETH_CORE_REGEX}")
-
-set(HALAL_ETH_LWIP_REGEX
-  ".*/HALAL/Services/Communication/Ethernet/LWIP/.*"
+set(HALAL_CPP_NO_ETH
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/HALAL.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/DMA/DMA.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/HALconfig/Halconfig.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/LowPowerTimer/LowPowerTimer.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/MDMA/MDMA.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/MPUManager/MPUManager.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/Packets/SPIOrder.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/PinModel/Pin.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/TimerDomain/TimerDomain.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/TimerPeripheral/TimerPeripheral.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/ADC/ADC.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/CORDIC/CORDIC.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/FDCAN/FDCAN.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/I2C/I2C.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/SPI/SPI.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/UART/UART.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/DigitalInputService/DigitalInputService.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/DigitalOutputService/DigitalOutputService.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/EXTI/EXTI.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Encoder/Encoder.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/FMAC/FMAC.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Flash/Flash.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Flash/FlashTests/Flash_Test.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/InfoWarning/InfoWarning.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/InputCapture/InputCapture.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/PWM/DualCenterPWM/DualCenterPWM.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/PWM/DualPWM/DualPWM.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/PWM/PWM/PWM.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/PWM/PhasedPWM/PhasedPWM.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/RTC.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/Scheduler.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/Time.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Watchdog/Watchdog.cpp
 )
 
-set(HALAL_C_ETH_LWIP ${HALAL_C_ALL})
-list(FILTER HALAL_C_ETH_LWIP INCLUDE REGEX "${HALAL_ETH_LWIP_REGEX}")
+set(HALAL_C_ETH_CORE)
+set(HALAL_CPP_ETH_CORE
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/IPV4/IPV4.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/MAC/MAC.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/Packets/Packet.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/SNTP/SNTP.cpp
+)
 
-set(HALAL_CPP_ETH_LWIP ${HALAL_CPP_ALL})
-list(FILTER HALAL_CPP_ETH_LWIP INCLUDE REGEX "${HALAL_ETH_LWIP_REGEX}")
+set(HALAL_C_ETH_LWIP)
+set(HALAL_CPP_ETH_LWIP
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/LWIP/Ethernet.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/LWIP/EthernetNode.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/LWIP/TCP/OrderProtocol.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/LWIP/TCP/ServerSocket.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/LWIP/TCP/Socket.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/LWIP/UDP/DatagramSocket.cpp
+)
 
-set(HALAL_C_ETH_PHY "")
-
+set(HALAL_C_ETH_PHY)
 if(USE_ETHERNET)
   list(APPEND HALAL_C_ETH_PHY
     ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/phy_select.c
@@ -234,6 +305,7 @@ if(USE_ETHERNET)
   if(USE_PHY_LAN8742)
     list(APPEND HALAL_C_ETH_PHY
       ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/lan8742.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/BSP/Components/lan8742/lan8742.c
     )
   endif()
 
@@ -244,60 +316,58 @@ if(USE_ETHERNET)
   endif()
 endif()
 
-set(HALAL_C_NO_ETH ${HALAL_C_ALL})
-list(FILTER HALAL_C_NO_ETH EXCLUDE REGEX
-  ".*/HALAL/Services/Communication/Ethernet/.*"
-)
-
-set(HALAL_CPP_NO_ETH ${HALAL_CPP_ALL})
-list(FILTER HALAL_CPP_NO_ETH EXCLUDE REGEX
-  ".*/HALAL/Services/Communication/Ethernet/.*"
-)
-
 # ============================
 # C++ Utilities
 # ============================
-file(GLOB_RECURSE CPP_UTILITIES_C ${CMAKE_CURRENT_LIST_DIR}/Src/C++Utilities/*.c)
-file(GLOB_RECURSE CPP_UTILITIES_CPP ${CMAKE_CURRENT_LIST_DIR}/Src/C++Utilities/*.cpp)
+set(CPP_UTILITIES_C)
+set(CPP_UTILITIES_CPP)
 
 # ============================
 # ST-LIB_LOW: ETH / NO_ETH
 # ============================
-file(GLOB_RECURSE STLIB_LOW_C_ALL ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/*.c)
-file(GLOB_RECURSE STLIB_LOW_CPP_ALL ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/*.cpp)
+set(STLIB_LOW_C_ETH)
 
-set(STLIB_LOW_ETH_REGEX ".*/ST-LIB_LOW/(Communication/.*|StateMachine/(StateOrder|HeapStateOrder|StackStateOrder)\\.cpp)$")
-set(STLIB_LOW_C_ETH ${STLIB_LOW_C_ALL})
-list(FILTER STLIB_LOW_C_ETH INCLUDE REGEX "${STLIB_LOW_ETH_REGEX}")
+set(STLIB_LOW_CPP_ETH
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Communication/Server/Server.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/StateMachine/StateOrder.cpp
+)
 
-set(STLIB_LOW_CPP_ETH ${STLIB_LOW_CPP_ALL})
-list(FILTER STLIB_LOW_CPP_ETH INCLUDE REGEX "${STLIB_LOW_ETH_REGEX}")
+set(STLIB_LOW_C_NO_ETH)
 
-set(STLIB_LOW_C_NO_ETH ${STLIB_LOW_C_ALL})
-list(FILTER STLIB_LOW_C_NO_ETH EXCLUDE REGEX "${STLIB_LOW_ETH_REGEX}")
-
-set(STLIB_LOW_CPP_NO_ETH ${STLIB_LOW_CPP_ALL})
-list(FILTER STLIB_LOW_CPP_NO_ETH EXCLUDE REGEX "${STLIB_LOW_ETH_REGEX}")
+set(STLIB_LOW_CPP_NO_ETH
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Clocks/Counter.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Clocks/Stopwatch.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/DigitalOutput/DigitalOutput.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/ErrorHandler/ErrorHandler.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/HalfBridge/HalfBridge.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Math/Math.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/ST-LIB_LOW.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Sd/Sd.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Sensors/DigitalSensor/DigitalSensor.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Sensors/LookupSensor/LookupSensor.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Sensors/NTC/NTC.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Sensors/Sensor/Sensor.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_LOW/Sensors/SensorInterrupt/SensorInterrupt.cpp
+)
 
 # ============================
 # ST-LIB_HIGH
 # ============================
 
-file(GLOB_RECURSE STLIB_HIGH_C_ALL ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/*.c)
-file(GLOB_RECURSE STLIB_HIGH_CPP_ALL ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/*.cpp)
+set(STLIB_HIGH_C_ETH)
 
-set(STLIB_HIGH_ETH_REGEX ".*/ST-LIB_HIGH/Protections/.*\\.cpp$")
-set(STLIB_HIGH_C_ETH ${STLIB_HIGH_C_ALL})
-list(FILTER STLIB_HIGH_C_ETH INCLUDE REGEX "${STLIB_HIGH_ETH_REGEX}")
+set(STLIB_HIGH_CPP_ETH
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/Protections/Boundary.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/Protections/ProtectionManager.cpp
+)
 
-set(STLIB_HIGH_CPP_ETH ${STLIB_HIGH_CPP_ALL})
-list(FILTER STLIB_HIGH_CPP_ETH INCLUDE REGEX "${STLIB_HIGH_ETH_REGEX}")
+set(STLIB_HIGH_C_NO_ETH)
 
-set(STLIB_HIGH_C_NO_ETH ${STLIB_HIGH_C_ALL})
-list(FILTER STLIB_HIGH_C_NO_ETH EXCLUDE REGEX "${STLIB_HIGH_ETH_REGEX}")
-
-set(STLIB_HIGH_CPP_NO_ETH ${STLIB_HIGH_CPP_ALL})
-list(FILTER STLIB_HIGH_CPP_NO_ETH EXCLUDE REGEX "${STLIB_HIGH_ETH_REGEX}")
+set(STLIB_HIGH_CPP_NO_ETH
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/FlashStorer/FlashStorer.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/FlashStorer/FlashVariable.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/ST-LIB_HIGH.cpp
+)
 
 # ============================
 # Librería STLIB_LIBRARY
@@ -312,8 +382,8 @@ add_library(${STLIB_LIBRARY} STATIC
   ${HALAL_C_NO_ETH}
   ${HALAL_CPP_NO_ETH}
 
-  ${HALAL_C_ETH_CORE}
-  ${HALAL_CPP_ETH_CORE}
+  $<$<BOOL:${USE_ETHERNET}>:${HALAL_C_ETH_CORE}>
+  $<$<BOOL:${USE_ETHERNET}>:${HALAL_CPP_ETH_CORE}>
 
   $<$<BOOL:${USE_ETHERNET}>:${HALAL_C_ETH_LWIP}>
   $<$<BOOL:${USE_ETHERNET}>:${HALAL_CPP_ETH_LWIP}>
@@ -353,8 +423,10 @@ target_compile_definitions(${STLIB_LIBRARY} PUBLIC
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:USE_HAL_DRIVER>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:STM32H723xx>
 
-  $<$<AND:$<BOOL:${USE_ETHERNET}>,$<STREQUAL:${SELECTED_PHY},LAN8742>>:USE_PHY_LAN8742>
-  $<$<AND:$<BOOL:${USE_ETHERNET}>,$<STREQUAL:${SELECTED_PHY},KSZ8041>>:USE_PHY_KSZ8041>
+  $<$<BOOL:${USE_PHY_LAN8742}>:USE_PHY_LAN8742>
+  $<$<BOOL:${USE_PHY_KSZ8041}>:USE_PHY_KSZ8041>
+  $<$<BOOL:${USE_PHY_LAN8742}>:LAN8742_PHY_ADDRESS=${LAN8742_PHY_ADDRESS}>
+  $<$<BOOL:${USE_PHY_KSZ8041}>:KSZ8041_PHY_ADDRESS=${KSZ8041_PHY_ADDRESS}>
 
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:TESTING_ENV>
 
