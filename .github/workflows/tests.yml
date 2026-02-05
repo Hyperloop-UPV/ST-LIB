@@ -41,16 +41,7 @@ jobs:
 
       - name: Run tests (ctest)
         run: |
-          ctest --test-dir out/build/simulator --no-tests=error --output-on-failure --output-junit out/build/simulator/junit.xml
-          test -f out/build/simulator/junit.xml
-
-      - name: Test report
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Simulator Tests
-          path: out/build/simulator/junit.xml
-          reporter: java-junit
+          ctest --test-dir out/build/simulator --no-tests=error --output-on-failure
 
       - name: Upload test reports
         if: always()
@@ -58,7 +49,6 @@ jobs:
         with:
           name: simulator-test-reports
           path: |
-            out/build/simulator/junit.xml
             out/build/simulator/Testing/Temporary/LastTest.log
           retention-days: 7
           if-no-files-found: ignore
