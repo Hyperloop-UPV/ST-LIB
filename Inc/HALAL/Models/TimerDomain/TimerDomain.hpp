@@ -309,7 +309,7 @@ struct TimerDomain {
                 case TimerAF::None: return GPIODomain::Pull::None;
 
                 case TimerAF::PWM: return GPIODomain::Pull::None;
-                case TimerAF::Encoder: return GPIODomain::Pull::Up; /* might be wrong */
+                case TimerAF::Encoder: return GPIODomain::Pull::Up;
 
                 // TODO: check what this really needs to be for each
                 case TimerAF::InputCapture: return GPIODomain::Pull::Up;
