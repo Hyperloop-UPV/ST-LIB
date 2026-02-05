@@ -33,6 +33,10 @@ struct TimerWrapper {
     TimerWrapper() = default;
     TimerWrapper(TimerDomain::Instance *inst) : instance(inst) {}
 
+    static constexpr int MAX_pwm_channel_duties = 4;
+    float pwm_channel_duties[MAX_pwm_channel_duties] = {0.0f, 0.0f, 0.0f, 0.0f};
+    uint32_t pwm_frequency = 0;
+
     enum CountingMode : uint8_t {
         UP = 0,
         DOWN = 1,
@@ -139,56 +143,72 @@ struct TimerWrapper {
             if constexpr(dev.e.pins[0].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
-            return PWM<dev, pin>(this, polarity, negated_polarity);
+            return PWM<dev, pin>(this, polarity, negated_polarity, 
+                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 1 &&
             dev.e.pins[1].pin == pin.pin && dev.e.pins[1].channel == pin.channel)
         {
             if constexpr(dev.e.pins[1].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
-            return PWM<dev, pin>(this, polarity, negated_polarity);
+            return PWM<dev, pin>(this, polarity, negated_polarity, 
+                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 2 &&
             dev.e.pins[2].pin == pin.pin && dev.e.pins[2].channel == pin.channel)
         {
             if constexpr(dev.e.pins[2].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
-            return PWM<dev, pin>(this, polarity, negated_polarity);
+            return PWM<dev, pin>(this, polarity, negated_polarity, 
+                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 3 &&
             dev.e.pins[3].pin == pin.pin && dev.e.pins[3].channel == pin.channel)
         {
             if constexpr(dev.e.pins[3].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
-            return PWM<dev, pin>(this, polarity, negated_polarity);
+            return PWM<dev, pin>(this, polarity, negated_polarity, 
+                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 4 &&
             dev.e.pins[4].pin == pin.pin && dev.e.pins[4].channel == pin.channel)
         {
             if constexpr(dev.e.pins[4].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
-            return PWM<dev, pin>(this, polarity, negated_polarity);
+            return PWM<dev, pin>(this, polarity, negated_polarity, 
+                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 5 &&
             dev.e.pins[5].pin == pin.pin && dev.e.pins[5].channel == pin.channel)
         {
             if constexpr(dev.e.pins[5].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
-            return PWM<dev, pin>(this, polarity, negated_polarity);
+            return PWM<dev, pin>(this, polarity, negated_polarity, 
+                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 6 &&
             dev.e.pins[6].pin == pin.pin && dev.e.pins[6].channel == pin.channel)
         {
             if constexpr(dev.e.pins[6].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
-            return PWM<dev, pin>(this, polarity, negated_polarity);
+            return PWM<dev, pin>(this, polarity, negated_polarity, 
+                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else if constexpr(dev.e.pin_count == 7 &&
             dev.e.pins[7].pin == pin.pin && dev.e.pins[7].channel == pin.channel)
         {
             if constexpr(dev.e.pins[7].af != TimerAF::PWM) {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
-            return PWM<dev, pin>(this, polarity, negated_polarity);
+            return PWM<dev, pin>(this, polarity, negated_polarity, 
+                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
         } else {
             ST_LIB::compile_error("No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
         }
@@ -202,7 +222,8 @@ struct TimerWrapper {
         // NOTE: No voy a comprobar todo esto, no hará falta comprobarlo con la siguiente versión del pwm, dualpwm
         static_assert((static_cast<uint8_t>(pin.channel) | static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) == static_cast<uint8_t>(negated_pin.channel));
         static_assert(pin.af == TimerAF::PWM && negated_pin.af == TimerAF::PWM);
-        return DualPWM<dev, pin, negated_pin>(this, polarity, negated_polarity);
+        return DualPWM<dev, pin, negated_pin>(this, polarity, negated_polarity, 
+            &pwm_channel_duties[static_cast<uint8_t>(pin.channel) - 1], &pwm_frequency);
     }
 
     inline void counter_enable() {
@@ -320,7 +341,41 @@ struct TimerWrapper {
         }
     }
 
-    ///////////////////////////////////////
+    ///////////////////////////////////////////
+    // Below are methods used by other objects
+
+    template<ST_LIB::PWM_Frequency_Mode mode = DEFAULT_PWM_FREQUENCY_MODE>
+    void set_pwm_frequency(uint32_t frequency) {
+        /* If it's center aligned duplicate the frequency */
+        if((instance->tim->CR1 & TIM_CR1_CMS) != 0) {
+            frequency = 2*frequency;
+        }
+        pwm_frequency = frequency;
+
+        if constexpr(mode == ST_LIB::PWM_Frequency_Mode::SPEED) {
+            instance->tim->ARR = (this->get_clock_frequency() / (instance->tim->PSC + 1)) / frequency;
+        } else if constexpr(mode == ST_LIB::PWM_Frequency_Mode::PRECISION) {
+            float psc_plus_1_mul_freq = (float)(instance->tim->PSC + 1) * (float)frequency;
+            instance->tim->ARR = (uint32_t)((float)get_clock_frequency() / psc_plus_1_mul_freq - 0.5f);
+        }
+
+        if(pwm_channel_duties[0] != 0.0f) {
+            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[0]);
+            instance->tim->CCR1 = raw_duty;
+        }
+        if(pwm_channel_duties[1] != 0.0f) {
+            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[1]);
+            instance->tim->CCR2 = raw_duty;
+        }
+        if(pwm_channel_duties[2] != 0.0f) {
+            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[2]);
+            instance->tim->CCR3 = raw_duty;
+        }
+        if(pwm_channel_duties[3] != 0.0f) {
+            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[3]);
+            instance->tim->CCR4 = raw_duty;
+        }
+    }
 
     template<ST_LIB::TimerChannel ch>
     inline void config_output_compare_channel(const TIM_OC_InitTypeDef *OC_Config)

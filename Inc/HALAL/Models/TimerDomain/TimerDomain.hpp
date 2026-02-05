@@ -161,6 +161,15 @@ struct TimerPin {
     ST_LIB::TimerChannel channel;
 };
 
+#ifndef DEFAULT_PWM_FREQUENCY_MODE
+#define DEFAULT_PWM_FREQUENCY_MODE ST_LIB::PWM_Frequency_Mode::PRECISION
+#endif
+
+enum class PWM_Frequency_Mode {
+    PRECISION,
+    SPEED,
+};
+
 constexpr std::array<uint8_t, 25> create_timer_idxmap() {
     std::array<uint8_t, 25> result{};
     
