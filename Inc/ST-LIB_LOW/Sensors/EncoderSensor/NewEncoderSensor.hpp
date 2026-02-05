@@ -11,7 +11,7 @@
 
 namespace ST_LIB {
 
-template<const TimerDomain::Timer &dev, size_t SAMPLES>
+template<typename EncoderType, size_t SAMPLES>
 struct EncoderSensor {
     enum Direction : uint8_t { FORWARD = 0, BACKWARDS = 1 };
 
@@ -21,7 +21,7 @@ private:
     const double counter_distance_m;
     const double sample_time_s;
 
-    ST_LIB::Encoder<dev> encoder;
+    EncoderType& encoder;
 
     RingBuffer<int64_t, (SAMPLES / 2) * 2> past_delta_counters{};
 
@@ -31,7 +31,7 @@ private:
     double *acceleration;
 
 public:
-    EncoderSensor(ST_LIB::Encoder<dev> *enc, const double counter_distance_m,
+    EncoderSensor(EncoderType& enc, const double counter_distance_m,
                   const double sample_time_s, Direction *direction,
                   double *position, double *speed, double *acceleration) : 
         encoder(enc),
@@ -45,17 +45,17 @@ public:
         for(size_t i{0}; i < SAMPLES; i++) past_delta_counters.push(0);
     }
 
-    void turn_on() { encoder->turn_on(); }
-    void turn_off() { encoder->turn_off(); }
+    void turn_on() { encoder.turn_on(); }
+    void turn_off() { encoder.turn_off(); }
     
     void reset() {
-        encoder->reset();
+        encoder.reset();
         for (size_t i{0}; i < SAMPLES; ++i) past_delta_counters.push_pop(0);
     }
 
     // must be called on equally spaced time periods
     void read() {
-        uint32_t counter{encoder->get_counter()};
+        uint32_t counter{encoder.get_counter()};
 
         int64_t delta_counter{(int64_t)counter - START_COUNTER};
         const int64_t &previous_delta_counter{
@@ -77,7 +77,7 @@ public:
                         ((sample_time_s * past_delta_counters.size() / 2) *
                          (sample_time_s * past_delta_counters.size() / 2));
 
-        *direction = encoder->get_direction() ? FORWARD : BACKWARDS;
+        *direction = encoder.get_direction() ? FORWARD : BACKWARDS;
 
         past_delta_counters.push_pop(delta_counter);
     }

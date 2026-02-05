@@ -16,6 +16,7 @@
 #ifdef HAL_TIM_MODULE_ENABLED
 
 #include "HALAL/Models/TimerDomain/TimerDomain.hpp"
+#include "HALAL/Services/Encoder/NewEncoder.hpp"
 #include "HALAL/Services/PWM/DualPWM.hpp"
 #include "HALAL/Services/PWM/PWM.hpp"
 #include "HALAL/Models/GPIO.hpp"
@@ -224,6 +225,15 @@ struct TimerWrapper {
         static_assert(pin.af == TimerAF::PWM && negated_pin.af == TimerAF::PWM);
         return DualPWM<dev, pin, negated_pin>(this, polarity, negated_polarity, 
             &pwm_channel_duties[static_cast<uint8_t>(pin.channel) - 1], &pwm_frequency);
+    }
+
+    template<TimerPin pin1, TimerPin pin2>
+    inline Encoder<dev, pin1, pin2> get_encoder()
+    {
+        static_assert(dev.e.pin_count > 1, "Need at least two pins on one timer to get an encoder");
+        static_assert(pin1.af == TimerAF::Encoder && pin2.af == TimerAF::Encoder, "Pins must be configured as Encoder");
+        
+        return Encoder<dev, pin1, pin2>(this);
     }
 
     inline void counter_enable() {
