@@ -9,13 +9,12 @@ namespace ST_LIB {
 template<const TimerDomain::Timer &dev>
 struct TimerWrapper;
 
-template<const TimerDomain::Timer &dev, const ST_LIB::TimerPin pin1, const ST_LIB::TimerPin pin2>
+template<const TimerDomain::Timer &dev>
 class Encoder {
     static_assert(dev.e.pin_count == 2, "Encoder must have exactly 2 encoder pins, as it uses the whole timer");
     static_assert(dev.e.pins[0].af == TimerAF::Encoder, "Pin 0 must be declared as encoder");
     static_assert(dev.e.pins[1].af == TimerAF::Encoder, "Pin 1 must be declared as encoder");
     static_assert(dev.e.pins[0].channel != dev.e.pins[1].channel, "Pins must be of different channels");
-    static_assert(pin1.channel != pin2.channel, "Encoder pins must be different channels (1 and 2)");
     
 
     inline static TimerWrapper<dev> *timer;

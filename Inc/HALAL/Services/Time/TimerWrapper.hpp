@@ -145,8 +145,8 @@ struct TimerWrapper {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
-                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
+                                 &pwm_channel_duties[(static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 1 &&
             dev.e.pins[1].pin == pin.pin && dev.e.pins[1].channel == pin.channel)
         {
@@ -154,8 +154,8 @@ struct TimerWrapper {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
-                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
+                                 &pwm_channel_duties[(static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 2 &&
             dev.e.pins[2].pin == pin.pin && dev.e.pins[2].channel == pin.channel)
         {
@@ -163,8 +163,8 @@ struct TimerWrapper {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
-                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
+                                 &pwm_channel_duties[(static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 3 &&
             dev.e.pins[3].pin == pin.pin && dev.e.pins[3].channel == pin.channel)
         {
@@ -172,8 +172,8 @@ struct TimerWrapper {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
-                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
+                                 &pwm_channel_duties[(static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 4 &&
             dev.e.pins[4].pin == pin.pin && dev.e.pins[4].channel == pin.channel)
         {
@@ -181,8 +181,8 @@ struct TimerWrapper {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
-                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
+                                 &pwm_channel_duties[(static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 5 &&
             dev.e.pins[5].pin == pin.pin && dev.e.pins[5].channel == pin.channel)
         {
@@ -190,8 +190,8 @@ struct TimerWrapper {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
-                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
+                                 &pwm_channel_duties[(static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1], &pwm_frequency);
         } else if constexpr(dev.e.pin_count > 6 &&
             dev.e.pins[6].pin == pin.pin && dev.e.pins[6].channel == pin.channel)
         {
@@ -199,8 +199,8 @@ struct TimerWrapper {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
-                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
+                                 &pwm_channel_duties[(static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1], &pwm_frequency);
         } else if constexpr(dev.e.pin_count == 7 &&
             dev.e.pins[7].pin == pin.pin && dev.e.pins[7].channel == pin.channel)
         {
@@ -208,8 +208,8 @@ struct TimerWrapper {
                 ST_LIB::compile_error("Pin must be configured in TimerDomain as a PWM");
             }
             return PWM<dev, pin>(this, polarity, negated_polarity, 
-                                 &pwm_channel_duties[static_cast<uint8_t>(pin.channel) & 
-                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)], &pwm_frequency);
+                                 &pwm_channel_duties[(static_cast<uint8_t>(pin.channel) & 
+                                    ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1], &pwm_frequency);
         } else {
             ST_LIB::compile_error("No pins passed to TimerWrapper are the same as the pins passed to get_pwm() [this method]");
         }
@@ -227,13 +227,9 @@ struct TimerWrapper {
             &pwm_channel_duties[static_cast<uint8_t>(pin.channel) - 1], &pwm_frequency);
     }
 
-    template<TimerPin pin1, TimerPin pin2>
-    inline Encoder<dev, pin1, pin2> get_encoder()
-    {
-        static_assert(dev.e.pin_count > 1, "Need at least two pins on one timer to get an encoder");
-        static_assert(pin1.af == TimerAF::Encoder && pin2.af == TimerAF::Encoder, "Pins must be configured as Encoder");
-        
-        return Encoder<dev, pin1, pin2>(this);
+    inline Encoder<dev> get_encoder()
+    {        
+        return Encoder<dev>(this);
     }
 
     inline void counter_enable() {
