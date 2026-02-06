@@ -134,6 +134,7 @@ enum TimerRequest : uint8_t {
 enum class TimerAF {
     None,
     PWM,
+    Encoder,
     InputCapture,
     BreakInput,
     BreakInputCompare,
@@ -286,27 +287,31 @@ struct TimerDomain {
 
         static consteval GPIODomain::AlternateFunction get_gpio_af(ST_LIB::TimerRequest req, ST_LIB::TimerPin pin);
 
-        // TODO: check what this really needs to be for each
         static consteval GPIODomain::OperationMode get_operation_mode(ST_LIB::TimerAF af)
         {
             switch(af) {
                 case TimerAF::None: return GPIODomain::OperationMode::INPUT;
 
                 case TimerAF::PWM: return GPIODomain::OperationMode::ALT_PP;
+                case TimerAF::Encoder: return GPIODomain::OperationMode::ALT_PP;
+
+                // TODO: check what this really needs to be for each
                 case TimerAF::InputCapture: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
-                
+
                 case TimerAF::BreakInput: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
                 case TimerAF::BreakInputCompare: return GPIODomain::OperationMode::OUTPUT_OPENDRAIN;
             }
         }
 
-        // TODO: check what this really needs to be for each
         static consteval GPIODomain::Pull get_pull(ST_LIB::TimerAF af)
         {
             switch(af) {
                 case TimerAF::None: return GPIODomain::Pull::None;
 
                 case TimerAF::PWM: return GPIODomain::Pull::None;
+                case TimerAF::Encoder: return GPIODomain::Pull::Up;
+
+                // TODO: check what this really needs to be for each
                 case TimerAF::InputCapture: return GPIODomain::Pull::Up;
                 
                 case TimerAF::BreakInput: return GPIODomain::Pull::None;
@@ -314,17 +319,19 @@ struct TimerDomain {
             }
         }
 
-        // TODO: check what this really needs to be for each
         static consteval GPIODomain::Speed get_speed(ST_LIB::TimerAF af)
         {
             switch(af) {
                 case TimerAF::None: return GPIODomain::Speed::Low;
 
                 case TimerAF::PWM: return GPIODomain::Speed::Low;
-                case TimerAF::InputCapture: return GPIODomain::Speed::High;
+                case TimerAF::Encoder: return GPIODomain::Speed::Low;
+
+                // TODO: check what this really needs to be for each
+                case TimerAF::InputCapture: return GPIODomain::Speed::Low;
                 
-                case TimerAF::BreakInput: return GPIODomain::Speed::Medium;
-                case TimerAF::BreakInputCompare: return GPIODomain::Speed::Medium;
+                case TimerAF::BreakInput: return GPIODomain::Speed::Low;
+                case TimerAF::BreakInputCompare: return GPIODomain::Speed::Low;
             }
         }
 
@@ -899,7 +906,7 @@ TimerDomain::Timer::get_gpio_af(ST_LIB::TimerRequest req, ST_LIB::TimerPin pin)
     for(std::size_t j = 0; j < tim_pins[(int)req].pin_count; j++) {
         if(pin.af == ST_LIB::TimerAF::None) {
             ST_LIB::compile_error("Error: Timers with pins must have associated TimerAF (alternate functions)");
-        } else if(((pin.af == ST_LIB::TimerAF::InputCapture || pin.af == ST_LIB::TimerAF::PWM) && 
+        } else if(((pin.af == ST_LIB::TimerAF::InputCapture || pin.af == ST_LIB::TimerAF::PWM || pin.af == ST_LIB::TimerAF::Encoder) && 
             (static_cast<uint8_t>(pin.channel) == static_cast<uint8_t>(tim_pins[(int)req].pins[j].use))) ||
 
             ((pin.af == ST_LIB::TimerAF::BreakInput) &&
