@@ -143,6 +143,11 @@ void Scheduler::start() {
 }
 
 void Scheduler::update() {
+    static TIM_TypeDef *tim = Scheduler_global_timer;
+    if(!tim) {
+        ErrorHandler("Scheduler global timer not initialized");
+    }
+
     while(ready_bitmap_ != 0u) {
         uint32_t bit_index = static_cast<uint32_t>(__builtin_ctz(ready_bitmap_));
         ready_bitmap_ &= ~(1u << bit_index); // Clear the bit
@@ -259,8 +264,8 @@ void Scheduler::schedule_next_interval() {
     int32_t diff = (int32_t)(next_task.next_fire_us - static_cast<uint32_t>(global_tick_us_));
     if (diff >= -1 && diff <= 1) [[unlikely]] {
         current_interval_us_ = 1;
-        Scheduler_global_timer->ARR = 1;
         Scheduler_global_timer->CNT = 1;
+        Scheduler_global_timer->ARR = 1;
     } else {
         if (diff < -1) [[unlikely]]{
             current_interval_us_ = static_cast<uint32_t>(0 - diff);
@@ -268,6 +273,12 @@ void Scheduler::schedule_next_interval() {
             current_interval_us_ = static_cast<uint32_t>(diff);
         }
         Scheduler_global_timer->ARR = static_cast<uint32_t>(current_interval_us_ - 1u);
+        while(Scheduler_global_timer->CNT > Scheduler_global_timer->ARR) [[unlikely]] {
+            uint32_t offset = Scheduler_global_timer->CNT - Scheduler_global_timer->ARR;
+            SET_BIT(Scheduler_global_timer->EGR, TIM_EGR_UG);
+            Scheduler_global_timer->CNT = offset;
+            current_interval_us_ = offset;
+        }
     }
     Scheduler::global_timer_enable();
 }
