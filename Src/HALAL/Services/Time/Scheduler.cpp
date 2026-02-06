@@ -256,6 +256,7 @@ void Scheduler::schedule_next_interval() {
     if (active_task_count_ == 0) [[unlikely]] {
         Scheduler::global_timer_disable();
         current_interval_us_ = 0;
+        Scheduler_global_timer->CNT = 0;
         return;
     }
 
