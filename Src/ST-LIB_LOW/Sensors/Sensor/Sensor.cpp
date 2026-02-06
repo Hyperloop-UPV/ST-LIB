@@ -1,8 +1,12 @@
 #include "Sensors/Sensor/Sensor.hpp"
 
-vector<uint8_t> Sensor::adc_id_list{};
-vector<uint8_t> Sensor::EXTI_id_list{};
-vector<uint8_t> Sensor::inputcapture_id_list{};
+#include "HALAL/Services/ADC/ADC.hpp"
+#include "HALAL/Services/EXTI/EXTI.hpp"
+#include "HALAL/Services/InputCapture/InputCapture.hpp"
+
+std::vector<uint8_t> Sensor::adc_id_list{};
+std::vector<uint8_t> Sensor::EXTI_id_list{};
+std::vector<uint8_t> Sensor::inputcapture_id_list{};
 
 void Sensor::start(){
 	for(uint8_t adc_id : adc_id_list){

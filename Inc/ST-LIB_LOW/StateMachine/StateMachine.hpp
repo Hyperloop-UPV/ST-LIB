@@ -2,7 +2,7 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "C++Utilities/StaticVector.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "HALAL/HALAL.hpp"
+#include "HALAL/Services/Time/Scheduler.hpp"
 #include <array>
 #include <concepts>
 #include <cstddef>

@@ -6,7 +6,8 @@
  */
 
 #include <Clocks/Counter.hpp>
-#include <HALAL/HALAL.hpp>
+
+#include "HALAL/Services/Time/Time.hpp"
 
 void Counter::update(){
 	this->freq = (this->counter + 0.0)/(this->update_period_ms / 1000.0);

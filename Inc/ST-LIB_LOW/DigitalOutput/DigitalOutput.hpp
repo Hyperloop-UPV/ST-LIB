@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "HALAL/HALAL.hpp"
+#include <cstdint>
+
+#include "HALAL/Models/PinModel/Pin.hpp"
 
 class DigitalOutput {
    public:

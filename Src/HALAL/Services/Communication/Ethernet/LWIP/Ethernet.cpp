@@ -5,7 +5,7 @@
  *      Author: stefa
  */
 
-#include "HALAL/Services/Communication/Ethernet/Ethernet.hpp"
+#include "HALAL/Services/Communication/Ethernet/LWIP/Ethernet.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
 
@@ -17,7 +17,6 @@ extern uint8_t IP_ADDRESS[4], NETMASK_ADDRESS[4], GATEWAY_ADDRESS[4];
 
 bool Ethernet::is_ready = false;
 bool Ethernet::is_running = false;
-
 
 void Ethernet::start(string local_mac, string local_ip, string subnet_mask,
                      string gateway) {

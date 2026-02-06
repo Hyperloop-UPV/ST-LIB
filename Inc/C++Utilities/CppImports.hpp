@@ -16,14 +16,14 @@
 #include <array>
 #include <bitset>
 #include <ctype.h>
-#ifdef SIM_ON
-#ifdef __APPLE__
-#include <stdlib.h>  // macOS
+#if defined(SIM_ON) || defined(TESTING_ENV)
+# ifdef __APPLE__
+#  include <stdlib.h>  // macOS
+# else
+#  include <malloc.h>  // Linux/Unix
+# endif
 #else
-#include <malloc.h>  // Linux/Unix
-#endif
-#else
-#include <malloc.h>
+# include <malloc.h>
 #endif
 #include <math.h>
 #include <deque>

@@ -2,8 +2,8 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
+#include "HALAL/Models/Packets/Order.hpp"
 #include "Protection.hpp"
-#include "HALAL/HALAL.hpp"
 
 class Notification : public Order{
 private:
@@ -99,4 +99,3 @@ private:
     	return *(uint16_t*)(buffer + sizeof(id));
     }
 };
-

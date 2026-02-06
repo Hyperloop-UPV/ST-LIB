@@ -5,9 +5,14 @@ on:
   pull_request:
     branches: [ development ]
 
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -17,16 +22,33 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build build-essential
+      
+      - name: Cache simulator deps
+        uses: actions/cache@v4
+        with:
+          path: out/build/simulator/_deps
+          key: simulator-deps-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'Tests/CMakeLists.txt') }}
+          restore-keys: |
+            simulator-deps-${{ runner.os }}-
 
       - name: Configure (CMake)
         run: |
-          cmake --preset simulator
+          cmake -S . -B out/build/simulator -G Ninja -DCMAKE_BUILD_TYPE=Debug
 
       - name: Build
         run: |
           cmake --build out/build/simulator
 
       - name: Run tests (ctest)
-        working-directory: out/build/simulator
         run: |
-          ctest --output-on-failure
+          ctest --test-dir out/build/simulator --no-tests=error --output-on-failure
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulator-test-reports
+          path: |
+            out/build/simulator/Testing/Temporary/LastTest.log
+          retention-days: 7
+          if-no-files-found: ignore

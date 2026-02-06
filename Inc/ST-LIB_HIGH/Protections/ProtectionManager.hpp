@@ -1,6 +1,10 @@
 #pragma once
 
-#include "HALAL/HALAL.hpp"
+#include <cstdio>
+
+#include "C++Utilities/CppUtils.hpp"
+#include "HALAL/Models/BoardID/BoardID.hpp"
+#include "HALAL/Models/Packets/Order.hpp"
 #include "Notification.hpp"
 #include "Protection.hpp"
 #include "StateMachine/StateMachine.hpp"

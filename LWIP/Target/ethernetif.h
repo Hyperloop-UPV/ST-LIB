@@ -24,6 +24,10 @@
 #include "lwip/err.h"
 #include "lwip/netif.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Within 'USER CODE' section, code will be kept by default at each generation */
 /* USER CODE BEGIN 0 */
 
@@ -42,4 +46,7 @@ u32_t sys_now(void);
 /* USER CODE BEGIN 1 */
 void pbuf_free_custom(struct pbuf *p);
 /* USER CODE END 1 */
+#ifdef __cplusplus
+}
+#endif
 #endif

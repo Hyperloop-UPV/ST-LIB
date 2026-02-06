@@ -7,8 +7,14 @@
 
 #pragma once
 #ifdef STLIB_ETH
-#include "HALAL/HALAL.hpp"
+#include <array>
+#include <cstdint>
+#include <vector>
+
 #include "ErrorHandler/ErrorHandler.hpp"
+#include "HALAL/Models/IPV4/IPV4.hpp"
+#include "HALAL/Models/Packets/Order.hpp"
+#include "HALAL/Services/Communication/Ethernet/LWIP/TCP/ServerSocket.hpp"
 
 #ifndef MAX_CONNECTIONS_TCP_SERVER
 	#define MAX_CONNECTIONS_TCP_SERVER 10

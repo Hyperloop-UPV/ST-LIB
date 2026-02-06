@@ -1,8 +1,11 @@
 #pragma once
 #define PROTECTIONTYPE_LENGTH 8
+#include "C++Utilities/CppUtils.hpp"
 #include "Control/Blocks/MeanCalculator.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "HALAL/HALAL.hpp"
+#include "HALAL/Models/Packets/Order.hpp"
+#include "HALAL/Services/InfoWarning/InfoWarning.hpp"
+#include "HALAL/Services/Time/RTC.hpp"
 
 using type_id_t = void (*)();
 template <typename>

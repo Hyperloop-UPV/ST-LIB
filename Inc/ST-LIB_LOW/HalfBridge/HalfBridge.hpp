@@ -7,7 +7,10 @@
 
 #pragma once
 
-#include "HALAL/HALAL.hpp"
+#include <cstdint>
+
+#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Services/PWM/DualPhasedPWM/DualPhasedPWM.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
 class HalfBridge {
