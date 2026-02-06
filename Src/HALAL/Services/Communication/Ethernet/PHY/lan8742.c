@@ -5,6 +5,8 @@
 #include "lan8742.h"
 #include "stm32h7xx_hal.h"
 
+extern ETH_HandleTypeDef heth;
+
 /* Bus IO provided by ethernetif.c */
 extern int32_t ETH_PHY_IO_Init(void);
 extern int32_t ETH_PHY_IO_DeInit(void);
@@ -25,14 +27,56 @@ static lan8742_IOCtx_t ctx = {
 };
 
 static void lan_init(void) {
-  /* Explicit PHY address (robust) */
+  uint32_t id1 = 0, id2 = 0;
+
+  HAL_ETH_SetMDIOClockRange(&heth);
+  LAN8742_RegisterBusIO(&lan, &ctx);
+
+  if (lan.IO.Init) {
+    lan.IO.Init();
+  }
+
+  lan.Is_Initialized = 0;
   lan.DevAddr = LAN8742_PHY_ADDRESS;
 
-  LAN8742_RegisterBusIO(&lan, &ctx);
-  LAN8742_Init(&lan);
+  /* Prefer configured address; fall back to MDIO scan if not responsive */
+  if (lan.IO.ReadReg(lan.DevAddr, LAN8742_PHYI1R, &id1) < 0 ||
+      lan.IO.ReadReg(lan.DevAddr, LAN8742_PHYI2R, &id2) < 0 ||
+      (id1 == 0x0000U) || (id1 == 0xFFFFU)) {
+    for (uint32_t addr = 0; addr <= 31; ++addr) {
+      if (lan.IO.ReadReg(addr, LAN8742_PHYI1R, &id1) < 0) {
+        continue;
+      }
+      if (lan.IO.ReadReg(addr, LAN8742_PHYI2R, &id2) < 0) {
+        continue;
+      }
+      if ((id1 != 0x0000U) && (id1 != 0xFFFFU)) {
+        lan.DevAddr = addr;
+        break;
+      }
+    }
+  }
+
+  if ((id1 != 0x0000U) && (id1 != 0xFFFFU)) {
+    lan.Is_Initialized = 1;
+  }
+
+  if (lan.Is_Initialized) {
+    LAN8742_DisablePowerDownMode(&lan);
+    LAN8742_StartAutoNego(&lan);
+
+    uint32_t bcr = 0;
+    if (lan.IO.ReadReg(lan.DevAddr, LAN8742_BCR, &bcr) >= 0) {
+      bcr |= (LAN8742_BCR_AUTONEGO_EN | LAN8742_BCR_RESTART_AUTONEGO);
+      lan.IO.WriteReg(lan.DevAddr, LAN8742_BCR, bcr);
+    }
+  }
 }
 
 static phy_link_state_t lan_get_link_state(void) {
+  if (!lan.Is_Initialized) {
+    return PHY_LINK_DOWN;
+  }
   int32_t st = LAN8742_GetLinkState(&lan);
 
   switch (st) {

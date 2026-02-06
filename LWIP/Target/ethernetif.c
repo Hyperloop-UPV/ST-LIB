@@ -172,7 +172,7 @@ void ethernet_link_check_state(struct netif *netif) {
   if (state == PHY_LINK_DOWN) {
     if (eth_link_up) {
       eth_link_up = 0;
-      HAL_ETH_Stop(&heth);
+      HAL_ETH_Stop_IT(&heth);
       netif_set_link_down(netif);
       netif_set_down(netif);
     }
@@ -206,7 +206,7 @@ void ethernet_link_check_state(struct netif *netif) {
     }
 
     HAL_ETH_SetMACConfig(&heth, &macconf);
-    HAL_ETH_Start(&heth);
+    HAL_ETH_Start_IT(&heth);
 
     netif_set_link_up(netif);
     netif_set_up(netif);

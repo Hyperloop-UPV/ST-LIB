@@ -12,6 +12,7 @@
 extern "C" {
 #include "ethernetif.h"
 #include "lwip.h"
+#include "netif/etharp.h"
 }
 
 extern uint32_t EthernetLinkTimer;
@@ -38,6 +39,7 @@ struct EthernetDomain {
     const GPIODomain::Pin &CRS_DV;
     const GPIODomain::Pin &RXD0;
     const GPIODomain::Pin &RXD1;
+    const GPIODomain::Pin &RXER;
     const GPIODomain::Pin &TXD1;
     const GPIODomain::Pin &TX_EN;
     const GPIODomain::Pin &TXD0;
@@ -50,6 +52,7 @@ struct EthernetDomain {
                                            .CRS_DV = PA7,
                                            .RXD0 = PC4,
                                            .RXD1 = PC5,
+                                           .RXER = PG2,
                                            .TXD1 = PB13,
                                            .TX_EN = PG11,
                                            .TXD0 = PG13,
@@ -60,6 +63,7 @@ struct EthernetDomain {
                                            .CRS_DV = PA7,
                                            .RXD0 = PC4,
                                            .RXD1 = PC5,
+                                           .RXER = PG2,
                                            .TXD1 = PB13,
                                            .TX_EN = PB11,
                                            .TXD0 = PB12,
@@ -80,7 +84,7 @@ struct EthernetDomain {
     EthernetPins pins;
     Entry e;
 
-    std::array<GPIODomain::GPIO, 9> rmii_gpios;
+    std::array<GPIODomain::GPIO, 10> rmii_gpios;
     DigitalOutputDomain::DigitalOutput phy_reset;
 
     consteval Ethernet(EthernetPins pins, const char *local_mac,
@@ -110,6 +114,10 @@ struct EthernetDomain {
                                GPIODomain::Speed::VeryHigh,
                                GPIODomain::AlternateFunction::AF11),
               GPIODomain::GPIO(pins.RXD1, GPIODomain::OperationMode::ALT_PP,
+                               GPIODomain::Pull::None,
+                               GPIODomain::Speed::VeryHigh,
+                               GPIODomain::AlternateFunction::AF11),
+              GPIODomain::GPIO(pins.RXER, GPIODomain::OperationMode::ALT_PP,
                                GPIODomain::Pull::None,
                                GPIODomain::Speed::VeryHigh,
                                GPIODomain::AlternateFunction::AF11),
@@ -198,13 +206,21 @@ struct EthernetDomain {
       const EthernetDomain::Config &e = cfgs[0];
 
       /* --- RESET PHY --- */
+#ifndef NUCLEO
       // RESET_N pin low then high
       do_instances[e.phy_reset_id].turn_off(); // RESET_N = 0
       HAL_Delay(PHY_RESET_LOW_DELAY_MS);
       do_instances[e.phy_reset_id].turn_on(); // RESET_N = 1
       HAL_Delay(PHY_RESET_HIGH_DELAY_MS);
+#else
+      // Nucleo boards typically rely on the PHY's own reset circuitry.
+      HAL_Delay(PHY_RESET_HIGH_DELAY_MS);
+#endif
 
       /* --- CLOCKS ETH --- */
+      __HAL_RCC_SYSCFG_CLK_ENABLE();
+      HAL_SYSCFG_ETHInterfaceSelect(SYSCFG_ETH_RMII);
+
       __HAL_RCC_ETH1MAC_CLK_ENABLE();
       __HAL_RCC_ETH1TX_CLK_ENABLE();
       __HAL_RCC_ETH1RX_CLK_ENABLE();
@@ -248,6 +264,8 @@ struct EthernetDomain {
 
       /* --- LwIP / ETH init --- */
       MX_LWIP_Init();
+      netif_set_up(&gnetif);
+      etharp_gratuitous(&gnetif);
 
       instances[0] = Instance{};
     }

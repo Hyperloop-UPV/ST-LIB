@@ -135,15 +135,15 @@
             }
         },
         {
-            "name": "board-debug-eth-lan8742",
-            "displayName": "Board [DBG] [ETH] [LAN8742]",
+            "name": "board-debug-eth-lan8700",
+            "displayName": "Board [DBG] [ETH] [LAN8700]",
             "inherits": [
                 "mcu"
             ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "USE_ETHERNET": "ON",
-                "PHY_TYPE": "LAN8742"
+                "PHY_TYPE": "LAN8700"
             }
         },
         {
@@ -159,15 +159,15 @@
             }
         },
         {
-            "name": "board-release-eth-lan8742",
-            "displayName": "Board [REL] [ETH] [LAN8742]",
+            "name": "board-release-eth-lan8700",
+            "displayName": "Board [REL] [ETH] [LAN8700]",
             "inherits": [
                 "mcu"
             ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "USE_ETHERNET": "ON",
-                "PHY_TYPE": "LAN8742"
+                "PHY_TYPE": "LAN8700"
             }
         },
         {
@@ -183,15 +183,15 @@
             }
         },
         {
-            "name": "board-relwithdebinfo-eth-lan8742",
-            "displayName": "Board [RWD] [ETH] [LAN8742]",
+            "name": "board-relwithdebinfo-eth-lan8700",
+            "displayName": "Board [RWD] [ETH] [LAN8700]",
             "inherits": [
                 "mcu"
             ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "USE_ETHERNET": "ON",
-                "PHY_TYPE": "LAN8742"
+                "PHY_TYPE": "LAN8700"
             }
         },
         {
@@ -247,24 +247,24 @@
             "configurePreset": "board-debug-eth-ksz8041"
         },
         {
-            "name": "board-debug-eth-lan8742",
-            "configurePreset": "board-debug-eth-lan8742"
+            "name": "board-debug-eth-lan8700",
+            "configurePreset": "board-debug-eth-lan8700"
         },
         {
             "name": "board-release-eth-ksz8041",
             "configurePreset": "board-release-eth-ksz8041"
         },
         {
-            "name": "board-release-eth-lan8742",
-            "configurePreset": "board-release-eth-lan8742"
+            "name": "board-release-eth-lan8700",
+            "configurePreset": "board-release-eth-lan8700"
         },
         {
             "name": "board-relwithdebinfo-eth-ksz8041",
             "configurePreset": "board-relwithdebinfo-eth-ksz8041"
         },
         {
-            "name": "board-relwithdebinfo-eth-lan8742",
-            "configurePreset": "board-relwithdebinfo-eth-lan8742"
+            "name": "board-relwithdebinfo-eth-lan8700",
+            "configurePreset": "board-relwithdebinfo-eth-lan8700"
         },
         {
             "name": "simulator",

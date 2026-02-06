@@ -34,11 +34,11 @@ jobs:
           - board-release
           - board-relwithdebinfo
           - board-debug-eth-ksz8041
-          - board-debug-eth-lan8742
+          - board-debug-eth-lan8700
           - board-release-eth-ksz8041
-          - board-release-eth-lan8742
+          - board-release-eth-lan8700
           - board-relwithdebinfo-eth-ksz8041
-          - board-relwithdebinfo-eth-lan8742
+          - board-relwithdebinfo-eth-lan8700
           # - simulator
       fail-fast: false
     uses: ./.github/workflows/build.yml
