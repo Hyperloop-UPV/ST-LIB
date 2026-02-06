@@ -7,6 +7,7 @@
 
 #ifdef STLIB_ETH
 #include "HALAL/Models/MAC/MAC.hpp"
+#include "HALAL/Services/Communication/Ethernet/LWIP/Ethernet.hpp"
 #include "HALAL/Services/Communication/Ethernet/LWIP/EthernetHelper.hpp"
 #include "HALAL/Services/Communication/Ethernet/LWIP/EthernetNode.hpp"
 extern "C" {
@@ -266,6 +267,8 @@ struct EthernetDomain {
       MX_LWIP_Init();
       netif_set_up(&gnetif);
       etharp_gratuitous(&gnetif);
+      ::Ethernet::is_ready = true;
+      ::Ethernet::is_running = true;
 
       instances[0] = Instance{};
     }
