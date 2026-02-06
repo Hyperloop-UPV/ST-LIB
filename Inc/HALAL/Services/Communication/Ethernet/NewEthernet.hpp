@@ -159,14 +159,14 @@ struct EthernetDomain {
   template <size_t N>
   static consteval array<Config, N> build(span<const Entry> config) {
     array<Config, N> cfgs{};
-    for (std::size_t i = 0; i < N; ++i) {
-      const auto &e = config[i];
-      cfgs[i].local_mac = e.local_mac;
-      cfgs[i].local_ip = e.local_ip;
-      cfgs[i].subnet_mask = e.subnet_mask;
-      cfgs[i].gateway = e.gateway;
-      cfgs[i].phy_reset_id = e.phy_reset_id;
-    }
+    static_assert(N == max_instances,
+                  "EthernetDomain only supports a single instance");
+    const auto &e = config[0];
+    cfgs[0].local_mac = e.local_mac;
+    cfgs[0].local_ip = e.local_ip;
+    cfgs[0].subnet_mask = e.subnet_mask;
+    cfgs[0].gateway = e.gateway;
+    cfgs[0].phy_reset_id = e.phy_reset_id;
 
     return cfgs;
   }
@@ -193,63 +193,63 @@ struct EthernetDomain {
 
     static void init(std::span<const Config, N> cfgs,
                      std::span<DigitalOutputDomain::Instance> do_instances) {
-      for (std::size_t i = 0; i < N; ++i) {
-        const EthernetDomain::Config &e = cfgs[i];
+      static_assert(N == max_instances,
+                    "EthernetDomain only supports a single instance");
+      const EthernetDomain::Config &e = cfgs[0];
 
-        /* --- RESET PHY --- */
-        // RESET_N pin low then high
-        do_instances[e.phy_reset_id].turn_off(); // RESET_N = 0
-        HAL_Delay(PHY_RESET_LOW_DELAY_MS);
-        do_instances[e.phy_reset_id].turn_on(); // RESET_N = 1
-        HAL_Delay(PHY_RESET_HIGH_DELAY_MS);
+      /* --- RESET PHY --- */
+      // RESET_N pin low then high
+      do_instances[e.phy_reset_id].turn_off(); // RESET_N = 0
+      HAL_Delay(PHY_RESET_LOW_DELAY_MS);
+      do_instances[e.phy_reset_id].turn_on(); // RESET_N = 1
+      HAL_Delay(PHY_RESET_HIGH_DELAY_MS);
 
-        /* --- CLOCKS ETH --- */
-        __HAL_RCC_ETH1MAC_CLK_ENABLE();
-        __HAL_RCC_ETH1TX_CLK_ENABLE();
-        __HAL_RCC_ETH1RX_CLK_ENABLE();
+      /* --- CLOCKS ETH --- */
+      __HAL_RCC_ETH1MAC_CLK_ENABLE();
+      __HAL_RCC_ETH1TX_CLK_ENABLE();
+      __HAL_RCC_ETH1RX_CLK_ENABLE();
 
-        /* --- NVIC --- */
-        HAL_NVIC_SetPriority(ETH_IRQn, 0, 0);
-        HAL_NVIC_EnableIRQ(ETH_IRQn);
+      /* --- NVIC --- */
+      HAL_NVIC_SetPriority(ETH_IRQn, 0, 0);
+      HAL_NVIC_EnableIRQ(ETH_IRQn);
 
-        /* --- IP / MAC --- */
-        MAC local_mac{e.local_mac};
-        IPV4 local_ip{e.local_ip};
-        IPV4 subnet_mask{e.subnet_mask};
-        IPV4 gateway{e.gateway};
+      /* --- IP / MAC --- */
+      MAC local_mac{e.local_mac};
+      IPV4 local_ip{e.local_ip};
+      IPV4 subnet_mask{e.subnet_mask};
+      IPV4 gateway{e.gateway};
 
-        ipaddr = local_ip.address;
-        netmask = subnet_mask.address;
-        gw = gateway.address;
+      ipaddr = local_ip.address;
+      netmask = subnet_mask.address;
+      gw = gateway.address;
 
-        IP_ADDRESS[0] = ipaddr.addr & 0xFF;
-        IP_ADDRESS[1] = (ipaddr.addr >> 8) & 0xFF;
-        IP_ADDRESS[2] = (ipaddr.addr >> 16) & 0xFF;
-        IP_ADDRESS[3] = (ipaddr.addr >> 24) & 0xFF;
+      IP_ADDRESS[0] = ipaddr.addr & 0xFF;
+      IP_ADDRESS[1] = (ipaddr.addr >> 8) & 0xFF;
+      IP_ADDRESS[2] = (ipaddr.addr >> 16) & 0xFF;
+      IP_ADDRESS[3] = (ipaddr.addr >> 24) & 0xFF;
 
-        NETMASK_ADDRESS[0] = netmask.addr & 0xFF;
-        NETMASK_ADDRESS[1] = (netmask.addr >> 8) & 0xFF;
-        NETMASK_ADDRESS[2] = (netmask.addr >> 16) & 0xFF;
-        NETMASK_ADDRESS[3] = (netmask.addr >> 24) & 0xFF;
+      NETMASK_ADDRESS[0] = netmask.addr & 0xFF;
+      NETMASK_ADDRESS[1] = (netmask.addr >> 8) & 0xFF;
+      NETMASK_ADDRESS[2] = (netmask.addr >> 16) & 0xFF;
+      NETMASK_ADDRESS[3] = (netmask.addr >> 24) & 0xFF;
 
-        GATEWAY_ADDRESS[0] = gw.addr & 0xFF;
-        GATEWAY_ADDRESS[1] = (gw.addr >> 8) & 0xFF;
-        GATEWAY_ADDRESS[2] = (gw.addr >> 16) & 0xFF;
-        GATEWAY_ADDRESS[3] = (gw.addr >> 24) & 0xFF;
+      GATEWAY_ADDRESS[0] = gw.addr & 0xFF;
+      GATEWAY_ADDRESS[1] = (gw.addr >> 8) & 0xFF;
+      GATEWAY_ADDRESS[2] = (gw.addr >> 16) & 0xFF;
+      GATEWAY_ADDRESS[3] = (gw.addr >> 24) & 0xFF;
 
-        gnetif.hwaddr[0] = local_mac.address[0];
-        gnetif.hwaddr[1] = local_mac.address[1];
-        gnetif.hwaddr[2] = local_mac.address[2];
-        gnetif.hwaddr[3] = local_mac.address[3];
-        gnetif.hwaddr[4] = local_mac.address[4];
-        gnetif.hwaddr[5] = local_mac.address[5];
-        gnetif.hwaddr_len = 6;
+      gnetif.hwaddr[0] = local_mac.address[0];
+      gnetif.hwaddr[1] = local_mac.address[1];
+      gnetif.hwaddr[2] = local_mac.address[2];
+      gnetif.hwaddr[3] = local_mac.address[3];
+      gnetif.hwaddr[4] = local_mac.address[4];
+      gnetif.hwaddr[5] = local_mac.address[5];
+      gnetif.hwaddr_len = 6;
 
-        /* --- LwIP / ETH init --- */
-        MX_LWIP_Init();
+      /* --- LwIP / ETH init --- */
+      MX_LWIP_Init();
 
-        instances[i] = Instance{};
-      }
+      instances[0] = Instance{};
     }
   };
 };
