@@ -42,10 +42,11 @@ public:
 		uint32_t resolution;
 		uint32_t external_trigger;
 		vector<uint32_t> channels;
+		DMA::Stream dma_stream;
 		string name;
 
 		InitData() = default;
-		InitData(ADC_TypeDef* adc, uint32_t resolution, uint32_t external_trigger, vector<uint32_t>& channels, string name);
+		InitData(ADC_TypeDef* adc, uint32_t resolution, uint32_t external_trigger, vector<uint32_t>& channels, DMA::Stream dma_stream, string name);
 	};
 
 	class Peripheral {

@@ -2,12 +2,8 @@
  * DMA.cpp
  *
  *  Created on: 10 dic. 2022
- *      Author: aleja
- */
+ *      Author: aleja */
 
-
-# Para que este codigo conviva con la nueva dma hay que forzarlo un pelin. Yo (Jorge no pm), creo que la DMA nueva puede funcionar para todos los perifericos. En caso
-# de que no sea asi, cambiare esto para que funcione (sera solo un momentito)
 
 
 #include "HALAL/Models/DMA/DMA.hpp"
