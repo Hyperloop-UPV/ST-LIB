@@ -16,8 +16,27 @@ enable_testing()
 
 option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
+option(USE_CCACHE "Use ccache if available" ON)
+option(STLIB_USE_PCH "Enable precompiled headers for ST-LIB" ON)
+if(NOT DEFINED ENABLE_LTO)
+  if(CMAKE_CROSSCOMPILING)
+    set(ENABLE_LTO OFF)
+  else()
+    set(ENABLE_LTO ON)
+  endif()
+endif()
+set(ENABLE_LTO "${ENABLE_LTO}" CACHE BOOL "Enable link-time optimization (LTO)")
 set(LAN8742_PHY_ADDRESS 0 CACHE STRING "LAN8742 PHY address (strap-dependent)")
 set(KSZ8041_PHY_ADDRESS 1 CACHE STRING "KSZ8041 PHY address (strap-dependent)")
+
+if(USE_CCACHE)
+  find_program(CCACHE_PROGRAM ccache)
+  if(CCACHE_PROGRAM)
+    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+    set(CMAKE_ASM_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  endif()
+endif()
 
 # ============================
 # PHY selection (Ethernet)
@@ -74,10 +93,12 @@ if(NOT CMAKE_CROSSCOMPILING)
   message(STATUS "Compiling for simulator")
   add_subdirectory(Tests)
 else()
-  execute_process(
-    COMMAND git submodule update --init --depth 1 Drivers/BSP/Components/lan8742
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
-  )
+  if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/BSP/Components/lan8742)
+    execute_process(
+      COMMAND git submodule update --init --depth 1 Drivers/BSP/Components/lan8742
+      WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
+    )
+  endif()
 endif()
 
 # ============================
@@ -171,40 +192,10 @@ if(CMAKE_CROSSCOMPILING)
     set(LWIP_DIR ${STM32CUBEH7}/Middlewares/Third_Party/LwIP)
 
     set(LWIP_SOURCES
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/api_lib.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/api_msg.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/err.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/if_api.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/netbuf.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/netdb.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/netifapi.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/sockets.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/api/tcpip.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/altcp.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/altcp_alloc.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/altcp_tcp.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/def.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/dns.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/inet_chksum.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/init.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ip.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/autoip.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/dhcp.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/etharp.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/icmp.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/igmp.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_addr.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_frag.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/dhcp6.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/ethip6.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/icmp6.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/inet6.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/ip6.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/ip6_addr.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/ip6_frag.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/mld6.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv6/nd6.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/inet_chksum.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/mem.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/memp.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/netif.c
@@ -217,14 +208,12 @@ if(CMAKE_CROSSCOMPILING)
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/tcp_out.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/timeouts.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/udp.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/bridgeif.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/bridgeif_fdb.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/etharp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/icmp.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_addr.c
+      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_frag.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/ethernet.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/lowpan6.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/lowpan6_ble.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/lowpan6_common.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/slipif.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/zepif.c
     )
 
     set(USER_LWIP_SOURCES
@@ -443,6 +432,8 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-mfloat-abi=hard>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-mthumb>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-specs=nosys.specs>
+  $<$<CONFIG:Debug>:-g>
+  $<$<CONFIG:RelWithDebInfo>:-g>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-ffunction-sections>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fdata-sections>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fno-exceptions>
@@ -497,6 +488,21 @@ target_include_directories(${STLIB_LIBRARY} PUBLIC
   ${CMAKE_CURRENT_LIST_DIR}/Inc/ST-LIB_LOW
   ${CMAKE_CURRENT_LIST_DIR}/Inc/ST-LIB_HIGH
 )
+
+if(ENABLE_LTO)
+  set_property(TARGET ${STLIB_LIBRARY} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+  set_property(TARGET ${STLIB_LIBRARY} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
+endif()
+
+if(STLIB_USE_PCH)
+  if(COMMAND target_precompile_headers)
+    target_precompile_headers(${STLIB_LIBRARY} PRIVATE
+      $<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_LIST_DIR}/Inc/C++Utilities/CppImports.hpp>
+    )
+  else()
+    message(WARNING "STLIB_USE_PCH=ON but target_precompile_headers is not available in this CMake version")
+  endif()
+endif()
 
 
 if(PROJECT_IS_TOP_LEVEL)

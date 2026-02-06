@@ -105,6 +105,15 @@
 #define CHECKSUM_CHECK_ICMP6 0
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
+#define LWIP_IPV6 0
+#define LWIP_DHCP 0
+#define LWIP_AUTOIP 0
+#define LWIP_DNS 0
+#define LWIP_IGMP 0
+#define LWIP_IPV6_MLD 0
+#define LWIP_IPV6_DHCP6 0
+#define LWIP_IPV6_REASS 0
+#define LWIP_IPV6_FRAG 0
 
 /* USER CODE END 1 */
 
