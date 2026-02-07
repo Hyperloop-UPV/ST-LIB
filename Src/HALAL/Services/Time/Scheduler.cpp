@@ -277,7 +277,7 @@ void Scheduler::schedule_next_interval() {
             uint32_t offset = Scheduler_global_timer->CNT - Scheduler_global_timer->ARR;
             current_interval_us_ = offset;
             SET_BIT(Scheduler_global_timer->EGR, TIM_EGR_UG); // This should cause an interrupt
-            Scheduler_global_timer->CNT += offset;
+            Scheduler_global_timer->CNT = Scheduler_global_timer->CNT + offset;
         }
     }
     Scheduler::global_timer_enable();
