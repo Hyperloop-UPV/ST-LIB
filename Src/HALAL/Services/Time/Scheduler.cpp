@@ -265,8 +265,7 @@ void Scheduler::schedule_next_interval() {
     int32_t diff = (int32_t)(next_task.next_fire_us - static_cast<uint32_t>(global_tick_us_));
     if (diff >= -1 && diff <= 1) [[unlikely]] {
         current_interval_us_ = 1;
-        Scheduler_global_timer->CNT = 1;
-        Scheduler_global_timer->ARR = 1;
+        SET_BIT(Scheduler_global_timer->EGR, TIM_EGR_UG); // This should cause an interrupt
     } else {
         if (diff < -1) [[unlikely]]{
             current_interval_us_ = static_cast<uint32_t>(0 - diff);
