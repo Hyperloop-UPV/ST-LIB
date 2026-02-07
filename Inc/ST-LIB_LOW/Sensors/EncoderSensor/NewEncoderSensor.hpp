@@ -34,9 +34,9 @@ public:
     EncoderSensor(EncoderType& enc, const double counter_distance_m,
                   const double sample_time_s, Direction *direction,
                   double *position, double *speed, double *acceleration) : 
-        encoder(enc),
         counter_distance_m(counter_distance_m),
         sample_time_s(sample_time_s),
+        encoder(enc),
         direction(direction),
         position(position),
         speed(speed),
