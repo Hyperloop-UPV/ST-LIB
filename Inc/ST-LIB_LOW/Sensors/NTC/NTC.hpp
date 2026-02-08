@@ -12,17 +12,15 @@ This NTC class is not generic. It is only for 10k Ohm, 1976Beta value NTCs.
 #pragma once
 #include <cstdint>
 
-#include "HALAL/Models/PinModel/Pin.hpp"
-#include "HALAL/Services/ADC/ADC.hpp"
-#include "Sensors/Sensor/Sensor.hpp"
+#include "HALAL/Services/ADC/NewADC.hpp"
+#include "Sensors/AnalogUtils.hpp"
 
 class NTC{
 public:
 	NTC() = default;
-	NTC(Pin &pin, float* src);
-  NTC(Pin &pin, float& src);
+	NTC(ST_LIB::ADCDomain::Instance& adc, float* src);
+  NTC(ST_LIB::ADCDomain::Instance& adc, float& src);
 	void read();
-	uint8_t get_id();
 
 private:
 	static constexpr int NTC_table[4096] = {
@@ -500,6 +498,6 @@ private:
   -677, -688, -700, -714, -729, -748, -770, 
   -797, -835, -873
 };
-  float* value;
-	uint8_t id;
+  float* value = nullptr;
+	ST_LIB::ADCDomain::Instance* adc = nullptr;
 };

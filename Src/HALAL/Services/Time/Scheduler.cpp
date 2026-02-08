@@ -115,8 +115,10 @@ void Scheduler::start() {
     if(prescaler == 0 || prescaler > 0xFFFF) {
         ErrorHandler("Invalid prescaler value: %u", prescaler);
     }
-    
-#ifndef TESTING_ENV
+
+    //static_assert(prescaler < 0xFFFF, "Prescaler is 16 bit, so it must be in that range");
+    //static_assert(prescaler != 0, "Prescaler must be in the range [1, 65535]");
+#ifndef SIM_ON
     RCC->APB1LENR |= SCHEDULER_RCC_TIMER_ENABLE;
 #endif
 
