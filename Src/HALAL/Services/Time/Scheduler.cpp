@@ -111,14 +111,11 @@ void Scheduler::start() {
             prescaler--;
         }
     }
-
-    // TODO: Fault when any of the next 2 static asserts happen (needs to be runtime bcos of SystemCoreClock)
+    
     if(prescaler == 0 || prescaler > 0xFFFF) {
         ErrorHandler("Invalid prescaler value: %u", prescaler);
     }
-
-    //static_assert(prescaler < 0xFFFF, "Prescaler is 16 bit, so it must be in that range");
-    //static_assert(prescaler != 0, "Prescaler must be in the range [1, 65535]");
+    
 #ifndef TESTING_ENV
     RCC->APB1LENR |= SCHEDULER_RCC_TIMER_ENABLE;
 #endif
@@ -127,9 +124,6 @@ void Scheduler::start() {
     Scheduler_global_timer->ARR = 0;
     Scheduler_global_timer->DIER |= LL_TIM_DIER_UIE;
     Scheduler_global_timer->CR1 = LL_TIM_CLOCKDIVISION_DIV1 | (Scheduler_global_timer->CR1 & ~TIM_CR1_CKD);
-    // I think this should be cleared at startup. TODO: Look it up in ref manual
-    // LL_TIM_DisableExternalClock(Scheduler_global_timer);
-    //  |-> does this: Scheduler_global_timer->SMCR &= ~TIM_SMCR_ECE; /* Disable external clock */
 
     // Temporary solution for TimerDomain
     ST_LIB::TimerDomain::callbacks[ST_LIB::timer_idxmap[SCHEDULER_TIMER_IDX]] = scheduler_global_timer_callback;
@@ -143,11 +137,6 @@ void Scheduler::start() {
 }
 
 void Scheduler::update() {
-    static TIM_TypeDef *tim = Scheduler_global_timer;
-    if(!tim) {
-        ErrorHandler("Scheduler global timer not initialized");
-    }
-
     while(ready_bitmap_ != 0u) {
         uint32_t bit_index = static_cast<uint32_t>(__builtin_ctz(ready_bitmap_));
         ready_bitmap_ &= ~(1u << bit_index); // Clear the bit
@@ -158,8 +147,6 @@ void Scheduler::update() {
         }
     }
 }
-
-// void Scheduler::global_timer_callback() { on_timer_update(); }
 
 inline uint8_t Scheduler::allocate_slot() {
     uint32_t idx = __builtin_ffs(Scheduler::free_bitmap_) - 1;
@@ -370,4 +357,5 @@ bool Scheduler::cancel_timeout(uint16_t id) {
     schedule_next_interval();
     return true;
 }
+
 
