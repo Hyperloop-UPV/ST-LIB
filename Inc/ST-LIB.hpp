@@ -145,8 +145,6 @@ template <auto &...devs> struct Board {
             ctx.template span<DigitalInputDomain>()),
         .mdma_packet_cfgs = MdmaPacketDomain::template build<mdmaPacketN>(
             ctx.template span<MdmaPacketDomain>()),
-        .sd_cfgs = SdDomain::template build<sdN>(
-            ctx.template span<SdDomain>()),
         .sd_cfgs = SdDomain::template build<sdN>(ctx.template span<SdDomain>()),
         .eth_cfgs = EthernetDomain::template build<ethN>(
             ctx.template span<EthernetDomain>()),
