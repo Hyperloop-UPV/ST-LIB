@@ -44,3 +44,11 @@
 extern "C" void HAL_SYSCFG_AnalogSwitchConfig(uint32_t SYSCFG_AnalogSwitch,
                                                uint32_t SYSCFG_SwitchState);
 #endif
+
+#ifndef STLIB_HAS_ADC3
+#if defined(ADC3)
+#define STLIB_HAS_ADC3 1
+#else
+#define STLIB_HAS_ADC3 0
+#endif
+#endif

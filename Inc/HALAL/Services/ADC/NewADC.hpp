@@ -242,7 +242,7 @@ struct ADCDomain {
     if (!is_internal_channel(ch)) {
       return true;
     }
-#if defined(ADC3)
+#if STLIB_HAS_ADC3
     return p == Peripheral::ADC_3;
 #else
     return p == Peripheral::ADC_2;
@@ -336,7 +336,7 @@ struct ADCDomain {
 
     if (e.channel != Channel::AUTO && is_internal_channel(e.channel)) {
       const Peripheral p = (e.peripheral == Peripheral::AUTO)
-#if defined(ADC3)
+#if STLIB_HAS_ADC3
                                ? Peripheral::ADC_3
 #else
                                ? Peripheral::ADC_2
