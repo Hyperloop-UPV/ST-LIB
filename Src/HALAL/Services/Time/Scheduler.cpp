@@ -111,14 +111,11 @@ void Scheduler::start() {
             prescaler--;
         }
     }
-
-    // TODO: Fault when any of the next 2 static asserts happen (needs to be runtime bcos of SystemCoreClock)
+    
     if(prescaler == 0 || prescaler > 0xFFFF) {
         ErrorHandler("Invalid prescaler value: %u", prescaler);
     }
-
-    //static_assert(prescaler < 0xFFFF, "Prescaler is 16 bit, so it must be in that range");
-    //static_assert(prescaler != 0, "Prescaler must be in the range [1, 65535]");
+    
 #ifndef TESTING_ENV
     RCC->APB1LENR |= SCHEDULER_RCC_TIMER_ENABLE;
 #endif
@@ -127,9 +124,6 @@ void Scheduler::start() {
     Scheduler_global_timer->ARR = 0;
     Scheduler_global_timer->DIER |= LL_TIM_DIER_UIE;
     Scheduler_global_timer->CR1 = LL_TIM_CLOCKDIVISION_DIV1 | (Scheduler_global_timer->CR1 & ~TIM_CR1_CKD);
-    // I think this should be cleared at startup. TODO: Look it up in ref manual
-    // LL_TIM_DisableExternalClock(Scheduler_global_timer);
-    //  |-> does this: Scheduler_global_timer->SMCR &= ~TIM_SMCR_ECE; /* Disable external clock */
 
     // Temporary solution for TimerDomain
     ST_LIB::TimerDomain::callbacks[ST_LIB::timer_idxmap[SCHEDULER_TIMER_IDX]] = scheduler_global_timer_callback;
@@ -153,8 +147,6 @@ void Scheduler::update() {
         }
     }
 }
-
-// void Scheduler::global_timer_callback() { on_timer_update(); }
 
 inline uint8_t Scheduler::allocate_slot() {
     uint32_t idx = __builtin_ffs(Scheduler::free_bitmap_) - 1;
@@ -251,6 +243,7 @@ void Scheduler::schedule_next_interval() {
     if (active_task_count_ == 0) [[unlikely]] {
         Scheduler::global_timer_disable();
         current_interval_us_ = 0;
+        Scheduler_global_timer->CNT = 0;
         return;
     }
 
@@ -259,8 +252,7 @@ void Scheduler::schedule_next_interval() {
     int32_t diff = (int32_t)(next_task.next_fire_us - static_cast<uint32_t>(global_tick_us_));
     if (diff >= -1 && diff <= 1) [[unlikely]] {
         current_interval_us_ = 1;
-        Scheduler_global_timer->ARR = 1;
-        Scheduler_global_timer->CNT = 1;
+        SET_BIT(Scheduler_global_timer->EGR, TIM_EGR_UG); // This should cause an interrupt
     } else {
         if (diff < -1) [[unlikely]]{
             current_interval_us_ = static_cast<uint32_t>(0 - diff);
@@ -268,6 +260,12 @@ void Scheduler::schedule_next_interval() {
             current_interval_us_ = static_cast<uint32_t>(diff);
         }
         Scheduler_global_timer->ARR = static_cast<uint32_t>(current_interval_us_ - 1u);
+        while(Scheduler_global_timer->CNT > Scheduler_global_timer->ARR) [[unlikely]] {
+            uint32_t offset = Scheduler_global_timer->CNT - Scheduler_global_timer->ARR;
+            current_interval_us_ = offset;
+            SET_BIT(Scheduler_global_timer->EGR, TIM_EGR_UG); // This should cause an interrupt
+            Scheduler_global_timer->CNT = Scheduler_global_timer->CNT + offset;
+        }
     }
     Scheduler::global_timer_enable();
 }
@@ -279,13 +277,13 @@ void Scheduler::on_timer_update() {
         uint8_t candidate_id = Scheduler::front_id();
         Task& task = tasks_[candidate_id];
         int32_t diff = (int32_t)(task.next_fire_us - static_cast<uint32_t>(global_tick_us_));
-        if (diff > 0) [[likely]]{
+        if(diff > 0) [[likely]]{
             break; // Task is in the future, stop processing
         }
         pop_front();
         ready_bitmap_ |= (1u << candidate_id); // mark task as ready
 
-        if (task.repeating) [[likely]] {
+        if(task.repeating) [[likely]] {
             task.next_fire_us = static_cast<uint32_t>(global_tick_us_ + task.period_us);
             insert_sorted(candidate_id);
         }
@@ -359,3 +357,5 @@ bool Scheduler::cancel_timeout(uint16_t id) {
     schedule_next_interval();
     return true;
 }
+
+
