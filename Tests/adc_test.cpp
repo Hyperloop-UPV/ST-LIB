@@ -76,7 +76,7 @@ TEST_F(ADCTest, PollingReadUpdatesOutputValue) {
   const float expected = (2048.0f / 4095.0f) * 3.3f;
   EXPECT_NEAR(output, expected, 0.001f);
   EXPECT_EQ(ST_LIB::MockedHAL::adc_get_last_channel(ADC1), ADC_CHANNEL_16);
-  EXPECT_FALSE(ST_LIB::MockedHAL::adc_is_running(ADC1));
+  EXPECT_TRUE(ST_LIB::MockedHAL::adc_is_running(ADC1));
 }
 
 TEST_F(ADCTest, PollTimeoutMapsToZeroReading) {

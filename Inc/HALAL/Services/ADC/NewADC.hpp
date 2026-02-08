@@ -179,6 +179,23 @@ struct ADCDomain {
     return 0;
   }
 
+  static uint8_t peripheral_index_from_handle(ADC_HandleTypeDef *handle) {
+    if (handle == &hadc1) {
+      return peripheral_index(Peripheral::ADC_1);
+    }
+    if (handle == &hadc2) {
+      return peripheral_index(Peripheral::ADC_2);
+    }
+    if (handle == &hadc3) {
+      return peripheral_index(Peripheral::ADC_3);
+    }
+    return 0;
+  }
+
+  static inline std::array<bool, 3> peripheral_running{false, false, false};
+  static inline std::array<Channel, 3> active_channel{
+      Channel::AUTO, Channel::AUTO, Channel::AUTO};
+
   static consteval bool is_valid_channel(Channel ch) {
     switch (ch) {
     case Channel::AUTO:
@@ -491,46 +508,78 @@ struct ADCDomain {
       return 4095U;
     }
 
-    uint32_t read_raw(uint32_t timeout_ms = 2) {
+  private:
+    uint32_t sample_raw(uint32_t timeout_ms = 2) {
       if (handle == nullptr) {
         return 0;
       }
 
-      ADC_ChannelConfTypeDef sConfig{};
-      sConfig.Channel = static_cast<uint32_t>(channel);
-      sConfig.Rank = ADC_REGULAR_RANK_1;
-      sConfig.SamplingTime = static_cast<uint32_t>(sample_time);
-      sConfig.SingleDiff = ADC_SINGLE_ENDED;
-      sConfig.OffsetNumber = ADC_OFFSET_NONE;
-      sConfig.Offset = 0;
+      const uint8_t pidx = peripheral_index_from_handle(handle);
+      const bool channel_change = active_channel[pidx] != channel;
+
+      if (channel_change && peripheral_running[pidx]) {
+        HAL_ADC_Stop(handle);
+        peripheral_running[pidx] = false;
+      }
+
+      if (channel_change) {
+        ADC_ChannelConfTypeDef sConfig{};
+        sConfig.Channel = static_cast<uint32_t>(channel);
+        sConfig.Rank = ADC_REGULAR_RANK_1;
+        sConfig.SamplingTime = static_cast<uint32_t>(sample_time);
+        sConfig.SingleDiff = ADC_SINGLE_ENDED;
+        sConfig.OffsetNumber = ADC_OFFSET_NONE;
+        sConfig.Offset = 0;
 #if defined(ADC_VER_V5_V90)
-      sConfig.OffsetSignedSaturation = DISABLE;
+        sConfig.OffsetSignedSaturation = DISABLE;
 #endif
 
-      if (HAL_ADC_ConfigChannel(handle, &sConfig) != HAL_OK) {
-        return 0;
+        if (HAL_ADC_ConfigChannel(handle, &sConfig) != HAL_OK) {
+          return 0;
+        }
+        active_channel[pidx] = channel;
       }
-      if (HAL_ADC_Start(handle) != HAL_OK) {
-        return 0;
+
+      if (!peripheral_running[pidx]) {
+        if (HAL_ADC_Start(handle) != HAL_OK) {
+          return 0;
+        }
+        peripheral_running[pidx] = true;
       }
+
       if (HAL_ADC_PollForConversion(handle, timeout_ms) != HAL_OK) {
-        HAL_ADC_Stop(handle);
         return 0;
       }
-      const uint32_t val = HAL_ADC_GetValue(handle);
-      HAL_ADC_Stop(handle);
-      return val;
+      return HAL_ADC_GetValue(handle);
+    }
+
+  public:
+    float get_raw(void) {
+      return static_cast<float>(sample_raw());
+    }
+
+    float get_value(float raw, float vref = 3.3f) const {
+      const float max_val = static_cast<float>(max_raw_for_resolution(resolution));
+      if (max_val <= 0.0f) {
+        return 0.0f;
+      }
+      return (raw / max_val) * vref;
+    }
+
+    float get_value(void) {
+      return get_value(get_raw(), 3.3f);
+    }
+
+    float get_value(float vref) {
+      return get_value(get_raw(), vref);
     }
 
     void read(double vref = 3.3, uint32_t timeout_ms = 2) {
       if (output == nullptr) {
         return;
       }
-      const uint32_t max_val = max_raw_for_resolution(resolution);
-      const uint32_t raw = std::min(read_raw(timeout_ms), max_val);
-      const double scaled =
-          (static_cast<double>(raw) / static_cast<double>(max_val)) * vref;
-      *output = static_cast<float>(scaled);
+      const float raw = static_cast<float>(sample_raw(timeout_ms));
+      *output = get_value(raw, static_cast<float>(vref));
     }
   };
 
@@ -572,7 +621,7 @@ struct ADCDomain {
       hadc->Init.ScanConvMode = ADC_SCAN_DISABLE;
       hadc->Init.EOCSelection = ADC_EOC_SINGLE_CONV;
       hadc->Init.LowPowerAutoWait = DISABLE;
-      hadc->Init.ContinuousConvMode = DISABLE;
+      hadc->Init.ContinuousConvMode = ENABLE;
       hadc->Init.NbrOfConversion = 1;
       hadc->Init.DiscontinuousConvMode = DISABLE;
       hadc->Init.NbrOfDiscConversion = 0;
@@ -606,7 +655,7 @@ struct ADCDomain {
           ADC_HandleTypeDef *hadc = handle_for(cfg.peripheral);
           hadc->Init.NbrOfConversion = 1;
           hadc->Init.ScanConvMode = ADC_SCAN_DISABLE;
-          hadc->Init.ContinuousConvMode = DISABLE;
+          hadc->Init.ContinuousConvMode = ENABLE;
           if (HAL_ADC_Init(hadc) != HAL_OK) {
             ErrorHandler("ADC Init failed");
           }
