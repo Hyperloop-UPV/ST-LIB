@@ -46,10 +46,6 @@ void ErrorHandlerModel::ErrorHandlerTrigger(string format, ... ){
 
 	description += string(buffer.get(), buffer.get() + size - 1) + " | Line: " + ErrorHandlerModel::line
 							+ " Function: '" + ErrorHandlerModel::func + "' File: " + ErrorHandlerModel::file ;
-	
-	#ifdef SIM_ON
-	LOG_FATAL(string(buffer.get(), buffer.get() + size - 1));
-	#endif
 
 #ifdef HAL_TIM_MODULE_ENABLED
 	 description += " | TimeStamp: " + to_string(Time::get_global_tick());
@@ -71,4 +67,3 @@ void ErrorHandlerModel::ErrorHandlerUpdate(){
 #endif
 
 }
-

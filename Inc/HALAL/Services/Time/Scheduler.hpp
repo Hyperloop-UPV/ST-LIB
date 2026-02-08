@@ -8,7 +8,7 @@
 
 /* Uso del scheduler, descrito en la wiki: https://wiki.hyperloopupv.com/es/firmware/Timing/Scheduler */
 
-#ifndef TESTING_ENV
+#ifndef SIM_ON
 #include "stm32h7xx_ll_tim.h"
 #else
 #include "MockedDrivers/stm32h7xx_ll_tim_wrapper.h"
@@ -29,7 +29,7 @@
 #define SCHEDULER_TIMER_BASE glue(TIM, glue(SCHEDULER_TIMER_IDX, _BASE))
 
 // Used to reserve a TimerPeripheral
-#ifndef TESTING_ENV
+#ifndef SIM_ON
 #include "stm32h7xx_hal_tim.h"
 #define SCHEDULER_HAL_TIM glue(htim, SCHEDULER_TIMER_IDX)
 extern TIM_HandleTypeDef SCHEDULER_HAL_TIM;
@@ -55,7 +55,7 @@ struct Scheduler {
     //static const uint32_t global_timer_base = SCHEDULER_TIMER_BASE;
     static void on_timer_update();
 
-#ifndef TESTING_ENV
+#ifndef SIM_ON
     private:
 #endif
     struct Task {

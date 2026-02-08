@@ -14,9 +14,6 @@
 #ifdef STLIB_ETH
 #include "StateMachine/StateOrder.hpp"
 #endif
-#ifdef SIM_ON
-#include "HALALMock/Services/SharedMemory/SharedMemory.hpp"
-#endif
 
 using ms = std::chrono::milliseconds;
 using us = std::chrono::microseconds;
@@ -551,10 +548,6 @@ public:
     return states;
   }
 
-#ifdef SIM_ON
-  uint8_t get_id_in_shm();
-  uint8_t state_machine_id_in_shm;
-#endif
 };
 
 /* @brief Helper function to create a State instance

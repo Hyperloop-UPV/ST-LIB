@@ -7,11 +7,7 @@
 
 #pragma once
 
-#ifndef TESTING_ENV
-#include "stm32h7xx_hal.h"
-#else
-#include "MockedDrivers/stm32h7xx_hal_wrapper.h"
-#endif
+#include "HALAL/hal_wrapper.h"
 
 #ifdef HAL_TIM_MODULE_ENABLED
 

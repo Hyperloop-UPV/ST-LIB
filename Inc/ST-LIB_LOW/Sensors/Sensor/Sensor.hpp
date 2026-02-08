@@ -12,7 +12,6 @@
 class Sensor{
 public:
 	static void start();
-	static std::vector<uint8_t> adc_id_list;
 	static std::vector<uint8_t> EXTI_id_list;
 	static std::vector<uint8_t> inputcapture_id_list;
 };
