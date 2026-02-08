@@ -8,7 +8,6 @@
 #pragma once
 #include <cstdint>
 #include "HALAL/Services/ADC/NewADC.hpp"
-#include "Sensors/AnalogUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "C++Utilities/CppUtils.hpp"
 
