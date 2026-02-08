@@ -135,7 +135,7 @@ namespace ST_LIB {
 
         static constexpr inline bool is_spi(Peripheral instance) {
             return is_one_of(instance, Peripheral::spi1, Peripheral::spi2,
-                            Peripheral::spi3, Peripheral::spi4, Peripheral::spi5);
+                            Peripheral::spi3, Peripheral::spi4, Peripheral::spi5, Peripheral::spi6);
         }
 
         static constexpr inline bool is_i2c(Peripheral instance) {
