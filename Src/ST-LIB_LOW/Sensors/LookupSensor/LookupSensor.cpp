@@ -12,7 +12,7 @@ void LookupSensor::read(){
 		return;
 	}
 	const float raw = adc->get_raw();
-	const float adc_voltage = adc->get_value(raw, REFERENCE_VOLTAGE);
+	const float adc_voltage = adc->get_value_from_raw(raw, REFERENCE_VOLTAGE);
 
 	int table_index = (int)(adc_voltage * table_size / REFERENCE_VOLTAGE);
 	if(table_index >= table_size){
