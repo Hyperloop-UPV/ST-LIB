@@ -11,8 +11,8 @@ void LookupSensor::read(){
 	if (adc == nullptr || value == nullptr) {
 		return;
 	}
-	const uint32_t raw = adc->read_raw();
-	const float adc_voltage = ST_LIB::adc_raw_to_voltage(raw, adc->resolution);
+	const float raw = adc->get_raw();
+	const float adc_voltage = adc->get_value(raw, REFERENCE_VOLTAGE);
 
 	int table_index = (int)(adc_voltage * table_size / REFERENCE_VOLTAGE);
 	if(table_index >= table_size){

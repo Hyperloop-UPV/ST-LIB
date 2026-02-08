@@ -4,7 +4,6 @@
 
 #include "Control/Blocks/MovingAverage.hpp"
 #include "HALAL/Services/ADC/NewADC.hpp"
-#include "Sensors/AnalogUtils.hpp"
 
 
 template<size_t N>
@@ -47,8 +46,8 @@ void PT100<N>::read(){
 	if(adc == nullptr || value == nullptr){
 		return;
 	}
-	const uint32_t raw = adc->read_raw();
-	const float val = ST_LIB::adc_raw_to_voltage(raw, adc->resolution);
+	const float raw = adc->get_raw();
+	const float val = adc->get_value(raw, 3.3f);
 	if(filter != nullptr){
 		filter->input(k/val + offset);
 		filter->execute();

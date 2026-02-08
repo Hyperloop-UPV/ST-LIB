@@ -10,7 +10,6 @@
 #include <type_traits>
 
 #include "HALAL/Services/ADC/NewADC.hpp"
-#include "Sensors/AnalogUtils.hpp"
 
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
@@ -58,8 +57,8 @@ void LinearSensor<Type>::read() {
     if (adc == nullptr || value == nullptr) {
         return;
     }
-    const uint32_t raw = adc->read_raw();
-    const float val = ST_LIB::adc_raw_to_voltage(raw, adc->resolution, vref);
+    const float raw = adc->get_raw();
+    const float val = adc->get_value(raw, vref);
 
     *value = slope * (Type)val + offset;
 }
