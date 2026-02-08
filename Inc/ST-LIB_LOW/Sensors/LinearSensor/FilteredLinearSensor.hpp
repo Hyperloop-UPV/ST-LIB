@@ -21,7 +21,7 @@ public:
       return;
     }
     const float raw = this->adc->get_raw();
-    const float val = this->adc->get_value(raw, this->vref);
+    const float val = this->adc->get_value_from_raw(raw, this->vref);
     *this->value =
         filter.compute(this->slope * static_cast<Type>(val) + this->offset);
   }

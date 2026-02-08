@@ -47,7 +47,7 @@ void PT100<N>::read(){
 		return;
 	}
 	const float raw = adc->get_raw();
-	const float val = adc->get_value(raw, 3.3f);
+	const float val = adc->get_value_from_raw(raw, 3.3f);
 	if(filter != nullptr){
 		filter->input(k/val + offset);
 		filter->execute();
