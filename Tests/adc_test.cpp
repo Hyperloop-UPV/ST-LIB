@@ -41,7 +41,7 @@ constexpr std::array<ST_LIB::ADCDomain::Entry, 1> internal_entry{{
 
 constexpr auto internal_cfg = ST_LIB::ADCDomain::build<1>(
     std::span<const ST_LIB::ADCDomain::Entry, 1>{internal_entry});
-#if defined(ADC3)
+#if STLIB_HAS_ADC3
 static_assert(internal_cfg[0].peripheral == ST_LIB::ADCDomain::Peripheral::ADC_3);
 #else
 static_assert(internal_cfg[0].peripheral == ST_LIB::ADCDomain::Peripheral::ADC_2);
