@@ -290,13 +290,13 @@ void Scheduler::on_timer_update() {
         uint8_t candidate_id = Scheduler::front_id();
         Task& task = tasks_[candidate_id];
         int32_t diff = (int32_t)(task.next_fire_us - static_cast<uint32_t>(global_tick_us_));
-        if (diff > 0) [[likely]]{
+        if(diff > 0) [[likely]]{
             break; // Task is in the future, stop processing
         }
         pop_front();
         ready_bitmap_ |= (1u << candidate_id); // mark task as ready
 
-        if (task.repeating) [[likely]] {
+        if(task.repeating) [[likely]] {
             task.next_fire_us = static_cast<uint32_t>(global_tick_us_ + task.period_us);
             insert_sorted(candidate_id);
         }
@@ -370,3 +370,4 @@ bool Scheduler::cancel_timeout(uint16_t id) {
     schedule_next_interval();
     return true;
 }
+
