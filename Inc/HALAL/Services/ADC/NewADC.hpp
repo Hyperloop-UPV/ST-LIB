@@ -2,6 +2,7 @@
 
 #include "HALAL/hal_wrapper.h"
 
+#include <algorithm>
 #include <array>
 #include <span>
 #include <utility>
@@ -144,15 +145,9 @@ struct ADCDomain {
       const auto gpio_idx = gpio.inscribe(ctx);
       Entry entry = e;
       entry.gpio_idx = gpio_idx;
-      Peripheral resolved_peripheral = entry.peripheral;
-      Channel resolved_channel = entry.channel;
-      if (resolved_peripheral == Peripheral::AUTO ||
-          resolved_channel == Channel::AUTO) {
-        const auto resolved = resolve_mapping(entry);
-        resolved_peripheral = resolved.first;
-        resolved_channel = resolved.second;
-      }
-      (void)resolved_channel;
+      const auto resolved = resolve_mapping(entry);
+      entry.peripheral = resolved.first;
+      entry.channel = resolved.second;
       return ctx.template add<ADCDomain>(entry, this);
     }
   };
@@ -395,6 +390,9 @@ struct ADCDomain {
   template <size_t N>
   static consteval array<Config, N> build(span<const Entry> entries) {
     static_assert(N <= max_instances, "ADCDomain: too many instances");
+    if (entries.size() != N) {
+      compile_error("ADC: build entries size mismatch");
+    }
 
     array<Config, N> cfgs{};
     array<bool, 3> periph_seen{};
@@ -415,6 +413,9 @@ struct ADCDomain {
       }
       if (!resolution_supported(peripheral, e.resolution)) {
         compile_error("ADC: resolution not supported by selected ADC");
+      }
+      if (e.sample_rate_hz != 0) {
+        compile_error("ADC: sample_rate_hz is not supported in polling mode");
       }
 
       const auto pidx = peripheral_index(peripheral);
@@ -474,6 +475,22 @@ struct ADCDomain {
     Resolution resolution = Resolution::BITS_12;
     float *output = nullptr;
 
+    static constexpr uint32_t max_raw_for_resolution(Resolution r) {
+      switch (r) {
+      case Resolution::BITS_16:
+        return 65535U;
+      case Resolution::BITS_14:
+        return 16383U;
+      case Resolution::BITS_12:
+        return 4095U;
+      case Resolution::BITS_10:
+        return 1023U;
+      case Resolution::BITS_8:
+        return 255U;
+      }
+      return 4095U;
+    }
+
     uint32_t read_raw(uint32_t timeout_ms = 2) {
       if (handle == nullptr) {
         return 0;
@@ -509,25 +526,8 @@ struct ADCDomain {
       if (output == nullptr) {
         return;
       }
-      const uint32_t raw = read_raw(timeout_ms);
-      uint32_t max_val = 4095U;
-      switch (resolution) {
-      case Resolution::BITS_16:
-        max_val = 65535U;
-        break;
-      case Resolution::BITS_14:
-        max_val = 16383U;
-        break;
-      case Resolution::BITS_12:
-        max_val = 4095U;
-        break;
-      case Resolution::BITS_10:
-        max_val = 1023U;
-        break;
-      case Resolution::BITS_8:
-        max_val = 255U;
-        break;
-      }
+      const uint32_t max_val = max_raw_for_resolution(resolution);
+      const uint32_t raw = std::min(read_raw(timeout_ms), max_val);
       const double scaled =
           (static_cast<double>(raw) / static_cast<double>(max_val)) * vref;
       *output = static_cast<float>(scaled);
@@ -596,6 +596,10 @@ struct ADCDomain {
 
       for (std::size_t i = 0; i < N; ++i) {
         const auto &cfg = cfgs[i];
+        if (cfg.peripheral == Peripheral::AUTO ||
+            cfg.channel == Channel::AUTO) {
+          ErrorHandler("ADC config unresolved (AUTO)");
+        }
         const auto pidx = peripheral_index(cfg.peripheral);
         if (!periph_configured[pidx]) {
           configure_peripheral(cfg);
