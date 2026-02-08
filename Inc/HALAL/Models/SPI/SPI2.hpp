@@ -194,7 +194,7 @@ struct SPIDomain {
                         miso_gpio(miso_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(miso_pin, peripheral)),
                         mosi_gpio(mosi_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(mosi_pin, peripheral)),
                         nss_gpio(GPIODomain::GPIO(nss_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(nss_pin, peripheral))),
-                        dma_rx_tx(dma_instance(peripheral))
+                        dma_rx_tx(dma_peripheral(peripheral))
                         {
             config.validate();
 
@@ -218,7 +218,7 @@ struct SPIDomain {
                         miso_gpio(miso_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(miso_pin, peripheral)),
                         mosi_gpio(mosi_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(mosi_pin, peripheral)),
                         nss_gpio(std::nullopt),  // No NSS GPIO
-                        dma_rx_tx(dma_instance(peripheral))
+                        dma_rx_tx(dma_peripheral(peripheral))
                         {
             config.validate();
             
@@ -422,20 +422,20 @@ struct SPIDomain {
             }
         }
 
-        static consteval DMA_Domain::Instance dma_instance(SPIPeripheral peripheral) {
+        static consteval DMA_Domain::Peripheral dma_peripheral(SPIPeripheral peripheral) {
             switch (peripheral) {
                 case SPIPeripheral::spi1:
-                    return DMA_Domain::Instance::spi1;
+                    return DMA_Domain::Peripheral::spi1;
                 case SPIPeripheral::spi2:
-                    return DMA_Domain::Instance::spi2;
+                    return DMA_Domain::Peripheral::spi2;
                 case SPIPeripheral::spi3:
-                    return DMA_Domain::Instance::spi3;
+                    return DMA_Domain::Peripheral::spi3;
                 case SPIPeripheral::spi4:
-                    return DMA_Domain::Instance::spi4;
+                    return DMA_Domain::Peripheral::spi4;
                 case SPIPeripheral::spi5:
-                    return DMA_Domain::Instance::spi5;
-                // case SPIPeripheral::spi6:
-                //     return DMA_Domain::Instance::spi6;
+                    return DMA_Domain::Peripheral::spi5;
+                case SPIPeripheral::spi6:
+                    return DMA_Domain::Peripheral::spi6;
                 default:
                     compile_error("Invalid SPI peripheral specified in SPIDomain::Device");
             }
@@ -951,7 +951,7 @@ struct SPIDomain {
 
         static void init(std::span<const Config, N> cfgs,
                          std::span<GPIODomain::Instance> gpio_instances,
-                         std::span<DMA_Domain::Instances_> dma_instances) {
+                         std::span<DMA_Domain::Instance> dma_peripherals) {
             for (std::size_t i = 0; i < N; ++i) {
                 const auto &e = cfgs[i];
 
@@ -1014,8 +1014,8 @@ struct SPIDomain {
                 auto& hspi = instances[i].hspi;
                 hspi.Instance = instances[i].instance;
 
-                auto& dma_rx = dma_instances[e.dma_rx_idx];
-                auto& dma_tx = dma_instances[e.dma_tx_idx];
+                auto& dma_rx = dma_peripherals[e.dma_rx_idx];
+                auto& dma_tx = dma_peripherals[e.dma_tx_idx];
 
                 // DMA handles are already configured and initialized by DMA_Domain
                 hspi.hdmarx = &dma_rx.dma;

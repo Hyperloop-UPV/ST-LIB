@@ -28,7 +28,7 @@ namespace ST_LIB {
         
         enum class Peripheral : uint8_t {none, adc1, adc2, adc3, 
                                         i2c1, i2c2, i2c3, i2c5,  
-                                        spi1, spi2, spi3, spi4, spi5,
+                                        spi1, spi2, spi3, spi4, spi5, spi6,
                                         fmac};
         
         enum class Stream : uint8_t {none, dma1_stream0, dma1_stream1, dma1_stream2, dma1_stream3, 
