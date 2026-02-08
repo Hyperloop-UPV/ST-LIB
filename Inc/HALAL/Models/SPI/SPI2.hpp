@@ -468,7 +468,7 @@ struct SPIDomain {
         SPI_HandleTypeDef hspi;
         SPI_TypeDef* instance;
 
-        volatile bool* operation_flag;
+        volatile bool* operation_flag = nullptr;
     };
 
 
