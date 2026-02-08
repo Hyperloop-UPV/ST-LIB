@@ -4,6 +4,7 @@
 #include "stm32h7xx_ll_gpio.h"
 #include "stm32h7xx_ll_bus.h"
 #include "stm32h7xx_ll_tim.h"
+#include <string.h>
 #define METADATA_FLASH_ADDR (0x080DFD00) //Metadata pool flash address
 #define HF_FLASH_ADDR (0x080C0000U) //Hard_fault_flash address
 #define HF_FLAG_VALUE (0xFF00FF00U) //Flag to know if already is written information in the flash
