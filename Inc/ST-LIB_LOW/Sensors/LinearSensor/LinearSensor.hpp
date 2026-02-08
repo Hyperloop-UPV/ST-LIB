@@ -58,7 +58,7 @@ void LinearSensor<Type>::read() {
         return;
     }
     const float raw = adc->get_raw();
-    const float val = adc->get_value(raw, vref);
+    const float val = adc->get_value_from_raw(raw, vref);
 
     *value = slope * (Type)val + offset;
 }

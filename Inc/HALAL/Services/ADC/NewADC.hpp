@@ -554,11 +554,11 @@ struct ADCDomain {
     }
 
   public:
-    float get_raw(void) {
-      return static_cast<float>(sample_raw());
+    float get_raw(uint32_t timeout_ms = 2) {
+      return static_cast<float>(sample_raw(timeout_ms));
     }
 
-    float get_value(float raw, float vref = 3.3f) const {
+    float get_value_from_raw(float raw, float vref = 3.3f) const {
       const float max_val = static_cast<float>(max_raw_for_resolution(resolution));
       if (max_val <= 0.0f) {
         return 0.0f;
@@ -566,21 +566,18 @@ struct ADCDomain {
       return (raw / max_val) * vref;
     }
 
-    float get_value(void) {
-      return get_value(get_raw(), 3.3f);
+    float get_value(uint32_t timeout_ms = 2, float vref = 3.3f) {
+      const float raw = get_raw(timeout_ms);
+      return get_value_from_raw(raw, vref);
     }
 
-    float get_value(float vref) {
-      return get_value(get_raw(), vref);
-    }
-
-    void read(double vref = 3.3, uint32_t timeout_ms = 2) {
+    void read(float vref = 3.3f, uint32_t timeout_ms = 2) {
       if (output == nullptr) {
         return;
       }
-      const float raw = static_cast<float>(sample_raw(timeout_ms));
-      *output = get_value(raw, static_cast<float>(vref));
+      *output = get_value(timeout_ms, vref);
     }
+
   };
 
   template <std::size_t N> struct Init {

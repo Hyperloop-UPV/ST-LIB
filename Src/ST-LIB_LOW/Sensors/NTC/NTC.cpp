@@ -10,7 +10,7 @@ void NTC::read() {
         return;
     }
     const float raw = adc->get_raw();
-    uint16_t val = static_cast<uint16_t>(adc->get_value(raw, 4095.0f));
+    uint16_t val = static_cast<uint16_t>(adc->get_value_from_raw(raw, 4095.0f));
     if (val > 4095u) {
         val = 4095u;
     }
