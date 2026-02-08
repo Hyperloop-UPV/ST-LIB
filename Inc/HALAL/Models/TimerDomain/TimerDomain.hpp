@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "hal_wrapper.h"
+#include "HALAL/hal_wrapper.h"
 
 #ifdef HAL_TIM_MODULE_ENABLED
 

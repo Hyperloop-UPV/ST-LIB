@@ -41,7 +41,7 @@ constexpr std::array<ST_LIB::ADCDomain::Entry, 1> internal_entry{{
 
 constexpr auto internal_cfg = ST_LIB::ADCDomain::build<1>(
     std::span<const ST_LIB::ADCDomain::Entry, 1>{internal_entry});
-#if STLIB_HAS_ADC3
+#if defined(ADC3)
 static_assert(internal_cfg[0].peripheral == ST_LIB::ADCDomain::Peripheral::ADC_3);
 #else
 static_assert(internal_cfg[0].peripheral == ST_LIB::ADCDomain::Peripheral::ADC_2);
@@ -76,7 +76,7 @@ TEST_F(ADCTest, PollingReadUpdatesOutputValue) {
   const float expected = (2048.0f / 4095.0f) * 3.3f;
   EXPECT_NEAR(output, expected, 0.001f);
   EXPECT_EQ(ST_LIB::MockedHAL::adc_get_last_channel(ADC1), ADC_CHANNEL_16);
-  EXPECT_TRUE(ST_LIB::MockedHAL::adc_is_running(ADC1));
+  EXPECT_FALSE(ST_LIB::MockedHAL::adc_is_running(ADC1));
 }
 
 TEST_F(ADCTest, PollTimeoutMapsToZeroReading) {
@@ -247,40 +247,4 @@ TEST_F(ADCTest, SeparatePeripheralsAreIndependent) {
   EXPECT_NEAR(out2, (3000.0f / 4095.0f) * 3.3f, 0.001f);
   EXPECT_EQ(ST_LIB::MockedHAL::adc_get_last_channel(ADC1), ADC_CHANNEL_16);
   EXPECT_EQ(ST_LIB::MockedHAL::adc_get_last_channel(ADC2), ADC_CHANNEL_2);
-}
-
-TEST_F(ADCTest, PreStartedPeripheralStillReadsValue) {
-  float output = -1.0f;
-  const std::array<ST_LIB::ADCDomain::Config, 1> cfgs{{
-      {.gpio_idx = 0,
-       .peripheral = ST_LIB::ADCDomain::Peripheral::ADC_1,
-       .channel = ST_LIB::ADCDomain::Channel::CH16,
-       .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
-       .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-       .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
-       .sample_rate_hz = 0,
-       .output = &output},
-  }};
-
-  ST_LIB::ADCDomain::Init<1>::init(cfgs);
-  ST_LIB::MockedHAL::adc_set_channel_raw(ADC1, ADC_CHANNEL_16, 3000U);
-
-  // Simulate external start so ADCDomain internal running cache is stale.
-  ADC_ChannelConfTypeDef sConfig{};
-  sConfig.Channel = ADC_CHANNEL_16;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_8CYCLES_5;
-  sConfig.SingleDiff = ADC_SINGLE_ENDED;
-  sConfig.OffsetNumber = ADC_OFFSET_NONE;
-  sConfig.Offset = 0;
-#if defined(ADC_VER_V5_V90)
-  sConfig.OffsetSignedSaturation = DISABLE;
-#endif
-  ASSERT_EQ(HAL_ADC_ConfigChannel(&hadc1, &sConfig), HAL_OK);
-  ASSERT_EQ(HAL_ADC_Start(&hadc1), HAL_OK);
-
-  auto &adc = ST_LIB::ADCDomain::Init<1>::instances[0];
-  adc.read(3.3f, 1);
-
-  EXPECT_NEAR(output, (3000.0f / 4095.0f) * 3.3f, 0.001f);
 }

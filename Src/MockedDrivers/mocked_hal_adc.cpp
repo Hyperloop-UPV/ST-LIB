@@ -20,7 +20,7 @@ struct ADCPeripheralState {
   std::unordered_map<uint32_t, uint32_t> channel_raw_values{};
 };
 
-#if STLIB_HAS_ADC3
+#if defined(ADC3)
 constexpr std::size_t kAdcCount = 3;
 static std::array<ADC_TypeDef *, kAdcCount> adc_instances{ADC1, ADC2, ADC3};
 #else

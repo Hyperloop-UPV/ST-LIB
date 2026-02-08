@@ -2,6 +2,7 @@
 
 #include "Control/Blocks/MovingAverage.hpp"
 #include "LinearSensor.hpp"
+#include "Sensors/AnalogUtils.hpp"
 
 template <class Type, size_t N>
 class FilteredLinearSensor : public LinearSensor<Type> {
@@ -20,8 +21,9 @@ public:
     if (this->adc == nullptr || this->value == nullptr) {
       return;
     }
-    const float raw = this->adc->get_raw();
-    const float val = this->adc->get_value_from_raw(raw, this->vref);
+    const uint32_t raw = this->adc->read_raw();
+    const float val =
+        ST_LIB::adc_raw_to_voltage(raw, this->adc->resolution, this->vref);
     *this->value =
         filter.compute(this->slope * static_cast<Type>(val) + this->offset);
   }

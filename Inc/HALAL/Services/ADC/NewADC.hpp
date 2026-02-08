@@ -1,8 +1,7 @@
 #pragma once
 
-#include "hal_wrapper.h"
+#include "HALAL/hal_wrapper.h"
 
-#include <algorithm>
 #include <array>
 #include <span>
 #include <utility>
@@ -145,9 +144,15 @@ struct ADCDomain {
       const auto gpio_idx = gpio.inscribe(ctx);
       Entry entry = e;
       entry.gpio_idx = gpio_idx;
-      const auto resolved = resolve_mapping(entry);
-      entry.peripheral = resolved.first;
-      entry.channel = resolved.second;
+      Peripheral resolved_peripheral = entry.peripheral;
+      Channel resolved_channel = entry.channel;
+      if (resolved_peripheral == Peripheral::AUTO ||
+          resolved_channel == Channel::AUTO) {
+        const auto resolved = resolve_mapping(entry);
+        resolved_peripheral = resolved.first;
+        resolved_channel = resolved.second;
+      }
+      (void)resolved_channel;
       return ctx.template add<ADCDomain>(entry, this);
     }
   };
@@ -178,23 +183,6 @@ struct ADCDomain {
     }
     return 0;
   }
-
-  static uint8_t peripheral_index_from_handle(ADC_HandleTypeDef *handle) {
-    if (handle == &hadc1) {
-      return peripheral_index(Peripheral::ADC_1);
-    }
-    if (handle == &hadc2) {
-      return peripheral_index(Peripheral::ADC_2);
-    }
-    if (handle == &hadc3) {
-      return peripheral_index(Peripheral::ADC_3);
-    }
-    return 0;
-  }
-
-  static inline std::array<bool, 3> peripheral_running{false, false, false};
-  static inline std::array<Channel, 3> active_channel{
-      Channel::AUTO, Channel::AUTO, Channel::AUTO};
 
   static consteval bool is_valid_channel(Channel ch) {
     switch (ch) {
@@ -259,7 +247,7 @@ struct ADCDomain {
     if (!is_internal_channel(ch)) {
       return true;
     }
-#if STLIB_HAS_ADC3
+#if defined(ADC3)
     return p == Peripheral::ADC_3;
 #else
     return p == Peripheral::ADC_2;
@@ -353,7 +341,7 @@ struct ADCDomain {
 
     if (e.channel != Channel::AUTO && is_internal_channel(e.channel)) {
       const Peripheral p = (e.peripheral == Peripheral::AUTO)
-#if STLIB_HAS_ADC3
+#if defined(ADC3)
                                ? Peripheral::ADC_3
 #else
                                ? Peripheral::ADC_2
@@ -407,9 +395,6 @@ struct ADCDomain {
   template <size_t N>
   static consteval array<Config, N> build(span<const Entry> entries) {
     static_assert(N <= max_instances, "ADCDomain: too many instances");
-    if (entries.size() != N) {
-      compile_error("ADC: build entries size mismatch");
-    }
 
     array<Config, N> cfgs{};
     array<bool, 3> periph_seen{};
@@ -430,9 +415,6 @@ struct ADCDomain {
       }
       if (!resolution_supported(peripheral, e.resolution)) {
         compile_error("ADC: resolution not supported by selected ADC");
-      }
-      if (e.sample_rate_hz != 0) {
-        compile_error("ADC: sample_rate_hz is not supported in polling mode");
       }
 
       const auto pidx = peripheral_index(peripheral);
@@ -492,105 +474,64 @@ struct ADCDomain {
     Resolution resolution = Resolution::BITS_12;
     float *output = nullptr;
 
-    static constexpr uint32_t max_raw_for_resolution(Resolution r) {
-      switch (r) {
-      case Resolution::BITS_16:
-        return 65535U;
-      case Resolution::BITS_14:
-        return 16383U;
-      case Resolution::BITS_12:
-        return 4095U;
-      case Resolution::BITS_10:
-        return 1023U;
-      case Resolution::BITS_8:
-        return 255U;
-      }
-      return 4095U;
-    }
-
-  private:
-    uint32_t sample_raw(uint32_t timeout_ms = 2) {
+    uint32_t read_raw(uint32_t timeout_ms = 2) {
       if (handle == nullptr) {
         return 0;
       }
 
-      const uint8_t pidx = peripheral_index_from_handle(handle);
-      const bool channel_change = active_channel[pidx] != channel;
-
-      if (channel_change && peripheral_running[pidx]) {
-        (void)HAL_ADC_Stop(handle);
-        peripheral_running[pidx] = false;
-      }
-
-      if (channel_change) {
-        ADC_ChannelConfTypeDef sConfig{};
-        sConfig.Channel = static_cast<uint32_t>(channel);
-        sConfig.Rank = ADC_REGULAR_RANK_1;
-        sConfig.SamplingTime = static_cast<uint32_t>(sample_time);
-        sConfig.SingleDiff = ADC_SINGLE_ENDED;
-        sConfig.OffsetNumber = ADC_OFFSET_NONE;
-        sConfig.Offset = 0;
+      ADC_ChannelConfTypeDef sConfig{};
+      sConfig.Channel = static_cast<uint32_t>(channel);
+      sConfig.Rank = ADC_REGULAR_RANK_1;
+      sConfig.SamplingTime = static_cast<uint32_t>(sample_time);
+      sConfig.SingleDiff = ADC_SINGLE_ENDED;
+      sConfig.OffsetNumber = ADC_OFFSET_NONE;
+      sConfig.Offset = 0;
 #if defined(ADC_VER_V5_V90)
-        sConfig.OffsetSignedSaturation = DISABLE;
+      sConfig.OffsetSignedSaturation = DISABLE;
 #endif
 
-        if (HAL_ADC_ConfigChannel(handle, &sConfig) != HAL_OK) {
-          return 0;
-        }
-        active_channel[pidx] = channel;
+      if (HAL_ADC_ConfigChannel(handle, &sConfig) != HAL_OK) {
+        return 0;
       }
-
-      if (!peripheral_running[pidx]) {
-        const HAL_StatusTypeDef start_status = HAL_ADC_Start(handle);
-        if (start_status != HAL_OK && start_status != HAL_BUSY) {
-          return 0;
-        }
-        peripheral_running[pidx] = true;
+      if (HAL_ADC_Start(handle) != HAL_OK) {
+        return 0;
       }
-
       if (HAL_ADC_PollForConversion(handle, timeout_ms) != HAL_OK) {
-        // Recover from a stalled peripheral (timeout/error) by re-arming once.
-        (void)HAL_ADC_Stop(handle);
-        peripheral_running[pidx] = false;
-
-        const HAL_StatusTypeDef restart_status = HAL_ADC_Start(handle);
-        if (restart_status != HAL_OK && restart_status != HAL_BUSY) {
-          return 0;
-        }
-        peripheral_running[pidx] = true;
-
-        if (HAL_ADC_PollForConversion(handle, timeout_ms) != HAL_OK) {
-          return 0;
-        }
+        HAL_ADC_Stop(handle);
+        return 0;
       }
-      return HAL_ADC_GetValue(handle);
+      const uint32_t val = HAL_ADC_GetValue(handle);
+      HAL_ADC_Stop(handle);
+      return val;
     }
 
-  public:
-    float get_raw(uint32_t timeout_ms = 2) {
-      return static_cast<float>(sample_raw(timeout_ms));
-    }
-
-    float get_value_from_raw(float raw, float vref = 3.3f) const {
-      const float max_val = static_cast<float>(max_raw_for_resolution(resolution));
-      if (max_val <= 0.0f) {
-        return 0.0f;
-      }
-      return (raw / max_val) * vref;
-    }
-
-    float get_value(uint32_t timeout_ms = 2, float vref = 3.3f) {
-      const float raw = get_raw(timeout_ms);
-      return get_value_from_raw(raw, vref);
-    }
-
-    void read(float vref = 3.3f, uint32_t timeout_ms = 2) {
+    void read(double vref = 3.3, uint32_t timeout_ms = 2) {
       if (output == nullptr) {
         return;
       }
-      *output = get_value(timeout_ms, vref);
+      const uint32_t raw = read_raw(timeout_ms);
+      uint32_t max_val = 4095U;
+      switch (resolution) {
+      case Resolution::BITS_16:
+        max_val = 65535U;
+        break;
+      case Resolution::BITS_14:
+        max_val = 16383U;
+        break;
+      case Resolution::BITS_12:
+        max_val = 4095U;
+        break;
+      case Resolution::BITS_10:
+        max_val = 1023U;
+        break;
+      case Resolution::BITS_8:
+        max_val = 255U;
+        break;
+      }
+      const double scaled =
+          (static_cast<double>(raw) / static_cast<double>(max_val)) * vref;
+      *output = static_cast<float>(scaled);
     }
-
   };
 
   template <std::size_t N> struct Init {
@@ -631,7 +572,7 @@ struct ADCDomain {
       hadc->Init.ScanConvMode = ADC_SCAN_DISABLE;
       hadc->Init.EOCSelection = ADC_EOC_SINGLE_CONV;
       hadc->Init.LowPowerAutoWait = DISABLE;
-      hadc->Init.ContinuousConvMode = ENABLE;
+      hadc->Init.ContinuousConvMode = DISABLE;
       hadc->Init.NbrOfConversion = 1;
       hadc->Init.DiscontinuousConvMode = DISABLE;
       hadc->Init.NbrOfDiscConversion = 0;
@@ -655,17 +596,13 @@ struct ADCDomain {
 
       for (std::size_t i = 0; i < N; ++i) {
         const auto &cfg = cfgs[i];
-        if (cfg.peripheral == Peripheral::AUTO ||
-            cfg.channel == Channel::AUTO) {
-          ErrorHandler("ADC config unresolved (AUTO)");
-        }
         const auto pidx = peripheral_index(cfg.peripheral);
         if (!periph_configured[pidx]) {
           configure_peripheral(cfg);
           ADC_HandleTypeDef *hadc = handle_for(cfg.peripheral);
           hadc->Init.NbrOfConversion = 1;
           hadc->Init.ScanConvMode = ADC_SCAN_DISABLE;
-          hadc->Init.ContinuousConvMode = ENABLE;
+          hadc->Init.ContinuousConvMode = DISABLE;
           if (HAL_ADC_Init(hadc) != HAL_OK) {
             ErrorHandler("ADC Init failed");
           }

@@ -13,6 +13,7 @@ This NTC class is not generic. It is only for 10k Ohm, 1976Beta value NTCs.
 #include <cstdint>
 
 #include "HALAL/Services/ADC/NewADC.hpp"
+#include "Sensors/AnalogUtils.hpp"
 
 class NTC{
 public:
