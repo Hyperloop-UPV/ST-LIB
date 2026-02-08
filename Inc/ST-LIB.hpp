@@ -83,11 +83,10 @@ template <typename... Domains> struct BuildCtx {
   }
 };
 
-using DomainsCtx = BuildCtx<MPUDomain, GPIODomain, TimerDomain,
-                            DigitalOutputDomain,
-                            DigitalInputDomain,
-                            MdmaPacketDomain,
-                            SdDomain /*, ADCDomain, PWMDomain, ...*/>;
+using DomainsCtx =
+    BuildCtx<MPUDomain, GPIODomain, TimerDomain, DigitalOutputDomain,
+             DigitalInputDomain, MdmaPacketDomain, SdDomain, EthernetDomain
+             /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {
@@ -110,6 +109,7 @@ template <auto &...devs> struct Board {
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
     constexpr std::size_t sdN = domain_size<SdDomain>();
+    constexpr std::size_t ethN = domain_size<EthernetDomain>();
     // ...
 
     struct ConfigBundle {
@@ -120,12 +120,13 @@ template <auto &...devs> struct Board {
       std::array<DigitalInputDomain::Config, dinN> din_cfgs;
       std::array<MdmaPacketDomain::Config, mdmaPacketN> mdma_packet_cfgs;
       std::array<SdDomain::Config, sdN> sd_cfgs;
+      std::array<EthernetDomain::Config, ethN> eth_cfgs;
       // ...
     };
 
     return ConfigBundle{
-        .mpu_cfgs = MPUDomain::template build<mpuN>(
-            ctx.template span<MPUDomain>()),
+        .mpu_cfgs =
+            MPUDomain::template build<mpuN>(ctx.template span<MPUDomain>()),
         .gpio_cfgs =
             GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
         .tim_cfgs =
@@ -136,8 +137,9 @@ template <auto &...devs> struct Board {
             ctx.template span<DigitalInputDomain>()),
         .mdma_packet_cfgs = MdmaPacketDomain::template build<mdmaPacketN>(
             ctx.template span<MdmaPacketDomain>()),
-        .sd_cfgs = SdDomain::template build<sdN>(
-            ctx.template span<SdDomain>()),
+        .sd_cfgs = SdDomain::template build<sdN>(ctx.template span<SdDomain>()),
+        .eth_cfgs = EthernetDomain::template build<ethN>(
+            ctx.template span<EthernetDomain>()),
         // ...
     };
   }
@@ -152,7 +154,15 @@ template <auto &...devs> struct Board {
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
     constexpr std::size_t sdN = domain_size<SdDomain>();
+    constexpr std::size_t ethN = domain_size<EthernetDomain>();
     // ...
+
+#ifdef HAL_IWDG_MODULE_ENABLED
+    Watchdog::check_reset_flag();
+#endif
+    HAL_Init();
+    HALconfig::system_clock();
+    HALconfig::peripheral_clock();
 
     MPUDomain::Init<mpuN, cfg.mpu_cfgs>::init();
     GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
@@ -161,11 +171,13 @@ template <auto &...devs> struct Board {
                                            GPIODomain::Init<gpioN>::instances);
     DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
                                          GPIODomain::Init<gpioN>::instances);
-    MdmaPacketDomain::Init<mdmaPacketN>::init(cfg.mdma_packet_cfgs,
-                                              MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances);
+    MdmaPacketDomain::Init<mdmaPacketN>::init(
+        cfg.mdma_packet_cfgs, MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances);
     SdDomain::Init<sdN>::init(cfg.sd_cfgs,
                               MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances,
                               DigitalInputDomain::Init<dinN>::instances);
+    EthernetDomain::Init<ethN>::init(
+        cfg.eth_cfgs, DigitalOutputDomain::Init<doutN>::instances);
     // ...
   }
 
@@ -188,7 +200,7 @@ template <auto &...devs> struct Board {
     constexpr std::size_t idx = owner_index_of<Domain, Target>();
 
     constexpr std::size_t N = domain_size<Domain>();
-    
+
     if constexpr (std::is_same_v<Domain, MPUDomain>) {
       return Domain::template Init<N, cfg.mpu_cfgs>::instances[idx];
     } else {

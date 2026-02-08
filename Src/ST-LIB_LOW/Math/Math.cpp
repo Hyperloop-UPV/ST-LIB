@@ -1,7 +1,9 @@
 #include "ST-LIB_LOW/Math/Math.hpp"
 
+#include "HALAL/Services/CORDIC/CORDIC.hpp"
+
 #ifndef SIM_ON
-array<int32_t, 4> Math::pointers = {0};
+std::array<int32_t, 4> Math::pointers = {0};
 
 int32_t Math::sin(int32_t angle){
 	pointers[0] = angle;
@@ -150,4 +152,3 @@ int32_t Math::unitary_to_tg(int32_t in){
 }
 
 #endif //SIM_ON
-

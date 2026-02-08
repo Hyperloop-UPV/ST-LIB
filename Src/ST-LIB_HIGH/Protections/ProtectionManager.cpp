@@ -1,5 +1,7 @@
 #include "Protections/ProtectionManager.hpp"
 
+#include "HALAL/Services/Communication/FDCAN/FDCAN.hpp"
+
 #include "Protections/Notification.hpp"
 
 IStateMachine* ProtectionManager::general_state_machine = nullptr;

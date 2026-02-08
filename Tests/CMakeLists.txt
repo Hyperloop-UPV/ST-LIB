@@ -52,7 +52,9 @@ target_include_directories(${STLIB_TEST_EXECUTABLE} PRIVATE
 )
 
 include(GoogleTest)
-gtest_discover_tests(${STLIB_TEST_EXECUTABLE})
+gtest_discover_tests(
+  ${STLIB_TEST_EXECUTABLE}
+)
 
 add_custom_command(
     TARGET ${STLIB_TEST_EXECUTABLE}

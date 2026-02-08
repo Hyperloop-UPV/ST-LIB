@@ -8,10 +8,18 @@
 #ifndef SD_HPP
 #define SD_HPP
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <span>
+#include <utility>
+
 #include "stm32h7xx_hal.h"
 
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "HALAL/HALAL.hpp"
+#include "HALAL/Models/Pin.hpp"
+#include "HALAL/Models/MPU.hpp"
 #include "ST-LIB_LOW/DigitalInput2.hpp"
 
 using ST_LIB::DigitalInputDomain;

@@ -19,11 +19,11 @@ public:
     }
 
     void process() override {
-    	if (callback != nullptr && state_machine.is_on && state_machine.current_state == state) callback();
+    	if (callback != nullptr && state_machine.is_on && state_machine.get_current_state_id() == state) callback();
     }
 
     void parse(OrderProtocol* socket, uint8_t* data)override{
-    	if(state_machine.is_on && state_machine.current_state == state) HeapOrder::parse(data);
+    	if(state_machine.is_on && state_machine.get_current_state_id() == state) HeapOrder::parse(data);
     }
 };
 

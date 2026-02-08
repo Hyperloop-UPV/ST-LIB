@@ -6,7 +6,8 @@
  */
 
 #pragma once
-#include "HALAL/HALAL.hpp"
+#include <cstdint>
+#include "HALAL/Models/PinModel/Pin.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "C++Utilities/CppUtils.hpp"
 

@@ -7,6 +7,8 @@
 
 #include <HalfBridge/HalfBridge.hpp>
 
+#include "HALAL/Services/DigitalOutputService/DigitalOutputService.hpp"
+
 HalfBridge::HalfBridge(Pin& positive_pwm_pin, Pin& positive_pwm_negated_pin,
 		Pin& negative_pwm_pin, Pin& negative_pwm_negated_pin, Pin& enable_pin) : is_dual(true),
 	positive_pwm{positive_pwm_pin, positive_pwm_negated_pin},
