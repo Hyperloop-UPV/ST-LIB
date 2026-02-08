@@ -7,8 +7,9 @@
  */
 
 #pragma once
-#include "HALAL/HALAL.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
+#include <cstdint>
+
+#include "HALAL/Models/PinModel/Pin.hpp"
 
 
 class DigitalSensor{
@@ -23,5 +24,4 @@ protected:
 	uint8_t id;
 	PinState *value;
 };
-
 

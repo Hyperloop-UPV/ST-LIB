@@ -83,13 +83,10 @@ template <typename... Domains> struct BuildCtx {
   }
 };
 
-using DomainsCtx = BuildCtx<MPUDomain, GPIODomain, TimerDomain,
-                            DigitalOutputDomain,
-                            DigitalInputDomain,
-                            MdmaPacketDomain,
-                            SdDomain,
-                            DMA_Domain,
-                            SPIDomain /*, ADCDomain, PWMDomain, ...*/>;
+using DomainsCtx =
+    BuildCtx<MPUDomain, GPIODomain, TimerDomain, DMA_Domain, SPIDomain, DigitalOutputDomain,
+             DigitalInputDomain, MdmaPacketDomain, SdDomain, EthernetDomain
+             /*, ADCDomain, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {
@@ -109,11 +106,12 @@ template <auto &...devs> struct Board {
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
     constexpr std::size_t timN = domain_size<TimerDomain>();
     constexpr std::size_t dmaN = domain_size<DMA_Domain>();
+    constexpr std::size_t spiN = domain_size<SPIDomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
     constexpr std::size_t sdN = domain_size<SdDomain>();
-    constexpr std::size_t spiN = domain_size<SPIDomain>();
+    constexpr std::size_t ethN = domain_size<EthernetDomain>();
     // ...
 
     struct ConfigBundle {
@@ -121,23 +119,26 @@ template <auto &...devs> struct Board {
       std::array<GPIODomain::Config, gpioN> gpio_cfgs;
       std::array<TimerDomain::Config, timN> tim_cfgs;
       std::array<DMA_Domain::Config, dmaN> dma_cfgs;
+      std::array<SPIDomain::Config, spiN> spi_cfgs;
       std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
       std::array<DigitalInputDomain::Config, dinN> din_cfgs;
       std::array<MdmaPacketDomain::Config, mdmaPacketN> mdma_packet_cfgs;
       std::array<SdDomain::Config, sdN> sd_cfgs;
-      std::array<SPIDomain::Config, spiN> spi_cfgs;
+      std::array<EthernetDomain::Config, ethN> eth_cfgs;
       // ...
     };
 
     return ConfigBundle{
-        .mpu_cfgs = MPUDomain::template build<mpuN>(
-            ctx.template span<MPUDomain>()),
+        .mpu_cfgs =
+            MPUDomain::template build<mpuN>(ctx.template span<MPUDomain>()),
         .gpio_cfgs =
             GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
         .tim_cfgs =
             TimerDomain::template build<timN>(ctx.template span<TimerDomain>()),
         .dma_cfgs = DMA_Domain::template build<dmaN>(
             ctx.template span<DMA_Domain>()),
+        .spi_cfgs = SPIDomain::template build<spiN>(
+            ctx.template span<SPIDomain>()),
         .dout_cfgs = DigitalOutputDomain::template build<doutN>(
             ctx.template span<DigitalOutputDomain>()),
         .din_cfgs = DigitalInputDomain::template build<dinN>(
@@ -146,8 +147,9 @@ template <auto &...devs> struct Board {
             ctx.template span<MdmaPacketDomain>()),
         .sd_cfgs = SdDomain::template build<sdN>(
             ctx.template span<SdDomain>()),
-        .spi_cfgs = SPIDomain::template build<spiN>(
-            ctx.template span<SPIDomain>()),
+        .sd_cfgs = SdDomain::template build<sdN>(ctx.template span<SdDomain>()),
+        .eth_cfgs = EthernetDomain::template build<ethN>(
+            ctx.template span<EthernetDomain>()),
         // ...
     };
   }
@@ -159,29 +161,39 @@ template <auto &...devs> struct Board {
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
     constexpr std::size_t timN = domain_size<TimerDomain>();
     constexpr std::size_t dmaN = domain_size<DMA_Domain>();
+    constexpr std::size_t spiN = domain_size<SPIDomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
     constexpr std::size_t sdN = domain_size<SdDomain>();
-    constexpr std::size_t spiN = domain_size<SPIDomain>();
+    constexpr std::size_t ethN = domain_size<EthernetDomain>();
     // ...
+
+#ifdef HAL_IWDG_MODULE_ENABLED
+    Watchdog::check_reset_flag();
+#endif
+    HAL_Init();
+    HALconfig::system_clock();
+    HALconfig::peripheral_clock();
 
     MPUDomain::Init<mpuN, cfg.mpu_cfgs>::init();
     GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
     TimerDomain::Init<timN>::init(cfg.tim_cfgs);
     DMA_Domain::Init<dmaN>::init(cfg.dma_cfgs);
+    SPIDomain::Init<spiN>::init(cfg.spi_cfgs,
+                                GPIODomain::Init<gpioN>::instances,
+                                DMA_Domain::Init<dmaN>::instances);
     DigitalOutputDomain::Init<doutN>::init(cfg.dout_cfgs,
                                            GPIODomain::Init<gpioN>::instances);
     DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
                                          GPIODomain::Init<gpioN>::instances);
-    MdmaPacketDomain::Init<mdmaPacketN>::init(cfg.mdma_packet_cfgs,
-                                              MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances);
+    MdmaPacketDomain::Init<mdmaPacketN>::init(
+        cfg.mdma_packet_cfgs, MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances);
     SdDomain::Init<sdN>::init(cfg.sd_cfgs,
                               MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances,
                               DigitalInputDomain::Init<dinN>::instances);
-    SPIDomain::Init<spiN>::init(cfg.spi_cfgs,
-                                GPIODomain::Init<gpioN>::instances,
-                                DMA_Domain::Init<dmaN>::instances);
+    EthernetDomain::Init<ethN>::init(
+        cfg.eth_cfgs, DigitalOutputDomain::Init<doutN>::instances);
     // ...
   }
 
@@ -204,7 +216,7 @@ template <auto &...devs> struct Board {
     constexpr std::size_t idx = owner_index_of<Domain, Target>();
 
     constexpr std::size_t N = domain_size<Domain>();
-    
+
     if constexpr (std::is_same_v<Domain, MPUDomain>) {
       return Domain::template Init<N, cfg.mpu_cfgs>::instances[idx];
     } else {

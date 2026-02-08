@@ -7,8 +7,10 @@
  */
 
 #pragma once
-#include "HALAL/HALAL.hpp"
-#include "ErrorHandler/ErrorHandler.hpp"
+#include <cstdint>
+#include <functional>
+
+#include "HALAL/Services/EXTI/EXTI.hpp"
 
 class SensorInterrupt{
 public:

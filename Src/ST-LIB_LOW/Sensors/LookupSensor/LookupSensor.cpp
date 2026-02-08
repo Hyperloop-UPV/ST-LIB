@@ -1,4 +1,6 @@
 #include "Sensors/LookupSensor/LookupSensor.hpp"
+
+#include "HALAL/Services/ADC/ADC.hpp"
 #include "Sensors/Sensor/Sensor.hpp"
 
 

@@ -7,8 +7,13 @@
  */
 
 #pragma once
+#include <cstdint>
+#include <climits>
+
+#include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "HALAL/HALAL.hpp"
+#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Services/Encoder/Encoder.hpp"
 
 template <size_t SAMPLES>
 class EncoderSensor {

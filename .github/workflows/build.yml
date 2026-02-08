@@ -6,7 +6,7 @@ on:
       preset:
         description: >
           CMake preset to build the project, run
-          `cmake --build --list-presets` to see options
+          `cmake --list-presets` to see options
         required: false
         type: string
         default: 'nucleo-debug'
@@ -20,7 +20,7 @@ on:
       preset:
         description: >
           CMake preset to build the project, run
-          `cmake --build --list-presets` to see options
+          `cmake --list-presets` to see options
         required: false
         type: string
         default: 'nucleo-debug'
@@ -43,7 +43,7 @@ jobs:
           submodules: false
           fetch-depth: 1
 
-      - name: Init submodules\
+      - name: Init submodules
         run: |
           git config --global --add safe.directory '*'
           ./tools/init-submodules.sh 

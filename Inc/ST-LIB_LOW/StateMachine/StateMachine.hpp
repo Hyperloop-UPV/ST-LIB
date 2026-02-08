@@ -2,7 +2,7 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "C++Utilities/StaticVector.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
-#include "HALAL/HALAL.hpp"
+#include "HALAL/Services/Time/Scheduler.hpp"
 #include <array>
 #include <concepts>
 #include <cstddef>
@@ -170,6 +170,19 @@ private:
         return;
         break;
       }
+      if(timed_action.id == Scheduler::INVALID_ID)
+      {
+        for(size_t j = 0; j < i; ++j)
+        {
+          TimedAction& prev_action = cyclic_actions[j];
+          if(prev_action.action == nullptr){ continue; }
+          if(!prev_action.is_on){ continue; }
+          Scheduler::unregister_task(prev_action.id);
+          prev_action.is_on = false;
+        }
+        ErrorHandler("Failed to register timed action");
+        return;
+      }
       timed_action.is_on = true;
     }
   }
@@ -261,9 +274,9 @@ private:
       constexpr bool operator==(const NestedPair&) const = default;
   };
 
-public:
   StateEnum current_state;
 
+public:
   constexpr ~StateMachine() override = default;
 
   void force_change_state(size_t state) override 
@@ -447,7 +460,7 @@ public:
   }
 
   template <size_t N, size_t O>
-  consteval void remove_cyclic_action(TimedAction *timed_action, const State<StateEnum, N, O>& state)
+  void remove_cyclic_action(TimedAction *timed_action, const State<StateEnum, N, O>& state)
   {
     for(size_t i = 0; i < states.size(); ++i)
     {
@@ -501,6 +514,12 @@ public:
       }
       nested_state_machine.push_back({state.get_state(), &state_machine});
   }
+
+  StateEnum get_current_state() const
+  {
+      return current_state;
+  }
+
 
 
   inline void refresh_state_orders()

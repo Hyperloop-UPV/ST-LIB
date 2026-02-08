@@ -1,8 +1,11 @@
 #pragma once
 
-#include "stdio.h"
+#include <concepts>
+#include <cstddef>
+#include <cstdio>
+
 #include "../ControlSystem.hpp"
-#include "HALAL/HALAL.hpp"
+#include "HALAL/Models/Concepts/Concepts.hpp"
 
 template<size_t N>
 class MovingAverage : public ControlBlock<double,double> {
@@ -154,4 +157,3 @@ class IntegerMovingAverage : public ControlBlock<InputType, OutputType> {
         	}
         }
 };
-

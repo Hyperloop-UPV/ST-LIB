@@ -1,5 +1,7 @@
 #pragma once
-#include "HALAL/HALAL.hpp"
+#include <cstdint>
+#include "HALAL/Models/Packets/Order.hpp"
+#include "HALAL/Models/Packets/OrderProtocol.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include <span>
 
@@ -39,7 +41,6 @@ public:
 		informer_socket->send_order(remove_state_orders_order);
 	}
 };
-
 
 
 
