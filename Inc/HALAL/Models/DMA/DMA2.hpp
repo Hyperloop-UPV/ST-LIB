@@ -26,12 +26,12 @@ namespace ST_LIB {
     extern void compile_error(const char *msg);
     struct DMA_Domain {
         
-        enum class Instance : uint8_t {none, adc1, adc2, adc3, 
+        enum class Peripheral : uint8_t {none, adc1, adc2, adc3, 
                                         i2c1, i2c2, i2c3, i2c5,  
                                         spi1, spi2, spi3, spi4, spi5,
                                         fmac};
         
-        enum class Stream : uint8_t {dma1_stream0, dma1_stream1, dma1_stream2, dma1_stream3, 
+        enum class Stream : uint8_t {none, dma1_stream0, dma1_stream1, dma1_stream2, dma1_stream3, 
                                         dma1_stream4, dma1_stream5, dma1_stream6, dma1_stream7, 
                                         dma2_stream0, dma2_stream1, dma2_stream2, dma2_stream3, 
                                         dma2_stream4, dma2_stream5, dma2_stream6, dma2_stream7};
@@ -56,12 +56,13 @@ namespace ST_LIB {
                 case Stream::dma2_stream5: return DMA2_Stream5;
                 case Stream::dma2_stream6: return DMA2_Stream6;
                 case Stream::dma2_stream7: return DMA2_Stream7;
+                case Stream::none: return nullptr;
             }
             return nullptr;
         }
         
         struct Entry {
-            Instance instance;
+            Peripheral instance;
             Stream stream;
             IRQn_Type irqn;
             uint8_t id;
@@ -74,7 +75,7 @@ namespace ST_LIB {
             std::array<Entry, sizeof...(Ss)> e{};
 
             
-            consteval DMA(Instance instance) {
+            consteval DMA(Peripheral instance) {
                 static_assert(sizeof...(Ss) <= 3, "Máximo 3 streams");
 
                 Stream streams[] = { Ss... };
@@ -83,7 +84,11 @@ namespace ST_LIB {
                 for (uint8_t j = 0; j < n; j++) {
                     e[j].instance = instance;
                     e[j].stream   = streams[j];
-                    e[j].irqn     = get_irqn(streams[j]);
+                    if (streams[j] != Stream::none) {
+                        e[j].irqn     = get_irqn(streams[j]);
+                    } else {
+                        e[j].irqn = (IRQn_Type)0; // Dummy value
+                    }
                     e[j].id       = j;
                 }
                 
@@ -120,73 +125,73 @@ namespace ST_LIB {
             else if (stream == Stream::dma2_stream5) return DMA2_Stream5_IRQn;
             else if (stream == Stream::dma2_stream6) return DMA2_Stream6_IRQn;
             else if (stream == Stream::dma2_stream7) return DMA2_Stream7_IRQn;
-            else ErrorHandler("Unknown DMA stream");
-            return DMA1_Stream0_IRQn; // Nunca se alcanza
+            else if (stream == Stream::none) return (IRQn_Type)0;
+            else compile_error("No tiene que llegar aqui nunca, creo");
         }
 
-        static constexpr inline bool is_one_of(Instance instance, auto... bases) {
+        static constexpr inline bool is_one_of(Peripheral instance, auto... bases) {
             return ((instance == bases) || ...);
         }
 
-        static constexpr inline bool is_spi(Instance instance) {
-            return is_one_of(instance, Instance::spi1, Instance::spi2,
-                            Instance::spi3, Instance::spi4, Instance::spi5);
+        static constexpr inline bool is_spi(Peripheral instance) {
+            return is_one_of(instance, Peripheral::spi1, Peripheral::spi2,
+                            Peripheral::spi3, Peripheral::spi4, Peripheral::spi5);
         }
 
-        static constexpr inline bool is_i2c(Instance instance) {
-            return is_one_of(instance, Instance::i2c1, Instance::i2c2,
-                            Instance::i2c3, Instance::i2c5);
+        static constexpr inline bool is_i2c(Peripheral instance) {
+            return is_one_of(instance, Peripheral::i2c1, Peripheral::i2c2,
+                            Peripheral::i2c3, Peripheral::i2c5);
         }
 
-        static constexpr inline bool is_adc(Instance instance) {
-            return is_one_of(instance, Instance::adc1, Instance::adc2, Instance::adc3);
+        static constexpr inline bool is_adc(Peripheral instance) {
+            return is_one_of(instance, Peripheral::adc1, Peripheral::adc2, Peripheral::adc3);
         }
 
-        static constexpr inline bool is_fmac(Instance instance) {
-            return instance == Instance::fmac;
+        static constexpr inline bool is_fmac(Peripheral instance) {
+            return instance == Peripheral::fmac;
         }
 
-        static constexpr inline bool is_none(Instance instance){
-            return instance == Instance::none;
+        static constexpr inline bool is_none(Peripheral instance){
+            return instance == Peripheral::none;
         }
 
-        static consteval inline uint32_t get_Request(Instance instance, uint8_t i) {
-            if (instance == Instance::none) return DMA_REQUEST_MEM2MEM;
+        static consteval inline uint32_t get_Request(Peripheral instance, uint8_t i) {
+            if (instance == Peripheral::none) return DMA_REQUEST_MEM2MEM;
 
-            if (instance == Instance::adc1) return DMA_REQUEST_ADC1;
-            if (instance == Instance::adc2) return DMA_REQUEST_ADC2;
-            if (instance == Instance::adc3) return DMA_REQUEST_ADC3;
+            if (instance == Peripheral::adc1) return DMA_REQUEST_ADC1;
+            if (instance == Peripheral::adc2) return DMA_REQUEST_ADC2;
+            if (instance == Peripheral::adc3) return DMA_REQUEST_ADC3;
 
-            if (instance == Instance::i2c1 && i == 0) return DMA_REQUEST_I2C1_RX;
-            if (instance == Instance::i2c1 && i == 1) return DMA_REQUEST_I2C1_TX;
-            if (instance == Instance::i2c2 && i == 0) return DMA_REQUEST_I2C2_RX;
-            if (instance == Instance::i2c2 && i == 1) return DMA_REQUEST_I2C2_TX;
-            if (instance == Instance::i2c3 && i == 0) return DMA_REQUEST_I2C3_RX;
-            if (instance == Instance::i2c3 && i == 1) return DMA_REQUEST_I2C3_TX;
-            if (instance == Instance::i2c5 && i == 0) return DMA_REQUEST_I2C5_RX; 
-            if (instance == Instance::i2c5 && i == 1) return DMA_REQUEST_I2C5_TX;
+            if (instance == Peripheral::i2c1 && i == 0) return DMA_REQUEST_I2C1_RX;
+            if (instance == Peripheral::i2c1 && i == 1) return DMA_REQUEST_I2C1_TX;
+            if (instance == Peripheral::i2c2 && i == 0) return DMA_REQUEST_I2C2_RX;
+            if (instance == Peripheral::i2c2 && i == 1) return DMA_REQUEST_I2C2_TX;
+            if (instance == Peripheral::i2c3 && i == 0) return DMA_REQUEST_I2C3_RX;
+            if (instance == Peripheral::i2c3 && i == 1) return DMA_REQUEST_I2C3_TX;
+            if (instance == Peripheral::i2c5 && i == 0) return DMA_REQUEST_I2C5_RX; 
+            if (instance == Peripheral::i2c5 && i == 1) return DMA_REQUEST_I2C5_TX;
 
-            if (instance == Instance::spi1 && i == 0) return DMA_REQUEST_SPI1_RX;
-            if (instance == Instance::spi1 && i == 1) return DMA_REQUEST_SPI1_TX;
-            if (instance == Instance::spi2 && i == 0) return DMA_REQUEST_SPI2_RX;
-            if (instance == Instance::spi2 && i == 1) return DMA_REQUEST_SPI2_TX;
-            if (instance == Instance::spi3 && i == 0) return DMA_REQUEST_SPI3_RX;
-            if (instance == Instance::spi3 && i == 1) return DMA_REQUEST_SPI3_TX;
-            if (instance == Instance::spi4 && i == 0) return DMA_REQUEST_SPI4_RX;
-            if (instance == Instance::spi4 && i == 1) return DMA_REQUEST_SPI4_TX;
-            if (instance == Instance::spi5 && i == 0) return DMA_REQUEST_SPI5_RX;
-            if (instance == Instance::spi5 && i == 1) return DMA_REQUEST_SPI5_TX; 
+            if (instance == Peripheral::spi1 && i == 0) return DMA_REQUEST_SPI1_RX;
+            if (instance == Peripheral::spi1 && i == 1) return DMA_REQUEST_SPI1_TX;
+            if (instance == Peripheral::spi2 && i == 0) return DMA_REQUEST_SPI2_RX;
+            if (instance == Peripheral::spi2 && i == 1) return DMA_REQUEST_SPI2_TX;
+            if (instance == Peripheral::spi3 && i == 0) return DMA_REQUEST_SPI3_RX;
+            if (instance == Peripheral::spi3 && i == 1) return DMA_REQUEST_SPI3_TX;
+            if (instance == Peripheral::spi4 && i == 0) return DMA_REQUEST_SPI4_RX;
+            if (instance == Peripheral::spi4 && i == 1) return DMA_REQUEST_SPI4_TX;
+            if (instance == Peripheral::spi5 && i == 0) return DMA_REQUEST_SPI5_RX;
+            if (instance == Peripheral::spi5 && i == 1) return DMA_REQUEST_SPI5_TX; 
             
-            if (instance == Instance::fmac && i == 0) return DMA_REQUEST_MEM2MEM;
-            if (instance == Instance::fmac && i == 1) return DMA_REQUEST_FMAC_WRITE;
-            if (instance == Instance::fmac && i == 2) return DMA_REQUEST_FMAC_READ;
+            if (instance == Peripheral::fmac && i == 0) return DMA_REQUEST_MEM2MEM;
+            if (instance == Peripheral::fmac && i == 1) return DMA_REQUEST_FMAC_WRITE;
+            if (instance == Peripheral::fmac && i == 2) return DMA_REQUEST_FMAC_READ;
 
-            ErrorHandler("Invalid DMA request configuration");
+            compile_error("Invalid DMA request configuration");
             return 0;
         }
 
-        static consteval inline uint32_t get_Direction(Instance instance, uint8_t i) {
-            if ((is_fmac(instance) && i == 0) || instance == Instance::none) {
+        static consteval inline uint32_t get_Direction(Peripheral instance, uint8_t i) {
+            if ((is_fmac(instance) && i == 0) || instance == Peripheral::none) {
                     return DMA_MEMORY_TO_MEMORY;
                 }
             else if  ((is_i2c(instance) && i == 1) ||
@@ -197,21 +202,21 @@ namespace ST_LIB {
             return DMA_PERIPH_TO_MEMORY;
         }
 
-        static consteval inline uint32_t get_PeriphInc(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_PeriphInc(Peripheral instance, uint8_t i) {
             if  ((is_fmac(instance) && i == 0) || is_none(instance)){
                 return DMA_PINC_ENABLE;
             }
             return DMA_PINC_DISABLE;
         }
 
-        static consteval inline uint32_t get_MemInc(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_MemInc(Peripheral instance, uint8_t i) {
             if  (is_fmac(instance) && i == 0){
                 return DMA_MINC_DISABLE;
             }
             return DMA_MINC_ENABLE;
         }
 
-        static consteval inline uint32_t get_PeriphDataAlignment(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_PeriphDataAlignment(Peripheral instance, uint8_t i) {
             if  (is_spi(instance) || is_i2c(instance)){
                 return DMA_PDATAALIGN_BYTE; 
             }
@@ -221,7 +226,7 @@ namespace ST_LIB {
             return DMA_PDATAALIGN_HALFWORD;
         }
 
-        static consteval inline uint32_t get_MemDataAlignment(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_MemDataAlignment(Peripheral instance, uint8_t i) {
             if  (is_i2c(instance)){
                 return DMA_MDATAALIGN_WORD;
             }
@@ -232,7 +237,7 @@ namespace ST_LIB {
             return DMA_MDATAALIGN_HALFWORD;
         }
 
-        static consteval inline uint32_t get_Mode(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_Mode(Peripheral instance, uint8_t i) {
             if  (is_spi(instance) || is_fmac(instance) || is_none(instance)){
                 return DMA_NORMAL;
             }
@@ -240,7 +245,7 @@ namespace ST_LIB {
             return DMA_CIRCULAR;
         }    
 
-        static consteval inline uint32_t get_Priority(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_Priority(Peripheral instance, uint8_t i) {
             if  (is_fmac(instance)){
                 return DMA_PRIORITY_HIGH;
             }
@@ -248,30 +253,30 @@ namespace ST_LIB {
             return DMA_PRIORITY_LOW;
         }
         
-        static consteval inline uint32_t get_FIFOMode(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_FIFOMode(Peripheral instance, uint8_t i) {
             if (is_fmac(instance)){
                 return DMA_FIFOMODE_ENABLE;
             }
             return DMA_FIFOMODE_DISABLE;
         }
 
-        static consteval inline uint32_t get_FIFOThreshold(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_FIFOThreshold(Peripheral instance, uint8_t i) {
             if  (is_spi(instance)){
                 return DMA_FIFO_THRESHOLD_FULL;
             }
             return DMA_FIFO_THRESHOLD_HALFFULL;
         }
 
-        static consteval inline uint32_t get_MemBurst(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_MemBurst(Peripheral instance, uint8_t i) {
             return DMA_MBURST_SINGLE;
         }
 
-        static consteval inline uint32_t get_PeriphBurst(Instance instance, uint8_t i) {
+        static consteval inline uint32_t get_PeriphBurst(Peripheral instance, uint8_t i) {
             return DMA_PBURST_SINGLE;
         }
 
         struct Config {
-            std::tuple<Instance, 
+            std::tuple<Peripheral, 
                     DMA_InitTypeDef, 
                     Stream, 
                     IRQn_Type,
@@ -282,12 +287,49 @@ namespace ST_LIB {
         template <size_t N>
         static consteval std::array<Config, N> build(span<const Entry> instances) {
             std::array<Config, N> cfgs{};
+            std::array<Entry, N> ents;
+            for(size_t i=0; i<N; ++i) ents[i] = instances[i];
+
+            std::array<bool, MAX_STREAMS> used_streams{}; // Defaults to false
+
+            // First pass: process user-specified streams
+            for (std::size_t i = 0; i < N; ++i) {
+                const auto &e = ents[i];
+                if (e.stream != Stream::none) {
+                    uint8_t stream_idx = static_cast<uint8_t>(e.stream) - 1;
+                    if (used_streams[stream_idx]) {
+                        compile_error("DMA stream already in use");
+                    }
+                    used_streams[stream_idx] = true;
+                }
+            }
+
+            // Second pass: assign streams for entries with Stream::none
+            for (std::size_t i = 0; i < N; ++i) {
+                auto &e = ents[i];
+                if (e.stream == Stream::none) {
+                    bool assigned = false;
+                    for (uint8_t j = 0; j < MAX_STREAMS; ++j) {
+                        if (!used_streams[j]) {
+                            e.stream = static_cast<Stream>(j + 1);
+                            e.irqn = get_irqn(e.stream);
+                            used_streams[j] = true;
+                            assigned = true;
+                            break;
+                        }
+                    }
+                    if (!assigned) {
+                        compile_error("Not enough DMA streams available");
+                    }
+                }
+            }
+
 
             for (std::size_t i = 0; i < N; ++i){
-                const auto &e = instances[i];
+                const auto &e = ents[i];
 
                 for (std::size_t j = 0; j < i; ++j){
-                    const auto &prev = instances[j];
+                    const auto &prev = ents[j];
                     if (prev.stream == e.stream){
                         compile_error("DMA stream already in use");
                     }
@@ -319,7 +361,7 @@ namespace ST_LIB {
 
 
         
-        struct Instances_ {
+        struct Instance {
             DMA_HandleTypeDef dma;
 
             void start(uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength){
@@ -329,7 +371,7 @@ namespace ST_LIB {
 
         
         template <std::size_t N> struct Init {
-            static inline std::array<Instances_, N> instances{};
+            static inline std::array<Instance, N> instances{};
 
             static void init(std::span<const Config, N> cfgs) {
                 if (N == 0) return;
@@ -349,7 +391,7 @@ namespace ST_LIB {
                     else{
                         HAL_NVIC_SetPriority(irqn, 0, 0);
                         HAL_NVIC_EnableIRQ(irqn);
-                        dma_irq_table[static_cast<uint8_t>(stream)] = &instances[i].dma;
+                        dma_irq_table[static_cast<uint8_t>(stream) - 1] = &instances[i].dma;
                     }
                 }
             }

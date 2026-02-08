@@ -32,7 +32,9 @@ void MultiplierAccelerator::IIR_software_in_software_out_inscribe(uint16_t input
 }
 
 void MultiplierAccelerator::inscribe(){
-    //DMA::inscribe_stream<FMAC_BASE, DMA2_Stream0_BASE, DMA2_Stream1_BASE, DMA2_Stream2_BASE>(Instance.hfmac);
+	DMA::inscribe_stream(Instance.dma_preload);
+	DMA::inscribe_stream(Instance.dma_read);
+	DMA::inscribe_stream(Instance.dma_write);
 }
 
 void MultiplierAccelerator::start(){
@@ -165,5 +167,4 @@ void HAL_FMAC_OutputDataReadyCallback(FMAC_HandleTypeDef *hfmac){
 void HAL_FMAC_ErrorCallback(FMAC_HandleTypeDef *hfmac){
 	ErrorHandler("Error while running FMAC");
 }
-
 

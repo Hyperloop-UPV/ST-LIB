@@ -16,8 +16,8 @@ uint8_t ADC::id_counter = 0;
 unordered_map<uint8_t, ADC::Instance> ADC::active_instances = {};
 
 
-ADC::InitData::InitData(ADC_TypeDef* adc, uint32_t resolution, uint32_t external_trigger, vector<uint32_t>& channels, string name) :
-		adc(adc), resolution(resolution), external_trigger(external_trigger), channels(channels), name(name) {}
+ADC::InitData::InitData(ADC_TypeDef* adc, uint32_t resolution, uint32_t external_trigger, vector<uint32_t>& channels, ST_LIB::DMA_Domain::Instance *dma_instance, string name) :
+		adc(adc), resolution(resolution), external_trigger(external_trigger), channels(channels), dma_instance(dma_instance), name(name) {}
 
 ADC::Peripheral::Peripheral(ADC_HandleTypeDef* handle, LowPowerTimer& timer, InitData& init_data) :
 	handle(handle), timer(timer), init_data(init_data) {
@@ -42,7 +42,7 @@ uint8_t ADC::inscribe(Pin pin) {
 
 
 	InitData& init_data = active_instances[id_counter].peripheral->init_data;
-     
+	//DMA::inscribe_stream(init_data.dma_stream);
 	active_instances[id_counter].rank = init_data.channels.size();
 	init_data.channels.push_back(active_instances[id_counter].channel);
 	return id_counter++;
@@ -68,7 +68,7 @@ void ADC::turn_on(uint8_t id){
 
 	uint32_t buffer_length = peripheral->init_data.channels.size();
 	if (HAL_ADC_Start_DMA(peripheral->handle, (uint32_t*) peripheral->dma_data_buffer, buffer_length) != HAL_OK) {
-		ErrorHandler("DMA - %d - of ADC - %d - did not start correctly", id);
+		ErrorHandler("DMA - %d - of ADC - %d - did not start correctly", peripheral->init_data.dma_instance, id);
 		return;
 	}
 
@@ -145,6 +145,8 @@ void ADC::init(Peripheral& peripheral) {
 			return;
 		}
 	}
+
+    __HAL_LINKDMA(&adc_handle, DMA_Handle, init_data.dma_instance->dma);
 
 	uint8_t counter = 0;
 	for(uint32_t channel : peripheral.init_data.channels) {

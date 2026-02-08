@@ -96,6 +96,7 @@ if(CMAKE_CROSSCOMPILING)
     # SD
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd.c
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_sd_ex.c
+    ${HAL_DRIVER_SRC_DIR}/stm32h7xx_ll_sdmmc.c
 
     # CAN / FDCAN
     ${HAL_DRIVER_SRC_DIR}/stm32h7xx_hal_fdcan.c
@@ -285,7 +286,6 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<COMPILE_LANGUAGE:C>:-w>
 
   $<$<COMPILE_LANGUAGE:CXX>:-Wall>
-  $<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>
   $<$<COMPILE_LANGUAGE:CXX>:-Werror>
   $<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-zero-variadic-macro-arguments>
   $<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>

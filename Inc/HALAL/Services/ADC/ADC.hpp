@@ -10,7 +10,7 @@
 
 #include "HALAL/Models/PinModel/Pin.hpp"
 #include "HALAL/Models/LowPowerTimer/LowPowerTimer.hpp"
-#include "HALAL/Models/DMA/DMA.hpp"
+#include "HALAL/Models/DMA/DMA2.hpp"
 
 #if defined(HAL_ADC_MODULE_ENABLED) && defined(HAL_LPTIM_MODULE_ENABLED)
 
@@ -42,10 +42,11 @@ public:
 		uint32_t resolution;
 		uint32_t external_trigger;
 		vector<uint32_t> channels;
+		ST_LIB::DMA_Domain::Instance *dma_instance;
 		string name;
 
 		InitData() = default;
-		InitData(ADC_TypeDef* adc, uint32_t resolution, uint32_t external_trigger, vector<uint32_t>& channels, string name);
+		InitData(ADC_TypeDef* adc, uint32_t resolution, uint32_t external_trigger, vector<uint32_t>& channels, ST_LIB::DMA_Domain::Instance *dma_instance, string name);
 	};
 
 	class Peripheral {

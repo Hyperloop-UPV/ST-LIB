@@ -45,30 +45,22 @@ class MDMA{
         uint32_t destination_address = reinterpret_cast<uint32_t>(destination);
         node.CDAR = destination_address;
         
+        // TCM memories are accessed by AHBS bus
         if ((destination_address < 0x00010000) || (destination_address >= 0x20000000 && destination_address < 0x20020000)) {
-            ErrorHandler("Error: MDMA destination address is inside ITCM or DTCM, which are not accessible.");
-            return;
-        }
-        
-        if (destination_address >= 0x24000000 && destination_address < 0x24050000) {
-            node.CTBR &= ~MDMA_CTBR_DBUS;
+            SET_BIT(node.CTBR, MDMA_CTBR_DBUS);
         } else {
-            node.CTBR |= MDMA_CTBR_DBUS;
+            CLEAR_BIT(node.CTBR, MDMA_CTBR_DBUS);
         }
     }
     void set_source(void* source) { 
         uint32_t source_address = reinterpret_cast<uint32_t>(source); 
         node.CSAR = source_address;
     
+        // TCM memories are accessed by AHBS bus
         if ((source_address < 0x00010000) || (source_address >= 0x20000000 && source_address < 0x20020000)) {
-            ErrorHandler("Error: MDMA source address is inside ITCM or DTCM, which are not accessible.");
-            return;
-        }
-
-        if (source_address >= 0x24000000 && source_address < 0x24050000) {
-            node.CTBR &= ~MDMA_CTBR_SBUS;
+            SET_BIT(node.CTBR, MDMA_CTBR_SBUS);
         } else {
-             node.CTBR |= MDMA_CTBR_SBUS;
+            CLEAR_BIT(node.CTBR, MDMA_CTBR_SBUS);
         }
     }
     auto get_node() -> MDMA_LinkNodeTypeDef* { return &node; }
@@ -105,7 +97,12 @@ private:
         uint32_t source_inc;
         uint32_t dest_inc;
 
-        switch(static_cast<uint32_t>(size)) {
+        size_t effective_size = size;
+        if (effective_size == 2 && ((reinterpret_cast<uintptr_t>(src) | reinterpret_cast<uintptr_t>(dst)) & 1)) effective_size = 1; // Odd address, so fallback to byte-wise
+        else if (effective_size == 4 && ((reinterpret_cast<uintptr_t>(src) | reinterpret_cast<uintptr_t>(dst)) & 3)) effective_size = 1; // Not word-aligned, so fallback to byte-wise
+        else if (effective_size == 8 && ((reinterpret_cast<uintptr_t>(src) | reinterpret_cast<uintptr_t>(dst)) & 7)) effective_size = 1; // Not doubleword-aligned, so fallback to byte-wise
+
+        switch(static_cast<uint32_t>(effective_size)) {
             case 2:
                 source_data_size = MDMA_SRC_DATASIZE_HALFWORD;
                 dest_data_size = MDMA_DEST_DATASIZE_HALFWORD;
