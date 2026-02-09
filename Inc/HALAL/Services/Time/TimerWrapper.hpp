@@ -366,20 +366,40 @@ struct TimerWrapper {
         }
 
         if(pwm_channel_duties[0] != 0.0f) {
-            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[0]);
-            instance->tim->CCR1 = raw_duty;
+            if constexpr(timer->is_32bit_instance) {
+                uint32_t raw_duty = (uint32_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[0] / 100.0f));
+                instance->tim->CCR1 = raw_duty;
+            } else {
+			    uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[0] / 100.0f));
+                instance->tim->CCR1 = raw_duty;
+	        }
         }
         if(pwm_channel_duties[1] != 0.0f) {
-            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[1]);
-            instance->tim->CCR2 = raw_duty;
+            if constexpr(timer->is_32bit_instance) {
+                uint32_t raw_duty = (uint32_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[1] / 100.0f));
+                instance->tim->CCR2 = raw_duty;
+            } else {
+			    uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[1] / 100.0f));
+                instance->tim->CCR2 = raw_duty;
+	        }
         }
         if(pwm_channel_duties[2] != 0.0f) {
-            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[2]);
-            instance->tim->CCR3 = raw_duty;
+            if constexpr(timer->is_32bit_instance) {
+                uint32_t raw_duty = (uint32_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[2] / 100.0f));
+                instance->tim->CCR3 = raw_duty;
+            } else {
+			    uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[2] / 100.0f));
+                instance->tim->CCR3 = raw_duty;
+	        }
         }
         if(pwm_channel_duties[3] != 0.0f) {
-            uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) / 100.0f * pwm_channel_duties[3]);
-            instance->tim->CCR4 = raw_duty;
+            if constexpr(timer->is_32bit_instance) {
+                uint32_t raw_duty = (uint32_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[3] / 100.0f));
+                instance->tim->CCR4 = raw_duty;
+            } else {
+			    uint16_t raw_duty = (uint16_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[3] / 100.0f));
+                instance->tim->CCR4 = raw_duty;
+	        }
         }
     }
 
@@ -550,7 +570,7 @@ struct TimerWrapper {
     }
 
     template<ST_LIB::TimerChannel ch>
-    inline void set_capture_compare(uint16_t val) {
+    inline void set_capture_compare(uint32_t val) {
         if constexpr((ch == TimerChannel::CHANNEL_1) || (ch == TimerChannel::CHANNEL_1_NEGATED)) {
             instance->tim->CCR1 = val;
         } else if constexpr((ch == TimerChannel::CHANNEL_2) || (ch == TimerChannel::CHANNEL_2_NEGATED)) {
@@ -582,3 +602,4 @@ struct TimerWrapper {
 } // namespace ST_LIB
 
 #endif // HAL_TIM_MODULE_ENABLED
+
