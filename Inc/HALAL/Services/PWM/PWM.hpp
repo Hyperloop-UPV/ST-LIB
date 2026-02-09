@@ -26,7 +26,7 @@ class PWM {
             case TimerChannel::CHANNEL_5:
             case TimerChannel::CHANNEL_6:
                 return (static_cast<uint8_t>(ch) & 
-                        static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1;
+                        ~static_cast<uint8_t>(TimerChannel::CHANNEL_NEGATED_FLAG)) - 1;
 
             default: ST_LIB::compile_error("unreachable");
                 return 0;
@@ -106,15 +106,15 @@ public:
     void turn_off() {
         if(!this->is_on) return;
 
-        CLEAR_BIT(timer->tim->CCER, (uint32_t)(TIM_CCER_CC1E << (get_channel_mul4(pin.channel) & 0x1FU)));
+        CLEAR_BIT(timer->instance->tim->CCER, (uint32_t)(TIM_CCER_CC1E << (get_channel_mul4(pin.channel) & 0x1FU)));
 
-        HAL_TIM_ChannelStateTypeDef *state = &timer->instance->hal_tim.ChannelState[get_channel_state_idx(pin.channel)];
+        volatile HAL_TIM_ChannelStateTypeDef *state = &timer->instance->hal_tim->ChannelState[get_channel_state_idx(pin.channel)];
         *state = HAL_TIM_CHANNEL_STATE_READY;
 
         if(timer->are_all_channels_free()) {
             if constexpr(timer->is_break_instance) {
                 // Disable Main Output Enable (MOE)
-                CLEAR_BIT(timer->tim->BDTR, TIM_BDTR_MOE);
+                CLEAR_BIT(timer->instance->tim->BDTR, TIM_BDTR_MOE);
             }
             timer->counter_disable();
         }
@@ -130,7 +130,7 @@ public:
         }
         
         if(duty_cycle > 100.0f) [[unlikely]] { duty_cycle = 100.0f; }
-        uint16_t raw_duty = (uint16_t)((float)(timer->instance->tim->ARR + 1) / (100.0f * duty_cycle));
+        uint16_t raw_duty = (uint16_t)((float)(timer->instance->tim->ARR + 1) * (duty_cycle / 100.0f));
         timer->template set_capture_compare<pin.channel>(raw_duty);
         *(this->duty_cycle) = duty_cycle;
     }
