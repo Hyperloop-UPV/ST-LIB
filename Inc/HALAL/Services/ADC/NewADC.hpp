@@ -518,7 +518,7 @@ struct ADCDomain {
       const bool channel_change = active_channel[pidx] != channel;
 
       if (channel_change && peripheral_running[pidx]) {
-        HAL_ADC_Stop(handle);
+        (void)HAL_ADC_Stop(handle);
         peripheral_running[pidx] = false;
       }
 
@@ -541,14 +541,27 @@ struct ADCDomain {
       }
 
       if (!peripheral_running[pidx]) {
-        if (HAL_ADC_Start(handle) != HAL_OK) {
+        const HAL_StatusTypeDef start_status = HAL_ADC_Start(handle);
+        if (start_status != HAL_OK && start_status != HAL_BUSY) {
           return 0;
         }
         peripheral_running[pidx] = true;
       }
 
       if (HAL_ADC_PollForConversion(handle, timeout_ms) != HAL_OK) {
-        return 0;
+        // Recover from a stalled peripheral (timeout/error) by re-arming once.
+        (void)HAL_ADC_Stop(handle);
+        peripheral_running[pidx] = false;
+
+        const HAL_StatusTypeDef restart_status = HAL_ADC_Start(handle);
+        if (restart_status != HAL_OK && restart_status != HAL_BUSY) {
+          return 0;
+        }
+        peripheral_running[pidx] = true;
+
+        if (HAL_ADC_PollForConversion(handle, timeout_ms) != HAL_OK) {
+          return 0;
+        }
       }
       return HAL_ADC_GetValue(handle);
     }
