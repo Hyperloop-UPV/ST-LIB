@@ -130,13 +130,13 @@ public:
         }
         
         if(duty_cycle > 100.0f) [[unlikely]] { duty_cycle = 100.0f; }
-		if constexpr(timer->is_32bit_instance) {
-			uint32_t raw_duty = (uint32_t)((float)(timer->instance->tim->ARR + 1) * (duty_cycle / 100.0f));
-	        timer->template set_capture_compare<pin.channel>(raw_duty);
-		} else {
-			uint16_t raw_duty = (uint16_t)((float)(timer->instance->tim->ARR + 1) * (duty_cycle / 100.0f));
-	        timer->template set_capture_compare<pin.channel>(raw_duty);
-		}
+        if constexpr(timer->is_32bit_instance) {
+            uint32_t raw_duty = (uint32_t)((float)(timer->instance->tim->ARR + 1) * (duty_cycle / 100.0f));
+            timer->template set_capture_compare<pin.channel>(raw_duty);
+        } else {
+            uint16_t raw_duty = (uint16_t)((float)(timer->instance->tim->ARR + 1) * (duty_cycle / 100.0f));
+            timer->template set_capture_compare<pin.channel>(raw_duty);
+        }
         *(this->duty_cycle) = duty_cycle;
     }
 
@@ -160,4 +160,5 @@ public:
 } // namespace ST_LIB
 
 #endif // HAL_TIM_MODULE_ENABLED
+
 
