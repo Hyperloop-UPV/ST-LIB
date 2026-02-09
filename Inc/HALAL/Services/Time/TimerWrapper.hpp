@@ -366,7 +366,7 @@ struct TimerWrapper {
         }
 
         if(pwm_channel_duties[0] != 0.0f) {
-            if constexpr(timer->is_32bit_instance) {
+            if constexpr(this->is_32bit_instance) {
                 uint32_t raw_duty = (uint32_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[0] / 100.0f));
                 instance->tim->CCR1 = raw_duty;
             } else {
@@ -375,7 +375,7 @@ struct TimerWrapper {
 	        }
         }
         if(pwm_channel_duties[1] != 0.0f) {
-            if constexpr(timer->is_32bit_instance) {
+            if constexpr(this->is_32bit_instance) {
                 uint32_t raw_duty = (uint32_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[1] / 100.0f));
                 instance->tim->CCR2 = raw_duty;
             } else {
@@ -384,7 +384,7 @@ struct TimerWrapper {
 	        }
         }
         if(pwm_channel_duties[2] != 0.0f) {
-            if constexpr(timer->is_32bit_instance) {
+            if constexpr(this->is_32bit_instance) {
                 uint32_t raw_duty = (uint32_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[2] / 100.0f));
                 instance->tim->CCR3 = raw_duty;
             } else {
@@ -393,7 +393,7 @@ struct TimerWrapper {
 	        }
         }
         if(pwm_channel_duties[3] != 0.0f) {
-            if constexpr(timer->is_32bit_instance) {
+            if constexpr(this->is_32bit_instance) {
                 uint32_t raw_duty = (uint32_t)((float)(instance->tim->ARR + 1) * (pwm_channel_duties[3] / 100.0f));
                 instance->tim->CCR4 = raw_duty;
             } else {
@@ -602,4 +602,5 @@ struct TimerWrapper {
 } // namespace ST_LIB
 
 #endif // HAL_TIM_MODULE_ENABLED
+
 
