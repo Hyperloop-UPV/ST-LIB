@@ -291,20 +291,19 @@ struct ADCDomain {
       {PA3, Peripheral::ADC_1, Channel::CH15, max_bits_adc12},
       {PA4, Peripheral::ADC_1, Channel::CH18, max_bits_adc12},
       {PA5, Peripheral::ADC_1, Channel::CH19, max_bits_adc12},
-      {PA6, Peripheral::ADC_1, Channel::CH3, max_bits_adc12},
-      {PB0, Peripheral::ADC_1, Channel::CH9, max_bits_adc12},
-      {PB1, Peripheral::ADC_1, Channel::CH5, max_bits_adc12},
+      {PA7, Peripheral::ADC_1, Channel::CH7, max_bits_adc12},
+      {PB0, Peripheral::ADC_1, Channel::CH7, max_bits_adc12},
+      {PC1, Peripheral::ADC_1, Channel::CH11, max_bits_adc12},
 
       {PF13, Peripheral::ADC_2, Channel::CH2, max_bits_adc12},
       {PF14, Peripheral::ADC_2, Channel::CH6, max_bits_adc12},
 
-      {PF5, Peripheral::ADC_3, Channel::CH4, max_bits_adc3},
-      {PF6, Peripheral::ADC_3, Channel::CH8, max_bits_adc3},
+      {PF3, Peripheral::ADC_3, Channel::CH5, max_bits_adc3},
+      {PF4, Peripheral::ADC_3, Channel::CH8, max_bits_adc3},
       {PF7, Peripheral::ADC_3, Channel::CH3, max_bits_adc3},
       {PF8, Peripheral::ADC_3, Channel::CH7, max_bits_adc3},
       {PF9, Peripheral::ADC_3, Channel::CH2, max_bits_adc3},
       {PF10, Peripheral::ADC_3, Channel::CH6, max_bits_adc3},
-      {PC2, Peripheral::ADC_3, Channel::CH0, max_bits_adc3},
       {PC3, Peripheral::ADC_3, Channel::CH1, max_bits_adc3},
   }};
 
