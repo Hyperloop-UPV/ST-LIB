@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "MockedDrivers/stm32h723xx_wrapper.h"
+#include "stm32h723xx_wrapper.h"
 #include "stm32h7xx.h"
 #include "MockedDrivers/common.hpp"
 #include "MockedDrivers/NVIC.hpp"

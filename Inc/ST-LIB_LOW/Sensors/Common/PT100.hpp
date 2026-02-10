@@ -3,9 +3,7 @@
 #include <cstdint>
 
 #include "Control/Blocks/MovingAverage.hpp"
-#include "HALAL/Models/PinModel/Pin.hpp"
-#include "HALAL/Services/ADC/ADC.hpp"
-#include "Sensors/Sensor/Sensor.hpp"
+#include "HALAL/Services/ADC/NewADC.hpp"
 
 
 template<size_t N>
@@ -15,45 +13,41 @@ public:
 	static constexpr float offset = -492.204082;
 	MovingAverage<N>* filter = nullptr;
 
-	PT100(Pin& pin, float* value, MovingAverage<N>& filter);
-	PT100(Pin& pin, float* value);
+	PT100(ST_LIB::ADCDomain::Instance& adc, float* value, MovingAverage<N>& filter);
+	PT100(ST_LIB::ADCDomain::Instance& adc, float* value);
 
-	PT100(Pin& pin, float& value, MovingAverage<N>& filter);
-	PT100(Pin& pin, float& value);
+	PT100(ST_LIB::ADCDomain::Instance& adc, float& value, MovingAverage<N>& filter);
+	PT100(ST_LIB::ADCDomain::Instance& adc, float& value);
 
 	void read();
 protected:
-	uint8_t id;
-	float* value;
+	ST_LIB::ADCDomain::Instance* adc = nullptr;
+	float* value = nullptr;
 };
 
 template<size_t N>
-PT100<N>::PT100(Pin& pin, float* value, MovingAverage<N>& filter) : value(value), filter(&filter){
-	id = ADC::inscribe(pin);
-	Sensor::adc_id_list.push_back(id);
-}
+PT100<N>::PT100(ST_LIB::ADCDomain::Instance& adc, float* value, MovingAverage<N>& filter)
+	: adc(&adc), value(value), filter(&filter){}
 
 template<size_t N>
-PT100<N>::PT100(Pin& pin, float& value, MovingAverage<N>& filter) : value(&value), filter(&filter){
-	id = ADC::inscribe(pin);
-	Sensor::adc_id_list.push_back(id);
-}
+PT100<N>::PT100(ST_LIB::ADCDomain::Instance& adc, float& value, MovingAverage<N>& filter)
+	: adc(&adc), value(&value), filter(&filter){}
 
 template<size_t N>
-PT100<N>::PT100(Pin& pin, float* value) : value(value){
-	id = ADC::inscribe(pin);
-	Sensor::adc_id_list.push_back(id);
-}
+PT100<N>::PT100(ST_LIB::ADCDomain::Instance& adc, float* value)
+	: adc(&adc), value(value){}
 
 template<size_t N>
-PT100<N>::PT100(Pin& pin, float& value) : value(&value){
-	id = ADC::inscribe(pin);
-	Sensor::adc_id_list.push_back(id);
-}
+PT100<N>::PT100(ST_LIB::ADCDomain::Instance& adc, float& value)
+	: adc(&adc), value(&value){}
 
 template<size_t N>
 void PT100<N>::read(){
-	float val = ADC::get_value(id);
+	if(adc == nullptr || value == nullptr){
+		return;
+	}
+	const float raw = adc->get_raw();
+	const float val = adc->get_value_from_raw(raw, 3.3f);
 	if(filter != nullptr){
 		filter->input(k/val + offset);
 		filter->execute();

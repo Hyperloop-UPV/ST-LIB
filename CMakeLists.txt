@@ -80,18 +80,20 @@ message(STATUS "${PROJECT_NAME} Ethernet: ${USE_ETHERNET}")
 message(STATUS "${PROJECT_NAME} Nucleo:   ${TARGET_NUCLEO}")
 message(STATUS "${PROJECT_NAME} Crosscompiling: ${CMAKE_CROSSCOMPILING}")
 
-if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers)
-  execute_process(
-    COMMAND git submodule update --init --depth 1
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-  )
-endif()
+if(CMAKE_CROSSCOMPILING)
+  if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers)
+    execute_process(
+      COMMAND git submodule update --init --depth 1
+      WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    )
+  endif()
 
-if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include)
-  execute_process(
-    COMMAND git submodule update --init --depth 1 Drivers/CMSIS/Device/ST/STM32H7xx Drivers/STM32H7xx_HAL_Driver
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
-  )
+  if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include)
+    execute_process(
+      COMMAND git submodule update --init --depth 1 Drivers/CMSIS/Device/ST/STM32H7xx Drivers/STM32H7xx_HAL_Driver
+      WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7
+    )
+  endif()
 endif()
 
 if(NOT CMAKE_CROSSCOMPILING)
@@ -110,7 +112,9 @@ endif()
 # STM32CubeH7 (HAL + LWIP)
 # ============================
 set(STM32CUBEH7 "${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7")
-message(STATUS "STM32CUBEH7: ${STM32CUBEH7}")
+if(CMAKE_CROSSCOMPILING)
+  message(STATUS "STM32CUBEH7: ${STM32CUBEH7}")
+endif()
 
 if(CMAKE_CROSSCOMPILING)
   message(STATUS "Compiling for STM32H723G")
@@ -246,7 +250,7 @@ set(HALAL_CPP_NO_ETH
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/PinModel/Pin.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/TimerDomain/TimerDomain.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/TimerPeripheral/TimerPeripheral.cpp
-  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/ADC/ADC.cpp
+  # ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/ADC/ADC.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/CORDIC/CORDIC.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/FDCAN/FDCAN.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/I2C/I2C.cpp
@@ -408,6 +412,7 @@ add_library(${STLIB_LIBRARY} STATIC
 
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/Scheduler.cpp>
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/TimerDomain/TimerDomain.cpp>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_hal_adc.cpp>
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_ll_tim.cpp>
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_system_stm32h7xx.c>
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/stm32h723xx_wrapper.c>
@@ -433,7 +438,7 @@ target_compile_definitions(${STLIB_LIBRARY} PUBLIC
   $<$<BOOL:${USE_PHY_KSZ8041}>:KSZ8041_PHY_ADDRESS=${KSZ8041_PHY_ADDRESS}>
   $<$<AND:$<BOOL:${USE_PHY_LAN8700}>,$<BOOL:${LAN8700_FORCE_100FD}>>:LAN8700_FORCE_100FD>
 
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:TESTING_ENV>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:SIM_ON>
 
   $<$<BOOL:${USE_ETHERNET}>:STLIB_ETH>
   $<IF:$<BOOL:${TARGET_NUCLEO}>,NUCLEO,BOARD>
@@ -467,14 +472,13 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
 
 target_include_directories(${STLIB_LIBRARY} PUBLIC
   # CMSIS + HAL
-  #$<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
-  #$<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Include>
-  ${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include
-  ${STM32CUBEH7}/Drivers/CMSIS/Include
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Include>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Core_A/Include>
-  #$<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc>
-  ${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
+  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Inc/MockedDrivers>
+  ${CMAKE_CURRENT_LIST_DIR}/Inc/STM32CubeH7Wrapper
 
   # LWIP includes 
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include>
@@ -530,9 +534,11 @@ if(PROJECT_IS_TOP_LEVEL)
     ${CMAKE_CURRENT_BINARY_DIR}
   )
 else()
-  target_include_directories(${STLIB_LIBRARY} PUBLIC
-    ${CMAKE_SOURCE_DIR}/Core/Inc
-  )
+  if(CMAKE_CROSSCOMPILING)
+    target_include_directories(${STLIB_LIBRARY} PUBLIC
+      ${CMAKE_SOURCE_DIR}/Core/Inc
+    )
+  endif()
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)

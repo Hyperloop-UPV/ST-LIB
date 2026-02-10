@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stm32h7xx_hal.h"
+#include "hal_wrapper.h"
 #include <array>
 #include <span>
 #include <tuple>

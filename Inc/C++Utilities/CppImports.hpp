@@ -16,7 +16,7 @@
 #include <array>
 #include <bitset>
 #include <ctype.h>
-#if defined(SIM_ON) || defined(TESTING_ENV)
+#if defined(SIM_ON)
 # ifdef __APPLE__
 #  include <stdlib.h>  // macOS
 # else

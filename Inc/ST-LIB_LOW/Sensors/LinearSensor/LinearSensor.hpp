@@ -9,20 +9,19 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "HALAL/Models/PinModel/Pin.hpp"
-#include "HALAL/Services/ADC/ADC.hpp"
-#include "Sensors/Sensor/Sensor.hpp"
+#include "HALAL/Services/ADC/NewADC.hpp"
 
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
 class LinearSensor {
    public:
     LinearSensor() = default;
-    LinearSensor(Pin &pin, Type slope, Type offset, Type *value);
-    LinearSensor(Pin &pin, Type slope, Type offset, Type &value);
+    LinearSensor(ST_LIB::ADCDomain::Instance &adc, Type slope, Type offset,
+                 Type *value, float vref = 3.3f);
+    LinearSensor(ST_LIB::ADCDomain::Instance &adc, Type slope, Type offset,
+                 Type &value, float vref = 3.3f);
 
     void read();
-    uint8_t get_id();
 
     void set_offset(Type new_offset);
     Type get_offset();
@@ -33,38 +32,35 @@ class LinearSensor {
     Type *get_value_pointer() const;
 
    protected:
-    uint8_t id;
+    ST_LIB::ADCDomain::Instance *adc = nullptr;
     Type slope;
     Type offset;
-    Type *value;
+    Type *value = nullptr;
+    float vref = 3.3f;
 };
 
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
-LinearSensor<Type>::LinearSensor(Pin &pin, Type slope, Type offset, Type *value)
-    : slope(slope), offset(offset), value(value) {
-    id = ADC::inscribe(pin);
-
-    Sensor::adc_id_list.push_back(id);
-}
+LinearSensor<Type>::LinearSensor(ST_LIB::ADCDomain::Instance &adc, Type slope,
+                                 Type offset, Type *value, float vref)
+    : adc(&adc), slope(slope), offset(offset), value(value), vref(vref) {}
 
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
-LinearSensor<Type>::LinearSensor(Pin &pin, Type slope, Type offset, Type &value)
-    : LinearSensor::LinearSensor(pin, slope, offset, &value) {}
+LinearSensor<Type>::LinearSensor(ST_LIB::ADCDomain::Instance &adc, Type slope,
+                                 Type offset, Type &value, float vref)
+    : LinearSensor::LinearSensor(adc, slope, offset, &value, vref) {}
 
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
 void LinearSensor<Type>::read() {
-    float val = ADC::get_value(id);
+    if (adc == nullptr || value == nullptr) {
+        return;
+    }
+    const float raw = adc->get_raw();
+    const float val = adc->get_value_from_raw(raw, vref);
 
     *value = slope * (Type)val + offset;
-}
-
-template <class Type>
-    requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
-uint8_t LinearSensor<Type>::get_id() {
-    return id;
 }
 
 template <class Type>
