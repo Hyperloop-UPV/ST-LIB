@@ -7,11 +7,7 @@
 
 #pragma once
 
-#ifndef TESTING_ENV
-#include "stm32h7xx_hal.h"
-#else
-#include "MockedDrivers/stm32h7xx_hal_wrapper.h"
-#endif
+#include "HALAL/hal_wrapper.h"
 
 #ifdef HAL_TIM_MODULE_ENABLED
 
@@ -227,7 +223,7 @@ struct TimerDomain {
         &htim1, &htim8
     };
 
-#ifdef TESTING_ENV
+#ifdef SIM_ON
     static TIM_TypeDef *cmsis_timers[16];
 #else
     static constexpr TIM_TypeDef *cmsis_timers[16] = {

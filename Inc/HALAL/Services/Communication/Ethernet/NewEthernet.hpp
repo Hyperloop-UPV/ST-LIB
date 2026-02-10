@@ -168,8 +168,11 @@ struct EthernetDomain {
   template <size_t N>
   static consteval array<Config, N> build(span<const Entry> config) {
     array<Config, N> cfgs{};
-    static_assert(N == max_instances,
-                  "EthernetDomain only supports a single instance");
+    static_assert(N <= max_instances,
+                  "EthernetDomain supports at most one instance");
+    if constexpr (N == 0) {
+      return cfgs;
+    }
     const auto &e = config[0];
     cfgs[0].local_mac = e.local_mac;
     cfgs[0].local_ip = e.local_ip;
@@ -202,8 +205,13 @@ struct EthernetDomain {
 
     static void init(std::span<const Config, N> cfgs,
                      std::span<DigitalOutputDomain::Instance> do_instances) {
-      static_assert(N == max_instances,
-                    "EthernetDomain only supports a single instance");
+      static_assert(N <= max_instances,
+                    "EthernetDomain supports at most one instance");
+      if constexpr (N == 0) {
+        (void)cfgs;
+        (void)do_instances;
+        return;
+      }
       const EthernetDomain::Config &e = cfgs[0];
 
       /* --- RESET PHY --- */

@@ -52,10 +52,6 @@ static void common_start(UART::Peripheral &printf_peripheral) {
   }
 #endif
 
-#ifdef HAL_ADC_MODULE_ENABLED
-  ADC::start();
-#endif
-
 #ifdef HAL_I2C_MODULE_ENABLED
   I2C::start();
 #endif

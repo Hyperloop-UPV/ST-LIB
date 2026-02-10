@@ -155,3 +155,4 @@ public:
 } // namespace ST_LIB
 
 #endif // HAL_TIM_MODULE_ENABLED
+
