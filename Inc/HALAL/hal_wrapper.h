@@ -41,6 +41,15 @@
 #define assert_param(expr) ((void)0U)
 #endif
 
+#ifndef TIM_EGR_UG
+#if defined(TIM_EGR_UG_Msk)
+#define TIM_EGR_UG TIM_EGR_UG_Msk
+#else
+// Mocked timer headers may not define update generation bit names.
+#define TIM_EGR_UG (1U)
+#endif
+#endif
+
 extern "C" void HAL_SYSCFG_AnalogSwitchConfig(uint32_t SYSCFG_AnalogSwitch,
                                                uint32_t SYSCFG_SwitchState);
 #endif
