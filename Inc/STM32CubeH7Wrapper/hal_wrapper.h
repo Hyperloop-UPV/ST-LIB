@@ -19,11 +19,16 @@
 #define HAL_DMA_MODULE_ENABLED
 #endif
 
-#include "MockedDrivers/stm32h7xx_hal_mock.h"
-#include "MockedDrivers/stm32h7xx_ll_adc_wrapper.h"
-#include "MockedDrivers/stm32h7xx_ll_tim_wrapper.h"
 #include "MockedDrivers/common.hpp"
+#include "MockedDrivers/stm32h7xx_hal_mock.h"
+#endif
 
+#include "stm32h7xx_ll_adc_wrapper.h"
+#include "stm32h7xx_ll_tim_wrapper.h"
+#include "stm32h7xx_ll_gpio_wrapper.h"
+#include "stm32h7xx_ll_bus_wrapper.h"
+
+#ifdef SIM_ON
 #ifndef SYSCFG_SWITCH_PC2
 #define SYSCFG_SWITCH_PC2 SYSCFG_PMCR_PC2SO
 #endif
@@ -51,7 +56,7 @@
 #endif
 
 extern "C" void HAL_SYSCFG_AnalogSwitchConfig(uint32_t SYSCFG_AnalogSwitch,
-                                               uint32_t SYSCFG_SwitchState);
+                                              uint32_t SYSCFG_SwitchState);
 #endif
 
 #ifndef STLIB_HAS_ADC3
