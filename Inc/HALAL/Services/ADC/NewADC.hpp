@@ -283,29 +283,51 @@ struct ADCDomain {
   static constexpr uint8_t max_bits_adc12 = 16;
   static constexpr uint8_t max_bits_adc3 = 12;
 
-  static constexpr std::array<PinMapping, 20> pin_map{{
-      {PF11, Peripheral::ADC_1, Channel::CH2, max_bits_adc12},
-      {PF12, Peripheral::ADC_1, Channel::CH6, max_bits_adc12},
-      {PC0, Peripheral::ADC_1, Channel::CH10, max_bits_adc12},
+  static constexpr std::array<PinMapping, 42> pin_map{{
       {PA0, Peripheral::ADC_1, Channel::CH16, max_bits_adc12},
+      {PA1, Peripheral::ADC_1, Channel::CH17, max_bits_adc12},
+      {PA2, Peripheral::ADC_1, Channel::CH14, max_bits_adc12},
       {PA3, Peripheral::ADC_1, Channel::CH15, max_bits_adc12},
       {PA4, Peripheral::ADC_1, Channel::CH18, max_bits_adc12},
       {PA5, Peripheral::ADC_1, Channel::CH19, max_bits_adc12},
       {PA6, Peripheral::ADC_1, Channel::CH3, max_bits_adc12},
+      {PA7, Peripheral::ADC_1, Channel::CH7, max_bits_adc12},
       {PB0, Peripheral::ADC_1, Channel::CH9, max_bits_adc12},
       {PB1, Peripheral::ADC_1, Channel::CH5, max_bits_adc12},
+      {PC0, Peripheral::ADC_1, Channel::CH10, max_bits_adc12},
+      {PC1, Peripheral::ADC_1, Channel::CH11, max_bits_adc12},
+      {PC4, Peripheral::ADC_1, Channel::CH4, max_bits_adc12},
+      {PC5, Peripheral::ADC_1, Channel::CH8, max_bits_adc12},
+      {PF11, Peripheral::ADC_1, Channel::CH2, max_bits_adc12},
+      {PF12, Peripheral::ADC_1, Channel::CH6, max_bits_adc12},
 
+      {PA2, Peripheral::ADC_2, Channel::CH14, max_bits_adc12},
+      {PA3, Peripheral::ADC_2, Channel::CH15, max_bits_adc12},
+      {PA4, Peripheral::ADC_2, Channel::CH18, max_bits_adc12},
+      {PA5, Peripheral::ADC_2, Channel::CH19, max_bits_adc12},
+      {PA6, Peripheral::ADC_2, Channel::CH3, max_bits_adc12},
+      {PA7, Peripheral::ADC_2, Channel::CH7, max_bits_adc12},
+      {PB0, Peripheral::ADC_2, Channel::CH9, max_bits_adc12},
+      {PB1, Peripheral::ADC_2, Channel::CH5, max_bits_adc12},
+      {PC0, Peripheral::ADC_2, Channel::CH10, max_bits_adc12},
+      {PC1, Peripheral::ADC_2, Channel::CH11, max_bits_adc12},
+      {PC4, Peripheral::ADC_2, Channel::CH4, max_bits_adc12},
+      {PC5, Peripheral::ADC_2, Channel::CH8, max_bits_adc12},
       {PF13, Peripheral::ADC_2, Channel::CH2, max_bits_adc12},
       {PF14, Peripheral::ADC_2, Channel::CH6, max_bits_adc12},
 
+      {PC0, Peripheral::ADC_3, Channel::CH10, max_bits_adc3},
+      {PC1, Peripheral::ADC_3, Channel::CH11, max_bits_adc3},
+      {PC2, Peripheral::ADC_3, Channel::CH0, max_bits_adc3},
+      {PC3, Peripheral::ADC_3, Channel::CH1, max_bits_adc3},
+      {PF3, Peripheral::ADC_3, Channel::CH5, max_bits_adc3},
+      {PF4, Peripheral::ADC_3, Channel::CH9, max_bits_adc3},
       {PF5, Peripheral::ADC_3, Channel::CH4, max_bits_adc3},
       {PF6, Peripheral::ADC_3, Channel::CH8, max_bits_adc3},
       {PF7, Peripheral::ADC_3, Channel::CH3, max_bits_adc3},
       {PF8, Peripheral::ADC_3, Channel::CH7, max_bits_adc3},
       {PF9, Peripheral::ADC_3, Channel::CH2, max_bits_adc3},
       {PF10, Peripheral::ADC_3, Channel::CH6, max_bits_adc3},
-      {PC2, Peripheral::ADC_3, Channel::CH0, max_bits_adc3},
-      {PC3, Peripheral::ADC_3, Channel::CH1, max_bits_adc3},
   }};
 
   static consteval uint8_t preference_score(Resolution r, Peripheral p) {
