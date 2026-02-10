@@ -9,7 +9,7 @@
 /* Uso del scheduler, descrito en la wiki:
  * https://wiki.hyperloopupv.com/es/firmware/Timing/Scheduler */
 
-#include "HALAL/hal_wrapper.h"
+#include "stm32h7xx_ll_tim_wrapper.h"
 
 #include <array>
 #include <cstdint>
