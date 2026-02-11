@@ -26,6 +26,60 @@ constexpr auto auto_cfg = ST_LIB::ADCDomain::build<1>(
 
 static_assert(auto_cfg[0].peripheral == ST_LIB::ADCDomain::Peripheral::ADC_1);
 static_assert(auto_cfg[0].channel == ST_LIB::ADCDomain::Channel::CH16);
+static_assert(ST_LIB::ADCDomain::pin_map.size() == 42);
+
+constexpr std::array<ST_LIB::ADCDomain::Entry, 1> auto_pf13_entry{{
+    {.gpio_idx = 0,
+     .pin = ST_LIB::PF13,
+     .peripheral = ST_LIB::ADCDomain::Peripheral::AUTO,
+     .channel = ST_LIB::ADCDomain::Channel::AUTO,
+     .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
+     .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
+     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
+     .sample_rate_hz = 0,
+     .output = &compile_time_output},
+}};
+
+constexpr auto auto_pf13_cfg = ST_LIB::ADCDomain::build<1>(
+    std::span<const ST_LIB::ADCDomain::Entry, 1>{auto_pf13_entry});
+static_assert(auto_pf13_cfg[0].peripheral == ST_LIB::ADCDomain::Peripheral::ADC_2);
+static_assert(auto_pf13_cfg[0].channel == ST_LIB::ADCDomain::Channel::CH2);
+
+constexpr std::array<ST_LIB::ADCDomain::Entry, 1> auto_pc0_12bit_entry{{
+    {.gpio_idx = 0,
+     .pin = ST_LIB::PC0,
+     .peripheral = ST_LIB::ADCDomain::Peripheral::AUTO,
+     .channel = ST_LIB::ADCDomain::Channel::AUTO,
+     .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
+     .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
+     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
+     .sample_rate_hz = 0,
+     .output = &compile_time_output},
+}};
+
+constexpr auto auto_pc0_12bit_cfg = ST_LIB::ADCDomain::build<1>(
+    std::span<const ST_LIB::ADCDomain::Entry, 1>{auto_pc0_12bit_entry});
+static_assert(auto_pc0_12bit_cfg[0].peripheral ==
+              ST_LIB::ADCDomain::Peripheral::ADC_3);
+static_assert(auto_pc0_12bit_cfg[0].channel == ST_LIB::ADCDomain::Channel::CH10);
+
+constexpr std::array<ST_LIB::ADCDomain::Entry, 1> auto_pc0_16bit_entry{{
+    {.gpio_idx = 0,
+     .pin = ST_LIB::PC0,
+     .peripheral = ST_LIB::ADCDomain::Peripheral::AUTO,
+     .channel = ST_LIB::ADCDomain::Channel::AUTO,
+     .resolution = ST_LIB::ADCDomain::Resolution::BITS_16,
+     .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
+     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
+     .sample_rate_hz = 0,
+     .output = &compile_time_output},
+}};
+
+constexpr auto auto_pc0_16bit_cfg = ST_LIB::ADCDomain::build<1>(
+    std::span<const ST_LIB::ADCDomain::Entry, 1>{auto_pc0_16bit_entry});
+static_assert(auto_pc0_16bit_cfg[0].peripheral ==
+              ST_LIB::ADCDomain::Peripheral::ADC_1);
+static_assert(auto_pc0_16bit_cfg[0].channel == ST_LIB::ADCDomain::Channel::CH10);
 
 constexpr std::array<ST_LIB::ADCDomain::Entry, 1> internal_entry{{
     {.gpio_idx = 0,
