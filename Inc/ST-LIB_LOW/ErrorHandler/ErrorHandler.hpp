@@ -9,16 +9,10 @@
 
 #include "C++Utilities/CppUtils.hpp"
 
-#ifndef TESTING_ENV
 #ifndef SIM_ON
 #include "HALAL/Services/Time/Time.hpp"
 #include "HALAL/Services/Communication/UART/UART.hpp"
-#else
-#include "HALALMock/Services/Time/Time.hpp"
-#include "HALALMock/Services/Communication/UART/UART.hpp"
-#include "HALALMock/Services/Logger/Logger.hpp"
-#endif // SIM_ON
-#endif // !defined(TESTING_ENV)
+#endif // !defined(SIM_ON)
 
 class ErrorHandlerModel {
 private:
@@ -64,4 +58,3 @@ public:
 
 #define ErrorHandler(x, ...) do { ErrorHandlerModel::SetMetaData(__LINE__, __FUNCTION__, __FILE__); \
 					           	   ErrorHandlerModel::ErrorHandlerTrigger(x, ##__VA_ARGS__);}while(0)
-

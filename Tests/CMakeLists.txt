@@ -17,6 +17,7 @@ message(STATUS "Generating test executable for ST-LIB")
 add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/Time/scheduler_test.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/timer_wrapper_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/adc_test.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/common_tests.cpp
 )
 
@@ -42,7 +43,7 @@ if(MINGW OR CYGWIN)
 endif()
 
 target_compile_definitions(${STLIB_TEST_EXECUTABLE} PRIVATE
-  TESTING_ENV
+  SIM_ON
 )
 
 target_include_directories(${STLIB_TEST_EXECUTABLE} PRIVATE

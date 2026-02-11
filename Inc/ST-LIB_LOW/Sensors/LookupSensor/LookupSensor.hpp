@@ -7,7 +7,7 @@
 
 #pragma once
 #include <cstdint>
-#include "HALAL/Models/PinModel/Pin.hpp"
+#include "HALAL/Services/ADC/NewADC.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "C++Utilities/CppUtils.hpp"
 
@@ -17,14 +17,13 @@
 class LookupSensor{
 public:
 	LookupSensor() = default;
-	LookupSensor(Pin &pin, double *table, int table_size, double *value);
-	LookupSensor(Pin &pin, double *table, int table_size, double &value);
+	LookupSensor(ST_LIB::ADCDomain::Instance& adc, double *table, int table_size, double *value);
+	LookupSensor(ST_LIB::ADCDomain::Instance& adc, double *table, int table_size, double &value);
 	void read();
-	uint8_t get_id();
 
 protected:
-	uint8_t id;
-	double *table;
-	int table_size;
-	double *value;
+	ST_LIB::ADCDomain::Instance* adc = nullptr;
+	double *table = nullptr;
+	int table_size = 0;
+	double *value = nullptr;
 };
