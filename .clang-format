@@ -11,7 +11,7 @@ AllowShortLoopsOnASingleLine: false
 Cpp11BracedListStyle: true
 BreakBeforeBraces: Attach
 BinPackArguments: false
-BinPackParameters: OnePerLine
+BinPackParameters: false
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AlignAfterOpenBracket: BlockIndent
