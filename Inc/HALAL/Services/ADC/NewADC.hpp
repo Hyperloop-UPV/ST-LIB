@@ -129,8 +129,7 @@ struct ADCDomain {
             .sample_time = sample_time,
             .prescaler = prescaler,
             .sample_rate_hz = sample_rate_hz,
-            .output = &output} {
-    }
+            .output = &output} {}
 
     consteval ADC(const GPIODomain::Pin &pin, Peripheral peripheral,
                   Channel channel, float &output,
@@ -594,7 +593,8 @@ struct ADCDomain {
     }
 
     float get_value_from_raw(float raw, float vref = 3.3f) const {
-      const float max_val = static_cast<float>(max_raw_for_resolution(resolution));
+      const float max_val =
+          static_cast<float>(max_raw_for_resolution(resolution));
       if (max_val <= 0.0f) {
         return 0.0f;
       }
@@ -612,7 +612,6 @@ struct ADCDomain {
       }
       *output = get_value(timeout_ms, vref);
     }
-
   };
 
   template <std::size_t N> struct Init {
