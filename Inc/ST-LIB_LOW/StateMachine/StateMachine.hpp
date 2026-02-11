@@ -418,7 +418,7 @@ public:
       for(auto& nested : nested_state_machine)
         {
           if(nested.state == current_state){
-            nested.machine->start();
+            nested.machine->enter();
             break;
           }
         }
