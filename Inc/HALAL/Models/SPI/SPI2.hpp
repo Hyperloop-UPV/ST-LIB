@@ -230,27 +230,31 @@ struct SPIDomain {
         }
 
         template <class Ctx>
-        consteval std::size_t inscribe(Ctx &ctx) const {
+        consteval std::size_t inscribe(Ctx& ctx) const {
             auto dma_indices = dma_rx_tx.inscribe(ctx);
-            
+
             // Conditionally add NSS GPIO if provided
             std::optional<std::size_t> nss_idx = std::nullopt;
             if (nss_gpio.has_value()) {
                 nss_idx = nss_gpio.value().inscribe(ctx);
             }
-            
-            Entry e{
-                .peripheral = peripheral,
-                .mode = mode,
-                .sck_gpio_idx = sck_gpio.inscribe(ctx),
-                .miso_gpio_idx = miso_gpio.inscribe(ctx),
-                .mosi_gpio_idx = mosi_gpio.inscribe(ctx),
-                .nss_gpio_idx = nss_idx,
-                .dma_rx_idx = dma_indices[0],
-                .dma_tx_idx = dma_indices[1],
-                .max_baudrate = max_baudrate,
-                .config = config
-            };
+
+            // Compute indices first to avoid taking addresses of immediate temporaries
+            const auto sck_idx = sck_gpio.inscribe(ctx);
+            const auto miso_idx = miso_gpio.inscribe(ctx);
+            const auto mosi_idx = mosi_gpio.inscribe(ctx);
+
+            Entry e;
+            e.peripheral = peripheral;
+            e.mode = mode;
+            e.sck_gpio_idx = sck_idx;
+            e.miso_gpio_idx = miso_idx;
+            e.mosi_gpio_idx = mosi_idx;
+            e.nss_gpio_idx = nss_idx;
+            e.dma_rx_idx = dma_indices[0];
+            e.dma_tx_idx = dma_indices[1];
+            e.max_baudrate = max_baudrate;
+            e.config = config;
 
             return ctx.template add<SPIDomain>(e, this);
         }
