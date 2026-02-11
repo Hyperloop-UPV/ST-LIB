@@ -344,8 +344,7 @@ void SPI::Order_update() {
                     // slave again if it has the correct Order ID ready
                     if (known_slave_ready(spi)) {
                         master_check_available_end(spi);
-                    } else if (Time::get_global_tick() - spi->last_end_check >
-                               MASTER_SPI_CHECK_DELAY) {
+                    } else if (Time::get_global_tick() - spi->last_end_check > MASTER_SPI_CHECK_DELAY) {
                         master_check_available_end(spi);
                         spi->last_end_check = Time::get_global_tick();
                     }

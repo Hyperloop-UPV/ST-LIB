@@ -155,7 +155,7 @@ public:
         return sizeof(id); 
     }
 
-    void set_pointer(size_t index, void* pointer) override {};
+    void set_pointer(size_t index, void* pointer) override{};
 };
 
 

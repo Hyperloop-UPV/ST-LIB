@@ -96,7 +96,7 @@ ServerSocket::~ServerSocket() {
 }
 
 ServerSocket::ServerSocket(EthernetNode local_node)
-    : ServerSocket(local_node.ip, local_node.port) {};
+    : ServerSocket(local_node.ip, local_node.port){};
 
 void ServerSocket::close() {
   // Clean all callbacks
