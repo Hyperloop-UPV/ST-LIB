@@ -259,6 +259,11 @@ class IStateMachine {
     virtual void force_change_state(size_t state) = 0;
     virtual size_t get_current_state_id() const = 0;
     constexpr bool operator==(const IStateMachine&) const = default;
+    protected:
+    virtual void enter() = 0;
+    virtual void exit() = 0;
+    template <class E, size_t N, size_t T>
+    friend class StateMachine;
 };
 
 template <class StateEnum, size_t NStates, size_t NTransitions>
@@ -327,14 +332,14 @@ private:
             state.get_transitions().size()};
   }
 
-  inline void enter() 
+  inline void enter() override 
   { 
       auto& state = states[static_cast<size_t>(current_state)];
       state.enter();
       
   }
 
-  inline void exit() 
+  inline void exit() override
   {
       auto& state = states[static_cast<size_t>(current_state)];
       state.exit();
@@ -391,11 +396,25 @@ public:
             if (t.predicate()) 
             {
                 exit();
+                for(auto& nested : nested_state_machine)
+                {
+                  if(nested.state == current_state){
+                    nested.machine->exit();
+                    break;
+                  }
+                }
                 #ifdef STLIB_ETH
                 remove_state_orders();
                 #endif
                 current_state = t.target;
                 enter();
+                for(auto& nested : nested_state_machine)
+                {
+                  if(nested.state == current_state){
+                    nested.machine->enter();
+                    break;
+                  }
+                }
                 #ifdef STLIB_ETH
                 refresh_state_orders();
                 #endif
@@ -435,11 +454,25 @@ public:
       }
         
         exit();
+          for(auto& nested : nested_state_machine)
+          {
+            if(nested.state == current_state){
+              nested.machine->exit();
+              break;
+            }
+          }
         #ifdef STLIB_ETH
         remove_state_orders();
         #endif
         current_state = new_state;
         enter();
+          for(auto& nested : nested_state_machine)
+          {
+            if(nested.state == current_state){
+              nested.machine->enter();
+              break;
+            }
+          }
         #ifdef STLIB_ETH
         refresh_state_orders();
         #endif
