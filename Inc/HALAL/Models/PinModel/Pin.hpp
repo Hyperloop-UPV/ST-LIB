@@ -6,7 +6,7 @@
  */
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
-#include "HALAL/hal_wrapper.h"
+#include "hal_wrapper.h"
 
 #define PERIPHERAL_BASE 0x40000000UL
 #define DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 PERIPHERAL_BASE + 0x18020000UL

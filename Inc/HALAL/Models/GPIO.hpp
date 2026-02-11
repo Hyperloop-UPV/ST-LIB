@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HALAL/hal_wrapper.h"
+#include "hal_wrapper.h"
 #include <array>
 #include <span>
 #include <tuple>

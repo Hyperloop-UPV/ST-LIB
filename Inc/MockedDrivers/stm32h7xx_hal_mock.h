@@ -465,6 +465,9 @@ typedef struct {
 #define TIM_DIER_UIE (1U << 0)
 #define TIM_DIER_BIE (1U << 7)
 #define TIM_SR_UIF (1U << 0)
+#define TIM_SR_COMIF (1U << 5)
+#define TIM_SR_TIF (1U << 6)
+#define TIM_SR_BIF (1U << 7)
 
 #define TIM_CCMR1_CC1S (3U << 0)
 #define TIM_CCMR1_OC1PE (1U << 3)

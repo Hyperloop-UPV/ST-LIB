@@ -415,6 +415,13 @@ public:
     void start()
     {
       enter();
+      for(auto& nested : nested_state_machine)
+        {
+          if(nested.state == current_state){
+            nested.machine->start();
+            break;
+          }
+        }
     }
 
 
