@@ -663,7 +663,7 @@ struct ADCDomain {
       hadc->Init.SamplingMode = ADC_SAMPLING_MODE_NORMAL;
       hadc->Init.DMAContinuousRequests = DISABLE;
 #endif
-      hadc->Init.Overrun = ADC_OVR_DATA_PRESERVED;
+      hadc->Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
       hadc->Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
       hadc->Init.OversamplingMode = DISABLE;
     }
