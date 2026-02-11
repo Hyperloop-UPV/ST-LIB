@@ -257,6 +257,7 @@ class IStateMachine {
     virtual void check_transitions() = 0;
     virtual void set_on(bool is_on) = 0;
     virtual void force_change_state(size_t state) = 0;
+    virtual void start() = 0;
     virtual size_t get_current_state_id() const = 0;
     constexpr bool operator==(const IStateMachine&) const = default;
 };
