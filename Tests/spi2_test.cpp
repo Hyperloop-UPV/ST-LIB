@@ -9,8 +9,19 @@
 #include "MockedDrivers/mocked_hal_spi.hpp"
 
 extern uint32_t SystemCoreClock;
+namespace ST_LIB::TestErrorHandler {
+void reset();
+void set_fail_on_error(bool enabled);
+extern int call_count;
+} // namespace ST_LIB::TestErrorHandler
 
 namespace {
+
+struct SPIDomainInstanceLayout {
+  SPI_HandleTypeDef hspi;
+  SPI_TypeDef *instance;
+  volatile bool *operation_flag;
+};
 
 struct SPIRequestMock {
   ST_LIB::SPIDomain::SPIMode mode;
@@ -89,6 +100,7 @@ protected:
     SystemCoreClock = 64'000'000U;
     ST_LIB::MockedHAL::spi_reset();
     ST_LIB::MockedHAL::dma_reset();
+    ST_LIB::TestErrorHandler::reset();
     clear_nvic_enables();
     clear_dma_irq_table();
     for (auto &inst : ST_LIB::SPIDomain::spi_instances) {
@@ -175,6 +187,18 @@ TEST_F(SPI2Test, InitWith32BitDataUsesWordAlignmentAndPrescaler) {
             DMA_MDATAALIGN_WORD);
 }
 
+TEST_F(SPI2Test, InitFailureOnHALSPIInitDoesNotRegisterOrEnableNVIC) {
+  ST_LIB::TestErrorHandler::set_fail_on_error(false);
+  ST_LIB::MockedHAL::spi_set_status(HAL_ERROR);
+
+  init_spi<ST_LIB::SPIDomain::SPIMode::MASTER, ST_LIB::SPIConfigTypes::DataSize::SIZE_8BIT>(
+      20'000'000U);
+
+  EXPECT_EQ(ST_LIB::TestErrorHandler::call_count, 1);
+  EXPECT_EQ(ST_LIB::SPIDomain::spi_instances[1], nullptr);
+  EXPECT_EQ(NVIC_GetEnableIRQ(SPI2_IRQn), 0U);
+}
+
 TEST_F(SPI2Test, SPI2IRQHandlerDispatchesToHALIRQ) {
   init_spi<ST_LIB::SPIDomain::SPIMode::MASTER, ST_LIB::SPIConfigTypes::DataSize::SIZE_8BIT>(
       20'000'000U);
@@ -247,6 +271,27 @@ TEST_F(SPI2Test, DMACompletionCallbacksSetOperationFlag) {
   EXPECT_TRUE(done);
 }
 
+TEST_F(SPI2Test, CallbacksWithUnknownHandleTriggerErrorPath) {
+  ST_LIB::TestErrorHandler::set_fail_on_error(false);
+
+  SPI_HandleTypeDef unknown{};
+  HAL_SPI_TxCpltCallback(&unknown);
+  EXPECT_EQ(ST_LIB::TestErrorHandler::call_count, 1);
+}
+
+TEST_F(SPI2Test, ErrorCallbackOnKnownHandleTriggersErrorPath) {
+  ST_LIB::TestErrorHandler::set_fail_on_error(false);
+  init_spi<ST_LIB::SPIDomain::SPIMode::MASTER, ST_LIB::SPIConfigTypes::DataSize::SIZE_8BIT>(
+      20'000'000U);
+
+  auto *hspi = ST_LIB::MockedHAL::spi_get_last_handle();
+  ASSERT_NE(hspi, nullptr);
+  hspi->ErrorCode = 0x55U;
+  HAL_SPI_ErrorCallback(hspi);
+
+  EXPECT_EQ(ST_LIB::TestErrorHandler::call_count, 1);
+}
+
 TEST_F(SPI2Test, SlaveWrapperDMAOperations) {
   auto &instance =
       init_spi<ST_LIB::SPIDomain::SPIMode::SLAVE, ST_LIB::SPIConfigTypes::DataSize::SIZE_8BIT>(
@@ -273,6 +318,24 @@ TEST_F(SPI2Test, SlaveWrapperDMAOperations) {
   EXPECT_FALSE(done);
   HAL_SPI_TxRxCpltCallback(ST_LIB::MockedHAL::spi_get_last_handle());
   EXPECT_TRUE(done);
+}
+
+TEST_F(SPI2Test, SlaveSoftwareNSSTogglesSSIWithSafePointerMapping) {
+  auto &instance =
+      init_spi<ST_LIB::SPIDomain::SPIMode::SLAVE, ST_LIB::SPIConfigTypes::DataSize::SIZE_8BIT>(
+          1'000'000U);
+
+  auto *layout = reinterpret_cast<SPIDomainInstanceLayout *>(&instance);
+  layout->instance = SPI2;
+
+  ST_LIB::SPIDomain::SPIWrapper<slave8_request> spi(instance);
+  layout->instance->CR1 |= SPI_CR1_SSI;
+
+  spi.set_software_nss(true);
+  EXPECT_EQ(layout->instance->CR1 & SPI_CR1_SSI, 0U);
+
+  spi.set_software_nss(false);
+  EXPECT_NE(layout->instance->CR1 & SPI_CR1_SSI, 0U);
 }
 
 TEST_F(SPI2Test, BusyStatusReturnsFalseInBlockingAndDMAPaths) {
