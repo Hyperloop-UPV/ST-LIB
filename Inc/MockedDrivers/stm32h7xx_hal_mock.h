@@ -16,6 +16,28 @@ enum {
   TIM3_IRQn = 29,
   TIM4_IRQn = 30,
   TIM5_IRQn = 50,
+  SPI1_IRQn = 35,
+  SPI2_IRQn = 36,
+  SPI3_IRQn = 51,
+  SPI4_IRQn = 84,
+  SPI5_IRQn = 85,
+  SPI6_IRQn = 86,
+  DMA1_Stream0_IRQn = 11,
+  DMA1_Stream1_IRQn = 12,
+  DMA1_Stream2_IRQn = 13,
+  DMA1_Stream3_IRQn = 14,
+  DMA1_Stream4_IRQn = 15,
+  DMA1_Stream5_IRQn = 16,
+  DMA1_Stream6_IRQn = 17,
+  DMA1_Stream7_IRQn = 47,
+  DMA2_Stream0_IRQn = 56,
+  DMA2_Stream1_IRQn = 57,
+  DMA2_Stream2_IRQn = 58,
+  DMA2_Stream3_IRQn = 59,
+  DMA2_Stream4_IRQn = 60,
+  DMA2_Stream5_IRQn = 61,
+  DMA2_Stream6_IRQn = 62,
+  DMA2_Stream7_IRQn = 63,
   TIM6_DAC_IRQn = 54,
   TIM7_IRQn = 55,
   TIM8_BRK_TIM12_IRQn = 43,
@@ -78,6 +100,12 @@ extern uint32_t SystemCoreClock;
 
 #define RCC_APB4ENR_ADC12EN (1U << 5)
 #define RCC_APB4ENR_ADC3EN (1U << 6)
+#define RCC_APB2ENR_SPI1EN (1U << 12)
+#define RCC_APB1LENR_SPI2EN (1U << 14)
+#define RCC_APB1LENR_SPI3EN (1U << 15)
+#define RCC_APB2ENR_SPI4EN (1U << 13)
+#define RCC_APB2ENR_SPI5EN (1U << 20)
+#define RCC_APB4ENR_SPI6EN (1U << 11)
 
 #define __HAL_RCC_GPIOA_CLK_ENABLE() (RCC->AHB4ENR |= RCC_AHB4ENR_GPIOAEN)
 #define __HAL_RCC_GPIOB_CLK_ENABLE() (RCC->AHB4ENR |= RCC_AHB4ENR_GPIOBEN)
@@ -89,6 +117,40 @@ extern uint32_t SystemCoreClock;
 #define __HAL_RCC_GPIOH_CLK_ENABLE() (RCC->AHB4ENR |= RCC_AHB4ENR_GPIOHEN)
 #define __HAL_RCC_ADC12_CLK_ENABLE() (RCC->APB4ENR |= RCC_APB4ENR_ADC12EN)
 #define __HAL_RCC_ADC3_CLK_ENABLE() (RCC->APB4ENR |= RCC_APB4ENR_ADC3EN)
+#define __HAL_RCC_SPI1_CLK_ENABLE() (RCC->APB2ENR |= RCC_APB2ENR_SPI1EN)
+#define __HAL_RCC_SPI2_CLK_ENABLE() (RCC->APB1LENR |= RCC_APB1LENR_SPI2EN)
+#define __HAL_RCC_SPI3_CLK_ENABLE() (RCC->APB1LENR |= RCC_APB1LENR_SPI3EN)
+#define __HAL_RCC_SPI4_CLK_ENABLE() (RCC->APB2ENR |= RCC_APB2ENR_SPI4EN)
+#define __HAL_RCC_SPI5_CLK_ENABLE() (RCC->APB2ENR |= RCC_APB2ENR_SPI5EN)
+#define __HAL_RCC_SPI6_CLK_ENABLE() (RCC->APB4ENR |= RCC_APB4ENR_SPI6EN)
+#define __HAL_RCC_DMA1_CLK_ENABLE() ((void)0U)
+#define __HAL_RCC_DMA2_CLK_ENABLE() ((void)0U)
+
+typedef struct __DMA_Stream_TypeDef {
+  volatile uint32_t CR;
+  volatile uint32_t NDTR;
+  volatile uint32_t PAR;
+  volatile uint32_t M0AR;
+  volatile uint32_t M1AR;
+  volatile uint32_t FCR;
+} DMA_Stream_TypeDef;
+
+extern DMA_Stream_TypeDef *DMA1_Stream0;
+extern DMA_Stream_TypeDef *DMA1_Stream1;
+extern DMA_Stream_TypeDef *DMA1_Stream2;
+extern DMA_Stream_TypeDef *DMA1_Stream3;
+extern DMA_Stream_TypeDef *DMA1_Stream4;
+extern DMA_Stream_TypeDef *DMA1_Stream5;
+extern DMA_Stream_TypeDef *DMA1_Stream6;
+extern DMA_Stream_TypeDef *DMA1_Stream7;
+extern DMA_Stream_TypeDef *DMA2_Stream0;
+extern DMA_Stream_TypeDef *DMA2_Stream1;
+extern DMA_Stream_TypeDef *DMA2_Stream2;
+extern DMA_Stream_TypeDef *DMA2_Stream3;
+extern DMA_Stream_TypeDef *DMA2_Stream4;
+extern DMA_Stream_TypeDef *DMA2_Stream5;
+extern DMA_Stream_TypeDef *DMA2_Stream6;
+extern DMA_Stream_TypeDef *DMA2_Stream7;
 
 typedef struct {
   volatile uint32_t MODER;
@@ -297,6 +359,223 @@ typedef struct {
 #define HAL_ADC_STATE_REG_BUSY 0x00000100U
 #define HAL_ADC_STATE_REG_EOC 0x00000200U
 #define HAL_ADC_STATE_TIMEOUT 0x00000400U
+
+typedef struct {
+  uint32_t Request;
+  uint32_t Direction;
+  uint32_t PeriphInc;
+  uint32_t MemInc;
+  uint32_t PeriphDataAlignment;
+  uint32_t MemDataAlignment;
+  uint32_t Mode;
+  uint32_t Priority;
+  uint32_t FIFOMode;
+  uint32_t FIFOThreshold;
+  uint32_t MemBurst;
+  uint32_t PeriphBurst;
+} DMA_InitTypeDef;
+
+typedef struct __DMA_HandleTypeDef {
+  DMA_Stream_TypeDef *Instance;
+  DMA_InitTypeDef Init;
+  void *Parent;
+} DMA_HandleTypeDef;
+
+#define DMA_REQUEST_MEM2MEM 0x000U
+#define DMA_REQUEST_ADC1 0x001U
+#define DMA_REQUEST_ADC2 0x002U
+#define DMA_REQUEST_ADC3 0x003U
+#define DMA_REQUEST_I2C1_RX 0x004U
+#define DMA_REQUEST_I2C1_TX 0x005U
+#define DMA_REQUEST_I2C2_RX 0x006U
+#define DMA_REQUEST_I2C2_TX 0x007U
+#define DMA_REQUEST_I2C3_RX 0x008U
+#define DMA_REQUEST_I2C3_TX 0x009U
+#define DMA_REQUEST_I2C5_RX 0x00AU
+#define DMA_REQUEST_I2C5_TX 0x00BU
+#define DMA_REQUEST_SPI1_RX 0x00CU
+#define DMA_REQUEST_SPI1_TX 0x00DU
+#define DMA_REQUEST_SPI2_RX 0x00EU
+#define DMA_REQUEST_SPI2_TX 0x00FU
+#define DMA_REQUEST_SPI3_RX 0x010U
+#define DMA_REQUEST_SPI3_TX 0x011U
+#define DMA_REQUEST_SPI4_RX 0x012U
+#define DMA_REQUEST_SPI4_TX 0x013U
+#define DMA_REQUEST_SPI5_RX 0x014U
+#define DMA_REQUEST_SPI5_TX 0x015U
+#define DMA_REQUEST_FMAC_WRITE 0x016U
+#define DMA_REQUEST_FMAC_READ 0x017U
+
+#define DMA_PERIPH_TO_MEMORY 0x000U
+#define DMA_MEMORY_TO_PERIPH 0x001U
+#define DMA_MEMORY_TO_MEMORY 0x002U
+
+#define DMA_PINC_DISABLE 0x000U
+#define DMA_PINC_ENABLE 0x001U
+#define DMA_MINC_DISABLE 0x000U
+#define DMA_MINC_ENABLE 0x001U
+
+#define DMA_PDATAALIGN_BYTE 0x000U
+#define DMA_PDATAALIGN_HALFWORD 0x001U
+#define DMA_PDATAALIGN_WORD 0x002U
+#define DMA_MDATAALIGN_BYTE 0x000U
+#define DMA_MDATAALIGN_HALFWORD 0x001U
+#define DMA_MDATAALIGN_WORD 0x002U
+
+#define DMA_NORMAL 0x000U
+#define DMA_CIRCULAR 0x001U
+#define DMA_PRIORITY_LOW 0x000U
+#define DMA_PRIORITY_HIGH 0x001U
+
+#define DMA_FIFOMODE_DISABLE 0x000U
+#define DMA_FIFOMODE_ENABLE 0x001U
+#define DMA_FIFO_THRESHOLD_HALFFULL 0x000U
+#define DMA_FIFO_THRESHOLD_FULL 0x001U
+
+#define DMA_MBURST_SINGLE 0x000U
+#define DMA_PBURST_SINGLE 0x000U
+
+typedef struct {
+  volatile uint32_t CR1;
+  volatile uint32_t CR2;
+  volatile uint32_t CFG1;
+  volatile uint32_t CFG2;
+  volatile uint32_t IER;
+  volatile uint32_t SR;
+  volatile uint32_t IFCR;
+  volatile uint32_t TXDR;
+  volatile uint32_t RXDR;
+  volatile uint32_t CRCPOLY;
+  volatile uint32_t TXCRC;
+  volatile uint32_t RXCRC;
+  volatile uint32_t UDRDR;
+} SPI_TypeDef;
+
+extern SPI_TypeDef *SPI1;
+extern SPI_TypeDef *SPI2;
+extern SPI_TypeDef *SPI3;
+extern SPI_TypeDef *SPI4;
+extern SPI_TypeDef *SPI5;
+extern SPI_TypeDef *SPI6;
+
+#define SPI1_BASE (0x40013000UL)
+#define SPI2_BASE (0x40003800UL)
+#define SPI3_BASE (0x40003C00UL)
+#define SPI4_BASE (0x40013400UL)
+#define SPI5_BASE (0x40015000UL)
+#define SPI6_BASE (0x58001400UL)
+
+typedef struct {
+  uint32_t Mode;
+  uint32_t Direction;
+  uint32_t DataSize;
+  uint32_t CLKPolarity;
+  uint32_t CLKPhase;
+  uint32_t NSS;
+  uint32_t BaudRatePrescaler;
+  uint32_t FirstBit;
+  uint32_t TIMode;
+  uint32_t CRCCalculation;
+  uint32_t CRCPolynomial;
+  uint32_t CRCLength;
+  uint32_t NSSPMode;
+  uint32_t NSSPolarity;
+  uint32_t FifoThreshold;
+  uint32_t TxCRCInitializationPattern;
+  uint32_t RxCRCInitializationPattern;
+  uint32_t MasterSSIdleness;
+  uint32_t MasterInterDataIdleness;
+  uint32_t MasterReceiverAutoSusp;
+  uint32_t MasterKeepIOState;
+  uint32_t IOSwap;
+} SPI_InitTypeDef;
+
+typedef struct __SPI_HandleTypeDef {
+  SPI_TypeDef *Instance;
+  SPI_InitTypeDef Init;
+  DMA_HandleTypeDef *hdmatx;
+  DMA_HandleTypeDef *hdmarx;
+  HAL_LockTypeDef Lock;
+  volatile uint32_t State;
+  volatile uint32_t ErrorCode;
+} SPI_HandleTypeDef;
+
+#define SPI_MODE_SLAVE 0x00000000U
+#define SPI_MODE_MASTER 0x00000001U
+
+#define SPI_DIRECTION_2LINES 0x00000000U
+#define SPI_DIRECTION_2LINES_RXONLY 0x00000001U
+#define SPI_DIRECTION_1LINE 0x00000002U
+#define SPI_DIRECTION_2LINES_TXONLY 0x00000003U
+
+#define SPI_POLARITY_LOW 0x00000000U
+#define SPI_POLARITY_HIGH 0x00000001U
+#define SPI_PHASE_1EDGE 0x00000000U
+#define SPI_PHASE_2EDGE 0x00000001U
+
+#define SPI_NSS_SOFT 0x00000000U
+#define SPI_NSS_HARD_INPUT 0x00000001U
+#define SPI_NSS_HARD_OUTPUT 0x00000002U
+
+#define SPI_BAUDRATEPRESCALER_2 0x00000000U
+#define SPI_BAUDRATEPRESCALER_4 0x00000001U
+#define SPI_BAUDRATEPRESCALER_8 0x00000002U
+#define SPI_BAUDRATEPRESCALER_16 0x00000003U
+#define SPI_BAUDRATEPRESCALER_32 0x00000004U
+#define SPI_BAUDRATEPRESCALER_64 0x00000005U
+#define SPI_BAUDRATEPRESCALER_128 0x00000006U
+#define SPI_BAUDRATEPRESCALER_256 0x00000007U
+
+#define SPI_FIRSTBIT_MSB 0x00000000U
+#define SPI_FIRSTBIT_LSB 0x00000001U
+
+#define SPI_TIMODE_DISABLE 0x00000000U
+#define SPI_TIMODE_ENABLE 0x00000001U
+
+#define SPI_CRCCALCULATION_DISABLE 0x00000000U
+#define SPI_CRCCALCULATION_ENABLE 0x00000001U
+
+#define SPI_NSS_PULSE_DISABLE 0x00000000U
+#define SPI_NSS_PULSE_ENABLE 0x00000001U
+
+#define SPI_NSS_POLARITY_LOW 0x00000000U
+#define SPI_NSS_POLARITY_HIGH 0x00000001U
+
+#define SPI_MASTER_KEEP_IO_STATE_DISABLE 0x00000000U
+#define SPI_MASTER_KEEP_IO_STATE_ENABLE 0x00000001U
+#define SPI_MASTER_RX_AUTOSUSP_DISABLE 0x00000000U
+#define SPI_MASTER_RX_AUTOSUSP_ENABLE 0x00000001U
+#define SPI_IO_SWAP_DISABLE 0x00000000U
+#define SPI_IO_SWAP_ENABLE 0x00000001U
+
+#define SPI_CRC_LENGTH_DATASIZE 0x00000000U
+#define SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN 0x00000000U
+#define SPI_CR1_SSI (1U << 8)
+
+#define HAL_SPI_STATE_RESET 0x00000000U
+#define HAL_SPI_STATE_READY 0x00000001U
+#define HAL_SPI_STATE_BUSY 0x00000002U
+#define HAL_SPI_ERROR_NONE 0x00000000U
+
+typedef struct {
+  uint32_t PeriphClockSelection;
+  uint32_t Spi123ClockSelection;
+  uint32_t Spi45ClockSelection;
+  uint32_t Spi6ClockSelection;
+} RCC_PeriphCLKInitTypeDef;
+
+#define RCC_PERIPHCLK_SPI1 0x00000001U
+#define RCC_PERIPHCLK_SPI2 0x00000002U
+#define RCC_PERIPHCLK_SPI3 0x00000004U
+#define RCC_PERIPHCLK_SPI4 0x00000008U
+#define RCC_PERIPHCLK_SPI5 0x00000010U
+#define RCC_PERIPHCLK_SPI6 0x00000020U
+#define RCC_PERIPHCLK_SPI123 0x00000100U
+#define RCC_PERIPHCLK_SPI45 0x00000200U
+
+#define RCC_SPI123CLKSOURCE_PLL 0x00000001U
+#define RCC_SPI45CLKSOURCE_PLL2 0x00000002U
+#define RCC_SPI6CLKSOURCE_PLL2 0x00000002U
 
 typedef struct TIM_TypeDef TIM_TypeDef;
 extern TIM_TypeDef *TIM1_BASE;
@@ -536,11 +815,67 @@ HAL_StatusTypeDef HAL_ADC_Stop(ADC_HandleTypeDef *hadc);
 uint32_t HAL_ADC_GetState(const ADC_HandleTypeDef *hadc);
 uint32_t HAL_ADC_GetError(const ADC_HandleTypeDef *hadc);
 
+HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef *hspi);
+HAL_StatusTypeDef HAL_SPI_Abort(SPI_HandleTypeDef *hspi);
+HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pData,
+                                   uint16_t Size, uint32_t Timeout);
+HAL_StatusTypeDef HAL_SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pData,
+                                  uint16_t Size, uint32_t Timeout);
+HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *hspi,
+                                          uint8_t *pTxData, uint8_t *pRxData,
+                                          uint16_t Size, uint32_t Timeout);
+HAL_StatusTypeDef HAL_SPI_Transmit_DMA(SPI_HandleTypeDef *hspi, uint8_t *pData,
+                                       uint16_t Size);
+HAL_StatusTypeDef HAL_SPI_Receive_DMA(SPI_HandleTypeDef *hspi, uint8_t *pData,
+                                      uint16_t Size);
+HAL_StatusTypeDef HAL_SPI_TransmitReceive_DMA(SPI_HandleTypeDef *hspi,
+                                              uint8_t *pTxData,
+                                              uint8_t *pRxData, uint16_t Size);
+void HAL_SPI_IRQHandler(SPI_HandleTypeDef *hspi);
+
 void HAL_SYSCFG_AnalogSwitchConfig(uint32_t SYSCFG_AnalogSwitch,
                                    uint32_t SYSCFG_SwitchState);
 
+void NVIC_EnableIRQ(IRQn_Type IRQn);
+void NVIC_DisableIRQ(IRQn_Type IRQn);
+
+HAL_StatusTypeDef MockedHAL_DMA_Init_Impl(DMA_HandleTypeDef *hdma);
+HAL_StatusTypeDef MockedHAL_DMA_Start_IT_Impl(DMA_HandleTypeDef *hdma,
+                                              uint32_t SrcAddress,
+                                              uint32_t DstAddress,
+                                              uint32_t DataLength);
+void MockedHAL_DMA_IRQHandler_Impl(DMA_HandleTypeDef *hdma);
+
 static inline uint32_t HAL_RCC_GetPCLK1Freq(void) { return SystemCoreClock; }
 static inline uint32_t HAL_RCC_GetPCLK2Freq(void) { return SystemCoreClock; }
+static inline void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t priority,
+                                        uint32_t subpriority) {
+  (void)IRQn;
+  (void)priority;
+  (void)subpriority;
+}
+static inline void HAL_NVIC_EnableIRQ(IRQn_Type IRQn) { NVIC_EnableIRQ(IRQn); }
+static inline void HAL_NVIC_DisableIRQ(IRQn_Type IRQn) { NVIC_DisableIRQ(IRQn); }
+static inline HAL_StatusTypeDef
+HAL_RCCEx_PeriphCLKConfig(RCC_PeriphCLKInitTypeDef *PeriphClkInit) {
+  (void)PeriphClkInit;
+  return HAL_OK;
+}
+static inline uint32_t HAL_RCCEx_GetPeriphCLKFreq(uint32_t PeriphClk) {
+  (void)PeriphClk;
+  return SystemCoreClock;
+}
+static inline HAL_StatusTypeDef HAL_DMA_Init(DMA_HandleTypeDef *hdma) {
+  return MockedHAL_DMA_Init_Impl(hdma);
+}
+static inline HAL_StatusTypeDef
+HAL_DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress,
+                 uint32_t DstAddress, uint32_t DataLength) {
+  return MockedHAL_DMA_Start_IT_Impl(hdma, SrcAddress, DstAddress, DataLength);
+}
+static inline void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma) {
+  MockedHAL_DMA_IRQHandler_Impl(hdma);
+}
 
 static inline void HAL_GPIO_Init(GPIO_TypeDef *GPIOx, GPIO_InitTypeDef *GPIO_Init) {
   (void)GPIOx;

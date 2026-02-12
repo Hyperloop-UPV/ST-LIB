@@ -168,4 +168,3 @@ void HAL_FMAC_ErrorCallback(FMAC_HandleTypeDef *hfmac){
 	ErrorHandler("Error while running FMAC");
 }
 
-

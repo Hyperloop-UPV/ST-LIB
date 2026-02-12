@@ -84,9 +84,9 @@ template <typename... Domains> struct BuildCtx {
 };
 
 using DomainsCtx =
-    BuildCtx<MPUDomain, GPIODomain, TimerDomain, DigitalOutputDomain,
+    BuildCtx<MPUDomain, GPIODomain, TimerDomain, DMA_Domain, SPIDomain, DigitalOutputDomain,
              DigitalInputDomain, MdmaPacketDomain, SdDomain, EthernetDomain,
-             ADCDomain /* PWMDomain, ...*/>;
+             ADCDomain/*, PWMDomain, ...*/>;
 
 template <auto &...devs> struct Board {
   static consteval auto build_ctx() {
@@ -105,6 +105,8 @@ template <auto &...devs> struct Board {
     constexpr std::size_t mpuN = domain_size<MPUDomain>();
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
     constexpr std::size_t timN = domain_size<TimerDomain>();
+    constexpr std::size_t dmaN = domain_size<DMA_Domain>();
+    constexpr std::size_t spiN = domain_size<SPIDomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
@@ -117,6 +119,8 @@ template <auto &...devs> struct Board {
       std::array<MPUDomain::Config, mpuN> mpu_cfgs;
       std::array<GPIODomain::Config, gpioN> gpio_cfgs;
       std::array<TimerDomain::Config, timN> tim_cfgs;
+      std::array<DMA_Domain::Config, dmaN> dma_cfgs;
+      std::array<SPIDomain::Config, spiN> spi_cfgs;
       std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
       std::array<DigitalInputDomain::Config, dinN> din_cfgs;
       std::array<MdmaPacketDomain::Config, mdmaPacketN> mdma_packet_cfgs;
@@ -133,6 +137,10 @@ template <auto &...devs> struct Board {
             GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
         .tim_cfgs =
             TimerDomain::template build<timN>(ctx.template span<TimerDomain>()),
+        .dma_cfgs = DMA_Domain::template build<dmaN>(
+            ctx.template span<DMA_Domain>()),
+        .spi_cfgs = SPIDomain::template build<spiN>(
+            ctx.template span<SPIDomain>()),
         .dout_cfgs = DigitalOutputDomain::template build<doutN>(
             ctx.template span<DigitalOutputDomain>()),
         .din_cfgs = DigitalInputDomain::template build<dinN>(
@@ -154,6 +162,8 @@ template <auto &...devs> struct Board {
     constexpr std::size_t mpuN = domain_size<MPUDomain>();
     constexpr std::size_t gpioN = domain_size<GPIODomain>();
     constexpr std::size_t timN = domain_size<TimerDomain>();
+    constexpr std::size_t dmaN = domain_size<DMA_Domain>();
+    constexpr std::size_t spiN = domain_size<SPIDomain>();
     constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
     constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
     constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
@@ -172,6 +182,10 @@ template <auto &...devs> struct Board {
     MPUDomain::Init<mpuN, cfg.mpu_cfgs>::init();
     GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
     TimerDomain::Init<timN>::init(cfg.tim_cfgs);
+    DMA_Domain::Init<dmaN>::init(cfg.dma_cfgs);
+    SPIDomain::Init<spiN>::init(cfg.spi_cfgs,
+                                GPIODomain::Init<gpioN>::instances,
+                                DMA_Domain::Init<dmaN>::instances);
     DigitalOutputDomain::Init<doutN>::init(cfg.dout_cfgs,
                                            GPIODomain::Init<gpioN>::instances);
     DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs,
