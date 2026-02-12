@@ -75,10 +75,6 @@ static void common_start(UART::Peripheral &printf_peripheral) {
   //Time::start();
 #endif
 
-#ifdef HAL_EXTI_MODULE_ENABLED
-  ExternalInterrupt::start();
-#endif
-
 #ifdef NDEBUG
 #ifdef HAL_IWDG_MODULE_ENABLED
   Watchdog::start();
