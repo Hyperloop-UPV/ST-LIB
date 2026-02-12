@@ -9,6 +9,8 @@
 
 #include "ErrorHandler/ErrorHandler.hpp"
 
+ST_LIB::EXTIDomain::Instance* ST_LIB::EXTIDomain::g_instances[ST_LIB::EXTIDomain::max_instances] = {
+    nullptr};
 
 extern "C"{
 
