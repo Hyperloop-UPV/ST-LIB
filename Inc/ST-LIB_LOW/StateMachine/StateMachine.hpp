@@ -432,7 +432,7 @@ public:
         }
     }
 
-    void start() override;
+    void start() override
     {
       enter();
       for(auto& nested : nested_state_machine)
