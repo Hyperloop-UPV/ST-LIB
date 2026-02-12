@@ -1,6 +1,7 @@
 #ifndef __HARD_FAULT_TRACE
 
 #define __HARD_FAULT_TRACE
+#include <string.h>
 #include "stm32h7xx_ll_gpio_wrapper.h"
 #include "stm32h7xx_ll_bus_wrapper.h"
 #include "stm32h7xx_ll_tim_wrapper.h"
