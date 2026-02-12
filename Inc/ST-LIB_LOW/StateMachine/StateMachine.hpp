@@ -262,6 +262,7 @@ class IStateMachine {
     protected:
     virtual void enter() = 0;
     virtual void exit() = 0;
+    virtual void start() = 0;
     template <class E, size_t N, size_t T>
     friend class StateMachine;
 };
@@ -431,7 +432,7 @@ public:
         }
     }
 
-    void start()
+    void start() override;
     {
       enter();
       for(auto& nested : nested_state_machine)
