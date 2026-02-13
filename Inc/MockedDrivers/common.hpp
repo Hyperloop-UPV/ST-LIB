@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #ifndef glue
 #define glue_(a,b) a##b
 #define glue(a,b) glue_(a,b)
