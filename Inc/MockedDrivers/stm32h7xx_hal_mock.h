@@ -816,6 +816,7 @@ uint32_t HAL_ADC_GetState(const ADC_HandleTypeDef *hadc);
 uint32_t HAL_ADC_GetError(const ADC_HandleTypeDef *hadc);
 
 HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef *hspi);
+HAL_StatusTypeDef HAL_SPI_DeInit(SPI_HandleTypeDef *hspi);
 HAL_StatusTypeDef HAL_SPI_Abort(SPI_HandleTypeDef *hspi);
 HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pData,
                                    uint16_t Size, uint32_t Timeout);

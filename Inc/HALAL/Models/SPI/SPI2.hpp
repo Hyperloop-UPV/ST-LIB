@@ -8,6 +8,7 @@
 #ifndef SPI2_HPP
 #define SPI2_HPP
 
+#include "hal_wrapper.h"
 #include "C++Utilities/CppImports.hpp"
 #include "HALAL/Models/GPIO.hpp"
 #include "HALAL/Models/Pin.hpp"
