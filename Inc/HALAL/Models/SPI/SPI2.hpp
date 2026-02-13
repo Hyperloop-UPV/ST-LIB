@@ -469,6 +469,21 @@ struct SPIDomain {
         SPI_TypeDef* instance;
 
         volatile bool* operation_flag = nullptr;
+        uint32_t error_count = 0;
+        bool was_aborted = false;
+
+        void recover() {
+            // Abort any ongoing SPI operation
+            HAL_SPI_Abort(&hspi);
+            
+            error_count++;
+            was_aborted = true;
+            operation_flag = nullptr;
+            
+            // Reset SPI state
+            HAL_SPI_DeInit(&hspi);
+            HAL_SPI_Init(&hspi);
+        }
     };
 
 
@@ -492,6 +507,31 @@ struct SPIDomain {
         static constexpr uint32_t frame_size = (data_bits <= 8) ? 1 : ((data_bits <= 16) ? 2 : 4);
 
         SPIWrapper(Instance &instance) : spi_instance{instance} {}
+
+        /**
+         * @brief Aborts any ongoing SPI operation and recovers the peripheral.
+         */
+        void abort_and_recover() {
+            spi_instance.recover();
+        }
+
+        /**
+         * @brief Checks if the SPI instance was aborted since the last reset.
+         */
+        bool was_aborted() const {
+            return spi_instance.was_aborted;
+        }
+
+        void clear_abort_flag() {
+            spi_instance.was_aborted = false;
+        }
+
+        /**
+         * @brief Gets the error count for this SPI instance.
+         */
+        uint32_t get_error_count() const {
+            return spi_instance.error_count;
+        }
 
         /**
          * @brief Sends data over SPI in blocking mode.
@@ -747,6 +787,20 @@ struct SPIDomain {
             } else {
                SET_BIT(spi_instance.instance->CR1, SPI_CR1_SSI);
             }
+        }
+
+        /**
+         * @brief Aborts any ongoing SPI operation and recovers the peripheral.
+         */
+        void abort_and_recover() {
+            spi_instance.recover();
+        }
+
+        /**
+         * @brief Gets the error count for this SPI instance.
+         */
+        uint32_t get_error_count() const {
+            return spi_instance.error_count;
         }
 
         /**
