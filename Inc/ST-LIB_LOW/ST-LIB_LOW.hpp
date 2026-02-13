@@ -2,7 +2,7 @@
 
 #include "ST-LIB_LOW/DigitalOutput2.hpp"
 #include "ST-LIB_LOW/DigitalInput2.hpp"
-
+#include "HALAL/Services/DFSDM/DFSDM.hpp"
 #include "Clocks/Counter.hpp"
 #include "Clocks/Stopwatch.hpp"
 #include "Sensors/LinearSensor/LinearSensor.hpp"
