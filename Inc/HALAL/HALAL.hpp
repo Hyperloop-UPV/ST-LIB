@@ -3,7 +3,7 @@
 #include "HALAL/Models/GPIO.hpp"
 #include "HALAL/Models/Pin.hpp"
 
-#include "HALAL/Models/DMA/DMA.hpp"
+#include "HALAL/Models/DMA/DMA2.hpp"
 #include "HALAL/Models/HALconfig/HALconfig.hpp"
 
 #include "HALAL/Services/DigitalInputService/DigitalInputService.hpp"
@@ -35,6 +35,7 @@
 
 #include "HALAL/Services/Communication/FDCAN/FDCAN.hpp"
 #include "HALAL/Services/Communication/I2C/I2C.hpp"
+#include "HALAL/Models/SPI/SPI2.hpp"
 #include "HALAL/Services/Communication/SPI/SPI.hpp"
 #include "HALAL/Services/Communication/UART/UART.hpp"
 
