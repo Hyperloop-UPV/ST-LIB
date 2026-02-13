@@ -142,11 +142,13 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
         return;
     }
 
-    // Attempt recovery before failing
-    inst->recover();
+   if (!inst->recover()) {
+        ErrorHandler("SPI%i failed with error number %u (recovery failed, error count: %u)", 
+                     inst_idx + 1, error_code, inst->error_count);
+    }
     
-    ErrorHandler("SPI%i failed with error number %u (recovered, error count: %u)", 
-                 inst_idx + 1, error_code, inst->error_count);
+    (void)error_code;  
+    (void)inst_idx; 
 }
 
 }

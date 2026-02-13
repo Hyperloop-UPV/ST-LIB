@@ -470,10 +470,10 @@ struct SPIDomain {
         SPI_TypeDef* instance;
 
         volatile bool* operation_flag = nullptr;
-        uint32_t error_count = 0;
-        bool was_aborted = false;
+        volatile uint32_t error_count = 0;
+        volatile bool was_aborted = false;
 
-        void recover() {
+        bool recover() {
             // Abort any ongoing SPI operation
             HAL_SPI_Abort(&hspi);
             
@@ -482,8 +482,15 @@ struct SPIDomain {
             operation_flag = nullptr;
             
             // Reset SPI state
-            HAL_SPI_DeInit(&hspi);
-            HAL_SPI_Init(&hspi);
+            auto status = HAL_SPI_DeInit(&hspi);
+            if (status != HAL_OK) {
+                return false;
+            }
+            status = HAL_SPI_Init(&hspi);
+            if (status != HAL_OK) {
+                return false;
+            }
+            return true;
         }
     };
 
