@@ -95,6 +95,8 @@ struct EXTIDomain {
     return cfgs;
   }
 
+  template <std::size_t N> struct Init;
+
   struct Instance {
 		friend void ::HAL_GPIO_EXTI_Callback(uint16_t);
 		template <std::size_t> friend struct Init;
@@ -110,7 +112,7 @@ struct EXTIDomain {
     GPIODomain::Instance* gpio = nullptr;
   };
 
-	static Instance* g_instances[EXTIDomain::max_instances];
+  static Instance* g_instances[EXTIDomain::max_instances];
 
   template <std::size_t N>
   struct Init {
@@ -136,6 +138,7 @@ struct EXTIDomain {
 				HAL_NVIC_EnableIRQ(irq_n);
 
 				inst.turn_on();
+				inst.is_on = true;
       }
     }
   };
