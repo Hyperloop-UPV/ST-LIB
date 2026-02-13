@@ -812,6 +812,20 @@ struct SPIDomain {
         }
 
         /**
+         * @brief Indicates whether the last operation was aborted.
+         */
+        bool was_aborted() const {
+            return spi_instance.was_aborted;
+        }
+
+        /**
+         * @brief Clears the aborted state flag for this SPI instance.
+         */
+        void clear_abort_flag() {
+            spi_instance.was_aborted = false;
+        }
+
+        /**
          * @brief Listens for data over SPI using DMA, uses an optional operation flag to signal completion.
          */
         template <typename E, size_t S>
