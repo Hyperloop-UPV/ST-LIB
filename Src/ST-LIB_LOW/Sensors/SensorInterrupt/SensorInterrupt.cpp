@@ -1,5 +1,5 @@
 #include "Sensors/SensorInterrupt/SensorInterrupt.hpp"
-#include "Sensors/Sensor/Sensor.hpp"
+
 
 SensorInterrupt::SensorInterrupt(ST_LIB::EXTIDomain::Instance &exti, GPIO_PinState *value) : exti(&exti), value(value) {
 }

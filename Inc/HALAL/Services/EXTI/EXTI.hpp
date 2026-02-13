@@ -9,7 +9,7 @@
 #define EXTI_HPP
 #include "HALAL/Models/GPIO.hpp"
 #include "HALAL/Models/Pin.hpp"
-#include <cmath>
+
 
 extern "C" void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
@@ -25,9 +25,9 @@ struct EXTIDomain {
 	}
 
 	enum class Trigger : uint8_t {
-		RISING_EDGE = 6, // ST_LIB::GPIODomain::OperationMode::EXTI_RISING
-		FALLING_EDGE = 7, // ST_LIB::GPIODomain::OperationMode::EXTI_FALLING
-		BOTH_EDGES = 8 // ST_LIB::GPIODomain::OperationMode::EXTI_RISING_FALLING 
+		RISING_EDGE = static_cast<uint8_t>(ST_LIB::GPIODomain::OperationMode::EXTI_RISING),
+		FALLING_EDGE = static_cast<uint8_t>(ST_LIB::GPIODomain::OperationMode::EXTI_FALLING),
+		BOTH_EDGES = static_cast<uint8_t>(ST_LIB::GPIODomain::OperationMode::EXTI_RISING_FALLING)
 	};
 
   struct Entry {
@@ -138,7 +138,7 @@ struct EXTIDomain {
 				HAL_NVIC_EnableIRQ(irq_n);
 
 				inst.turn_on();
-				inst.is_on = true;
+
       }
     }
   };
