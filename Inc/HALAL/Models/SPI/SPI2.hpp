@@ -477,7 +477,8 @@ struct SPIDomain {
             // Abort any ongoing SPI operation
             HAL_SPI_Abort(&hspi);
             
-            error_count++;
+            uint32_t newErrorCount = error_count + 1; // Cause volatile in c++ freacking sucks
+            error_count = newErrorCount;
             was_aborted = true;
             operation_flag = nullptr;
             
