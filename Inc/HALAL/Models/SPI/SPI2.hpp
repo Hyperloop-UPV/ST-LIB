@@ -240,18 +240,18 @@ struct SPIDomain {
                 nss_idx = nss_gpio.value().inscribe(ctx);
             }
             
-            Entry e{
-                .peripheral = peripheral,
-                .mode = mode,
-                .sck_gpio_idx = sck_gpio.inscribe(ctx),
-                .miso_gpio_idx = miso_gpio.inscribe(ctx),
-                .mosi_gpio_idx = mosi_gpio.inscribe(ctx),
-                .nss_gpio_idx = nss_idx,
-                .dma_rx_idx = dma_indices[0],
-                .dma_tx_idx = dma_indices[1],
-                .max_baudrate = max_baudrate,
-                .config = config
-            };
+            Entry e;
+
+            e.peripheral = peripheral;
+            e.mode = mode;
+            e.sck_gpio_idx = sck_gpio.inscribe(ctx);
+            e.miso_gpio_idx = miso_gpio.inscribe(ctx);
+            e.mosi_gpio_idx = mosi_gpio.inscribe(ctx);
+            e.nss_gpio_idx = nss_idx;
+            e.dma_rx_idx = dma_indices[0];
+            e.dma_tx_idx = dma_indices[1];
+            e.max_baudrate = max_baudrate;
+            e.config = config;
 
             return ctx.template add<SPIDomain>(e, this);
         }
