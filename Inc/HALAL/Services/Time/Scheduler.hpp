@@ -6,30 +6,28 @@
  */
 #pragma once
 
-/* Uso del scheduler, descrito en la wiki: https://wiki.hyperloopupv.com/es/firmware/Timing/Scheduler */
+/* Uso del scheduler, descrito en la wiki:
+ * https://wiki.hyperloopupv.com/es/firmware/Timing/Scheduler */
 
-#ifndef TESTING_ENV
-#include "stm32h7xx_ll_tim.h"
-#else
-#include "MockedDrivers/stm32h7xx_ll_tim_wrapper.h"
-#endif
+#include "stm32h7xx_ll_tim_wrapper.h"
+
 #include <array>
 #include <cstdint>
 #include <functional>
 
 /* NOTE(vic): Esto cambiará pronto */
 #ifndef SCHEDULER_TIMER_IDX
-# define SCHEDULER_TIMER_IDX 2
+#define SCHEDULER_TIMER_IDX 2
 #endif
 
 #ifndef glue
-#define glue_(a,b) a ## b
-#define glue(a,b) glue_(a,b)
+#define glue_(a, b) a##b
+#define glue(a, b) glue_(a, b)
 #endif
 #define SCHEDULER_TIMER_BASE glue(TIM, glue(SCHEDULER_TIMER_IDX, _BASE))
 
 // Used to reserve a TimerPeripheral
-#ifndef TESTING_ENV
+#ifndef SIM_ON
 #include "stm32h7xx_hal_tim.h"
 #define SCHEDULER_HAL_TIM glue(htim, SCHEDULER_TIMER_IDX)
 extern TIM_HandleTypeDef SCHEDULER_HAL_TIM;
@@ -51,12 +49,13 @@ struct Scheduler {
 
     // static void global_timer_callback();
 
-    // Have to be public because SCHEDULER_GLOBAL_TIMER_CALLBACK won't work otherwise
-    //static const uint32_t global_timer_base = SCHEDULER_TIMER_BASE;
+    // Have to be public because SCHEDULER_GLOBAL_TIMER_CALLBACK won't work
+    // otherwise
+    // static const uint32_t global_timer_base = SCHEDULER_TIMER_BASE;
     static void on_timer_update();
 
-#ifndef TESTING_ENV
-    private:
+#ifndef SIM_ON
+private:
 #endif
     struct Task {
         uint32_t next_fire_us{0};
@@ -71,12 +70,19 @@ struct Scheduler {
     static constexpr uint32_t FREQUENCY = 1'000'000u; // 1 MHz -> 1us precision
 
     static std::array<Task, kMaxTasks> tasks_;
-    static_assert(kMaxTasks == 16, "kMaxTasks must be 16, if more is needed, sorted_task_ids_ must change");
-    /* sorted_task_ids_ is a sorted queue with 4bits for each id in the scheduler's current ids */
+    static_assert(
+        kMaxTasks == 16,
+        "kMaxTasks must be 16, if more is needed, sorted_task_ids_ must change"
+    );
+    /* sorted_task_ids_ is a sorted queue with 4bits for each id in the
+     * scheduler's current ids */
     static uint64_t sorted_task_ids_;
 
     static uint32_t active_task_count_;
-    static_assert(kMaxTasks <= 32, "kMaxTasks must be <= 32, if more is needed, the bitmaps must change");
+    static_assert(
+        kMaxTasks <= 32,
+        "kMaxTasks must be <= 32, if more is needed, the bitmaps must change"
+    );
     static uint32_t ready_bitmap_;
     static uint32_t free_bitmap_;
     static uint64_t global_tick_us_;

@@ -1,9 +1,9 @@
 #include "ST-LIB_LOW/Sd/Sd.hpp"
 
-SD_HandleTypeDef *g_sdmmc1_handle = nullptr;
-SD_HandleTypeDef *g_sdmmc2_handle = nullptr;
-void *g_sdmmc1_instance_ptr = nullptr;
-void *g_sdmmc2_instance_ptr = nullptr;
+SD_HandleTypeDef* g_sdmmc1_handle = nullptr;
+SD_HandleTypeDef* g_sdmmc2_handle = nullptr;
+void* g_sdmmc1_instance_ptr = nullptr;
+void* g_sdmmc2_instance_ptr = nullptr;
 
 using namespace ST_LIB;
 
@@ -27,16 +27,24 @@ void SdDomain::Instance::on_abort() { ErrorHandler("SD Card operation aborted");
 
 void SdDomain::Instance::on_error() { ErrorHandler("SD Card error occurred"); }
 
-bool SdDomain::Instance::is_card_present() { return cd_instance->first->read() == cd_instance->second; }
-bool SdDomain::Instance::is_write_protected() { return wp_instance->first->read() == wp_instance->second; }
+bool SdDomain::Instance::is_card_present() {
+    return cd_instance->first->read() == cd_instance->second;
+}
+bool SdDomain::Instance::is_write_protected() {
+    return wp_instance->first->read() == wp_instance->second;
+}
 
-bool SdDomain::Instance::is_busy() { 
-    if (!card_initialized) return false;
-    return (hsd.State == HAL_SD_STATE_BUSY) || (hsd.State == HAL_SD_STATE_PROGRAMMING) || (hsd.State == HAL_SD_STATE_RECEIVING);
+bool SdDomain::Instance::is_busy() {
+    if (!card_initialized)
+        return false;
+    return (hsd.State == HAL_SD_STATE_BUSY) || (hsd.State == HAL_SD_STATE_PROGRAMMING) ||
+           (hsd.State == HAL_SD_STATE_RECEIVING);
 }
 
 bool SdDomain::Instance::initialize_card() {
-    if (card_initialized) { return true; } // Already initialized
+    if (card_initialized) {
+        return true;
+    } // Already initialized
 
     HAL_StatusTypeDef status = HAL_SD_Init(&hsd);
     if (status != HAL_OK) {
@@ -60,7 +68,9 @@ bool SdDomain::Instance::initialize_card() {
 }
 
 bool SdDomain::Instance::deinitialize_card() {
-    if (!card_initialized) { return true; } // Already deinitialized
+    if (!card_initialized) {
+        return true;
+    } // Already deinitialized
 
     HAL_StatusTypeDef status = HAL_SD_DeInit(&hsd);
     if (status != HAL_OK) {
@@ -72,20 +82,28 @@ bool SdDomain::Instance::deinitialize_card() {
 }
 
 void SdDomain::Instance::switch_buffer() {
-    current_buffer = (current_buffer == BufferSelect::Buffer0) ? BufferSelect::Buffer1 : BufferSelect::Buffer0;
+    current_buffer =
+        (current_buffer == BufferSelect::Buffer0) ? BufferSelect::Buffer1 : BufferSelect::Buffer0;
 }
 
 bool SdDomain::Instance::configure_idma() {
-    HAL_StatusTypeDef status = HAL_SDEx_ConfigDMAMultiBuffer(&hsd,
+    HAL_StatusTypeDef status = HAL_SDEx_ConfigDMAMultiBuffer(
+        &hsd,
         reinterpret_cast<uint32_t*>(mpu_buffer0_instance->ptr),
         reinterpret_cast<uint32_t*>(mpu_buffer1_instance->ptr),
-        mpu_buffer0_instance->size / 512); // Number of 512B-blocks
+        mpu_buffer0_instance->size / 512
+    ); // Number of 512B-blocks
 
-    if (status != HAL_OK) { return false; }
+    if (status != HAL_OK) {
+        return false;
+    }
     return true;
 }
 
-HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(uint32_t BlockAdd, uint32_t NumberOfBlocks) {
+HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(
+    uint32_t BlockAdd,
+    uint32_t NumberOfBlocks
+) {
     SDMMC_DataInitTypeDef config;
     uint32_t errorstate;
     uint32_t DmaBase0_reg;
@@ -119,12 +137,12 @@ HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(uint
         }
 
         /* Configure the SD DPSM (Data Path State Machine) */
-        config.DataTimeOut   = SDMMC_DATATIMEOUT;
-        config.DataLength    = BLOCKSIZE * NumberOfBlocks;
+        config.DataTimeOut = SDMMC_DATATIMEOUT;
+        config.DataLength = BLOCKSIZE * NumberOfBlocks;
         config.DataBlockSize = SDMMC_DATABLOCK_SIZE_512B;
-        config.TransferDir   = SDMMC_TRANSFER_DIR_TO_SDMMC;
-        config.TransferMode  = SDMMC_TRANSFER_MODE_BLOCK;
-        config.DPSM          = SDMMC_DPSM_DISABLE;
+        config.TransferDir = SDMMC_TRANSFER_DIR_TO_SDMMC;
+        config.TransferMode = SDMMC_TRANSFER_MODE_BLOCK;
+        config.DPSM = SDMMC_DPSM_DISABLE;
         (void)SDMMC_ConfigData(hsd.Instance, &config);
 
         // hsd.Instance->DCTRL |= SDMMC_DCTRL_FIFORST;
@@ -148,17 +166,22 @@ HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_ReadBlocksDMAMultiBuffer(uint
             return HAL_ERROR;
         }
 
-        __HAL_SD_ENABLE_IT(&hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_RXOVERR | SDMMC_IT_DATAEND |
-                                SDMMC_IT_IDMABTC));
+        __HAL_SD_ENABLE_IT(
+            &hsd,
+            (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_RXOVERR | SDMMC_IT_DATAEND |
+             SDMMC_IT_IDMABTC)
+        );
 
         return HAL_OK;
-    }
-    else {
+    } else {
         return HAL_BUSY;
     }
 }
 
-HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(uint32_t BlockAdd, uint32_t NumberOfBlocks) {
+HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(
+    uint32_t BlockAdd,
+    uint32_t NumberOfBlocks
+) {
     SDMMC_DataInitTypeDef config;
     uint32_t errorstate;
     uint32_t DmaBase0_reg;
@@ -189,12 +212,12 @@ HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(uin
         }
 
         /* Configure the SD DPSM (Data Path State Machine) */
-        config.DataTimeOut   = SDMMC_DATATIMEOUT;
-        config.DataLength    = BLOCKSIZE * NumberOfBlocks;
+        config.DataTimeOut = SDMMC_DATATIMEOUT;
+        config.DataLength = BLOCKSIZE * NumberOfBlocks;
         config.DataBlockSize = SDMMC_DATABLOCK_SIZE_512B;
-        config.TransferDir   = SDMMC_TRANSFER_DIR_TO_CARD;
-        config.TransferMode  = SDMMC_TRANSFER_MODE_BLOCK;
-        config.DPSM          = SDMMC_DPSM_DISABLE;
+        config.TransferDir = SDMMC_TRANSFER_DIR_TO_CARD;
+        config.TransferMode = SDMMC_TRANSFER_MODE_BLOCK;
+        config.DPSM = SDMMC_DPSM_DISABLE;
         (void)SDMMC_ConfigData(hsd.Instance, &config);
 
         // hsd.Instance->DCTRL |= SDMMC_DCTRL_FIFORST;
@@ -219,20 +242,21 @@ HAL_StatusTypeDef SdDomain::Instance::Not_HAL_SDEx_WriteBlocksDMAMultiBuffer(uin
             return HAL_ERROR;
         }
 
-        __HAL_SD_ENABLE_IT(&hsd, (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_TXUNDERR | SDMMC_IT_DATAEND |
-                                SDMMC_IT_IDMABTC));
+        __HAL_SD_ENABLE_IT(
+            &hsd,
+            (SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT | SDMMC_IT_TXUNDERR | SDMMC_IT_DATAEND |
+             SDMMC_IT_IDMABTC)
+        );
 
         return HAL_OK;
-    }
-    else {
+    } else {
         return HAL_BUSY;
     }
 }
 
-
 extern "C" {
 
-void HAL_SD_MspInit(SD_HandleTypeDef *hsd) {
+void HAL_SD_MspInit(SD_HandleTypeDef* hsd) {
     if (hsd->Instance == SDMMC1) {
         __HAL_RCC_SDMMC1_CLK_ENABLE();
         __HAL_RCC_SDMMC1_FORCE_RESET();
@@ -260,19 +284,19 @@ void SDMMC2_IRQHandler(void) {
     }
 }
 
-void HAL_SD_TxCpltCallback(SD_HandleTypeDef *hsd) {
+void HAL_SD_TxCpltCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
         sd_instance->on_dma_write_complete();
     }
 }
 
-void HAL_SD_RxCpltCallback(SD_HandleTypeDef *hsd) {
+void HAL_SD_RxCpltCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
         sd_instance->on_dma_read_complete();
     }
 }
 
-void HAL_SD_AbortCallback(SD_HandleTypeDef *hsd) {
+void HAL_SD_AbortCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
         sd_instance->on_abort();
     } else {
@@ -280,7 +304,7 @@ void HAL_SD_AbortCallback(SD_HandleTypeDef *hsd) {
     }
 }
 
-void HAL_SD_ErrorCallback(SD_HandleTypeDef *hsd) {
+void HAL_SD_ErrorCallback(SD_HandleTypeDef* hsd) {
     if (auto sd_instance = ST_LIB::get_sd_instance(hsd)) {
         sd_instance->on_error();
     } else {

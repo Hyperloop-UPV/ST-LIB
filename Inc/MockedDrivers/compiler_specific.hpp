@@ -38,36 +38,36 @@ static inline uint32_t __RBIT(uint32_t val) {
     return val;
 }
 
-#define __CLZ                  __builtin_clz
+#define __CLZ __builtin_clz
 
 #if defined(_MSC_VER) && (_MSC_VER > 1200) && !defined(__clang__)
 void _ReadWriteBarrier(void);
 #pragma intrinsic(_ReadWriteBarrier)
-#define __COMPILER_BARRIER()   _ReadWriteBarrier()
-#define __DSB()  __COMPILER_BARRIER()
-#define __ISB()  __COMPILER_BARRIER()
+#define __COMPILER_BARRIER() _ReadWriteBarrier()
+#define __DSB() __COMPILER_BARRIER()
+#define __ISB() __COMPILER_BARRIER()
 #else
 
-#define __COMPILER_BARRIER()   asm volatile("" ::: "memory")
+#define __COMPILER_BARRIER() asm volatile("" ::: "memory")
 
 // Architecture-specific definitions for barrier intrinsics used in mocks
 #if defined(__x86_64__) || defined(_M_X64)
 
 // Host x86_64
-#  define __DSB()  __asm__ volatile("mfence" ::: "memory")
-#  define __ISB()  __asm__ volatile("lfence" ::: "memory")
+#define __DSB() __asm__ volatile("mfence" ::: "memory")
+#define __ISB() __asm__ volatile("lfence" ::: "memory")
 
 #elif defined(__aarch64__) || defined(_M_ARM64)
 
 // Host ARM64
-#  define __DSB()  __asm__ volatile("dmb ish" ::: "memory")
-#  define __ISB()  __asm__ volatile("isb" ::: "memory")
+#define __DSB() __asm__ volatile("dmb ish" ::: "memory")
+#define __ISB() __asm__ volatile("isb" ::: "memory")
 
 #else
 
 // Any other host architecture: compiler barrier only
-#  define __DSB()  __COMPILER_BARRIER()
-#  define __ISB()  __COMPILER_BARRIER()
+#define __DSB() __COMPILER_BARRIER()
+#define __ISB() __COMPILER_BARRIER()
 
 #endif
 #endif

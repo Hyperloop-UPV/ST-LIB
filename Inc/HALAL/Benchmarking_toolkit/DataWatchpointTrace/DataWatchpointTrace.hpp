@@ -15,9 +15,9 @@
 #define DEMCR_TRCENA 0x01000000
 #define DWT_CTRL_CYCCNTENA 0x00000001
 /*
-    This class is designed to study the efficiency of an algorithm 
-    by counting the number of clock cycles required for execution. 
-    It provides a more predictable and reliable method for measuring 
+    This class is designed to study the efficiency of an algorithm
+    by counting the number of clock cycles required for execution.
+    It provides a more predictable and reliable method for measuring
     performance compared to using time-based measurements.
 */
 /*
@@ -27,32 +27,32 @@
     The difference will be the number of clock cycles done in the algorithm
 */
 class DataWatchpointTrace {
-   public:
+public:
     static void start() {
         unlock_dwt();
         reset_cnt();
     }
     static unsigned int start_count() {
-        DWT->CTRL |= DWT_CTRL_CYCCNTENA;  // enables the counter
+        DWT->CTRL |= DWT_CTRL_CYCCNTENA; // enables the counter
         DWT->CYCCNT = 0;
         return DWT->CYCCNT;
     }
     static unsigned int stop_count() {
-        DWT->CTRL &= ~DWT_CTRL_CYCCNTENA;  // disable the counter
+        DWT->CTRL &= ~DWT_CTRL_CYCCNTENA; // disable the counter
         return DWT->CYCCNT;
     }
     static unsigned int get_count() {
-        return DWT->CYCCNT;  // returns the current value of the counter
+        return DWT->CYCCNT; // returns the current value of the counter
     }
 
-   private:
+private:
     static void reset_cnt() {
         CoreDebug->DEMCR |= DEMCR_TRCENA;
-        DWT->CYCCNT = 0;  // reset the counter
+        DWT->CYCCNT = 0; // reset the counter
         DWT->CTRL = 0;
     }
 
-    static void unlock_dwt() {  // unlock the dwt
+    static void unlock_dwt() { // unlock the dwt
         uint32_t lsr = DWT->LSR;
         if ((lsr & DWT_LSR_Present_Msk) != 0) {
             if ((lsr & DWT_LSR_Access_Msk) != 0) {

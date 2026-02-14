@@ -19,7 +19,8 @@
 #include "Sensors/SensorInterrupt/SensorInterrupt.hpp"
 #include "Sensors/LinearSensor/LinearSensor.hpp"
 #include "Sensors/LookupSensor/LookupSensor.hpp"
-#include "Sensors/EncoderSensor/EncoderSensor.hpp"
+// #include "Sensors/EncoderSensor/EncoderSensor.hpp"
+#include "Sensors/EncoderSensor/NewEncoderSensor.hpp"
 #include "Sensors/PWMSensor/PWMSensor.hpp"
 #include "Sensors/NTC/NTC.hpp"
 
@@ -31,5 +32,5 @@
 
 class STLIB_LOW {
 public:
-	static void start();
+    static void start();
 };

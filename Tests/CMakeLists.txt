@@ -8,27 +8,35 @@ project( ${STLIB_TEST_EXECUTABLE})
 include(FetchContent)
 FetchContent_Declare(
   googletest
-  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG v1.15.2
+  GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(googletest)
 
 message(STATUS "Generating test executable for ST-LIB")
 
 add_executable(${STLIB_TEST_EXECUTABLE}
+    ${CMAKE_CURRENT_LIST_DIR}/../Src/HALAL/Models/SPI/SPI2.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../Src/HALAL/Models/DMA/DMA2.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/scheduler_test.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/timer_wrapper_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/adc_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/spi2_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/dma2_test.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/common_tests.cpp
 )
 
 set_target_properties(${STLIB_TEST_EXECUTABLE} PROPERTIES
     CXX_STANDARD 23
     CXX_STANDARD_REQUIRED YES
-    C_STANDARD 11
+    C_STANDARD 17
     C_STANDARD_REQUIRED YES
 )
 
 target_link_libraries(
     ${STLIB_TEST_EXECUTABLE}
+    PRIVATE
     GTest::gtest_main
     ${STLIB_LIBRARY}
 )
@@ -37,12 +45,8 @@ if(MINGW OR CYGWIN)
     target_link_options(${STLIB_TEST_EXECUTABLE} PRIVATE -static)
 endif()
 
-if(MINGW OR CYGWIN)
-    target_link_options(${STLIB_TEST_EXECUTABLE} PRIVATE -static)
-endif()
-
 target_compile_definitions(${STLIB_TEST_EXECUTABLE} PRIVATE
-  TESTING_ENV
+  SIM_ON
 )
 
 target_include_directories(${STLIB_TEST_EXECUTABLE} PRIVATE
@@ -51,8 +55,14 @@ target_include_directories(${STLIB_TEST_EXECUTABLE} PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/../Inc/ST-LIB_HIGH
 )
 
+if(TARGET stlib_sim_dev_flags)
+    target_link_libraries(${STLIB_TEST_EXECUTABLE} PRIVATE stlib_sim_dev_flags)
+endif()
+
 include(GoogleTest)
-gtest_discover_tests(${STLIB_TEST_EXECUTABLE})
+gtest_discover_tests(
+  ${STLIB_TEST_EXECUTABLE}
+)
 
 add_custom_command(
     TARGET ${STLIB_TEST_EXECUTABLE}

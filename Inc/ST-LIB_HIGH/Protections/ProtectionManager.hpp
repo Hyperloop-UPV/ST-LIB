@@ -1,39 +1,41 @@
 #pragma once
 
-#include "HALAL/HALAL.hpp"
+#include <cstdio>
+
+#include "C++Utilities/CppUtils.hpp"
+#include "HALAL/Models/BoardID/BoardID.hpp"
+#include "HALAL/Models/Packets/Order.hpp"
 #include "Notification.hpp"
 #include "Protection.hpp"
 #include "StateMachine/StateMachine.hpp"
 
 #define getname(var) #var
-#define add_protection(src, ...)                                   \
-    {                                                              \
-        Protection& ref =                                          \
-            ProtectionManager::_add_protection(src, __VA_ARGS__);  \
-        if (getname(src)[0] == '&') {                              \
-            ref.set_name((char*)malloc(sizeof(getname(src)) - 1)); \
-            sprintf(ref.get_name(), "%s", getname(src) + 1);       \
-        } else {                                                   \
-            ref.set_name((char*)malloc(sizeof(getname(src))));     \
-            sprintf(ref.get_name(), "%s", getname(src));           \
-        }                                                          \
+#define add_protection(src, ...)                                                                   \
+    {                                                                                              \
+        Protection& ref = ProtectionManager::_add_protection(src, __VA_ARGS__);                    \
+        if (getname(src)[0] == '&') {                                                              \
+            ref.set_name((char*)malloc(sizeof(getname(src)) - 1));                                 \
+            sprintf(ref.get_name(), "%s", getname(src) + 1);                                       \
+        } else {                                                                                   \
+            ref.set_name((char*)malloc(sizeof(getname(src))));                                     \
+            sprintf(ref.get_name(), "%s", getname(src));                                           \
+        }                                                                                          \
     }
 
-#define add_high_frequency_protection(src, ...)                              \
-    {                                                                        \
-        Protection& ref = ProtectionManager::_add_high_frequency_protection( \
-            src, __VA_ARGS__);                                               \
-        if (getname(src)[0] == '&') {                                        \
-            ref.set_name((char*)malloc(sizeof(getname(src)) - 1));           \
-            sprintf(ref.get_name(), "%s", getname(src) + 1);                 \
-        } else {                                                             \
-            ref.set_name((char*)malloc(sizeof(getname(src))));               \
-            sprintf(ref.get_name(), "%s", getname(src));                     \
-        }                                                                    \
+#define add_high_frequency_protection(src, ...)                                                    \
+    {                                                                                              \
+        Protection& ref = ProtectionManager::_add_high_frequency_protection(src, __VA_ARGS__);     \
+        if (getname(src)[0] == '&') {                                                              \
+            ref.set_name((char*)malloc(sizeof(getname(src)) - 1));                                 \
+            sprintf(ref.get_name(), "%s", getname(src) + 1);                                       \
+        } else {                                                                                   \
+            ref.set_name((char*)malloc(sizeof(getname(src))));                                     \
+            sprintf(ref.get_name(), "%s", getname(src));                                           \
+        }                                                                                          \
     }
 
 class ProtectionManager {
-   public:
+public:
     typedef uint8_t state_id;
     static bool external_trigger;
 
@@ -42,21 +44,25 @@ class ProtectionManager {
 
     static void set_id(Boards::ID id);
 
-    static void link_state_machine(IStateMachine& general_state_machine,
-                                   state_id fault_id);
+    static void link_state_machine(IStateMachine& general_state_machine, state_id fault_id);
 
-    template <class Type, ProtectionType... Protector,
-              template <class, ProtectionType> class Boundaries>
-    static Protection& _add_protection(
-        Type* src, Boundaries<Type, Protector>... protectors) {
+    template <
+        class Type,
+        ProtectionType... Protector,
+        template <class, ProtectionType>
+        class Boundaries>
+    static Protection& _add_protection(Type* src, Boundaries<Type, Protector>... protectors) {
         low_frequency_protections.push_back(Protection(src, protectors...));
         return low_frequency_protections.back();
     }
 
-    template <class Type, ProtectionType... Protector,
-              template <class, ProtectionType> class Boundaries>
-    static Protection& _add_high_frequency_protection(
-        Type* src, Boundaries<Type, Protector>... protectors) {
+    template <
+        class Type,
+        ProtectionType... Protector,
+        template <class, ProtectionType>
+        class Boundaries>
+    static Protection&
+    _add_high_frequency_protection(Type* src, Boundaries<Type, Protector>... protectors) {
         high_frequency_protections.push_back(Protection(src, protectors...));
         return high_frequency_protections.back();
     }
@@ -72,14 +78,13 @@ class ProtectionManager {
     static void propagate_fault();
     static void notify(Protection& protection);
 
-   private:
+private:
     static constexpr uint16_t warning_id = 2;
     static constexpr uint16_t fault_id = 3;
     static char* message;
     static size_t message_size;
     static bool test_fault;
-    static constexpr const char* format =
-        "{\"boardId\": %s, \"timestamp\":{%s}, %s}";
+    static constexpr const char* format = "{\"boardId\": %s, \"timestamp\":{%s}, %s}";
 
     static Boards::ID board_id;
     static vector<Protection> low_frequency_protections;

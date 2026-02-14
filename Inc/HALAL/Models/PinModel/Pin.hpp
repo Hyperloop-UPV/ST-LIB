@@ -6,7 +6,7 @@
  */
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
-#include "stm32h7xx_hal.h"
+#include "hal_wrapper.h"
 
 #define PERIPHERAL_BASE 0x40000000UL
 #define DOMAIN3_ADVANCED_HIGH_PERFORMANCE_BUS1 PERIPHERAL_BASE + 0x18020000UL
@@ -78,7 +78,7 @@ enum PinState : uint8_t { OFF, ON };
 enum TRIGGER : uint8_t { RISING_EDGE = 1, FAILING_EDGE = 0, BOTH_EDGES = 2 };
 
 class Pin {
-   public:
+public:
     GPIO_TypeDef* port;
     GPIOPin gpio_pin;
     AlternativeFunction alternative_function;
@@ -98,25 +98,23 @@ class Pin {
     }
 
     bool operator<(const Pin& other) const {
-        if (port == other.port) return gpio_pin < other.gpio_pin;
+        if (port == other.port)
+            return gpio_pin < other.gpio_pin;
         return port < other.port;
     }
 };
 
 namespace std {
-template <>
-struct hash<Pin> {
+template <> struct hash<Pin> {
     std::size_t operator()(const Pin& k) const {
         using std::hash;
         using std::size_t;
         using std::string;
 
-        return ((hash<uint16_t>()(k.gpio_pin) ^
-                 (hash<uint32_t>()((size_t)(k.port)) << 1)) >>
-                1);
+        return ((hash<uint16_t>()(k.gpio_pin) ^ (hash<uint32_t>()((size_t)(k.port)) << 1)) >> 1);
     }
 };
-}  // namespace std
+} // namespace std
 
 extern Pin PA0;
 extern Pin PA1;

@@ -16,11 +16,11 @@
 #include <array>
 #include <bitset>
 #include <ctype.h>
-#ifdef SIM_ON
+#if defined(SIM_ON)
 #ifdef __APPLE__
-#include <stdlib.h>  // macOS
+#include <stdlib.h> // macOS
 #else
-#include <malloc.h>  // Linux/Unix
+#include <malloc.h> // Linux/Unix
 #endif
 #else
 #include <malloc.h>

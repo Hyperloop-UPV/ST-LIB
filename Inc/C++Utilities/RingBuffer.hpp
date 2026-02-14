@@ -2,8 +2,7 @@
 
 #include "CppImports.hpp"
 
-template <typename T, size_t N>
-class RingBuffer {
+template <typename T, size_t N> class RingBuffer {
     std::array<T, N> buffer{};
 
     size_t stored_items{0};
@@ -11,9 +10,7 @@ class RingBuffer {
     size_t front{0};
     size_t back{0};
 
-    size_t move_forward(size_t origin, size_t amount) {
-        return (origin + amount) % N;
-    }
+    size_t move_forward(size_t origin, size_t amount) { return (origin + amount) % N; }
 
     size_t move_backward(size_t origin, size_t amount) {
         // N * ((amount / N) + 1) makes it so that the operation doesn't
@@ -22,11 +19,12 @@ class RingBuffer {
         return ((origin + (N * ((amount / N) + 1))) - amount) % N;
     }
 
-   public:
+public:
     RingBuffer() {}
 
     bool push(T item) {
-        if (is_full()) return false;
+        if (is_full())
+            return false;
 
         buffer[front] = item;
         front = move_forward(front, 1);
@@ -36,7 +34,8 @@ class RingBuffer {
     }
 
     bool pop() {
-        if (is_empty()) return false;
+        if (is_empty())
+            return false;
 
         back = move_forward(back, 1);
         --stored_items;
@@ -45,7 +44,8 @@ class RingBuffer {
     }
 
     bool push_pop(T item) {
-        if (is_empty()) return false;
+        if (is_empty())
+            return false;
 
         buffer[front] = item;
         front = move_forward(front, 1);
@@ -54,13 +54,11 @@ class RingBuffer {
         return true;
     }
 
-    T &operator[](size_t index) {
-        return buffer[move_backward(front, index + 1)];
-    }
+    T& operator[](size_t index) { return buffer[move_backward(front, index + 1)]; }
 
-    T &last() { return buffer[back]; }
+    T& last() { return buffer[back]; }
 
-    T &first() { return buffer[move_backward(front, 1)]; }
+    T& first() { return buffer[move_backward(front, 1)]; }
 
     constexpr size_t capacity() { return N; }
     size_t size() { return stored_items; }

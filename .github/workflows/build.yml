@@ -6,7 +6,7 @@ on:
       preset:
         description: >
           CMake preset to build the project, run
-          `cmake --build --list-presets` to see options
+          `cmake --list-presets` to see options
         required: false
         type: string
         default: 'nucleo-debug'
@@ -20,7 +20,7 @@ on:
       preset:
         description: >
           CMake preset to build the project, run
-          `cmake --build --list-presets` to see options
+          `cmake --list-presets` to see options
         required: false
         type: string
         default: 'nucleo-debug'
@@ -43,10 +43,10 @@ jobs:
           submodules: false
           fetch-depth: 1
 
-      - name: Init submodules\
+      - name: Init submodules
         run: |
           git config --global --add safe.directory '*'
-          ./tools/init-submodules.sh 
+          ./tools/init-submodules.sh
         shell: bash
 
       - name: Build
@@ -54,13 +54,3 @@ jobs:
           cmake --preset ${{ inputs.preset }}
           cmake --build --preset ${{ inputs.preset }}
         shell: bash
-
-      - name: Upload Build
-        id: upload-build-artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.preset }}
-          path: out/build/${{ inputs.preset }}/libst-lib.a
-          retention-days: 7
-          compression-level: 0
-          if-no-files-found: error

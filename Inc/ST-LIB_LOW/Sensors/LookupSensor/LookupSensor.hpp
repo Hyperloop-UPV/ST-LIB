@@ -6,24 +6,23 @@
  */
 
 #pragma once
-#include "HALAL/HALAL.hpp"
+#include <cstdint>
+#include "HALAL/Services/ADC/NewADC.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "C++Utilities/CppUtils.hpp"
 
 #define REFERENCE_VOLTAGE 3.3
 
-
-class LookupSensor{
+class LookupSensor {
 public:
-	LookupSensor() = default;
-	LookupSensor(Pin &pin, double *table, int table_size, double *value);
-	LookupSensor(Pin &pin, double *table, int table_size, double &value);
-	void read();
-	uint8_t get_id();
+    LookupSensor() = default;
+    LookupSensor(ST_LIB::ADCDomain::Instance& adc, double* table, int table_size, double* value);
+    LookupSensor(ST_LIB::ADCDomain::Instance& adc, double* table, int table_size, double& value);
+    void read();
 
 protected:
-	uint8_t id;
-	double *table;
-	int table_size;
-	double *value;
+    ST_LIB::ADCDomain::Instance* adc = nullptr;
+    double* table = nullptr;
+    int table_size = 0;
+    double* value = nullptr;
 };

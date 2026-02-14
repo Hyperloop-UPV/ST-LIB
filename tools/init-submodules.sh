@@ -13,4 +13,3 @@ git submodule update --init \
   Drivers/STM32H7xx_HAL_Driver \
   Drivers/CMSIS/Device/ST/STM32H7xx \
   Drivers/BSP/Components/lan8742
-

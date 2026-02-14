@@ -7,8 +7,9 @@
 
 #include "DigitalOutput/DigitalOutput.hpp"
 
-DigitalOutput::DigitalOutput(Pin& pin)
-    : pin(pin), id(DigitalOutputService::inscribe(pin)) {}
+#include "HALAL/Services/DigitalOutputService/DigitalOutputService.hpp"
+
+DigitalOutput::DigitalOutput(Pin& pin) : pin(pin), id(DigitalOutputService::inscribe(pin)) {}
 
 void DigitalOutput::turn_on() { DigitalOutputService::turn_on(id); }
 

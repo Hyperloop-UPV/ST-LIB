@@ -1,4 +1,10 @@
 #!/bin/sh
+set -eu
 
-cd out/build/simulator/Tests
-./st-lib-test
+script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+repo_root="$(CDPATH= cd -- "${script_dir}/.." && pwd)"
+
+cd "${repo_root}"
+cmake --preset simulator
+cmake --build --preset simulator
+ctest --preset simulator-all
