@@ -99,7 +99,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi) {
 
     if (inst->operation_flag != nullptr) {
         *(inst->operation_flag) = true;
-        inst->operation_flag = nullptr;  // Clear pointer after setting flag
+        inst->operation_flag = nullptr; // Clear pointer after setting flag
     }
 }
 
@@ -117,7 +117,7 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi) {
     uint32_t error_code = hspi->ErrorCode;
     ST_LIB::SPIDomain::Instance* inst = nullptr;
     uint32_t inst_idx = 0;
-    
+
     if (spi_instances[0] != nullptr && hspi == &spi_instances[0]->hspi) {
         inst = spi_instances[0];
         inst_idx = 0;
@@ -141,12 +141,16 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi) {
         return;
     }
 
-   if (!inst->recover()) {
-        ErrorHandler("SPI%i failed with error number %u (recovery failed, error count: %u)", 
-                     inst_idx + 1, error_code, inst->error_count);
+    if (!inst->recover()) {
+        ErrorHandler(
+            "SPI%i failed with error number %u (recovery failed, error count: %u)",
+            inst_idx + 1,
+            error_code,
+            inst->error_count
+        );
     }
-    
-    (void)error_code;  
-    (void)inst_idx; 
+
+    (void)error_code;
+    (void)inst_idx;
 }
 }
