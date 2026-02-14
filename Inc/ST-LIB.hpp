@@ -93,7 +93,8 @@ using DomainsCtx = BuildCtx<
     MdmaPacketDomain,
     SdDomain,
     EthernetDomain,
-    ADCDomain /*, PWMDomain, ...*/>;
+    ADCDomain,
+    EXTIDomain /* PWMDomain, ...*/>;
 
 template <auto&... devs> struct Board {
     static consteval auto build_ctx() {
@@ -120,6 +121,7 @@ template <auto&... devs> struct Board {
         constexpr std::size_t sdN = domain_size<SdDomain>();
         constexpr std::size_t ethN = domain_size<EthernetDomain>();
         constexpr std::size_t adcN = domain_size<ADCDomain>();
+        constexpr std::size_t extiN = domain_size<EXTIDomain>();
         // ...
 
         struct ConfigBundle {
@@ -134,6 +136,7 @@ template <auto&... devs> struct Board {
             std::array<SdDomain::Config, sdN> sd_cfgs;
             std::array<EthernetDomain::Config, ethN> eth_cfgs;
             std::array<ADCDomain::Config, adcN> adc_cfgs;
+            std::array<EXTIDomain::Config, extiN> exti_cfgs;
             // ...
         };
 
@@ -154,6 +157,7 @@ template <auto&... devs> struct Board {
             .sd_cfgs = SdDomain::template build<sdN>(ctx.template span<SdDomain>()),
             .eth_cfgs = EthernetDomain::template build<ethN>(ctx.template span<EthernetDomain>()),
             .adc_cfgs = ADCDomain::template build<adcN>(ctx.template span<ADCDomain>()),
+            .exti_cfgs = EXTIDomain::template build<extiN>(ctx.template span<EXTIDomain>()),
             // ...
         };
     }
@@ -172,6 +176,7 @@ template <auto&... devs> struct Board {
         constexpr std::size_t sdN = domain_size<SdDomain>();
         constexpr std::size_t ethN = domain_size<EthernetDomain>();
         constexpr std::size_t adcN = domain_size<ADCDomain>();
+        constexpr std::size_t extiN = domain_size<EXTIDomain>();
         // ...
 
 #ifdef HAL_IWDG_MODULE_ENABLED
@@ -203,7 +208,8 @@ template <auto&... devs> struct Board {
         );
         EthernetDomain::Init<ethN>::init(cfg.eth_cfgs, DigitalOutputDomain::Init<doutN>::instances);
         ADCDomain::Init<adcN>::init(cfg.adc_cfgs, GPIODomain::Init<gpioN>::instances);
-        // ...
+        EXTIDomain::Init<extiN>::init(cfg.exti_cfgs,
+                                      GPIODomain::Init<gpioN>::instances); // ...
     }
 
     template <typename Domain, auto& Target, std::size_t I = 0>
