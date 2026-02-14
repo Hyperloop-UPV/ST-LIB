@@ -2,7 +2,7 @@
 
 ## 1. Prerequisites
 
-- CMake + Ninja
+- CMake + Ninja (CMake >= 3.28 for `cmake --preset` / `ctest --preset` with this repo)
 - Python 3
 - C/C++ compiler toolchain
 

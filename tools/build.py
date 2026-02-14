@@ -5,26 +5,6 @@ import sys
 from pathlib import Path
 
 
-VALID_PRESETS = [
-    "nucleo-debug",
-    "nucleo-release",
-    "nucleo-relwithdebinfo",
-    "nucleo-debug-eth",
-    "nucleo-release-eth",
-    "nucleo-relwithdebinfo-eth",
-    "board-debug",
-    "board-release",
-    "board-relwithdebinfo",
-    "board-debug-eth-ksz8041",
-    "board-debug-eth-lan8700",
-    "board-release-eth-ksz8041",
-    "board-release-eth-lan8700",
-    "board-relwithdebinfo-eth-ksz8041",
-    "board-relwithdebinfo-eth-lan8700",
-    "simulator",
-    "simulator-asan",
-]
-
 TEST_PRESET_BY_CONFIGURE = {
     "simulator": "simulator-all",
     "simulator-asan": "simulator-all-asan",
@@ -46,7 +26,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-p",
         "--preset",
-        choices=VALID_PRESETS,
         default="simulator",
         help="CMake configure/build preset to use",
     )
