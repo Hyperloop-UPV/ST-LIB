@@ -92,7 +92,7 @@ template <typename... Domains> struct BuildCtx {
     X(GPIODomain, gpio) NEXT             \
     X(TimerDomain, tim) NEXT             \
     X(DMA_Domain, dma) NEXT              \
-    X(SPIDomain, spi, GPIODomain::Init<gpioN>::instances, DMA_Domain::Init<dmaN>::instances) \
+    X(SPIDomain, spi, GPIODomain::Init<gpioN>::instances, DMA_Domain::Init<dmaN>::instances) NEXT \
     X(DigitalOutputDomain, dout, GPIODomain::Init<gpioN>::instances) NEXT \
     X(DigitalInputDomain, din, GPIODomain::Init<gpioN>::instances) NEXT \
     X(MdmaPacketDomain, mdmaPacket, MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances) NEXT \
