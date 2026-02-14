@@ -1,18 +1,21 @@
-## shell script for CI automation and tests compressing
+#!/usr/bin/env bash
+set -euo pipefail
 
-#only compress if using simulator
-# otherwise it would create empty folder
+archive_name="${1:-test_files.tar}"
+preset_or_build_dir="${2:-simulator}"
 
-#!/bin/sh
-if [[ $# -eq 0 ]] ; then
-    echo "ERROR, provide a build configuration"
+if [[ "${preset_or_build_dir}" == */* ]]; then
+    build_dir="${preset_or_build_dir%/}"
+else
+    build_dir="out/build/${preset_or_build_dir}"
+fi
+
+test_binary="${build_dir}/Tests/st-lib-test"
+
+if [[ ! -f "${test_binary}" ]]; then
+    echo "Test binary not found at '${test_binary}'. Build simulator tests first."
     exit 1
 fi
-mode=$1
 
-
-if [[ "$mode" == "simulator" ]]; then
-    tar -cvf test_files.tar out/build/simulator/Tests/st-lib-test
-else
-    exit 1
-fi # mode=simulator
+tar -cvf "${archive_name}" "${test_binary}"
+echo "Archive created: ${archive_name} (from ${test_binary})"

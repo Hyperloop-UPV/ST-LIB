@@ -203,6 +203,17 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
+        },
+        {
+            "name": "simulator-asan",
+            "displayName": "Simulator [ASAN+UBSAN]",
+            "inherits": [
+                "sim"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "STLIB_ENABLE_SANITIZERS": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -269,6 +280,41 @@
         {
             "name": "simulator",
             "configurePreset": "simulator"
+        },
+        {
+            "name": "simulator-asan",
+            "configurePreset": "simulator-asan"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "simulator-all",
+            "configurePreset": "simulator",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error"
+            }
+        },
+        {
+            "name": "simulator-adc",
+            "inherits": "simulator-all",
+            "filter": {
+                "include": {
+                    "name": "ADCTest"
+                }
+            }
+        },
+        {
+            "name": "simulator-all-asan",
+            "configurePreset": "simulator-asan",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error"
+            }
         }
     ]
 }

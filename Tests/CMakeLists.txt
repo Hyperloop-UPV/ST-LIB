@@ -8,7 +8,9 @@ project( ${STLIB_TEST_EXECUTABLE})
 include(FetchContent)
 FetchContent_Declare(
   googletest
-  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG v1.15.2
+  GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(googletest)
 
@@ -28,19 +30,16 @@ add_executable(${STLIB_TEST_EXECUTABLE}
 set_target_properties(${STLIB_TEST_EXECUTABLE} PROPERTIES
     CXX_STANDARD 23
     CXX_STANDARD_REQUIRED YES
-    C_STANDARD 11
+    C_STANDARD 17
     C_STANDARD_REQUIRED YES
 )
 
 target_link_libraries(
     ${STLIB_TEST_EXECUTABLE}
+    PRIVATE
     GTest::gtest_main
     ${STLIB_LIBRARY}
 )
-
-if(MINGW OR CYGWIN)
-    target_link_options(${STLIB_TEST_EXECUTABLE} PRIVATE -static)
-endif()
 
 if(MINGW OR CYGWIN)
     target_link_options(${STLIB_TEST_EXECUTABLE} PRIVATE -static)
@@ -55,6 +54,10 @@ target_include_directories(${STLIB_TEST_EXECUTABLE} PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/../Inc/ST-LIB_LOW
     ${CMAKE_CURRENT_LIST_DIR}/../Inc/ST-LIB_HIGH
 )
+
+if(TARGET stlib_sim_dev_flags)
+    target_link_libraries(${STLIB_TEST_EXECUTABLE} PRIVATE stlib_sim_dev_flags)
+endif()
 
 include(GoogleTest)
 gtest_discover_tests(

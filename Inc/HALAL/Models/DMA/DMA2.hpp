@@ -183,6 +183,7 @@ struct DMA_Domain {
             return (IRQn_Type)0;
         else
             compile_error("No tiene que llegar aqui nunca, creo");
+        return (IRQn_Type)0;
     }
 
     static constexpr inline bool is_one_of(Peripheral instance, auto... bases) {

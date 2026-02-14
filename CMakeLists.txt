@@ -18,6 +18,7 @@ option(USE_ETHERNET "Enable ethernet peripheral" OFF)
 option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
 option(USE_CCACHE "Use ccache if available" ON)
 option(STLIB_USE_PCH "Enable precompiled headers for ST-LIB" ON)
+option(STLIB_ENABLE_SANITIZERS "Enable AddressSanitizer + UBSan for simulator builds" OFF)
 if(NOT DEFINED ENABLE_LTO)
   if(CMAKE_CROSSCOMPILING)
     set(ENABLE_LTO OFF)
@@ -79,6 +80,26 @@ endif()
 message(STATUS "${PROJECT_NAME} Ethernet: ${USE_ETHERNET}")
 message(STATUS "${PROJECT_NAME} Nucleo:   ${TARGET_NUCLEO}")
 message(STATUS "${PROJECT_NAME} Crosscompiling: ${CMAKE_CROSSCOMPILING}")
+message(STATUS "${PROJECT_NAME} Sanitizers: ${STLIB_ENABLE_SANITIZERS}")
+
+if(NOT CMAKE_CROSSCOMPILING)
+  add_library(stlib_sim_dev_flags INTERFACE)
+
+  if(STLIB_ENABLE_SANITIZERS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+      target_compile_options(stlib_sim_dev_flags INTERFACE
+        -fsanitize=address,undefined
+        -fno-omit-frame-pointer
+      )
+      target_link_options(stlib_sim_dev_flags INTERFACE
+        -fsanitize=address,undefined
+      )
+    else()
+      message(WARNING "STLIB_ENABLE_SANITIZERS is ON but compiler does not support configured sanitizers")
+    endif()
+  endif()
+
+endif()
 
 if(CMAKE_CROSSCOMPILING)
   if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers)
@@ -430,6 +451,10 @@ set_target_properties(${STLIB_LIBRARY} PROPERTIES
   C_STANDARD_REQUIRED YES
 )
 
+if(NOT CMAKE_CROSSCOMPILING)
+  target_link_libraries(${STLIB_LIBRARY} PUBLIC stlib_sim_dev_flags)
+endif()
+
 target_compile_definitions(${STLIB_LIBRARY} PUBLIC
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:USE_HAL_DRIVER>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:STM32H723xx>
@@ -484,7 +509,7 @@ target_include_directories(${STLIB_LIBRARY} PUBLIC
   $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Inc/MockedDrivers>
   ${CMAKE_CURRENT_LIST_DIR}/Inc/STM32CubeH7Wrapper
 
-  # LWIP includes 
+  # LWIP includes
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include>
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/system>
   $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/netif/ppp>
