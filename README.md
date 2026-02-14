@@ -1,41 +1,45 @@
 # ST-LIB
 
-Library to simplify programming an STM32 H7 MCU taking advantage of C++ objects.
+Library to simplify STM32 H7 firmware development using C++.
 
-The library is divided into three levels:
+Main layers:
 
-* HALAL (HAL Abstraction Layer): takes the STM32 HAL functions and exposes an object oriented interface
-* STLIB-LOW: provides low level utilities on top of the HALAL and a couple of fundamental abstractions.
-* STLIB-HIGH: provides high level programming utilities to validate sensor values and implement control loops.
+- HALAL
+- ST-LIB_LOW
+- ST-LIB_HIGH
 
-## Container Setup
-To use it you must install [Dev Containers extension on VSCode](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and [Docker](https://www.docker.com). Be careful,use the instructions related to your OS, as docker doesn't work the same way in all OS's.
-Then, when you open this folder in VSCode, you will have the ability to reopen it inside the container. Don't worry, the first time you do it will take some time.
-
-## Submodules setup
-The only needed submodules are:
-- STM32CubeH7/Drivers/STM32H7xx_HAL_Driver
-- STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx
-- STM32CubeH7/Drivers/BSP/Components/lan8742
+## Quickstart
 
 ```sh
-git submodule update --init
-cd STM32CubeH7
-git submodule update --init Drivers/STM32H7xx_HAL_Driver Drivers/CMSIS/Device/ST/STM32H7xx Drivers/BSP/Components/lan8742
+./tools/init-submodules.sh
+cmake --preset simulator
+cmake --build --preset simulator
+ctest --preset simulator-all
 ```
 
-The submodules initialization is also available by executing [this script](tools/init-submodules.sh)
+## Documentation
 
-## Automatic formatting (commit/push)
-This repository uses `pre-commit` + `clang-format` to format C/C++ files automatically on `git commit` and `git push`.
+- Setup: [`docs/setup.md`](docs/setup.md)
+- Build and presets: [`docs/build-and-presets.md`](docs/build-and-presets.md)
+- Testing: [`docs/testing.md`](docs/testing.md)
 
-Install hooks once:
+## Recommended Presets
+
+- `simulator`
+- `simulator-asan`
+- `nucleo-*`
+- `board-*`
+
+List all presets:
+
+```sh
+cmake --list-presets
+```
+
+## Formatting and Hooks
+
 ```sh
 pip install pre-commit
 ./tools/install-git-hooks.sh
-```
-
-Run manually on all files:
-```sh
 pre-commit run --all-files
 ```

@@ -22,7 +22,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build build-essential
-      
+
       - name: Cache simulator deps
         uses: actions/cache@v4
         with:
@@ -33,15 +33,15 @@ jobs:
 
       - name: Configure (CMake)
         run: |
-          cmake -S . -B out/build/simulator -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          cmake --preset simulator
 
       - name: Build
         run: |
-          cmake --build out/build/simulator
+          cmake --build --preset simulator
 
       - name: Run tests (ctest)
         run: |
-          ctest --test-dir out/build/simulator --no-tests=error --output-on-failure
+          ctest --preset simulator-all
 
       - name: Upload test reports
         if: always()
