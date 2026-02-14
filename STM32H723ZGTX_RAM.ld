@@ -34,7 +34,7 @@
 /* This linker script places code and read-only data in ITCM RAM for execution
    and places initialized data in DTCM RAM. This only leaves 64kB for code, so
    it could potentially overflow, if you want to host a big application, maybe
-   should use RAM_D1 for code as well (and either adjust MPU settings or mess 
+   should use RAM_D1 for code as well (and either adjust MPU settings or mess
    arround with the memory areas specifications, so that the code thinks RAM_D1
    is actually FLASH). */
 
@@ -149,10 +149,10 @@ SECTIONS
 
     /* New MPU system buffers */
     *(.mpu_ram_d1_nc.buffer)
-    
+
     /* User manual allocations via D1_NC macro */
     *(.mpu_ram_d1_nc.user)
-    
+
     /* Ethernet Rx Pool */
     . = ALIGN(32);
     *(.Rx_PoolSection)
@@ -215,14 +215,14 @@ SECTIONS
   {
     . = ALIGN(32);
     __mpu_d2_nc_start = ABSOLUTE(.);
-    
+
     /* Ethernet descriptors */
-    *(.RxDecripSection) 
+    *(.RxDecripSection)
     *(.TxDecripSection)
-    
+
     /* New MPU system buffers */
     *(.mpu_ram_d2_nc.buffer)
-    
+
     /* User manual allocations via D2_NC macro */
     *(.mpu_ram_d2_nc.user)
   } >RAM_D2
@@ -241,13 +241,13 @@ SECTIONS
   {
     . = ALIGN(32);
     __mpu_d3_nc_start = ABSOLUTE(.);
-    
+
     /* New MPU system buffers */
     *(.mpu_ram_d3_nc.buffer)
-    
+
     /* Legacy MPUManager allocations */
     *(.mpu_ram_d3_nc.legacy)
-    
+
     /* User manual allocations via D3_NC macro */
     *(.mpu_ram_d3_nc.user)
   } >RAM_D3
@@ -265,7 +265,7 @@ SECTIONS
   .ram_code :
   {
   	. = ALIGN(4);
-  	_sram_code = .; 
+  	_sram_code = .;
     *(.ram_code)
     *(.ram_code*)
     . = ALIGN(4);
@@ -276,10 +276,10 @@ SECTIONS
   .ram_d1 :
   {
     . = ALIGN(32);
-    
+
     /* New MPU system buffers */
     *(.ram_d1.buffer)
-    
+
     /* User manual allocations via D1_C macro */
     *(.ram_d1.user)
   } >RAM_D1
@@ -288,10 +288,10 @@ SECTIONS
   .ram_d2 :
   {
     . = ALIGN(32);
-    
+
     /* New MPU system buffers */
     *(.ram_d2.buffer)
-    
+
     /* User manual allocations via D2_C macro */
     *(.ram_d2.user)
   } >RAM_D2
@@ -303,7 +303,7 @@ SECTIONS
 
     /* New MPU system buffers */
     *(.ram_d3.buffer)
-    
+
     /* User manual allocations via D3_C macro */
     *(.ram_d3.user)
   } >RAM_D3
