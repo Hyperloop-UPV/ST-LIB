@@ -9,13 +9,12 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 
-class Stopwatch{
+class Stopwatch {
 
 private:
-	map<const string, uint64_t> start_times;
+    map<const string, uint64_t> start_times;
 
 public:
-	void start(const string);
-	uint64_t stop(const string);
+    void start(const string);
+    uint64_t stop(const string);
 };
-

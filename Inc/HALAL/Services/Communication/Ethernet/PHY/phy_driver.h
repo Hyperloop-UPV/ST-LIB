@@ -14,4 +14,4 @@ typedef struct {
     phy_link_state_t (*get_link_state)(void);
 } phy_driver_t;
 
-extern const phy_driver_t *phy_driver;
+extern const phy_driver_t* phy_driver;

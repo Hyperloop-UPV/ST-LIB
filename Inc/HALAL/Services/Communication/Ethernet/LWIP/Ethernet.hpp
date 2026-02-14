@@ -25,19 +25,17 @@
 
 class Ethernet {
 public:
-  static bool is_ready;
-  static bool is_running;
+    static bool is_ready;
+    static bool is_running;
 
-  static void inscribe();
-  static void start(string local_mac, string local_ip, string subnet_mask,
-                    string gateway);
-  static void start(MAC local_mac, IPV4 local_ip, IPV4 subnet_mask,
-                    IPV4 gateway);
+    static void inscribe();
+    static void start(string local_mac, string local_ip, string subnet_mask, string gateway);
+    static void start(MAC local_mac, IPV4 local_ip, IPV4 subnet_mask, IPV4 gateway);
 
-  /**
-   * @brief handles the received messages by ethernet
-   */
-  static void update();
+    /**
+     * @brief handles the received messages by ethernet
+     */
+    static void update();
 
 private:
 };

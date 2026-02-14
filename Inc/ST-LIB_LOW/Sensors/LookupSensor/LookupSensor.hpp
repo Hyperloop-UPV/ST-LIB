@@ -13,17 +13,16 @@
 
 #define REFERENCE_VOLTAGE 3.3
 
-
-class LookupSensor{
+class LookupSensor {
 public:
-	LookupSensor() = default;
-	LookupSensor(ST_LIB::ADCDomain::Instance& adc, double *table, int table_size, double *value);
-	LookupSensor(ST_LIB::ADCDomain::Instance& adc, double *table, int table_size, double &value);
-	void read();
+    LookupSensor() = default;
+    LookupSensor(ST_LIB::ADCDomain::Instance& adc, double* table, int table_size, double* value);
+    LookupSensor(ST_LIB::ADCDomain::Instance& adc, double* table, int table_size, double& value);
+    void read();
 
 protected:
-	ST_LIB::ADCDomain::Instance* adc = nullptr;
-	double *table = nullptr;
-	int table_size = 0;
-	double *value = nullptr;
+    ST_LIB::ADCDomain::Instance* adc = nullptr;
+    double* table = nullptr;
+    int table_size = 0;
+    double* value = nullptr;
 };

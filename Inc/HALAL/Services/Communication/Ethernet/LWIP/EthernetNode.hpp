@@ -4,23 +4,21 @@
 
 #ifdef HAL_ETH_MODULE_ENABLED
 
-struct EthernetNode{
-	IPV4 ip;
-	uint32_t port;
+struct EthernetNode {
+    IPV4 ip;
+    uint32_t port;
 
-	EthernetNode(IPV4 ip, uint32_t port);
+    EthernetNode(IPV4 ip, uint32_t port);
 
-	bool operator==(const EthernetNode& other) const;
+    bool operator==(const EthernetNode& other) const;
 };
 
 namespace std {
 
-  template <>
-  struct hash<EthernetNode>
-  {
+template <> struct hash<EthernetNode> {
     std::size_t operator()(const EthernetNode& k) const;
-  };
+};
 
-}
+} // namespace std
 
 #endif

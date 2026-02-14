@@ -6,8 +6,8 @@ using namespace ST_LIB;
 TimerXList
 #undef X
 
-void (*TimerDomain::callbacks[TimerDomain::max_instances])(void*) = {nullptr};
-void *TimerDomain::callback_data[TimerDomain::max_instances] = {nullptr};
+    void (*TimerDomain::callbacks[TimerDomain::max_instances])(void*) = {nullptr};
+void* TimerDomain::callback_data[TimerDomain::max_instances] = {nullptr};
 
 extern "C" void TIM1_UP_IRQHandler(void) {
     CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[1]]->SR, TIM_SR_UIF);
@@ -45,11 +45,11 @@ extern "C" void TIM7_IRQHandler(void) {
 }
 
 extern "C" void TIM8_BRK_TIM12_IRQHandler(void) {
-    if((TimerDomain::cmsis_timers[timer_idxmap[12]]->SR & TIM_SR_UIF) != 0) {
+    if ((TimerDomain::cmsis_timers[timer_idxmap[12]]->SR & TIM_SR_UIF) != 0) {
         CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[12]]->SR, TIM_SR_UIF);
         TimerDomain::callbacks[timer_idxmap[12]](TimerDomain::callback_data[timer_idxmap[12]]);
     }
-    if((TimerDomain::cmsis_timers[timer_idxmap[8]]->SR & TIM_SR_BIF) != 0) {
+    if ((TimerDomain::cmsis_timers[timer_idxmap[8]]->SR & TIM_SR_BIF) != 0) {
         CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[8]]->SR, TIM_SR_BIF);
         /* this could probably have some other callback */
         TimerDomain::callbacks[timer_idxmap[8]](TimerDomain::callback_data[timer_idxmap[8]]);
@@ -57,23 +57,23 @@ extern "C" void TIM8_BRK_TIM12_IRQHandler(void) {
 }
 
 extern "C" void TIM8_UP_TIM13_IRQHandler(void) {
-    if((TimerDomain::cmsis_timers[timer_idxmap[13]]->SR & TIM_SR_UIF) != 0) {
+    if ((TimerDomain::cmsis_timers[timer_idxmap[13]]->SR & TIM_SR_UIF) != 0) {
         CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[13]]->SR, TIM_SR_UIF);
         TimerDomain::callbacks[timer_idxmap[13]](TimerDomain::callback_data[timer_idxmap[13]]);
     }
-    if((TimerDomain::cmsis_timers[timer_idxmap[8]]->SR & TIM_SR_UIF) != 0) {
+    if ((TimerDomain::cmsis_timers[timer_idxmap[8]]->SR & TIM_SR_UIF) != 0) {
         CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[8]]->SR, TIM_SR_UIF);
         TimerDomain::callbacks[timer_idxmap[8]](TimerDomain::callback_data[timer_idxmap[8]]);
     }
 }
 
 extern "C" void TIM8_TRG_COM_TIM14_IRQHandler(void) {
-    if((TimerDomain::cmsis_timers[timer_idxmap[14]]->SR & TIM_SR_UIF) != 0) {
+    if ((TimerDomain::cmsis_timers[timer_idxmap[14]]->SR & TIM_SR_UIF) != 0) {
         CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[14]]->SR, TIM_SR_UIF);
         TimerDomain::callbacks[timer_idxmap[14]](TimerDomain::callback_data[timer_idxmap[14]]);
     }
     constexpr uint32_t com_trg_flags = TIM_SR_TIF | TIM_SR_COMIF;
-    if((TimerDomain::cmsis_timers[timer_idxmap[14]]->SR & com_trg_flags) != 0) {
+    if ((TimerDomain::cmsis_timers[timer_idxmap[14]]->SR & com_trg_flags) != 0) {
         CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[8]]->SR, com_trg_flags);
         /* this could probably have some other callback */
         TimerDomain::callbacks[timer_idxmap[8]](TimerDomain::callback_data[timer_idxmap[8]]);
@@ -104,4 +104,3 @@ extern "C" void TIM24_IRQHandler(void) {
     CLEAR_BIT(TimerDomain::cmsis_timers[timer_idxmap[24]]->SR, TIM_SR_UIF);
     TimerDomain::callbacks[timer_idxmap[24]](TimerDomain::callback_data[timer_idxmap[24]]);
 }
-

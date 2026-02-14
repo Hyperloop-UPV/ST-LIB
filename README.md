@@ -25,3 +25,17 @@ git submodule update --init Drivers/STM32H7xx_HAL_Driver Drivers/CMSIS/Device/ST
 ```
 
 The submodules initialization is also available by executing [this script](tools/init-submodules.sh)
+
+## Automatic formatting (commit/push)
+This repository uses `pre-commit` + `clang-format` to format C/C++ files automatically on `git commit` and `git push`.
+
+Install hooks once:
+```sh
+pip install pre-commit
+./tools/install-git-hooks.sh
+```
+
+Run manually on all files:
+```sh
+pre-commit run --all-files
+```
