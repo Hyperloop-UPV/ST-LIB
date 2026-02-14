@@ -187,20 +187,6 @@ template <auto&... devs> struct Board {
 #undef X
     }
 
-    template <typename Domain, auto &Target, std::size_t I = 0>
-    static consteval std::size_t owner_index_of() {
-        constexpr auto owners = ctx.template owners_span<Domain>();
-
-        if constexpr (I >= owners.size()) {
-            compile_error("Device not registered in domain");
-            return 0;
-        } else {
-            return owners[I] == &Target ? I : owner_index_of<Domain, Target, I + 1>();
-        }
-
-        static constexpr auto cfg = build();
-    }
-
     template <typename Domain, auto& Target, std::size_t I = 0>
     static consteval std::size_t owner_index_of() {
         constexpr auto owners = ctx.template owners_span<Domain>();
