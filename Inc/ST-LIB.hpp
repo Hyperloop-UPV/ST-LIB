@@ -157,6 +157,8 @@ template <auto&... devs> struct Board {
         };
     }
 
+    static constexpr auto cfg = build();
+
     static void init() {
 #define NEXT ;
 #define X(domain, inst, ...) \
