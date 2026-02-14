@@ -20,7 +20,7 @@ using std::getline;
 using std::stringstream;
 
 class MAC {
-   public:
+public:
     uint8_t address[6];
     string string_address;
 

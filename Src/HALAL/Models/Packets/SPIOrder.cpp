@@ -7,6 +7,6 @@
 
 #include "HALAL/Models/Packets/SPIOrder.hpp"
 
-map<uint16_t, SPIBaseOrder*> SPIBaseOrder::SPIOrdersByID {};
+map<uint16_t, SPIBaseOrder*> SPIBaseOrder::SPIOrdersByID{};
 
 SPIBaseOrder::~SPIBaseOrder(){};

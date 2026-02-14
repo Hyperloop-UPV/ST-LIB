@@ -9,9 +9,9 @@
 #include <cstdint>
 #include <vector>
 
-class Sensor{
+class Sensor {
 public:
-	static void start();
-	static std::vector<uint8_t> EXTI_id_list;
-	static std::vector<uint8_t> inputcapture_id_list;
+    static void start();
+    static std::vector<uint8_t> EXTI_id_list;
+    static std::vector<uint8_t> inputcapture_id_list;
 };

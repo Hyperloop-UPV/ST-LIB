@@ -14,21 +14,20 @@
 
 #ifdef HAL_ETH_MODULE_ENABLED
 
-
-using std::stringstream;
 using std::getline;
+using std::stringstream;
 
-class IPV4{
+class IPV4 {
 public:
-	ip_addr_t address;
-	string string_address;
+    ip_addr_t address;
+    string string_address;
 
-	IPV4();
-	IPV4(const char* address);
-	IPV4(string address);
-	IPV4(ip_addr_t address);
+    IPV4();
+    IPV4(const char* address);
+    IPV4(string address);
+    IPV4(ip_addr_t address);
 
-	void operator=(const char* address);
+    void operator=(const char* address);
 };
 
 #endif

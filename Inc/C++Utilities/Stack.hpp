@@ -15,11 +15,10 @@
  * @tparam T The type of elements stored in the stack.
  * @tparam S The maximum number of elements.
  */
-template<typename T, size_t S>
-class Stack {
+template <typename T, size_t S> class Stack {
 public:
     Stack() : top_idx(0) {}
-    
+
     bool push(const T& value) {
         if (top_idx < S) {
             data[top_idx++] = value;
@@ -27,7 +26,7 @@ public:
         }
         return false;
     }
-    
+
     bool pop() {
         if (top_idx == 0) {
             return false;
@@ -43,11 +42,11 @@ public:
         }
         return data[top_idx - 1];
     }
-    
+
     size_t size() const { return top_idx; }
     size_t capacity() const { return S; }
     bool empty() const { return top_idx == 0; }
-    
+
 private:
     T data[S];
     size_t top_idx;

@@ -8,19 +8,18 @@
 #pragma once
 #include "C++Utilities/CppUtils.hpp"
 
-class Counter{
+class Counter {
 
 private:
-	uint16_t update_period_ms = 125;
-	uint8_t time_id;
-	void update();
+    uint16_t update_period_ms = 125;
+    uint8_t time_id;
+    void update();
 
 public:
-	uint64_t counter = 0;
-	double freq = 0.0;
+    uint64_t counter = 0;
+    double freq = 0.0;
 
-	~Counter();
-	Counter(uint64_t update_period_ms);
-	void count();
-
+    ~Counter();
+    Counter(uint64_t update_period_ms);
+    void count();
 };

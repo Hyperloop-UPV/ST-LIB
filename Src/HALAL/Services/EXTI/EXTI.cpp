@@ -22,12 +22,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     }
 }
 
-uint8_t ExternalInterrupt::inscribe(Pin& pin, function<void()>&& action,
-                                    TRIGGER trigger) {
+uint8_t ExternalInterrupt::inscribe(Pin& pin, function<void()>&& action, TRIGGER trigger) {
     if (not instances.contains(pin.gpio_pin)) {
         ErrorHandler(
             " The pin %s is already used or isn t available for EXTI usage",
-            pin.to_string().c_str());
+            pin.to_string().c_str()
+        );
         return 0;
     }
 

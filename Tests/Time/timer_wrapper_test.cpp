@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-//#include <thread>
-//#include <chrono>
+// #include <thread>
+// #include <chrono>
 
 #include "HALAL/Models/TimerDomain/TimerDomain.hpp"
 #include "HALAL/Services/Time/TimerWrapper.hpp"
 
-TIM_TypeDef *ST_LIB::TimerDomain::cmsis_timers[16] = {
+TIM_TypeDef* ST_LIB::TimerDomain::cmsis_timers[16] = {
     [0] = TIM2_BASE,
     [1] = TIM3_BASE,
     [2] = TIM4_BASE,
@@ -33,14 +33,13 @@ protected:
         TIM1_BASE->SR = 0;
         TIM1_BASE->CR1 = 0;
         TIM1_BASE->DIER = 0;
-
     }
 };
 
 constexpr ST_LIB::TimerDomain::Timer tim1_decl{{
     .request = ST_LIB::TimerRequest::Advanced_1,
 }};
-ST_LIB::TimerDomain::Instance tim1_inst {
+ST_LIB::TimerDomain::Instance tim1_inst{
     .tim = TIM1_BASE,
     .hal_tim = 0,
     .timer_idx = 14,
@@ -100,7 +99,7 @@ TEST_F(TimerWrapperTests, OnePulseMode_EnabledDisabled) {
     EXPECT_EQ(TIM1_BASE->CR1 & TIM_CR1_OPM, 0);
 }
 
-void callback(void *raw) {}
+void callback(void* raw) {}
 
 TEST_F(TimerWrapperTests, ConfigureTimer) {
     ST_LIB::TimerWrapper<tim1_decl> tim1(&tim1_inst);
@@ -109,8 +108,13 @@ TEST_F(TimerWrapperTests, ConfigureTimer) {
 #define PERIOD 1000
     tim1.set_prescaler(PRESCALER_VAL);
     tim1.configure16bit(callback, 0, PERIOD);
-    EXPECT_EQ(static_cast<uint32_t>(TIM1_BASE->PSC), static_cast<uint32_t>(PRESCALER_VAL)); /* set prescaler */
-    EXPECT_EQ(static_cast<uint32_t>(TIM1_BASE->ARR), static_cast<uint32_t>(PERIOD)); /* set period */
+    EXPECT_EQ(
+        static_cast<uint32_t>(TIM1_BASE->PSC),
+        static_cast<uint32_t>(PRESCALER_VAL)
+    ); /* set prescaler */
+    EXPECT_EQ(
+        static_cast<uint32_t>(TIM1_BASE->ARR),
+        static_cast<uint32_t>(PERIOD)
+    );                                                    /* set period */
     EXPECT_EQ(TIM1_BASE->CR1 & TIM_CR1_CEN, TIM_CR1_CEN); /* set counter enable */
 }
-
