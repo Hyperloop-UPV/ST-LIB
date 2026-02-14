@@ -8,6 +8,7 @@
 #ifndef SPI2_HPP
 #define SPI2_HPP
 
+#include "hal_wrapper.h"
 #include "C++Utilities/CppImports.hpp"
 #include "HALAL/Models/GPIO.hpp"
 #include "HALAL/Models/Pin.hpp"
@@ -520,6 +521,29 @@ struct SPIDomain {
         SPI_TypeDef* instance;
 
         volatile bool* operation_flag = nullptr;
+        volatile uint32_t error_count = 0;
+        volatile bool was_aborted = false;
+
+        bool recover() {
+            // Abort any ongoing SPI operation
+            HAL_SPI_Abort(&hspi);
+
+            uint32_t newErrorCount = error_count + 1; // Cause volatile in c++ freacking sucks
+            error_count = newErrorCount;
+            was_aborted = true;
+            operation_flag = nullptr;
+
+            // Reset SPI state
+            auto status = HAL_SPI_DeInit(&hspi);
+            if (status != HAL_OK) {
+                return false;
+            }
+            status = HAL_SPI_Init(&hspi);
+            if (status != HAL_OK) {
+                return false;
+            }
+            return true;
+        }
     };
 
     static inline Instance* spi_instances[max_instances];
@@ -542,6 +566,23 @@ struct SPIDomain {
         static constexpr uint32_t frame_size = (data_bits <= 8) ? 1 : ((data_bits <= 16) ? 2 : 4);
 
         SPIWrapper(Instance& instance) : spi_instance{instance} {}
+
+        /**
+         * @brief Aborts any ongoing SPI operation and recovers the peripheral.
+         */
+        void abort_and_recover() { spi_instance.recover(); }
+
+        /**
+         * @brief Checks if the SPI instance was aborted since the last reset.
+         */
+        bool was_aborted() const { return spi_instance.was_aborted; }
+
+        void clear_abort_flag() { spi_instance.was_aborted = false; }
+
+        /**
+         * @brief Gets the error count for this SPI instance.
+         */
+        uint32_t get_error_count() const { return spi_instance.error_count; }
 
         /**
          * @brief Sends data over SPI in blocking mode.
@@ -978,6 +1019,26 @@ struct SPIDomain {
                 SET_BIT(spi_instance.instance->CR1, SPI_CR1_SSI);
             }
         }
+
+        /**
+         * @brief Aborts any ongoing SPI operation and recovers the peripheral.
+         */
+        void abort_and_recover() { spi_instance.recover(); }
+
+        /**
+         * @brief Gets the error count for this SPI instance.
+         */
+        uint32_t get_error_count() const { return spi_instance.error_count; }
+
+        /**
+         * @brief Indicates whether the last operation was aborted.
+         */
+        bool was_aborted() const { return spi_instance.was_aborted; }
+
+        /**
+         * @brief Clears the aborted state flag for this SPI instance.
+         */
+        void clear_abort_flag() { spi_instance.was_aborted = false; }
 
         /**
          * @brief Listens for data over SPI using DMA, uses an optional operation flag to signal

@@ -299,18 +299,54 @@ TEST_F(SPI2Test, CallbacksWithUnknownHandleTriggerErrorPath) {
     EXPECT_EQ(ST_LIB::TestErrorHandler::call_count, 1);
 }
 
-TEST_F(SPI2Test, ErrorCallbackOnKnownHandleTriggersErrorPath) {
+TEST_F(SPI2Test, ErrorCallbackOnKnownHandleRecoversWithoutErrorPath) {
     ST_LIB::TestErrorHandler::set_fail_on_error(false);
-    init_spi<ST_LIB::SPIDomain::SPIMode::MASTER, ST_LIB::SPIConfigTypes::DataSize::SIZE_8BIT>(
-        20'000'000U
-    );
+    auto& instance =
+        init_spi<ST_LIB::SPIDomain::SPIMode::MASTER, ST_LIB::SPIConfigTypes::DataSize::SIZE_8BIT>(
+            20'000'000U
+        );
+    ST_LIB::SPIDomain::SPIWrapper<master8_request> spi(instance);
+
+    const auto before_abort =
+        ST_LIB::MockedHAL::spi_get_call_count(ST_LIB::MockedHAL::SPIOperation::Abort);
+    const auto before_init =
+        ST_LIB::MockedHAL::spi_get_call_count(ST_LIB::MockedHAL::SPIOperation::Init);
 
     auto* hspi = ST_LIB::MockedHAL::spi_get_last_handle();
     ASSERT_NE(hspi, nullptr);
     hspi->ErrorCode = 0x55U;
     HAL_SPI_ErrorCallback(hspi);
 
+    EXPECT_EQ(ST_LIB::TestErrorHandler::call_count, 0);
+    EXPECT_EQ(
+        ST_LIB::MockedHAL::spi_get_call_count(ST_LIB::MockedHAL::SPIOperation::Abort),
+        before_abort + 1U
+    );
+    EXPECT_EQ(
+        ST_LIB::MockedHAL::spi_get_call_count(ST_LIB::MockedHAL::SPIOperation::Init),
+        before_init + 1U
+    );
+    EXPECT_EQ(spi.get_error_count(), 1U);
+    EXPECT_TRUE(spi.was_aborted());
+}
+
+TEST_F(SPI2Test, ErrorCallbackOnKnownHandleTriggersErrorPathWhenRecoveryFails) {
+    ST_LIB::TestErrorHandler::set_fail_on_error(false);
+    auto& instance =
+        init_spi<ST_LIB::SPIDomain::SPIMode::MASTER, ST_LIB::SPIConfigTypes::DataSize::SIZE_8BIT>(
+            20'000'000U
+        );
+    ST_LIB::SPIDomain::SPIWrapper<master8_request> spi(instance);
+
+    auto* hspi = ST_LIB::MockedHAL::spi_get_last_handle();
+    ASSERT_NE(hspi, nullptr);
+    hspi->ErrorCode = 0x55U;
+    ST_LIB::MockedHAL::spi_set_status(HAL_ERROR);
+    HAL_SPI_ErrorCallback(hspi);
+
     EXPECT_EQ(ST_LIB::TestErrorHandler::call_count, 1);
+    EXPECT_EQ(spi.get_error_count(), 1U);
+    EXPECT_TRUE(spi.was_aborted());
 }
 
 TEST_F(SPI2Test, SlaveWrapperDMAOperations) {

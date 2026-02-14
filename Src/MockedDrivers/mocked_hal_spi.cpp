@@ -102,6 +102,16 @@ extern "C" HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef* hspi) {
     return take_status();
 }
 
+extern "C" HAL_StatusTypeDef HAL_SPI_DeInit(SPI_HandleTypeDef* hspi) {
+    g_state.last_handle = hspi;
+    if (hspi == nullptr) {
+        return HAL_ERROR;
+    }
+    hspi->State = HAL_SPI_STATE_RESET;
+    hspi->ErrorCode = HAL_SPI_ERROR_NONE;
+    return take_status();
+}
+
 extern "C" HAL_StatusTypeDef HAL_SPI_Abort(SPI_HandleTypeDef* hspi) {
     g_state.calls[static_cast<std::size_t>(ST_LIB::MockedHAL::SPIOperation::Abort)]++;
     g_state.last_handle = hspi;
