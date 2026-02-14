@@ -82,19 +82,35 @@ template <typename... Domains> struct BuildCtx {
     }
 };
 
-using DomainsCtx = BuildCtx<
-    MPUDomain,
-    GPIODomain,
-    TimerDomain,
-    DMA_Domain,
-    SPIDomain,
-    DigitalOutputDomain,
-    DigitalInputDomain,
-    MdmaPacketDomain,
-    SdDomain,
-    EthernetDomain,
-    ADCDomain,
-    EXTIDomain /* PWMDomain, ...*/>;
+/* DomainXList params:
+ *  - First param: Domain name
+ *  - Second param: instance name
+ *  - Rest: any dependencies on previous domains
+ */
+#define DomainXList \
+    X_TEMPLATED(MPUDomain, mpu) NEXT     \
+    X(GPIODomain, gpio) NEXT             \
+    X(TimerDomain, tim) NEXT             \
+    X(DMA_Domain, dma) NEXT              \
+    X(SPIDomain, spi, GPIODomain::Init<gpioN>::instances, DMA_Domain::Init<dmaN>::instances) NEXT \
+    X(DigitalOutputDomain, dout, GPIODomain::Init<gpioN>::instances) NEXT \
+    X(DigitalInputDomain, din, GPIODomain::Init<gpioN>::instances) NEXT \
+    X(MdmaPacketDomain, mdmaPacket, MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances) NEXT \
+    X(SdDomain, sd, MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances, DigitalInputDomain::Init<dinN>::instances) NEXT \
+    X(EthernetDomain, eth, DigitalOutputDomain::Init<doutN>::instances) NEXT \
+    X(ADCDomain, adc, GPIODomain::Init<gpioN>::instances) NEXT \
+    X(EXTIDomain, exti, GPIODomain::Init<gpioN>::instances) /* NEXT \
+    X(...Domain, ..., dependencies here [for init()]) */
+
+#define X_TEMPLATED X
+
+#define NEXT ,
+#define X(domain, inst, ...) domain
+
+using DomainsCtx = BuildCtx<DomainXList>;
+
+#undef NEXT
+#undef X
 
 template <auto&... devs> struct Board {
     static consteval auto build_ctx() {
@@ -109,75 +125,48 @@ template <auto&... devs> struct Board {
         return ctx.template span<D>().size();
     }
 
+
     static consteval auto build() {
-        constexpr std::size_t mpuN = domain_size<MPUDomain>();
-        constexpr std::size_t gpioN = domain_size<GPIODomain>();
-        constexpr std::size_t timN = domain_size<TimerDomain>();
-        constexpr std::size_t dmaN = domain_size<DMA_Domain>();
-        constexpr std::size_t spiN = domain_size<SPIDomain>();
-        constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
-        constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
-        constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
-        constexpr std::size_t sdN = domain_size<SdDomain>();
-        constexpr std::size_t ethN = domain_size<EthernetDomain>();
-        constexpr std::size_t adcN = domain_size<ADCDomain>();
-        constexpr std::size_t extiN = domain_size<EXTIDomain>();
-        // ...
+#define NEXT ;
+#define X(domain, inst, ...) \
+        constexpr std::size_t inst##N = domain_size<domain>();
+    
+        DomainXList;
+
+#undef X
 
         struct ConfigBundle {
-            std::array<MPUDomain::Config, mpuN> mpu_cfgs;
-            std::array<GPIODomain::Config, gpioN> gpio_cfgs;
-            std::array<TimerDomain::Config, timN> tim_cfgs;
-            std::array<DMA_Domain::Config, dmaN> dma_cfgs;
-            std::array<SPIDomain::Config, spiN> spi_cfgs;
-            std::array<DigitalOutputDomain::Config, doutN> dout_cfgs;
-            std::array<DigitalInputDomain::Config, dinN> din_cfgs;
-            std::array<MdmaPacketDomain::Config, mdmaPacketN> mdma_packet_cfgs;
-            std::array<SdDomain::Config, sdN> sd_cfgs;
-            std::array<EthernetDomain::Config, ethN> eth_cfgs;
-            std::array<ADCDomain::Config, adcN> adc_cfgs;
-            std::array<EXTIDomain::Config, extiN> exti_cfgs;
-            // ...
+#define X(domain, inst, ...) \
+      std::array<domain::Config, inst##N> inst##_cfgs
+    
+            DomainXList;
+
+#undef NEXT
+#undef X
         };
 
         return ConfigBundle{
-            .mpu_cfgs = MPUDomain::template build<mpuN>(ctx.template span<MPUDomain>()),
-            .gpio_cfgs = GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
-            .tim_cfgs = TimerDomain::template build<timN>(ctx.template span<TimerDomain>()),
-            .dma_cfgs = DMA_Domain::template build<dmaN>(ctx.template span<DMA_Domain>()),
-            .spi_cfgs = SPIDomain::template build<spiN>(ctx.template span<SPIDomain>()),
-            .dout_cfgs =
-                DigitalOutputDomain::template build<doutN>(ctx.template span<DigitalOutputDomain>()
-                ),
-            .din_cfgs =
-                DigitalInputDomain::template build<dinN>(ctx.template span<DigitalInputDomain>()),
-            .mdma_packet_cfgs =
-                MdmaPacketDomain::template build<mdmaPacketN>(ctx.template span<MdmaPacketDomain>()
-                ),
-            .sd_cfgs = SdDomain::template build<sdN>(ctx.template span<SdDomain>()),
-            .eth_cfgs = EthernetDomain::template build<ethN>(ctx.template span<EthernetDomain>()),
-            .adc_cfgs = ADCDomain::template build<adcN>(ctx.template span<ADCDomain>()),
-            .exti_cfgs = EXTIDomain::template build<extiN>(ctx.template span<EXTIDomain>()),
-            // ...
+#define NEXT ,
+#define X(domain, inst, ...) \
+      .inst##_cfgs = domain::template build<inst##N>(ctx.template span<domain>())
+
+            DomainXList,
+
+#undef NEXT
+#undef X
         };
     }
 
     static constexpr auto cfg = build();
 
     static void init() {
-        constexpr std::size_t mpuN = domain_size<MPUDomain>();
-        constexpr std::size_t gpioN = domain_size<GPIODomain>();
-        constexpr std::size_t timN = domain_size<TimerDomain>();
-        constexpr std::size_t dmaN = domain_size<DMA_Domain>();
-        constexpr std::size_t spiN = domain_size<SPIDomain>();
-        constexpr std::size_t doutN = domain_size<DigitalOutputDomain>();
-        constexpr std::size_t dinN = domain_size<DigitalInputDomain>();
-        constexpr std::size_t mdmaPacketN = domain_size<MdmaPacketDomain>();
-        constexpr std::size_t sdN = domain_size<SdDomain>();
-        constexpr std::size_t ethN = domain_size<EthernetDomain>();
-        constexpr std::size_t adcN = domain_size<ADCDomain>();
-        constexpr std::size_t extiN = domain_size<EXTIDomain>();
-        // ...
+#define NEXT ;
+#define X(domain, inst, ...) \
+    constexpr std::size_t inst##N = domain_size<domain>();
+    
+        DomainXList;
+
+#undef X
 
 #ifdef HAL_IWDG_MODULE_ENABLED
         Watchdog::check_reset_flag();
@@ -186,30 +175,18 @@ template <auto&... devs> struct Board {
         HALconfig::system_clock();
         HALconfig::peripheral_clock();
 
-        MPUDomain::Init<mpuN, cfg.mpu_cfgs>::init();
-        GPIODomain::Init<gpioN>::init(cfg.gpio_cfgs);
-        TimerDomain::Init<timN>::init(cfg.tim_cfgs);
-        DMA_Domain::Init<dmaN>::init(cfg.dma_cfgs);
-        SPIDomain::Init<spiN>::init(
-            cfg.spi_cfgs,
-            GPIODomain::Init<gpioN>::instances,
-            DMA_Domain::Init<dmaN>::instances
-        );
-        DigitalOutputDomain::Init<doutN>::init(cfg.dout_cfgs, GPIODomain::Init<gpioN>::instances);
-        DigitalInputDomain::Init<dinN>::init(cfg.din_cfgs, GPIODomain::Init<gpioN>::instances);
-        MdmaPacketDomain::Init<mdmaPacketN>::init(
-            cfg.mdma_packet_cfgs,
-            MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances
-        );
-        SdDomain::Init<sdN>::init(
-            cfg.sd_cfgs,
-            MPUDomain::Init<mpuN, cfg.mpu_cfgs>::instances,
-            DigitalInputDomain::Init<dinN>::instances
-        );
-        EthernetDomain::Init<ethN>::init(cfg.eth_cfgs, DigitalOutputDomain::Init<doutN>::instances);
-        ADCDomain::Init<adcN>::init(cfg.adc_cfgs, GPIODomain::Init<gpioN>::instances);
-        EXTIDomain::Init<extiN>::init(cfg.exti_cfgs,
-                                      GPIODomain::Init<gpioN>::instances); // ...
+
+#undef X_TEMPLATED
+#define X_TEMPLATED(domain, inst, ...) \
+    domain::Init<inst##N, cfg.inst##_cfgs>::init(##__VA_ARGS__);
+#define X(domain, inst, ...) \
+    domain::Init<inst##N>::init(cfg.inst##_cfgs, ##__VA_ARGS__);
+
+        DomainXList;
+
+#undef NEXT
+#undef X_TEMPLATED
+#undef X
     }
 
     template <typename Domain, auto& Target, std::size_t I = 0>
