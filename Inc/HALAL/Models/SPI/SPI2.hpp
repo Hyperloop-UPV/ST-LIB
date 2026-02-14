@@ -15,35 +15,35 @@
 #include "HALAL/Models/DMA/DMA2.hpp"
 #include "HALAL/Models/SPI/SPIConfig.hpp"
 
-using ST_LIB::GPIODomain;
 using ST_LIB::DMA_Domain;
+using ST_LIB::GPIODomain;
 using ST_LIB::SPIConfigTypes;
 
 // Forward declaration of IRQ handlers and HAL callbacks
 extern "C" {
-    void SPI1_IRQHandler(void);
-    void SPI2_IRQHandler(void);
-    void SPI3_IRQHandler(void);
-    void SPI4_IRQHandler(void);
-    void SPI5_IRQHandler(void);
-    void SPI6_IRQHandler(void);
+void SPI1_IRQHandler(void);
+void SPI2_IRQHandler(void);
+void SPI3_IRQHandler(void);
+void SPI4_IRQHandler(void);
+void SPI5_IRQHandler(void);
+void SPI6_IRQHandler(void);
 
-    void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi);
-    void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi);
-    void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi);
-    void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi);
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi);
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi);
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi);
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi);
 }
 
 namespace ST_LIB {
-extern void compile_error(const char *msg);
+extern void compile_error(const char* msg);
 
 struct SPIDomain {
 
-/**
- * =========================================
- *          Internal working things
- * =========================================
- */
+    /**
+     * =========================================
+     *          Internal working things
+     * =========================================
+     */
 
     // Configuration types
     using ClockPolarity = SPIConfigTypes::ClockPolarity;
@@ -71,35 +71,54 @@ struct SPIDomain {
         SLAVE = false,
     };
 
-    static consteval bool compare_pin(const GPIODomain::Pin &p1, const GPIODomain::Pin &p2) {
+    static consteval bool compare_pin(const GPIODomain::Pin& p1, const GPIODomain::Pin& p2) {
         return (p1.port == p2.port) && (p1.pin == p2.pin);
     }
 
-    static consteval GPIODomain::AlternateFunction get_af(const GPIODomain::Pin &pin, SPIPeripheral peripheral) {
+    static consteval GPIODomain::AlternateFunction
+    get_af(const GPIODomain::Pin& pin, SPIPeripheral peripheral) {
 
         if (peripheral == SPIPeripheral::spi2) {
-            if (compare_pin(pin, PB4)) return GPIODomain::AlternateFunction::AF7;
+            if (compare_pin(pin, PB4))
+                return GPIODomain::AlternateFunction::AF7;
         }
         if (peripheral == SPIPeripheral::spi3) {
-            if (compare_pin(pin, PA4)) return GPIODomain::AlternateFunction::AF6;
-            if (compare_pin(pin, PA15)) return GPIODomain::AlternateFunction::AF6;
-            if (compare_pin(pin, PB2)) return GPIODomain::AlternateFunction::AF7;
-            if (compare_pin(pin, PB3)) return GPIODomain::AlternateFunction::AF6;
-            if (compare_pin(pin, PB4)) return GPIODomain::AlternateFunction::AF6;
-            if (compare_pin(pin, PB5)) return GPIODomain::AlternateFunction::AF7;
-            if (compare_pin(pin, PC10)) return GPIODomain::AlternateFunction::AF6;
-            if (compare_pin(pin, PC11)) return GPIODomain::AlternateFunction::AF6;
-            if (compare_pin(pin, PC12)) return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PA4))
+                return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PA15))
+                return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PB2))
+                return GPIODomain::AlternateFunction::AF7;
+            if (compare_pin(pin, PB3))
+                return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PB4))
+                return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PB5))
+                return GPIODomain::AlternateFunction::AF7;
+            if (compare_pin(pin, PC10))
+                return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PC11))
+                return GPIODomain::AlternateFunction::AF6;
+            if (compare_pin(pin, PC12))
+                return GPIODomain::AlternateFunction::AF6;
         }
         if (peripheral == SPIPeripheral::spi6) {
-            if (compare_pin(pin, PA4)) return GPIODomain::AlternateFunction::AF8;
-            if (compare_pin(pin, PA5)) return GPIODomain::AlternateFunction::AF8;
-            if (compare_pin(pin, PA6)) return GPIODomain::AlternateFunction::AF8;
-            if (compare_pin(pin, PA7)) return GPIODomain::AlternateFunction::AF8;
-            if (compare_pin(pin, PA15)) return GPIODomain::AlternateFunction::AF7;
-            if (compare_pin(pin, PB3)) return GPIODomain::AlternateFunction::AF8;
-            if (compare_pin(pin, PB4)) return GPIODomain::AlternateFunction::AF8;
-            if (compare_pin(pin, PB5)) return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA4))
+                return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA5))
+                return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA6))
+                return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA7))
+                return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PA15))
+                return GPIODomain::AlternateFunction::AF7;
+            if (compare_pin(pin, PB3))
+                return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PB4))
+                return GPIODomain::AlternateFunction::AF8;
+            if (compare_pin(pin, PB5))
+                return GPIODomain::AlternateFunction::AF8;
         }
 
         return GPIODomain::AlternateFunction::AF5; // Default AF for everything else
@@ -107,21 +126,29 @@ struct SPIDomain {
 
     static constexpr uint32_t get_prescaler_flag(uint32_t prescaler) {
         switch (prescaler) {
-            case 2: return SPI_BAUDRATEPRESCALER_2;
-            case 4: return SPI_BAUDRATEPRESCALER_4;
-            case 8: return SPI_BAUDRATEPRESCALER_8;
-            case 16: return SPI_BAUDRATEPRESCALER_16;
-            case 32: return SPI_BAUDRATEPRESCALER_32;
-            case 64: return SPI_BAUDRATEPRESCALER_64;
-            case 128: return SPI_BAUDRATEPRESCALER_128;
-            case 256: return SPI_BAUDRATEPRESCALER_256;
-            default:
-                if consteval {
-                    compile_error("Invalid prescaler value");
-                } else {
-                    ErrorHandler("Invalid prescaler value");
-                    return SPI_BAUDRATEPRESCALER_256;
-                }
+        case 2:
+            return SPI_BAUDRATEPRESCALER_2;
+        case 4:
+            return SPI_BAUDRATEPRESCALER_4;
+        case 8:
+            return SPI_BAUDRATEPRESCALER_8;
+        case 16:
+            return SPI_BAUDRATEPRESCALER_16;
+        case 32:
+            return SPI_BAUDRATEPRESCALER_32;
+        case 64:
+            return SPI_BAUDRATEPRESCALER_64;
+        case 128:
+            return SPI_BAUDRATEPRESCALER_128;
+        case 256:
+            return SPI_BAUDRATEPRESCALER_256;
+        default:
+            if consteval {
+                compile_error("Invalid prescaler value");
+            } else {
+                ErrorHandler("Invalid prescaler value");
+                return SPI_BAUDRATEPRESCALER_256;
+            }
         }
     }
 
@@ -162,14 +189,12 @@ struct SPIDomain {
         SPIConfig config;      // User-defined SPI configuration
     };
 
-
-/**
- * =========================================
- *              Request Object
- * =========================================
- */
-    template<DMA_Domain::Stream dma_rx_stream, DMA_Domain::Stream dma_tx_stream>
-    struct Device {
+    /**
+     * =========================================
+     *              Request Object
+     * =========================================
+     */
+    template <DMA_Domain::Stream dma_rx_stream, DMA_Domain::Stream dma_tx_stream> struct Device {
         using domain = SPIDomain;
 
         SPIPeripheral peripheral;
@@ -183,62 +208,113 @@ struct SPIDomain {
         std::optional<GPIODomain::GPIO> nss_gpio;
 
         DMA_Domain::DMA<dma_rx_stream, dma_tx_stream> dma_rx_tx;
-        
-        consteval Device(SPIMode mode, SPIPeripheral peripheral, uint32_t max_baudrate,
-                        GPIODomain::Pin sck_pin, GPIODomain::Pin miso_pin, 
-                        GPIODomain::Pin mosi_pin, GPIODomain::Pin nss_pin,
-                        SPIConfig config = SPIConfig{})
-                        : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate},
-                        config{config},
-                        sck_gpio(sck_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(sck_pin, peripheral)),
-                        miso_gpio(miso_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(miso_pin, peripheral)),
-                        mosi_gpio(mosi_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(mosi_pin, peripheral)),
-                        nss_gpio(GPIODomain::GPIO(nss_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(nss_pin, peripheral))),
-                        dma_rx_tx(dma_peripheral(peripheral))
-                        {
+
+        consteval Device(
+            SPIMode mode,
+            SPIPeripheral peripheral,
+            uint32_t max_baudrate,
+            GPIODomain::Pin sck_pin,
+            GPIODomain::Pin miso_pin,
+            GPIODomain::Pin mosi_pin,
+            GPIODomain::Pin nss_pin,
+            SPIConfig config = SPIConfig{}
+        )
+            : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate}, config{config},
+              sck_gpio(
+                  sck_pin,
+                  GPIODomain::OperationMode::ALT_PP,
+                  GPIODomain::Pull::None,
+                  GPIODomain::Speed::VeryHigh,
+                  get_af(sck_pin, peripheral)
+              ),
+              miso_gpio(
+                  miso_pin,
+                  GPIODomain::OperationMode::ALT_PP,
+                  GPIODomain::Pull::None,
+                  GPIODomain::Speed::VeryHigh,
+                  get_af(miso_pin, peripheral)
+              ),
+              mosi_gpio(
+                  mosi_pin,
+                  GPIODomain::OperationMode::ALT_PP,
+                  GPIODomain::Pull::None,
+                  GPIODomain::Speed::VeryHigh,
+                  get_af(mosi_pin, peripheral)
+              ),
+              nss_gpio(GPIODomain::GPIO(
+                  nss_pin,
+                  GPIODomain::OperationMode::ALT_PP,
+                  GPIODomain::Pull::None,
+                  GPIODomain::Speed::VeryHigh,
+                  get_af(nss_pin, peripheral)
+              )),
+              dma_rx_tx(dma_peripheral(peripheral)) {
             config.validate();
 
             if (config.nss_mode == NSSMode::SOFTWARE) {
-                compile_error("Use NSSMode::SOFTWARE, and omit NSS pin for software NSS management, it is handled externally");
+                compile_error("Use NSSMode::SOFTWARE, and omit NSS pin for software NSS "
+                              "management, it is handled externally");
             }
 
             validate_nss_pin(peripheral, nss_pin);
-            
-            validate_spi_pins(peripheral, sck_pin, miso_pin, mosi_pin);
-        }
-        
-        // Constructor without NSS pin (for software NSS mode)
-        consteval Device(SPIMode mode, SPIPeripheral peripheral, uint32_t max_baudrate,
-                        GPIODomain::Pin sck_pin, GPIODomain::Pin miso_pin, 
-                        GPIODomain::Pin mosi_pin,
-                        SPIConfig config)
-                        : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate},
-                        config{config},
-                        sck_gpio(sck_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(sck_pin, peripheral)),
-                        miso_gpio(miso_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(miso_pin, peripheral)),
-                        mosi_gpio(mosi_pin, GPIODomain::OperationMode::ALT_PP, GPIODomain::Pull::None, GPIODomain::Speed::VeryHigh, get_af(mosi_pin, peripheral)),
-                        nss_gpio(std::nullopt),  // No NSS GPIO
-                        dma_rx_tx(dma_peripheral(peripheral))
-                        {
-            config.validate();
-            
-            if (config.nss_mode == NSSMode::HARDWARE) {
-                compile_error("NSS pin must be provided for hardware NSS mode, or use NSSMode::SOFTWARE");
-            }
-            
+
             validate_spi_pins(peripheral, sck_pin, miso_pin, mosi_pin);
         }
 
-        template <class Ctx>
-        consteval std::size_t inscribe(Ctx &ctx) const {
+        // Constructor without NSS pin (for software NSS mode)
+        consteval Device(
+            SPIMode mode,
+            SPIPeripheral peripheral,
+            uint32_t max_baudrate,
+            GPIODomain::Pin sck_pin,
+            GPIODomain::Pin miso_pin,
+            GPIODomain::Pin mosi_pin,
+            SPIConfig config
+        )
+            : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate}, config{config},
+              sck_gpio(
+                  sck_pin,
+                  GPIODomain::OperationMode::ALT_PP,
+                  GPIODomain::Pull::None,
+                  GPIODomain::Speed::VeryHigh,
+                  get_af(sck_pin, peripheral)
+              ),
+              miso_gpio(
+                  miso_pin,
+                  GPIODomain::OperationMode::ALT_PP,
+                  GPIODomain::Pull::None,
+                  GPIODomain::Speed::VeryHigh,
+                  get_af(miso_pin, peripheral)
+              ),
+              mosi_gpio(
+                  mosi_pin,
+                  GPIODomain::OperationMode::ALT_PP,
+                  GPIODomain::Pull::None,
+                  GPIODomain::Speed::VeryHigh,
+                  get_af(mosi_pin, peripheral)
+              ),
+              nss_gpio(std::nullopt), // No NSS GPIO
+              dma_rx_tx(dma_peripheral(peripheral)) {
+            config.validate();
+
+            if (config.nss_mode == NSSMode::HARDWARE) {
+                compile_error(
+                    "NSS pin must be provided for hardware NSS mode, or use NSSMode::SOFTWARE"
+                );
+            }
+
+            validate_spi_pins(peripheral, sck_pin, miso_pin, mosi_pin);
+        }
+
+        template <class Ctx> consteval std::size_t inscribe(Ctx& ctx) const {
             auto dma_indices = dma_rx_tx.inscribe(ctx);
-            
+
             // Conditionally add NSS GPIO if provided
             std::optional<std::size_t> nss_idx = std::nullopt;
             if (nss_gpio.has_value()) {
                 nss_idx = nss_gpio.value().inscribe(ctx);
             }
-            
+
             Entry e{
                 .peripheral = peripheral,
                 .mode = mode,
@@ -257,76 +333,64 @@ struct SPIDomain {
 
     private:
         // Helper function to validate SPI pins (SCK, MISO, MOSI only)
-        static consteval void validate_spi_pins(SPIPeripheral peripheral, 
-                                               GPIODomain::Pin sck_pin,
-                                               GPIODomain::Pin miso_pin,
-                                               GPIODomain::Pin mosi_pin) {
+        static consteval void validate_spi_pins(
+            SPIPeripheral peripheral,
+            GPIODomain::Pin sck_pin,
+            GPIODomain::Pin miso_pin,
+            GPIODomain::Pin mosi_pin
+        ) {
             switch (peripheral) {
             case SPIPeripheral::spi1:
-                if (!compare_pin(sck_pin, PB3) &&
-                    !compare_pin(sck_pin, PG11) &&
+                if (!compare_pin(sck_pin, PB3) && !compare_pin(sck_pin, PG11) &&
                     !compare_pin(sck_pin, PA5)) {
                     compile_error("Invalid SCK pin for SPI1");
                 }
-                if (!compare_pin(miso_pin, PB4) &&
-                    !compare_pin(miso_pin, PG9) &&
+                if (!compare_pin(miso_pin, PB4) && !compare_pin(miso_pin, PG9) &&
                     !compare_pin(miso_pin, PA6)) {
                     compile_error("Invalid MISO pin for SPI1");
                 }
-                if (!compare_pin(mosi_pin, PB5) &&
-                    !compare_pin(mosi_pin, PD7) &&
+                if (!compare_pin(mosi_pin, PB5) && !compare_pin(mosi_pin, PD7) &&
                     !compare_pin(mosi_pin, PA7)) {
                     compile_error("Invalid MOSI pin for SPI1");
                 }
                 break;
 
             case SPIPeripheral::spi2:
-                if (!compare_pin(sck_pin, PD3) &&
-                    !compare_pin(sck_pin, PA12) &&
-                    !compare_pin(sck_pin, PA9) &&
-                    !compare_pin(sck_pin, PB13) &&
+                if (!compare_pin(sck_pin, PD3) && !compare_pin(sck_pin, PA12) &&
+                    !compare_pin(sck_pin, PA9) && !compare_pin(sck_pin, PB13) &&
                     !compare_pin(sck_pin, PB10)) {
                     compile_error("Invalid SCK pin for SPI2");
                 }
-                if (!compare_pin(miso_pin, PC2) &&
-                    !compare_pin(miso_pin, PB14)) {
+                if (!compare_pin(miso_pin, PC2) && !compare_pin(miso_pin, PB14)) {
                     compile_error("Invalid MISO pin for SPI2");
                 }
-                if (!compare_pin(mosi_pin, PC3) &&
-                    !compare_pin(mosi_pin, PC1) &&
+                if (!compare_pin(mosi_pin, PC3) && !compare_pin(mosi_pin, PC1) &&
                     !compare_pin(mosi_pin, PB15)) {
                     compile_error("Invalid MOSI pin for SPI2");
                 }
                 break;
-            
+
             case SPIPeripheral::spi3:
-                if (!compare_pin(sck_pin, PB3) &&
-                    !compare_pin(sck_pin, PC10)) {
+                if (!compare_pin(sck_pin, PB3) && !compare_pin(sck_pin, PC10)) {
                     compile_error("Invalid SCK pin for SPI3");
-                }    
-                if (!compare_pin(miso_pin, PB4) &&
-                    !compare_pin(miso_pin, PC11)) {
+                }
+                if (!compare_pin(miso_pin, PB4) && !compare_pin(miso_pin, PC11)) {
                     compile_error("Invalid MISO pin for SPI3");
                 }
-                if (!compare_pin(mosi_pin, PB5) &&
-                    !compare_pin(mosi_pin, PD6) &&
-                    !compare_pin(mosi_pin, PC12) &&
-                    !compare_pin(mosi_pin, PB2)) {
+                if (!compare_pin(mosi_pin, PB5) && !compare_pin(mosi_pin, PD6) &&
+                    !compare_pin(mosi_pin, PC12) && !compare_pin(mosi_pin, PB2)) {
                     compile_error("Invalid MOSI pin for SPI3");
                 }
                 break;
 
             case SPIPeripheral::spi4:
-                if (!compare_pin(sck_pin, PE2) &&
-                    !compare_pin(sck_pin, PE12)) {
+                if (!compare_pin(sck_pin, PE2) && !compare_pin(sck_pin, PE12)) {
                     compile_error("Invalid SCK pin for SPI4");
                 }
-                if (!compare_pin(miso_pin, PE5) &&
-                    !compare_pin(miso_pin, PE13)) {
+                if (!compare_pin(miso_pin, PE5) && !compare_pin(miso_pin, PE13)) {
                     compile_error("Invalid MISO pin for SPI4");
                 }
-                if (!compare_pin(mosi_pin, PE6) &&
-                    !compare_pin(mosi_pin, PE14)) {
+                if (!compare_pin(mosi_pin, PE6) && !compare_pin(mosi_pin, PE14)) {
                     compile_error("Invalid MOSI pin for SPI4");
                 }
                 break;
@@ -338,26 +402,21 @@ struct SPIDomain {
                 if (!compare_pin(miso_pin, PF8)) {
                     compile_error("Invalid MISO pin for SPI5");
                 }
-                if (!compare_pin(mosi_pin, PF9) &&
-                    !compare_pin(mosi_pin, PF11)) {
+                if (!compare_pin(mosi_pin, PF9) && !compare_pin(mosi_pin, PF11)) {
                     compile_error("Invalid MOSI pin for SPI5");
                 }
                 break;
-            
+
             case SPIPeripheral::spi6:
-                if (!compare_pin(sck_pin, PB3) &&
-                    !compare_pin(sck_pin, PG13) &&
-                    !compare_pin(sck_pin, PC10) && 
-                    !compare_pin(sck_pin, PA7)) {
+                if (!compare_pin(sck_pin, PB3) && !compare_pin(sck_pin, PG13) &&
+                    !compare_pin(sck_pin, PC10) && !compare_pin(sck_pin, PA7)) {
                     compile_error("Invalid SCK pin for SPI6");
                 }
-                if (!compare_pin(miso_pin, PB4) &&
-                    !compare_pin(miso_pin, PG12) &&
+                if (!compare_pin(miso_pin, PB4) && !compare_pin(miso_pin, PG12) &&
                     !compare_pin(miso_pin, PA6)) {
                     compile_error("Invalid MISO pin for SPI6");
                 }
-                if (!compare_pin(mosi_pin, PB5) &&
-                    !compare_pin(mosi_pin, PG14) &&
+                if (!compare_pin(mosi_pin, PB5) && !compare_pin(mosi_pin, PG14) &&
                     !compare_pin(mosi_pin, PA7)) {
                     compile_error("Invalid MOSI pin for SPI6");
                 }
@@ -372,32 +431,27 @@ struct SPIDomain {
         static consteval void validate_nss_pin(SPIPeripheral peripheral, GPIODomain::Pin nss_pin) {
             switch (peripheral) {
             case SPIPeripheral::spi1:
-                if (!compare_pin(nss_pin, PA4) &&
-                    !compare_pin(nss_pin, PA15) &&
+                if (!compare_pin(nss_pin, PA4) && !compare_pin(nss_pin, PA15) &&
                     !compare_pin(nss_pin, PG10)) {
                     compile_error("Invalid NSS pin for SPI1");
                 }
                 break;
 
             case SPIPeripheral::spi2:
-                if (!compare_pin(nss_pin, PA11) &&
-                    !compare_pin(nss_pin, PB9) &&
-                    !compare_pin(nss_pin, PB4) &&
-                    !compare_pin(nss_pin, PB12)) {
+                if (!compare_pin(nss_pin, PA11) && !compare_pin(nss_pin, PB9) &&
+                    !compare_pin(nss_pin, PB4) && !compare_pin(nss_pin, PB12)) {
                     compile_error("Invalid NSS pin for SPI2");
                 }
                 break;
 
             case SPIPeripheral::spi3:
-                if (!compare_pin(nss_pin, PA15) &&
-                    !compare_pin(nss_pin, PA4)) {
+                if (!compare_pin(nss_pin, PA15) && !compare_pin(nss_pin, PA4)) {
                     compile_error("Invalid NSS pin for SPI3");
                 }
                 break;
 
             case SPIPeripheral::spi4:
-                if (!compare_pin(nss_pin, PE4) &&
-                    !compare_pin(nss_pin, PE11)) {
+                if (!compare_pin(nss_pin, PE4) && !compare_pin(nss_pin, PE11)) {
                     compile_error("Invalid NSS pin for SPI4");
                 }
                 break;
@@ -409,10 +463,8 @@ struct SPIDomain {
                 break;
 
             case SPIPeripheral::spi6:
-                if (!compare_pin(nss_pin, PA0) &&
-                    !compare_pin(nss_pin, PA15) &&
-                    !compare_pin(nss_pin, PG8) &&
-                    !compare_pin(nss_pin, PA4)) {
+                if (!compare_pin(nss_pin, PA0) && !compare_pin(nss_pin, PA15) &&
+                    !compare_pin(nss_pin, PG8) && !compare_pin(nss_pin, PA4)) {
                     compile_error("Invalid NSS pin for SPI6");
                 }
                 break;
@@ -424,32 +476,31 @@ struct SPIDomain {
 
         static consteval DMA_Domain::Peripheral dma_peripheral(SPIPeripheral peripheral) {
             switch (peripheral) {
-                case SPIPeripheral::spi1:
-                    return DMA_Domain::Peripheral::spi1;
-                case SPIPeripheral::spi2:
-                    return DMA_Domain::Peripheral::spi2;
-                case SPIPeripheral::spi3:
-                    return DMA_Domain::Peripheral::spi3;
-                case SPIPeripheral::spi4:
-                    return DMA_Domain::Peripheral::spi4;
-                case SPIPeripheral::spi5:
-                    return DMA_Domain::Peripheral::spi5;
-                case SPIPeripheral::spi6:
-                    return DMA_Domain::Peripheral::spi6;
-                default:
-                    compile_error("Invalid SPI peripheral specified in SPIDomain::Device");
+            case SPIPeripheral::spi1:
+                return DMA_Domain::Peripheral::spi1;
+            case SPIPeripheral::spi2:
+                return DMA_Domain::Peripheral::spi2;
+            case SPIPeripheral::spi3:
+                return DMA_Domain::Peripheral::spi3;
+            case SPIPeripheral::spi4:
+                return DMA_Domain::Peripheral::spi4;
+            case SPIPeripheral::spi5:
+                return DMA_Domain::Peripheral::spi5;
+            case SPIPeripheral::spi6:
+                return DMA_Domain::Peripheral::spi6;
+            default:
+                compile_error("Invalid SPI peripheral specified in SPIDomain::Device");
             }
         }
     };
 
-
-/**
- * =========================================
- *        Instance (state holder)
- * =========================================
- */
-    template <std::size_t N> struct Init; // Forward declaration
-    template <auto &device_request, bool IsMaster> struct SPIWrapper; // Forward declaration
+    /**
+     * =========================================
+     *        Instance (state holder)
+     * =========================================
+     */
+    template <std::size_t N> struct Init;                             // Forward declaration
+    template <auto& device_request, bool IsMaster> struct SPIWrapper; // Forward declaration
     struct Instance {
         template <std::size_t> friend struct Init;
         template <auto&, bool> friend struct SPIWrapper;
@@ -459,50 +510,57 @@ struct SPIDomain {
         friend void ::SPI4_IRQHandler(void);
         friend void ::SPI5_IRQHandler(void);
         friend void ::SPI6_IRQHandler(void);
-        friend void ::HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi);
-        friend void ::HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi);
-        friend void ::HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi);
-        friend void ::HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi);
+        friend void ::HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi);
+        friend void ::HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi);
+        friend void ::HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi);
+        friend void ::HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi);
 
-       private:
+    private:
         SPI_HandleTypeDef hspi;
         SPI_TypeDef* instance;
 
         volatile bool* operation_flag = nullptr;
     };
 
-
     static inline Instance* spi_instances[max_instances];
-/**
- * =========================================
- *          Wrapper, public API
- * =========================================
- */
+    /**
+     * =========================================
+     *          Wrapper, public API
+     * =========================================
+     */
 
     // SPI Wrapper primary template
-    template <auto &device_request, bool IsMaster = (device_request.mode == SPIMode::MASTER)>
+    template <auto& device_request, bool IsMaster = (device_request.mode == SPIMode::MASTER)>
     struct SPIWrapper;
 
     /**
      * @brief SPI Wrapper for Master mode operations.
      */
-    template <auto &device_request>
-    struct SPIWrapper<device_request, true> {
-        static constexpr uint32_t data_bits = static_cast<uint32_t>(device_request.config.data_size);
+    template <auto& device_request> struct SPIWrapper<device_request, true> {
+        static constexpr uint32_t data_bits =
+            static_cast<uint32_t>(device_request.config.data_size);
         static constexpr uint32_t frame_size = (data_bits <= 8) ? 1 : ((data_bits <= 16) ? 2 : 4);
 
-        SPIWrapper(Instance &instance) : spi_instance{instance} {}
+        SPIWrapper(Instance& instance) : spi_instance{instance} {}
 
         /**
          * @brief Sends data over SPI in blocking mode.
          */
-        template <typename E, size_t S>
-        bool send(span<E, S> data) {
+        template <typename E, size_t S> bool send(span<E, S> data) {
             if (data.size_bytes() % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", data.size_bytes(), frame_size);
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    data.size_bytes(),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Transmit(&spi_instance.hspi, (uint8_t*)data.data(), data.size_bytes() / frame_size, 10);
+            auto error_code = HAL_SPI_Transmit(
+                &spi_instance.hspi,
+                (uint8_t*)data.data(),
+                data.size_bytes() / frame_size,
+                10
+            );
             return check_error_code(error_code);
         }
 
@@ -510,25 +568,44 @@ struct SPIDomain {
          * @brief Sends a trivially copyable data type over SPI in blocking mode.
          */
         template <typename T>
-        bool send(const T& data) requires std::is_trivially_copyable_v<T> {
+        bool send(const T& data)
+            requires std::is_trivially_copyable_v<T>
+        {
             if (sizeof(T) % frame_size != 0) {
-                ErrorHandler("SPI data type size (%d) not aligned to frame size (%d)", sizeof(T), frame_size);
+                ErrorHandler(
+                    "SPI data type size (%d) not aligned to frame size (%d)",
+                    sizeof(T),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Transmit(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&data), sizeof(T) / frame_size, 10);
+            auto error_code = HAL_SPI_Transmit(
+                &spi_instance.hspi,
+                reinterpret_cast<const uint8_t*>(&data),
+                sizeof(T) / frame_size,
+                10
+            );
             return check_error_code(error_code);
         }
-        
+
         /**
          * @brief Receives data over SPI in blocking mode.
          */
-        template <typename E, size_t S>
-        bool receive(span<E, S> data) {
+        template <typename E, size_t S> bool receive(span<E, S> data) {
             if (data.size_bytes() % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", data.size_bytes(), frame_size);
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    data.size_bytes(),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Receive(&spi_instance.hspi, (uint8_t*)data.data(), data.size_bytes() / frame_size, 10);
+            auto error_code = HAL_SPI_Receive(
+                &spi_instance.hspi,
+                (uint8_t*)data.data(),
+                data.size_bytes() / frame_size,
+                10
+            );
             return check_error_code(error_code);
         }
 
@@ -536,12 +613,23 @@ struct SPIDomain {
          * @brief Receives a trivially copyable data type over SPI in blocking mode.
          */
         template <typename T>
-        bool receive(T& data) requires std::is_trivially_copyable_v<T> {
+        bool receive(T& data)
+            requires std::is_trivially_copyable_v<T>
+        {
             if (sizeof(T) % frame_size != 0) {
-                ErrorHandler("SPI data type size (%d) not aligned to frame size (%d)", sizeof(T), frame_size);
+                ErrorHandler(
+                    "SPI data type size (%d) not aligned to frame size (%d)",
+                    sizeof(T),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Receive(&spi_instance.hspi, reinterpret_cast<uint8_t*>(&data), sizeof(T) / frame_size, 10);
+            auto error_code = HAL_SPI_Receive(
+                &spi_instance.hspi,
+                reinterpret_cast<uint8_t*>(&data),
+                sizeof(T) / frame_size,
+                10
+            );
             return check_error_code(error_code);
         }
 
@@ -552,10 +640,20 @@ struct SPIDomain {
         bool transceive(span<E1, S1> tx_data, span<E2, S2> rx_data) {
             size_t size = std::min(tx_data.size_bytes(), rx_data.size_bytes());
             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, (uint8_t*)tx_data.data(), (uint8_t*)rx_data.data(), size / frame_size, 10);
+            auto error_code = HAL_SPI_TransmitReceive(
+                &spi_instance.hspi,
+                (uint8_t*)tx_data.data(),
+                (uint8_t*)rx_data.data(),
+                size / frame_size,
+                10
+            );
             return check_error_code(error_code);
         }
 
@@ -563,13 +661,25 @@ struct SPIDomain {
          * @brief Sends and receives a trivially copyable data type over SPI in blocking mode.
          */
         template <typename E, size_t S, typename T>
-        bool transceive(span<E, S> tx_data, T& rx_data) requires std::is_trivially_copyable_v<T> {
+        bool transceive(span<E, S> tx_data, T& rx_data)
+            requires std::is_trivially_copyable_v<T>
+        {
             size_t size = std::min(tx_data.size_bytes(), sizeof(T));
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, (uint8_t*)tx_data.data(), reinterpret_cast<uint8_t*>(&rx_data), size / frame_size, 10);
+            auto error_code = HAL_SPI_TransmitReceive(
+                &spi_instance.hspi,
+                (uint8_t*)tx_data.data(),
+                reinterpret_cast<uint8_t*>(&rx_data),
+                size / frame_size,
+                10
+            );
             return check_error_code(error_code);
         }
 
@@ -577,13 +687,25 @@ struct SPIDomain {
          * @brief Sends and receives a trivially copyable data type over SPI in blocking mode.
          */
         template <typename T, typename E, size_t S>
-        bool transceive(const T& tx_data, span<E, S> rx_data) requires std::is_trivially_copyable_v<T> {
+        bool transceive(const T& tx_data, span<E, S> rx_data)
+            requires std::is_trivially_copyable_v<T>
+        {
             size_t size = std::min(sizeof(T), rx_data.size_bytes());
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), (uint8_t*)rx_data.data(), size / frame_size, 10);
+            auto error_code = HAL_SPI_TransmitReceive(
+                &spi_instance.hspi,
+                reinterpret_cast<const uint8_t*>(&tx_data),
+                (uint8_t*)rx_data.data(),
+                size / frame_size,
+                10
+            );
             return check_error_code(error_code);
         }
 
@@ -591,133 +713,239 @@ struct SPIDomain {
          * @brief Sends and receives a trivially copyable data type over SPI in blocking mode.
          */
         template <typename T1, typename T2>
-        bool transceive(const T1& tx_data, T2& rx_data) requires (std::is_trivially_copyable_v<T1> && std::is_trivially_copyable_v<T2>) {
+        bool transceive(const T1& tx_data, T2& rx_data)
+            requires(std::is_trivially_copyable_v<T1> && std::is_trivially_copyable_v<T2>)
+        {
             size_t size = std::min(sizeof(T1), sizeof(T2));
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), reinterpret_cast<uint8_t*>(&rx_data), size / frame_size, 10);
+            auto error_code = HAL_SPI_TransmitReceive(
+                &spi_instance.hspi,
+                reinterpret_cast<const uint8_t*>(&tx_data),
+                reinterpret_cast<uint8_t*>(&rx_data),
+                size / frame_size,
+                10
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends data over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends data over SPI using DMA, uses an optional operation flag to signal
+         * completion.
          */
         template <typename E, size_t S>
         bool send_DMA(span<E, S> data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             if (data.size_bytes() % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", data.size_bytes(), frame_size);
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    data.size_bytes(),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, (uint8_t*)data.data(), data.size_bytes() / frame_size);
+            auto error_code = HAL_SPI_Transmit_DMA(
+                &spi_instance.hspi,
+                (uint8_t*)data.data(),
+                data.size_bytes() / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends a trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends a trivially copyable data type over SPI using DMA, uses an optional
+         * operation flag to signal completion.
          */
         template <typename T>
-        bool send_DMA(const T& data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+        bool send_DMA(const T& data, volatile bool* operation_flag = nullptr)
+            requires std::is_trivially_copyable_v<T>
+        {
             spi_instance.operation_flag = operation_flag;
-             if (sizeof(T) % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", sizeof(T), frame_size);
+            if (sizeof(T) % frame_size != 0) {
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    sizeof(T),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&data), sizeof(T) / frame_size);
+            auto error_code = HAL_SPI_Transmit_DMA(
+                &spi_instance.hspi,
+                reinterpret_cast<const uint8_t*>(&data),
+                sizeof(T) / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Receives data over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Receives data over SPI using DMA, uses an optional operation flag to signal
+         * completion.
          */
         template <typename E, size_t S>
         bool receive_DMA(span<E, S> data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             if (data.size_bytes() % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", data.size_bytes(), frame_size);
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    data.size_bytes(),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, (uint8_t*)data.data(), data.size_bytes() / frame_size);
+            auto error_code = HAL_SPI_Receive_DMA(
+                &spi_instance.hspi,
+                (uint8_t*)data.data(),
+                data.size_bytes() / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Receives a trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Receives a trivially copyable data type over SPI using DMA, uses an optional
+         * operation flag to signal completion.
          */
         template <typename T>
-        bool receive_DMA(T& data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+        bool receive_DMA(T& data, volatile bool* operation_flag = nullptr)
+            requires std::is_trivially_copyable_v<T>
+        {
             spi_instance.operation_flag = operation_flag;
-             if (sizeof(T) % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", sizeof(T), frame_size);
+            if (sizeof(T) % frame_size != 0) {
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    sizeof(T),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, reinterpret_cast<uint8_t*>(&data), sizeof(T) / frame_size);
+            auto error_code = HAL_SPI_Receive_DMA(
+                &spi_instance.hspi,
+                reinterpret_cast<uint8_t*>(&data),
+                sizeof(T) / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends and receives data over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends and receives data over SPI using DMA, uses an optional operation flag to
+         * signal completion.
          */
         template <typename E1, size_t S1, typename E2, size_t S2>
-        bool transceive_DMA(span<E1, S1> tx_data, span<E2, S2> rx_data, volatile bool* operation_flag = nullptr) {
+        bool transceive_DMA(
+            span<E1, S1> tx_data,
+            span<E2, S2> rx_data,
+            volatile bool* operation_flag = nullptr
+        ) {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(tx_data.size_bytes(), rx_data.size_bytes());
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), (uint8_t*)rx_data.data(), size / frame_size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(
+                &spi_instance.hspi,
+                (uint8_t*)tx_data.data(),
+                (uint8_t*)rx_data.data(),
+                size / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends a span and receives a trivially copyable type over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends a span and receives a trivially copyable type over SPI using DMA, uses an
+         * optional operation flag to signal completion.
          */
         template <typename E, size_t S, typename T>
-        bool transceive_DMA(span<E, S> tx_data, T& rx_data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+        bool transceive_DMA(span<E, S> tx_data, T& rx_data, volatile bool* operation_flag = nullptr)
+            requires std::is_trivially_copyable_v<T>
+        {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(tx_data.size_bytes(), sizeof(T));
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), reinterpret_cast<uint8_t*>(&rx_data), size / frame_size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(
+                &spi_instance.hspi,
+                (uint8_t*)tx_data.data(),
+                reinterpret_cast<uint8_t*>(&rx_data),
+                size / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends a trivially copyable type and receives a span over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends a trivially copyable type and receives a span over SPI using DMA, uses an
+         * optional operation flag to signal completion.
          */
         template <typename T, typename E, size_t S>
-        bool transceive_DMA(const T& tx_data, span<E, S> rx_data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+        bool transceive_DMA(
+            const T& tx_data,
+            span<E, S> rx_data,
+            volatile bool* operation_flag = nullptr
+        )
+            requires std::is_trivially_copyable_v<T>
+        {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(sizeof(T), rx_data.size_bytes());
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), (uint8_t*)rx_data.data(), size / frame_size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(
+                &spi_instance.hspi,
+                reinterpret_cast<const uint8_t*>(&tx_data),
+                (uint8_t*)rx_data.data(),
+                size / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends and receives a trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends and receives a trivially copyable data type over SPI using DMA, uses an
+         * optional operation flag to signal completion.
          */
         template <typename T1, typename T2>
-        bool transceive_DMA(const T1& tx_data, T2& rx_data, volatile bool* operation_flag = nullptr) requires (std::is_trivially_copyable_v<T1> && std::is_trivially_copyable_v<T2>) {
+        bool transceive_DMA(const T1& tx_data, T2& rx_data, volatile bool* operation_flag = nullptr)
+            requires(std::is_trivially_copyable_v<T1> && std::is_trivially_copyable_v<T2>)
+        {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(sizeof(T1), sizeof(T2));
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), reinterpret_cast<uint8_t*>(&rx_data), size / frame_size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(
+                &spi_instance.hspi,
+                reinterpret_cast<const uint8_t*>(&tx_data),
+                reinterpret_cast<uint8_t*>(&rx_data),
+                size / frame_size
+            );
             return check_error_code(error_code);
         }
 
-       private:
+    private:
         Instance& spi_instance;
         bool check_error_code(HAL_StatusTypeDef error_code) {
             if (error_code == HAL_OK) {
@@ -734,138 +962,231 @@ struct SPIDomain {
     /**
      * @brief SPI Wrapper for Slave mode operations. Doesn't allow for blocking operations.
      */
-    template <auto &device_request>
-    struct SPIWrapper<device_request, false> {
-        static constexpr uint32_t data_bits = static_cast<uint32_t>(device_request.config.data_size);
+    template <auto& device_request> struct SPIWrapper<device_request, false> {
+        static constexpr uint32_t data_bits =
+            static_cast<uint32_t>(device_request.config.data_size);
         static constexpr uint32_t frame_size = (data_bits <= 8) ? 1 : ((data_bits <= 16) ? 2 : 4);
 
-        SPIWrapper(Instance &instance) : spi_instance{instance} {}
+        SPIWrapper(Instance& instance) : spi_instance{instance} {}
 
-        void set_software_nss(bool selected) requires (device_request.config.nss_mode == SPIConfigTypes::NSSMode::SOFTWARE) {
+        void set_software_nss(bool selected)
+            requires(device_request.config.nss_mode == SPIConfigTypes::NSSMode::SOFTWARE)
+        {
             if (selected) {
-               CLEAR_BIT(spi_instance.instance->CR1, SPI_CR1_SSI);
+                CLEAR_BIT(spi_instance.instance->CR1, SPI_CR1_SSI);
             } else {
-               SET_BIT(spi_instance.instance->CR1, SPI_CR1_SSI);
+                SET_BIT(spi_instance.instance->CR1, SPI_CR1_SSI);
             }
         }
 
         /**
-         * @brief Listens for data over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Listens for data over SPI using DMA, uses an optional operation flag to signal
+         * completion.
          */
         template <typename E, size_t S>
         bool listen(span<E, S> data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             if (data.size_bytes() % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", data.size_bytes(), frame_size);
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    data.size_bytes(),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, (uint8_t*)data.data(), data.size_bytes() / frame_size);
+            auto error_code = HAL_SPI_Receive_DMA(
+                &spi_instance.hspi,
+                (uint8_t*)data.data(),
+                data.size_bytes() / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Listens for trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Listens for trivially copyable data type over SPI using DMA, uses an optional
+         * operation flag to signal completion.
          */
         template <typename T>
-        bool listen(T& data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+        bool listen(T& data, volatile bool* operation_flag = nullptr)
+            requires std::is_trivially_copyable_v<T>
+        {
             spi_instance.operation_flag = operation_flag;
             if (sizeof(T) % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", sizeof(T), frame_size);
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    sizeof(T),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Receive_DMA(&spi_instance.hspi, reinterpret_cast<uint8_t*>(&data), sizeof(T) / frame_size);
+            auto error_code = HAL_SPI_Receive_DMA(
+                &spi_instance.hspi,
+                reinterpret_cast<uint8_t*>(&data),
+                sizeof(T) / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Arms the SPI to send data over DMA when requested, uses an optional operation flag to signal completion.
+         * @brief Arms the SPI to send data over DMA when requested, uses an optional operation flag
+         * to signal completion.
          */
         template <typename E, size_t S>
         bool arm(span<E, S> tx_data, volatile bool* operation_flag = nullptr) {
             spi_instance.operation_flag = operation_flag;
             if (tx_data.size_bytes() % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", tx_data.size_bytes(), frame_size);
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    tx_data.size_bytes(),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), tx_data.size_bytes() / frame_size);
+            auto error_code = HAL_SPI_Transmit_DMA(
+                &spi_instance.hspi,
+                (uint8_t*)tx_data.data(),
+                tx_data.size_bytes() / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Arms the SPI to send a trivially copyable data type over DMA when requested, uses an optional operation flag to signal completion.
+         * @brief Arms the SPI to send a trivially copyable data type over DMA when requested, uses
+         * an optional operation flag to signal completion.
          */
         template <typename T>
-        bool arm(const T& data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+        bool arm(const T& data, volatile bool* operation_flag = nullptr)
+            requires std::is_trivially_copyable_v<T>
+        {
             spi_instance.operation_flag = operation_flag;
             if (sizeof(T) % frame_size != 0) {
-                ErrorHandler("SPI data size (%d) not aligned to frame size (%d)", sizeof(T), frame_size);
+                ErrorHandler(
+                    "SPI data size (%d) not aligned to frame size (%d)",
+                    sizeof(T),
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_Transmit_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&data), sizeof(T) / frame_size);
+            auto error_code = HAL_SPI_Transmit_DMA(
+                &spi_instance.hspi,
+                reinterpret_cast<const uint8_t*>(&data),
+                sizeof(T) / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends and receives data over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends and receives data over SPI using DMA, uses an optional operation flag to
+         * signal completion.
          */
         template <typename E1, size_t S1, typename E2, size_t S2>
-        bool transceive(span<E1, S1> tx_data, span<E2, S2> rx_data, volatile bool* operation_flag = nullptr) {
+        bool transceive(
+            span<E1, S1> tx_data,
+            span<E2, S2> rx_data,
+            volatile bool* operation_flag = nullptr
+        ) {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(tx_data.size_bytes(), rx_data.size_bytes());
             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), (uint8_t*)rx_data.data(), size / frame_size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(
+                &spi_instance.hspi,
+                (uint8_t*)tx_data.data(),
+                (uint8_t*)rx_data.data(),
+                size / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends a span and receives a trivially copyable type over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends a span and receives a trivially copyable type over SPI using DMA, uses an
+         * optional operation flag to signal completion.
          */
         template <typename E, size_t S, typename T>
-        bool transceive(span<E, S> tx_data, T& rx_data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+        bool transceive(span<E, S> tx_data, T& rx_data, volatile bool* operation_flag = nullptr)
+            requires std::is_trivially_copyable_v<T>
+        {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(tx_data.size_bytes(), sizeof(T));
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, (uint8_t*)tx_data.data(), reinterpret_cast<uint8_t*>(&rx_data), size / frame_size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(
+                &spi_instance.hspi,
+                (uint8_t*)tx_data.data(),
+                reinterpret_cast<uint8_t*>(&rx_data),
+                size / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends a trivially copyable type and receives a span over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends a trivially copyable type and receives a span over SPI using DMA, uses an
+         * optional operation flag to signal completion.
          */
         template <typename T, typename E, size_t S>
-        bool transceive(const T& tx_data, span<E, S> rx_data, volatile bool* operation_flag = nullptr) requires std::is_trivially_copyable_v<T> {
+        bool
+        transceive(const T& tx_data, span<E, S> rx_data, volatile bool* operation_flag = nullptr)
+            requires std::is_trivially_copyable_v<T>
+        {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(sizeof(T), rx_data.size_bytes());
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), (uint8_t*)rx_data.data(), size / frame_size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(
+                &spi_instance.hspi,
+                reinterpret_cast<const uint8_t*>(&tx_data),
+                (uint8_t*)rx_data.data(),
+                size / frame_size
+            );
             return check_error_code(error_code);
         }
 
         /**
-         * @brief Sends and receives a trivially copyable data type over SPI using DMA, uses an optional operation flag to signal completion.
+         * @brief Sends and receives a trivially copyable data type over SPI using DMA, uses an
+         * optional operation flag to signal completion.
          */
         template <typename T1, typename T2>
-        bool transceive(const T1& tx_data, T2& rx_data, volatile bool* operation_flag = nullptr) requires (std::is_trivially_copyable_v<T1> && std::is_trivially_copyable_v<T2>) {
+        bool transceive(const T1& tx_data, T2& rx_data, volatile bool* operation_flag = nullptr)
+            requires(std::is_trivially_copyable_v<T1> && std::is_trivially_copyable_v<T2>)
+        {
             spi_instance.operation_flag = operation_flag;
             auto size = std::min(sizeof(T1), sizeof(T2));
-             if (size % frame_size != 0) {
-                ErrorHandler("SPI transaction size (%d) not aligned to frame size (%d)", size, frame_size);
+            if (size % frame_size != 0) {
+                ErrorHandler(
+                    "SPI transaction size (%d) not aligned to frame size (%d)",
+                    size,
+                    frame_size
+                );
                 return false;
             }
-            auto error_code = HAL_SPI_TransmitReceive_DMA(&spi_instance.hspi, reinterpret_cast<const uint8_t*>(&tx_data), reinterpret_cast<uint8_t*>(&rx_data), size / frame_size);
+            auto error_code = HAL_SPI_TransmitReceive_DMA(
+                &spi_instance.hspi,
+                reinterpret_cast<const uint8_t*>(&tx_data),
+                reinterpret_cast<uint8_t*>(&rx_data),
+                size / frame_size
+            );
             return check_error_code(error_code);
         }
 
-       private:
+    private:
         Instance& spi_instance;
         bool check_error_code(HAL_StatusTypeDef error_code) {
             if (error_code == HAL_OK) {
@@ -879,14 +1200,12 @@ struct SPIDomain {
         }
     };
 
-
-/**
- * =========================================
- *          Internal working things
- * =========================================
- */
-    template <size_t N>
-    static consteval array<Config, N> build(span<const Entry> entries) {
+    /**
+     * =========================================
+     *          Internal working things
+     * =========================================
+     */
+    template <size_t N> static consteval array<Config, N> build(span<const Entry> entries) {
         array<Config, N> cfgs{};
 
         if (N == 0) {
@@ -945,15 +1264,16 @@ struct SPIDomain {
         return cfgs;
     }
 
-    template <std::size_t N>
-    struct Init {
+    template <std::size_t N> struct Init {
         static inline std::array<Instance, N> instances{};
 
-        static void init(std::span<const Config, N> cfgs,
-                         std::span<GPIODomain::Instance> gpio_instances,
-                         std::span<DMA_Domain::Instance> dma_peripherals) {
+        static void init(
+            std::span<const Config, N> cfgs,
+            std::span<GPIODomain::Instance> gpio_instances,
+            std::span<DMA_Domain::Instance> dma_peripherals
+        ) {
             for (std::size_t i = 0; i < N; ++i) {
-                const auto &e = cfgs[i];
+                const auto& e = cfgs[i];
 
                 SPIPeripheral peripheral = e.peripheral;
                 instances[i].instance = reinterpret_cast<SPI_TypeDef*>(e.peripheral);
@@ -1045,12 +1365,10 @@ struct SPIDomain {
                     init.Mode = SPI_MODE_MASTER;
                     // Baudrate prescaler calculation
                     uint32_t pclk_freq;
-                    if (peripheral == SPIPeripheral::spi1 ||
-                        peripheral == SPIPeripheral::spi2 ||
+                    if (peripheral == SPIPeripheral::spi1 || peripheral == SPIPeripheral::spi2 ||
                         peripheral == SPIPeripheral::spi3) {
                         pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI123);
-                    } else if (peripheral == SPIPeripheral::spi4 ||
-                               peripheral == SPIPeripheral::spi5) {
+                    } else if (peripheral == SPIPeripheral::spi4 || peripheral == SPIPeripheral::spi5) {
                         pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI45);
                     } else {
                         pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI6);
@@ -1059,28 +1377,38 @@ struct SPIDomain {
                 } else {
                     init.Mode = SPI_MODE_SLAVE;
                 }
-                
-                init.NSS = SPIConfigTypes::translate_nss_mode(e.config.nss_mode, e.mode == SPIMode::MASTER);
+
+                init.NSS = SPIConfigTypes::translate_nss_mode(
+                    e.config.nss_mode,
+                    e.mode == SPIMode::MASTER
+                );
                 init.Direction = SPIConfigTypes::translate_direction(e.config.direction);
                 init.DataSize = SPIConfigTypes::translate_data_size(e.config.data_size);
                 init.CLKPolarity = SPIConfigTypes::translate_clock_polarity(e.config.polarity);
                 init.CLKPhase = SPIConfigTypes::translate_clock_phase(e.config.phase);
                 init.FirstBit = SPIConfigTypes::translate_bit_order(e.config.bit_order);
                 init.TIMode = SPIConfigTypes::translate_ti_mode(e.config.ti_mode);
-                init.CRCCalculation = SPIConfigTypes::translate_crc_calculation(e.config.crc_calculation);
+                init.CRCCalculation =
+                    SPIConfigTypes::translate_crc_calculation(e.config.crc_calculation);
                 if (e.config.crc_calculation) {
                     init.CRCPolynomial = e.config.crc_polynomial;
                     init.CRCLength = SPIConfigTypes::translate_crc_length(e.config.crc_length);
                 }
                 init.NSSPMode = SPIConfigTypes::translate_nss_pulse(e.config.nss_pulse);
                 init.NSSPolarity = SPIConfigTypes::translate_nss_polarity(e.config.nss_polarity);
-                init.FifoThreshold = SPIConfigTypes::translate_fifo_threshold(e.config.fifo_threshold);
+                init.FifoThreshold =
+                    SPIConfigTypes::translate_fifo_threshold(e.config.fifo_threshold);
                 init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
                 init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-                init.MasterSSIdleness = SPIConfigTypes::translate_ss_idleness(e.config.master_ss_idleness);
-                init.MasterInterDataIdleness = SPIConfigTypes::translate_interdata_idleness(e.config.master_interdata_idleness);
-                init.MasterReceiverAutoSusp = SPIConfigTypes::translate_rx_autosusp(e.config.master_rx_autosusp);
-                init.MasterKeepIOState = SPIConfigTypes::translate_keep_io_state(e.config.keep_io_state);
+                init.MasterSSIdleness =
+                    SPIConfigTypes::translate_ss_idleness(e.config.master_ss_idleness);
+                init.MasterInterDataIdleness =
+                    SPIConfigTypes::translate_interdata_idleness(e.config.master_interdata_idleness
+                    );
+                init.MasterReceiverAutoSusp =
+                    SPIConfigTypes::translate_rx_autosusp(e.config.master_rx_autosusp);
+                init.MasterKeepIOState =
+                    SPIConfigTypes::translate_keep_io_state(e.config.keep_io_state);
                 init.IOSwap = SPIConfigTypes::translate_io_swap(e.config.io_swap);
 
                 if (HAL_SPI_Init(&hspi) != HAL_OK) {
@@ -1129,6 +1457,5 @@ struct SPIDomain {
 };
 
 } // namespace ST_LIB
-
 
 #endif // SPI2_HPP

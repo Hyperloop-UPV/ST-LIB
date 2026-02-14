@@ -12,7 +12,7 @@
 #include "HALAL/Models/PinModel/Pin.hpp"
 
 class DigitalOutput {
-   public:
+public:
     DigitalOutput() = default;
     DigitalOutput(Pin& pin);
 
@@ -22,7 +22,7 @@ class DigitalOutput {
     void set_pin_state(PinState state);
     bool lock_pin_state(PinState state);
 
-   private:
+private:
     Pin pin;
     uint8_t id;
 };

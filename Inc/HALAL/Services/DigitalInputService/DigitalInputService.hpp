@@ -9,12 +9,12 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 
 #ifdef HAL_GPIO_MODULE_ENABLED
-class DigitalInput{
+class DigitalInput {
 public:
-	static map<uint8_t,Pin> service_ids;
-	static uint8_t id_counter;
+    static map<uint8_t, Pin> service_ids;
+    static uint8_t id_counter;
 
-	static uint8_t inscribe(Pin& pin);
-	static PinState read_pin_state(uint8_t id);
+    static uint8_t inscribe(Pin& pin);
+    static PinState read_pin_state(uint8_t id);
 };
 #endif

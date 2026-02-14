@@ -14,12 +14,22 @@
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
 class LinearSensor {
-   public:
+public:
     LinearSensor() = default;
-    LinearSensor(ST_LIB::ADCDomain::Instance &adc, Type slope, Type offset,
-                 Type *value, float vref = 3.3f);
-    LinearSensor(ST_LIB::ADCDomain::Instance &adc, Type slope, Type offset,
-                 Type &value, float vref = 3.3f);
+    LinearSensor(
+        ST_LIB::ADCDomain::Instance& adc,
+        Type slope,
+        Type offset,
+        Type* value,
+        float vref = 3.3f
+    );
+    LinearSensor(
+        ST_LIB::ADCDomain::Instance& adc,
+        Type slope,
+        Type offset,
+        Type& value,
+        float vref = 3.3f
+    );
 
     void read();
 
@@ -29,26 +39,36 @@ class LinearSensor {
     void set_gain(Type new_gain);
     Type get_gain();
 
-    Type *get_value_pointer() const;
+    Type* get_value_pointer() const;
 
-   protected:
-    ST_LIB::ADCDomain::Instance *adc = nullptr;
+protected:
+    ST_LIB::ADCDomain::Instance* adc = nullptr;
     Type slope;
     Type offset;
-    Type *value = nullptr;
+    Type* value = nullptr;
     float vref = 3.3f;
 };
 
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
-LinearSensor<Type>::LinearSensor(ST_LIB::ADCDomain::Instance &adc, Type slope,
-                                 Type offset, Type *value, float vref)
+LinearSensor<Type>::LinearSensor(
+    ST_LIB::ADCDomain::Instance& adc,
+    Type slope,
+    Type offset,
+    Type* value,
+    float vref
+)
     : adc(&adc), slope(slope), offset(offset), value(value), vref(vref) {}
 
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
-LinearSensor<Type>::LinearSensor(ST_LIB::ADCDomain::Instance &adc, Type slope,
-                                 Type offset, Type &value, float vref)
+LinearSensor<Type>::LinearSensor(
+    ST_LIB::ADCDomain::Instance& adc,
+    Type slope,
+    Type offset,
+    Type& value,
+    float vref
+)
     : LinearSensor::LinearSensor(adc, slope, offset, &value, vref) {}
 
 template <class Type>
@@ -89,6 +109,6 @@ void LinearSensor<Type>::set_gain(Type new_gain) {
 
 template <class Type>
     requires std::is_integral_v<Type> || std::is_floating_point_v<Type>
-Type *LinearSensor<Type>::get_value_pointer() const {
+Type* LinearSensor<Type>::get_value_pointer() const {
     return value;
 }

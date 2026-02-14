@@ -19,7 +19,9 @@ uint8_t Encoder::inscribe(Pin& pin1, Pin& pin2) {
         ErrorHandler(
             " The pin %s and the pin %s are already used or aren't "
             "configurated for encoder usage",
-            pin1.to_string().c_str(), pin2.to_string().c_str());
+            pin1.to_string().c_str(),
+            pin2.to_string().c_str()
+        );
         return 0;
     }
 
@@ -47,14 +49,12 @@ void Encoder::turn_on(uint8_t id) {
     TimerPeripheral* timer = pin_timer_map[registered_encoder[id]];
 
     if (HAL_TIM_Encoder_GetState(timer->handle) == HAL_TIM_STATE_RESET) {
-        ErrorHandler("Unable to get state from encoder in timer %s",
-                     timer->name.c_str());
+        ErrorHandler("Unable to get state from encoder in timer %s", timer->name.c_str());
         return;
     }
 
     if (HAL_TIM_Encoder_Start(timer->handle, TIM_CHANNEL_ALL) != HAL_OK) {
-        ErrorHandler("Unable to start encoder in timer %s",
-                     timer->name.c_str());
+        ErrorHandler("Unable to start encoder in timer %s", timer->name.c_str());
         return;
     }
 
@@ -111,8 +111,7 @@ void Encoder::init(TimerPeripheral* encoder) {
     TIM_Encoder_InitTypeDef sConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
 
-    encoder->handle->Instance =
-        TimerPeripheral::handle_to_timer[encoder->handle];
+    encoder->handle->Instance = TimerPeripheral::handle_to_timer[encoder->handle];
     encoder->handle->Init.Prescaler = encoder->init_data.prescaler;
     encoder->handle->Init.CounterMode = TIM_COUNTERMODE_UP;
     encoder->handle->Init.Period = encoder->init_data.period;
@@ -128,27 +127,23 @@ void Encoder::init(TimerPeripheral* encoder) {
     sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
     sConfig.IC2Filter = 0;
     if (HAL_TIM_Encoder_Init(encoder->handle, &sConfig) != HAL_OK) {
-        ErrorHandler("Unable to init encoder in timer %s",
-                     encoder->name.c_str());
+        ErrorHandler("Unable to init encoder in timer %s", encoder->name.c_str());
     }
     sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
     sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    if (HAL_TIMEx_MasterConfigSynchronization(encoder->handle,
-                                              &sMasterConfig) != HAL_OK) {
+    if (HAL_TIMEx_MasterConfigSynchronization(encoder->handle, &sMasterConfig) != HAL_OK) {
         ErrorHandler(
             "Unable to config master synchronization in encoder in timer %s",
-            encoder->name.c_str());
+            encoder->name.c_str()
+        );
     }
 }
 
-int64_t Encoder::get_delta_clock(uint64_t clock_time,
-                                 uint64_t last_clock_time) {
+int64_t Encoder::get_delta_clock(uint64_t clock_time, uint64_t last_clock_time) {
     int64_t delta_clock = clock_time - last_clock_time;
-    if (clock_time < last_clock_time) {  // overflow handle
-        delta_clock =
-            clock_time +
-            CLOCK_MAX_VALUE * NANO_SECOND / HAL_RCC_GetPCLK1Freq() * 2 -
-            last_clock_time;
+    if (clock_time < last_clock_time) { // overflow handle
+        delta_clock = clock_time + CLOCK_MAX_VALUE * NANO_SECOND / HAL_RCC_GetPCLK1Freq() * 2 -
+                      last_clock_time;
     }
     return delta_clock;
 }

@@ -8,39 +8,42 @@
 
 class DatagramSocket {
 public:
-  struct udp_pcb *udp_control_block;
+    struct udp_pcb* udp_control_block;
 
-  IPV4 local_ip;
-  uint32_t local_port;
-  IPV4 remote_ip;
-  uint32_t remote_port;
-  bool is_disconnected = true;
-  DatagramSocket();
-  DatagramSocket(DatagramSocket &&other);
-  DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip,
-                 uint32_t remote_port);
-  DatagramSocket(EthernetNode local_node, EthernetNode remote_node);
-  ~DatagramSocket();
+    IPV4 local_ip;
+    uint32_t local_port;
+    IPV4 remote_ip;
+    uint32_t remote_port;
+    bool is_disconnected = true;
+    DatagramSocket();
+    DatagramSocket(DatagramSocket&& other);
+    DatagramSocket(IPV4 local_ip, uint32_t local_port, IPV4 remote_ip, uint32_t remote_port);
+    DatagramSocket(EthernetNode local_node, EthernetNode remote_node);
+    ~DatagramSocket();
 
-  void operator=(DatagramSocket &&);
+    void operator=(DatagramSocket&&);
 
-  void reconnect();
+    void reconnect();
 
-  static void receive_callback(void *args, struct udp_pcb *udp_control_block,
-                               struct pbuf *packet_buffer,
-                               const ip_addr_t *remote_address, u16_t port);
-  bool send_packet(Packet &packet) {
-    uint8_t *packet_buffer = packet.build();
+    static void receive_callback(
+        void* args,
+        struct udp_pcb* udp_control_block,
+        struct pbuf* packet_buffer,
+        const ip_addr_t* remote_address,
+        u16_t port
+    );
+    bool send_packet(Packet& packet) {
+        uint8_t* packet_buffer = packet.build();
 
-    struct pbuf *tx_buffer = pbuf_alloc(PBUF_TRANSPORT, packet.size, PBUF_RAM);
-    pbuf_take(tx_buffer, packet_buffer, packet.size);
-    udp_send(udp_control_block, tx_buffer);
-    pbuf_free(tx_buffer);
+        struct pbuf* tx_buffer = pbuf_alloc(PBUF_TRANSPORT, packet.size, PBUF_RAM);
+        pbuf_take(tx_buffer, packet_buffer, packet.size);
+        udp_send(udp_control_block, tx_buffer);
+        pbuf_free(tx_buffer);
 
-    return true;
-  }
+        return true;
+    }
 
-  void close();
+    void close();
 };
 
 #endif

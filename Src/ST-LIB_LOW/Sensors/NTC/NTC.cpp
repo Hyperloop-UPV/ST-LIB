@@ -1,9 +1,7 @@
 #include "Sensors/NTC/NTC.hpp"
 
-NTC::NTC(ST_LIB::ADCDomain::Instance& adc, float *src)
-    : value(src), adc(&adc) {}
-NTC::NTC(ST_LIB::ADCDomain::Instance& adc, float& src)
-    : value(&src), adc(&adc) {}
+NTC::NTC(ST_LIB::ADCDomain::Instance& adc, float* src) : value(src), adc(&adc) {}
+NTC::NTC(ST_LIB::ADCDomain::Instance& adc, float& src) : value(&src), adc(&adc) {}
 
 void NTC::read() {
     if (adc == nullptr || value == nullptr) {

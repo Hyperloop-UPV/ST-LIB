@@ -24,8 +24,8 @@
 #include "Control/ControlSystem.hpp"
 #ifdef SIM_ON
 #else
-	#include "FlashStorer/FlashStorer.hpp"
+#include "FlashStorer/FlashStorer.hpp"
 #endif
 namespace STLIB_HIGH {
-	void start();
+void start();
 }

@@ -1,8 +1,8 @@
 #pragma once
 
 namespace Boards {
-  
-  enum ID{
+
+enum ID {
     VCU,
     BLCU_VEHICLE,
     BLCU_INFRASTRUCTURE,
@@ -12,8 +12,8 @@ namespace Boards {
     PCU,
     BMSA,
     OBCCU,
-	BCU,
+    BCU,
     NOBOARD
-  };
+};
 
 }
