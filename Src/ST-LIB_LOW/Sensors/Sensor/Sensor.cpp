@@ -4,10 +4,9 @@
 
 std::vector<uint8_t> Sensor::inputcapture_id_list{};
 
-void Sensor::start(){
+void Sensor::start() {
 
-	for(uint8_t inputcapture_id : inputcapture_id_list){
-		InputCapture::turn_on(inputcapture_id);
-	}
-
+    for (uint8_t inputcapture_id : inputcapture_id_list) {
+        InputCapture::turn_on(inputcapture_id);
+    }
 }

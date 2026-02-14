@@ -12,14 +12,14 @@
 
 #include "HALAL/Services/EXTI/EXTI.hpp"
 
-class SensorInterrupt{
+class SensorInterrupt {
 public:
-	SensorInterrupt() = default;
-	SensorInterrupt(ST_LIB::EXTIDomain::Instance &exti, GPIO_PinState *value);
-	SensorInterrupt(ST_LIB::EXTIDomain::Instance &exti, GPIO_PinState &value);
-	void read();
+    SensorInterrupt() = default;
+    SensorInterrupt(ST_LIB::EXTIDomain::Instance& exti, GPIO_PinState* value);
+    SensorInterrupt(ST_LIB::EXTIDomain::Instance& exti, GPIO_PinState& value);
+    void read();
 
 protected:
-	ST_LIB::EXTIDomain::Instance *exti;
-	GPIO_PinState *value;
+    ST_LIB::EXTIDomain::Instance* exti;
+    GPIO_PinState* value;
 };
