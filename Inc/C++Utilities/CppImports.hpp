@@ -17,13 +17,13 @@
 #include <bitset>
 #include <ctype.h>
 #if defined(SIM_ON)
-# ifdef __APPLE__
-#  include <stdlib.h>  // macOS
-# else
-#  include <malloc.h>  // Linux/Unix
-# endif
+#ifdef __APPLE__
+#include <stdlib.h> // macOS
 #else
-# include <malloc.h>
+#include <malloc.h> // Linux/Unix
+#endif
+#else
+#include <malloc.h>
 #endif
 #include <math.h>
 #include <deque>

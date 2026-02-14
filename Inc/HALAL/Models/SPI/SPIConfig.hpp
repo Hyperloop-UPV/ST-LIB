@@ -14,25 +14,22 @@
 namespace ST_LIB {
 
 struct SPIConfigTypes {
-    
+
     enum class ClockPolarity : bool {
-        LOW = false,    // Clock idle state is low (CPOL=0)
-        HIGH = true     // Clock idle state is high (CPOL=1)
+        LOW = false, // Clock idle state is low (CPOL=0)
+        HIGH = true  // Clock idle state is high (CPOL=1)
     };
 
     enum class ClockPhase : bool {
-        FIRST_EDGE = false,     // Data sampled on first clock edge (CPHA=0)
-        SECOND_EDGE = true      // Data sampled on second clock edge (CPHA=1)
+        FIRST_EDGE = false, // Data sampled on first clock edge (CPHA=0)
+        SECOND_EDGE = true  // Data sampled on second clock edge (CPHA=1)
     };
 
-    enum class BitOrder : bool {
-        MSB_FIRST = false,
-        LSB_FIRST = true
-    };
+    enum class BitOrder : bool { MSB_FIRST = false, LSB_FIRST = true };
 
     enum class NSSMode {
-        SOFTWARE,       // Software NSS management (manual control)
-        HARDWARE        // Hardware NSS management (automatic)
+        SOFTWARE, // Software NSS management (manual control)
+        HARDWARE  // Hardware NSS management (automatic)
     };
 
     enum class DataSize : uint8_t {
@@ -68,10 +65,10 @@ struct SPIConfigTypes {
     };
 
     enum class Direction {
-    FULL_DUPLEX,        // 2-line bidirectional (most common)
-    HALF_DUPLEX,        // 1-line bidirectional
-    SIMPLEX_TX_ONLY,    // Transmit only
-    SIMPLEX_RX_ONLY     // Receive only
+        FULL_DUPLEX,     // 2-line bidirectional (most common)
+        HALF_DUPLEX,     // 1-line bidirectional
+        SIMPLEX_TX_ONLY, // Transmit only
+        SIMPLEX_RX_ONLY  // Receive only
     };
 
     enum class FIFOThreshold : uint8_t {
@@ -93,13 +90,10 @@ struct SPIConfigTypes {
         THRESHOLD_16DATA = 16
     };
 
-    enum class NSSPolarity {
-        ACTIVE_LOW = false,
-        ACTIVE_HIGH = true
-    };
+    enum class NSSPolarity { ACTIVE_LOW = false, ACTIVE_HIGH = true };
 
     enum class CRCLength : uint8_t {
-        DATASIZE = 0,  // CRC length matches data size
+        DATASIZE = 0, // CRC length matches data size
         CRC_4BIT = 4,
         CRC_5BIT = 5,
         CRC_6BIT = 6,
@@ -140,40 +134,43 @@ struct SPIConfigTypes {
         ClockPhase phase = ClockPhase::FIRST_EDGE;
         BitOrder bit_order = BitOrder::MSB_FIRST;
         NSSMode nss_mode = NSSMode::HARDWARE;
-        
+
         // Data format
         DataSize data_size = DataSize::SIZE_8BIT;
         Direction direction = Direction::FULL_DUPLEX;
         FIFOThreshold fifo_threshold = FIFOThreshold::THRESHOLD_01DATA;
-        
+
         // NSS settings
-        bool nss_pulse = false;                         // NSS pulse between data frames (master only)
+        bool nss_pulse = false; // NSS pulse between data frames (master only)
         NSSPolarity nss_polarity = NSSPolarity::ACTIVE_LOW;
-        
+
         // Master timing settings
-        uint8_t master_ss_idleness = 0;                 // Cycles (0-15) between NSS and first data
-        uint8_t master_interdata_idleness = 0;          // Cycles (0-15) between data frames
-        
+        uint8_t master_ss_idleness = 0;        // Cycles (0-15) between NSS and first data
+        uint8_t master_interdata_idleness = 0; // Cycles (0-15) between data frames
+
         // Advanced options
-        bool keep_io_state = true;                      // Keep pin states when idle (prevents floating)
-        bool master_rx_autosusp = false;                // Auto-suspend in master RX mode to prevent overrun
-        bool io_swap = false;                           // Swap MISO/MOSI pins
-        
+        bool keep_io_state = true;       // Keep pin states when idle (prevents floating)
+        bool master_rx_autosusp = false; // Auto-suspend in master RX mode to prevent overrun
+        bool io_swap = false;            // Swap MISO/MOSI pins
+
         // Protocol options
-        bool ti_mode = false;                           // Enable TI synchronous serial frame format (Microwire compatible)
-        
+        bool ti_mode = false; // Enable TI synchronous serial frame format (Microwire compatible)
+
         // CRC options (hardware CRC calculation)
-        bool crc_calculation = false;                   // Enable hardware CRC calculation
-        uint32_t crc_polynomial = 0x07;                 // CRC polynomial (must be odd, default for CRC-8)
-        CRCLength crc_length = CRCLength::DATASIZE;     // CRC length (default: matches data size)
-        
+        bool crc_calculation = false;   // Enable hardware CRC calculation
+        uint32_t crc_polynomial = 0x07; // CRC polynomial (must be odd, default for CRC-8)
+        CRCLength crc_length = CRCLength::DATASIZE; // CRC length (default: matches data size)
+
         constexpr SPIConfig() = default;
-        
-        constexpr SPIConfig(ClockPolarity pol, ClockPhase ph, 
-                          BitOrder order = BitOrder::MSB_FIRST,
-                          NSSMode nss = NSSMode::HARDWARE)
+
+        constexpr SPIConfig(
+            ClockPolarity pol,
+            ClockPhase ph,
+            BitOrder order = BitOrder::MSB_FIRST,
+            NSSMode nss = NSSMode::HARDWARE
+        )
             : polarity(pol), phase(ph), bit_order(order), nss_mode(nss) {}
-        
+
         // Compile-time validation
         constexpr void validate() const {
             // Validate CRC polynomial if CRC is enabled
@@ -185,7 +182,7 @@ struct SPIConfigTypes {
                     compile_error("CRC polynomial must be odd");
                 }
             }
-            
+
             // Validate timing parameters
             if (master_ss_idleness > 15) {
                 compile_error("master_ss_idleness must be 0-15");
@@ -224,14 +221,14 @@ struct SPIConfigTypes {
 
     static constexpr uint32_t translate_direction(Direction dir) {
         switch (dir) {
-            case Direction::FULL_DUPLEX:
-                return SPI_DIRECTION_2LINES;
-            case Direction::HALF_DUPLEX:
-                return SPI_DIRECTION_1LINE;
-            case Direction::SIMPLEX_TX_ONLY:
-                return SPI_DIRECTION_2LINES_TXONLY;
-            case Direction::SIMPLEX_RX_ONLY:
-                return SPI_DIRECTION_2LINES_RXONLY;
+        case Direction::FULL_DUPLEX:
+            return SPI_DIRECTION_2LINES;
+        case Direction::HALF_DUPLEX:
+            return SPI_DIRECTION_1LINE;
+        case Direction::SIMPLEX_TX_ONLY:
+            return SPI_DIRECTION_2LINES_TXONLY;
+        case Direction::SIMPLEX_RX_ONLY:
+            return SPI_DIRECTION_2LINES_RXONLY;
         }
         return SPI_DIRECTION_2LINES;
     }
@@ -251,14 +248,16 @@ struct SPIConfigTypes {
 
     static constexpr uint32_t translate_ss_idleness(uint8_t cycles) {
         // Clamp to valid range 0-15
-        if (cycles > 15) cycles = 15;
+        if (cycles > 15)
+            cycles = 15;
         return cycles;
     }
 
     static constexpr uint32_t translate_interdata_idleness(uint8_t cycles) {
         // Clamp to valid range 0-15, shift to proper position
-        if (cycles > 15) cycles = 15;
-        return (cycles << 4);  // These are in bits 7:4 of CFG2
+        if (cycles > 15)
+            cycles = 15;
+        return (cycles << 4); // These are in bits 7:4 of CFG2
     }
 
     static constexpr uint32_t translate_keep_io_state(bool enable) {

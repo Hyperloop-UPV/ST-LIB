@@ -55,8 +55,8 @@
 #endif
 #endif
 
-extern "C" void HAL_SYSCFG_AnalogSwitchConfig(uint32_t SYSCFG_AnalogSwitch,
-                                              uint32_t SYSCFG_SwitchState);
+extern "C" void
+HAL_SYSCFG_AnalogSwitchConfig(uint32_t SYSCFG_AnalogSwitch, uint32_t SYSCFG_SwitchState);
 #endif
 
 #ifndef STLIB_HAS_ADC3

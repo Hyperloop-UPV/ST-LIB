@@ -9,7 +9,7 @@ uint32_t ST_LIB::SPIDomain::calculate_prescaler(uint32_t src_freq, uint32_t max_
             ErrorHandler("Cannot achieve desired baudrate, speed is too low");
         }
     }
-    
+
     return get_prescaler_flag(prescaler);
 }
 
@@ -70,14 +70,13 @@ void SPI6_IRQHandler(void) {
     HAL_SPI_IRQHandler(&inst->hspi);
 }
 
-
 /**
  * =========================================
  *               HAL Callbacks
  * =========================================
  */
 
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi) {
     auto& spi_instances = ST_LIB::SPIDomain::spi_instances;
 
     ST_LIB::SPIDomain::Instance* inst = nullptr;
@@ -104,15 +103,15 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     }
 }
 
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef* hspi) {
     HAL_SPI_TxCpltCallback(hspi); // Same logic
 }
 
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
     HAL_SPI_TxCpltCallback(hspi); // Same logic
 }
 
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef* hspi) {
     auto& spi_instances = ST_LIB::SPIDomain::spi_instances;
 
     uint32_t error_code = hspi->ErrorCode;
@@ -150,5 +149,4 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
     (void)error_code;  
     (void)inst_idx; 
 }
-
 }

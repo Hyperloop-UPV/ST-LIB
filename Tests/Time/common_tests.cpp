@@ -14,23 +14,21 @@ void reset() {
     call_count = 0;
 }
 
-void set_fail_on_error(bool enabled) {
-    fail_on_error = enabled;
-}
+void set_fail_on_error(bool enabled) { fail_on_error = enabled; }
 } // namespace ST_LIB::TestErrorHandler
 
-void ErrorHandlerModel::SetMetaData(int line, const char * func, const char * file){
-		ErrorHandlerModel::line = to_string(line);
-		ErrorHandlerModel::func = string(func);
-		ErrorHandlerModel::file = string(file);
+void ErrorHandlerModel::SetMetaData(int line, const char* func, const char* file) {
+    ErrorHandlerModel::line = to_string(line);
+    ErrorHandlerModel::func = string(func);
+    ErrorHandlerModel::file = string(file);
 }
 
-void ErrorHandlerModel::ErrorHandlerTrigger(string format, ... ){
+void ErrorHandlerModel::ErrorHandlerTrigger(string format, ...) {
     (void)format;
     ST_LIB::TestErrorHandler::call_count++;
-    if(ST_LIB::TestErrorHandler::fail_on_error){
+    if (ST_LIB::TestErrorHandler::fail_on_error) {
         EXPECT_EQ(1, 0);
     }
 }
 
-void ErrorHandlerModel::ErrorHandlerUpdate(){}
+void ErrorHandlerModel::ErrorHandlerUpdate() {}

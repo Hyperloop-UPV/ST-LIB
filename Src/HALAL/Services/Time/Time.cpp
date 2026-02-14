@@ -23,17 +23,12 @@ stack<TIM_HandleTypeDef*> Time::available_high_precision_timers;
 unordered_map<uint8_t, Time::Alarm> Time::high_precision_alarms_by_id;
 unordered_map<uint8_t, Time::Alarm> Time::low_precision_alarms_by_id;
 unordered_map<uint8_t, Time::Alarm> Time::mid_precision_alarms_by_id;
-unordered_map<TIM_HandleTypeDef*, Time::Alarm>
-    Time::high_precision_alarms_by_timer;
+unordered_map<TIM_HandleTypeDef*, Time::Alarm> Time::high_precision_alarms_by_timer;
 
-unordered_map<TIM_HandleTypeDef*, TIM_TypeDef*>
-    Time::timer32_by_timer32handler_map = {
-        {&htim2, TIM2}, {&htim5, TIM5}, {&htim23, TIM23}, {&htim24, TIM24}};
-unordered_map<TIM_HandleTypeDef*, IRQn_Type>
-    Time::timer32interrupt_by_timer32handler_map = {{&htim2, TIM2_IRQn},
-                                                    {&htim5, TIM5_IRQn},
-                                                    {&htim23, TIM23_IRQn},
-                                                    {&htim24, TIM24_IRQn}};
+unordered_map<TIM_HandleTypeDef*, TIM_TypeDef*> Time::timer32_by_timer32handler_map =
+    {{&htim2, TIM2}, {&htim5, TIM5}, {&htim23, TIM23}, {&htim24, TIM24}};
+unordered_map<TIM_HandleTypeDef*, IRQn_Type> Time::timer32interrupt_by_timer32handler_map =
+    {{&htim2, TIM2_IRQn}, {&htim5, TIM5_IRQn}, {&htim23, TIM23_IRQn}, {&htim24, TIM24_IRQn}};
 
 stack<uint8_t> Time::low_precision_erasable_ids;
 stack<uint8_t> Time::mid_precision_erasable_ids;
@@ -42,9 +37,13 @@ uint64_t Time::global_tick = 0;
 uint64_t Time::low_precision_tick = 0;
 uint64_t Time::mid_precision_tick = 0;
 
-void Time::init_timer(TIM_TypeDef* tim, TIM_HandleTypeDef* htim,
-                      uint32_t prescaler, uint32_t period,
-                      IRQn_Type interrupt_channel) {
+void Time::init_timer(
+    TIM_TypeDef* tim,
+    TIM_HandleTypeDef* htim,
+    uint32_t prescaler,
+    uint32_t period,
+    IRQn_Type interrupt_channel
+) {
     TIM_ClockConfigTypeDef sClockSourceConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
 
@@ -86,30 +85,36 @@ void Time::start() {
         } else {
             hal_enable_timer(global_timer);
             Time::init_timer(
-                timer32_by_timer32handler_map[global_timer], global_timer, 0,
+                timer32_by_timer32handler_map[global_timer],
+                global_timer,
+                0,
                 HIGH_PRECISION_MAX_ARR,
-                timer32interrupt_by_timer32handler_map[global_timer]);
+                timer32interrupt_by_timer32handler_map[global_timer]
+            );
             HAL_TIM_Base_Start_IT(global_timer);
         }
     }
     for (auto timer : high_precision_timers) {
-        if (timer32_by_timer32handler_map.find(timer) ==
-            timer32_by_timer32handler_map.end()) {
+        if (timer32_by_timer32handler_map.find(timer) == timer32_by_timer32handler_map.end()) {
             ErrorHandler("Global Timer pointer is not valid");
             high_precision_timers.erase(timer);
         } else {
             hal_enable_timer(timer);
-            Time::init_timer(timer32_by_timer32handler_map[timer], timer, 0,
-                             HIGH_PRECISION_MAX_ARR,
-                             timer32interrupt_by_timer32handler_map[timer]);
+            Time::init_timer(
+                timer32_by_timer32handler_map[timer],
+                timer,
+                0,
+                HIGH_PRECISION_MAX_ARR,
+                timer32interrupt_by_timer32handler_map[timer]
+            );
             Time::available_high_precision_timers.push(timer);
         }
     }
 }
 
 bool Time::is_valid_timer(TIM_HandleTypeDef* tim) {
-    if (tim == global_timer || tim == low_precision_timer ||
-        tim == mid_precision_timer || high_precision_timers.contains(tim))
+    if (tim == global_timer || tim == low_precision_timer || tim == mid_precision_timer ||
+        high_precision_timers.contains(tim))
         return true;
     return false;
 }
@@ -130,8 +135,7 @@ void Time::hal_enable_timer(TIM_HandleTypeDef* tim) {
 
 uint64_t Time::get_global_tick() {
     if (global_timer == nullptr) {
-        ErrorHandler(
-            "tried to use global tick without global timer configured");
+        ErrorHandler("tried to use global tick without global timer configured");
         return 0;
     }
     uint64_t current_tick = Time::global_tick + global_timer->Instance->CNT;
@@ -140,19 +144,15 @@ uint64_t Time::get_global_tick() {
     return current_tick * to_nanoseconds;
 }
 
-void Time::start_timer(TIM_HandleTypeDef* handle, uint32_t prescaler,
-                       uint32_t arr) {
+void Time::start_timer(TIM_HandleTypeDef* handle, uint32_t prescaler, uint32_t arr) {
     handle->Instance->ARR = arr;
     handle->Instance->PSC = prescaler;
     HAL_TIM_Base_Start_IT(handle);
 }
 
-void Time::stop_timer(TIM_HandleTypeDef* handle) {
-    HAL_TIM_Base_Stop_IT(handle);
-}
+void Time::stop_timer(TIM_HandleTypeDef* handle) { HAL_TIM_Base_Stop_IT(handle); }
 
-uint8_t Time::register_high_precision_alarm(uint32_t period_in_us,
-                                            function<void()> func) {
+uint8_t Time::register_high_precision_alarm(uint32_t period_in_us, function<void()> func) {
     if (available_high_precision_timers.size() == 0) {
         ErrorHandler("There are no available high precision timers left");
         return 0;
@@ -161,8 +161,7 @@ uint8_t Time::register_high_precision_alarm(uint32_t period_in_us,
     TIM_HandleTypeDef* tim = Time::available_high_precision_timers.top();
     Time::available_high_precision_timers.pop();
 
-    Time::Alarm alarm = {
-        .period = period_in_us, .tim = tim, .alarm = [&]() {}, .is_on = true};
+    Time::Alarm alarm = {.period = period_in_us, .tim = tim, .alarm = [&]() {}, .is_on = true};
 
     for (auto timer : high_precision_timers) {
         NVIC_DisableIRQ(timer32interrupt_by_timer32handler_map[timer]);
@@ -203,31 +202,28 @@ bool Time::unregister_high_precision_alarm(uint8_t id) {
     return true;
 }
 
-uint8_t Time::register_mid_precision_alarm(uint32_t period_in_us,
-                                           function<void()> func) {
+uint8_t Time::register_mid_precision_alarm(uint32_t period_in_us, function<void()> func) {
     if (mid_precision_timer == nullptr) {
-        ErrorHandler(
-            "Cannot register mid precision alarm if no timer is used for mid "
-            "precision");
+        ErrorHandler("Cannot register mid precision alarm if no timer is used for mid "
+                     "precision");
         return 0;
     }
-    if (mid_precision_alarms_by_id.size() ==
-        std::numeric_limits<uint8_t>::max()) {
-        ErrorHandler(
-            "Cannot register mid precision alarm as all id's are already "
-            "occupied");
+    if (mid_precision_alarms_by_id.size() == std::numeric_limits<uint8_t>::max()) {
+        ErrorHandler("Cannot register mid precision alarm as all id's are already "
+                     "occupied");
         return 0;
     }
     if (std::find_if(
-            TimerPeripheral::timers.begin(), TimerPeripheral::timers.end(),
+            TimerPeripheral::timers.begin(),
+            TimerPeripheral::timers.end(),
             [&](TimerPeripheral& tim) -> bool {
                 return tim.handle == mid_precision_timer && (tim.is_occupied());
-            }) != TimerPeripheral::timers.end()) {
-        ErrorHandler(
-            "a timer cannot be used as mid precision timer and PWM or Input "
-            "Capture Simultaneously");
-        return 0;  // TODO: put this check in high precision timers and global
-                   // timer too
+            }
+        ) != TimerPeripheral::timers.end()) {
+        ErrorHandler("a timer cannot be used as mid precision timer and PWM or Input "
+                     "Capture Simultaneously");
+        return 0; // TODO: put this check in high precision timers and global
+                  // timer too
     }
 
     Time::Alarm alarm = {
@@ -235,25 +231,26 @@ uint8_t Time::register_mid_precision_alarm(uint32_t period_in_us,
         .tim = Time::mid_precision_timer,
         .alarm = [&]() {},
         .offset = Time::mid_precision_tick,
-        .is_on = true};
+        .is_on = true
+    };
 
     while (mid_precision_alarms_by_id.contains(mid_precision_ids))
         mid_precision_ids++;
 
-    NVIC_DisableIRQ(
-        timer32interrupt_by_timer32handler_map[mid_precision_timer]);
+    NVIC_DisableIRQ(timer32interrupt_by_timer32handler_map[mid_precision_timer]);
     Time::mid_precision_alarms_by_id[mid_precision_ids] = alarm;
 
     if (not Time::mid_precision_registered) {
         hal_enable_timer(mid_precision_timer);
         Time::init_timer(
             timer32_by_timer32handler_map[mid_precision_timer],
-            Time::mid_precision_timer, 275, Time::mid_precision_step_in_us,
-            timer32interrupt_by_timer32handler_map[mid_precision_timer]);
-        Time::ConfigTimer(Time::mid_precision_timer,
-                          Time::mid_precision_step_in_us);
-        NVIC_DisableIRQ(
-            timer32interrupt_by_timer32handler_map[mid_precision_timer]);
+            Time::mid_precision_timer,
+            275,
+            Time::mid_precision_step_in_us,
+            timer32interrupt_by_timer32handler_map[mid_precision_timer]
+        );
+        Time::ConfigTimer(Time::mid_precision_timer, Time::mid_precision_step_in_us);
+        NVIC_DisableIRQ(timer32interrupt_by_timer32handler_map[mid_precision_timer]);
         Time::mid_precision_registered = true;
     }
 
@@ -269,8 +266,7 @@ bool Time::unregister_mid_precision_alarm(uint8_t id) {
         return false;
     }
 
-    NVIC_DisableIRQ(
-        timer32interrupt_by_timer32handler_map[mid_precision_timer]);
+    NVIC_DisableIRQ(timer32interrupt_by_timer32handler_map[mid_precision_timer]);
     Time::Alarm& alarm = Time::mid_precision_alarms_by_id[id];
     alarm.is_on = false;
     Time::mid_precision_erasable_ids.push(id);
@@ -279,20 +275,19 @@ bool Time::unregister_mid_precision_alarm(uint8_t id) {
     return true;
 }
 
-uint8_t Time::register_low_precision_alarm(uint32_t period_in_ms,
-                                           function<void()> func) {
-    if (low_precision_alarms_by_id.size() ==
-        std::numeric_limits<uint8_t>::max()) {
-        ErrorHandler(
-            "Cannot register low precision alarm as all id's are already "
-            "occupied");
+uint8_t Time::register_low_precision_alarm(uint32_t period_in_ms, function<void()> func) {
+    if (low_precision_alarms_by_id.size() == std::numeric_limits<uint8_t>::max()) {
+        ErrorHandler("Cannot register low precision alarm as all id's are already "
+                     "occupied");
         return 0;
     }
-    Time::Alarm alarm = {.period = period_in_ms,
-                         .tim = low_precision_timer,
-                         .alarm = func,
-                         .offset = low_precision_tick,
-                         .is_on = true};
+    Time::Alarm alarm = {
+        .period = period_in_ms,
+        .tim = low_precision_timer,
+        .alarm = func,
+        .offset = low_precision_tick,
+        .is_on = true
+    };
 
     while (low_precision_alarms_by_id.contains(low_precision_ids))
         low_precision_ids++;
@@ -303,20 +298,19 @@ uint8_t Time::register_low_precision_alarm(uint32_t period_in_ms,
     return low_precision_ids++;
 }
 
-uint8_t Time::register_low_precision_alarm(uint32_t period_in_ms,
-                                           void (*func)()) {
-    if (low_precision_alarms_by_id.size() ==
-        std::numeric_limits<uint8_t>::max()) {
-        ErrorHandler(
-            "Cannot register low precision alarm as all id's are already "
-            "occupied");
+uint8_t Time::register_low_precision_alarm(uint32_t period_in_ms, void (*func)()) {
+    if (low_precision_alarms_by_id.size() == std::numeric_limits<uint8_t>::max()) {
+        ErrorHandler("Cannot register low precision alarm as all id's are already "
+                     "occupied");
         return 0;
     }
-    Time::Alarm alarm = {.period = period_in_ms,
-                         .tim = low_precision_timer,
-                         .alarm = func,
-                         .offset = low_precision_tick,
-                         .is_on = true};
+    Time::Alarm alarm = {
+        .period = period_in_ms,
+        .tim = low_precision_timer,
+        .alarm = func,
+        .offset = low_precision_tick,
+        .is_on = true
+    };
 
     while (low_precision_alarms_by_id.contains(low_precision_ids))
         low_precision_ids++;
@@ -342,25 +336,22 @@ bool Time::unregister_low_precision_alarm(uint8_t id) {
 }
 
 uint8_t Time::set_timeout(int milliseconds, function<void()> callback) {
-    if (low_precision_alarms_by_id.size() ==
-        std::numeric_limits<uint8_t>::max()) {
-        ErrorHandler(
-            "Cannot register timeout as all low precision alarms id's are "
-            "already occupied");
+    if (low_precision_alarms_by_id.size() == std::numeric_limits<uint8_t>::max()) {
+        ErrorHandler("Cannot register timeout as all low precision alarms id's are "
+                     "already occupied");
         return 255;
     }
     while (low_precision_alarms_by_id.contains(low_precision_ids))
         low_precision_ids++;
     uint8_t id = low_precision_ids;
     uint64_t tick_on_register = low_precision_tick;
-    Time::register_low_precision_alarm(
-        milliseconds, [&, id, callback, tick_on_register]() {
-            if (tick_on_register == low_precision_tick) {
-                return;
-            }
-            callback();
-            Time::unregister_low_precision_alarm(id);
-        });
+    Time::register_low_precision_alarm(milliseconds, [&, id, callback, tick_on_register]() {
+        if (tick_on_register == low_precision_tick) {
+            return;
+        }
+        callback();
+        Time::unregister_low_precision_alarm(id);
+    });
     return id;
 }
 
@@ -371,17 +362,14 @@ void Time::cancel_timeout(uint8_t id) {
     Time::unregister_low_precision_alarm(id);
 }
 
-void Time::global_timer_callback() {
-    Time::global_tick += Time::HIGH_PRECISION_MAX_ARR;
-}
+void Time::global_timer_callback() { Time::global_tick += Time::HIGH_PRECISION_MAX_ARR; }
 
 void Time::high_precision_timer_callback(TIM_HandleTypeDef* tim) {
     Time::high_precision_alarms_by_timer[tim].alarm();
 }
 
 void Time::mid_precision_timer_callback() {
-    for (pair<const uint8_t, Time::Alarm>& pair :
-         Time::mid_precision_alarms_by_id) {
+    for (pair<const uint8_t, Time::Alarm>& pair : Time::mid_precision_alarms_by_id) {
         Time::Alarm& alarm = pair.second;
         if (alarm.is_on == false || alarm.offset == Time::mid_precision_tick)
             continue;
@@ -391,8 +379,7 @@ void Time::mid_precision_timer_callback() {
     }
     Time::mid_precision_tick++;
     while (not Time::mid_precision_erasable_ids.empty()) {
-        Time::mid_precision_alarms_by_id.erase(
-            Time::mid_precision_erasable_ids.top());
+        Time::mid_precision_alarms_by_id.erase(Time::mid_precision_erasable_ids.top());
         Time::mid_precision_erasable_ids.pop();
     }
 }
@@ -408,8 +395,7 @@ void Time::low_precision_timer_callback() {
     }
     low_precision_tick++;
     while (not Time::low_precision_erasable_ids.empty()) {
-        Time::low_precision_alarms_by_id.erase(
-            Time::low_precision_erasable_ids.top());
+        Time::low_precision_alarms_by_id.erase(Time::low_precision_erasable_ids.top());
         Time::low_precision_erasable_ids.pop();
     }
 }

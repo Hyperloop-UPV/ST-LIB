@@ -8,7 +8,7 @@
 #include "HALAL/Models/PinModel/Pin.hpp"
 
 class DigitalOutputService {
-   public:
+public:
     static map<uint8_t, Pin> service_ids;
     static uint8_t id_counter;
 
