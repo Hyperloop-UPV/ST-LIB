@@ -7,8 +7,8 @@
 
 #pragma once
 
-// #include "Protections/Protection.hpp"
-// #include "Protections/ProtectionManager.hpp"
+#include "Protections/Protection.hpp"
+#include "Protections/ProtectionManager.hpp"
 #include "Control/ControlBlock.hpp"
 #include "Control/FeedbackControlBlock.hpp"
 #include "Control/SplitterBlock.hpp"

@@ -6,6 +6,7 @@
  */
 
 #include "HALAL/Services/Communication/SPI/SPI.hpp"
+#include "HALAL/Services/Time/Scheduler.hpp"
 
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
 
@@ -461,12 +462,12 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef* hspi) {
                     spi->try_count++;
                     switch (*(spi->available_end)) {
                         case NO_ORDER_ID: {
-                            spi->last_end_check = Time::get_global_tick();
+                            spi->last_end_check = Scheduler::get_global_tick();
                             SPI::turn_on_chip_select(spi);
                         } break;
                         default:
                         case ERROR_ORDER_ID: {
-                            spi->last_end_check = Time::get_global_tick();
+                            spi->last_end_check = Scheduler::get_global_tick();
                             spi->error_count++;
                             SPI::turn_on_chip_select(spi);
                         } break;

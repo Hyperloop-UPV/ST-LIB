@@ -126,19 +126,7 @@ void Time::hal_enable_timer(TIM_HandleTypeDef* tim) {
     }
 }
 
-// PUBLIC SERVICE METHODS
-
-uint64_t Time::get_global_tick() {
-    if (global_timer == nullptr) {
-        ErrorHandler(
-            "tried to use global tick without global timer configured");
-        return 0;
-    }
-    uint64_t current_tick = Time::global_tick + global_timer->Instance->CNT;
-    uint32_t apb1_tim_freq = HAL_RCC_GetPCLK1Freq() * 2;
-    double to_nanoseconds = 1.0 / apb1_tim_freq * 1000000000.0;
-    return current_tick * to_nanoseconds;
-}
+// PUBLIC SERVICE METHOD
 
 void Time::start_timer(TIM_HandleTypeDef* handle, uint32_t prescaler,
                        uint32_t arr) {

@@ -1,6 +1,7 @@
 #include "Protections/ProtectionManager.hpp"
 
 #include "HALAL/Services/Communication/FDCAN/FDCAN.hpp"
+#include "HALAL/Services/Time/Scheduler.hpp"
 
 #include "Protections/Notification.hpp"
 
@@ -86,9 +87,9 @@ void ProtectionManager::check_protections() {
             ProtectionManager::to_fault();
         }
         Global_RTC::update_rtc_data();
-        if(Time::get_global_tick() > protection.get_last_notify_tick() + notify_delay_in_nanoseconds) {
+        if(Scheduler::get_global_tick() > protection.get_last_notify_tick() + notify_delay_in_nanoseconds) {
             ProtectionManager::notify(protection);
-            protection.update_last_notify_tick(Time::get_global_tick());
+            protection.update_last_notify_tick(Scheduler::get_global_tick());
         }
     }
 }
@@ -106,9 +107,9 @@ void ProtectionManager::check_high_frequency_protections() {
             ProtectionManager::to_fault();
         }   
         Global_RTC::update_rtc_data();
-        if(Time::get_global_tick() > protection.get_last_notify_tick() + notify_delay_in_nanoseconds) {
+        if(Scheduler::get_global_tick() > protection.get_last_notify_tick() + notify_delay_in_nanoseconds) {
             ProtectionManager::notify(protection);
-            protection.update_last_notify_tick(Time::get_global_tick());
+            protection.update_last_notify_tick(Scheduler::get_global_tick());
         }
     }
 }

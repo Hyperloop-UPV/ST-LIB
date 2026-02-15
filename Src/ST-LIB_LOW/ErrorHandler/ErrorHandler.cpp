@@ -6,6 +6,7 @@
  */
 
 #include "ErrorHandler/ErrorHandler.hpp"
+#include "HALAL/Services/Time/Scheduler.hpp"
 
 string ErrorHandlerModel::description = "Error-No-Description-Found";
 string ErrorHandlerModel::line = "Error-No-Line-Found";
@@ -48,7 +49,7 @@ void ErrorHandlerModel::ErrorHandlerTrigger(string format, ... ){
 							+ " Function: '" + ErrorHandlerModel::func + "' File: " + ErrorHandlerModel::file ;
 
 #ifdef HAL_TIM_MODULE_ENABLED
-	 description += " | TimeStamp: " + to_string(Time::get_global_tick());
+	 description += " | TimeStamp: " + to_string(Scheduler::get_global_tick());
 #endif
 
 }
