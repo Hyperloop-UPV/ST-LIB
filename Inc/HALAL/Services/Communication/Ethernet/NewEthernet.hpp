@@ -240,8 +240,6 @@ struct EthernetDomain {
     }
     // Runtime object
     struct Instance {
-        const char* sntp_server{nullptr};
-        bool sntp_started{false};
 
         constexpr Instance() {}
         void update() {
@@ -255,12 +253,6 @@ struct EthernetDomain {
                 if (netif_is_link_up(&gnetif) && !netif_is_up(&gnetif)) {
                     netif_set_up(&gnetif);
                 }
-            }
-
-            if (!sntp_started && sntp_server != nullptr && sntp_server[0] != '\0' &&
-                netif_is_link_up(&gnetif)) {
-                // SNTP::sntp_update(sntp_server);
-                sntp_started = true;
             }
         }
         bool is_connected() { return netif_is_link_up(&gnetif); }
