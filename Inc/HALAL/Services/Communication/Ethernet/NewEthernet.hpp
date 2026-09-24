@@ -259,7 +259,7 @@ struct EthernetDomain {
 
             if (!sntp_started && sntp_server != nullptr && sntp_server[0] != '\0' &&
                 netif_is_link_up(&gnetif)) {
-                SNTP::sntp_update(sntp_server);
+                // SNTP::sntp_update(sntp_server);
                 sntp_started = true;
             }
         }
