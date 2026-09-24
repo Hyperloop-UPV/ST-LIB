@@ -3,6 +3,8 @@
  *
  *  Created on: 21 feb. 2023
  *      Author: Ricardo
+ *  Edited on: 22 sep. 2026
+ *      by: Víctor
  */
 
 #include "HALAL/Services/Communication/SNTP/SNTP.hpp"
@@ -31,10 +33,10 @@
 
 #define SNTP_SET_SYSTEM_TIME_US(sec, us) stlib_sntp_set_time((sec), (us))
 #define SNTP_GET_SYSTEM_TIME(sec, us)                                                              \
-  do {                                                                                             \
-    (sec) = stlib_sntp_get_rtc_seconds();                                                          \
-    (us) = stlib_sntp_get_rtc_microseconds();                                                      \
-  } while (0)
+    do {                                                                                           \
+        (sec) = stlib_sntp_get_rtc_seconds();                                                      \
+        (us) = stlib_sntp_get_rtc_microseconds();                                                  \
+    } while (0)
 
 #define SNTP_SET_SYSTEM_TIME_NTP(s, f)                                                             \
     SNTP_SET_SYSTEM_TIME_US((u32_t)((s) + DIFF_SEC_1970_2036), SNTP_FRAC_TO_US(f))
@@ -95,8 +97,7 @@ void SNTP::stop(void) {
     }
 }
 
-void SNTP::initialize_request(SNTP::Message* req)
-{
+void SNTP::initialize_request(SNTP::Message* req) {
     memset(req, 0, SNTP::MSG_LEN);
     req->li_vn_mode = SNTP::LEAP_INDICATOR_NO_WARNING | SNTP::VERSION | SNTP::MODE_CLIENT;
 
@@ -108,17 +109,16 @@ void SNTP::initialize_request(SNTP::Message* req)
         sec = lwip_htonl((uint32_t)secs);
         frac = lwip_htonl(frac);
 
-# if SNTP_CHECK_RESPONSE >= 2
+#if SNTP_CHECK_RESPONSE >= 2
         sntp_last_timestamp_sent.sec = sec;
         sntp_last_timestamp_sent.frac = frac;
-# endif
+#endif
         req->transmit_timestamp[0] = sec;
         req->transmit_timestamp[1] = frac;
     }
 }
 
-void SNTP::send_request(const ip_addr_t* server_addr)
-{
+void SNTP::send_request(const ip_addr_t* server_addr) {
     struct pbuf* p;
 
     LWIP_ASSERT("server_addr != NULL", server_addr != NULL);
@@ -223,7 +223,7 @@ void SNTP::process(const SNTP::Timestamps* timestamps)
         /* Get the destination time stamp, i.e. the current system time */
         SNTP_GET_SYSTEM_TIME_NTP(dest_sec, dest_frac);
 
-        step_sec = 
+        step_sec =
             (dest_sec < sec) ? ((u32_t)sec - (u32_t)dest_sec) : ((u32_t)dest_sec - (u32_t)sec);
         /* In order to avoid overflows, skip the compensation if the clock step
          * is larger than about 34 years. */
@@ -247,8 +247,7 @@ void SNTP::process(const SNTP::Timestamps* timestamps)
     LWIP_UNUSED_ARG(frac); /* might be unused if only seconds are set */
 }
 
-void SNTP::recv(void* arg, struct udp_pcb* pcb, struct pbuf* p, const ip_addr_t* addr, u16_t port)
-{
+void SNTP::recv(void* arg, struct udp_pcb* pcb, struct pbuf* p, const ip_addr_t* addr, u16_t port) {
     SNTP::Timestamps timestamps;
     uint8_t mode;
     uint8_t stratum;

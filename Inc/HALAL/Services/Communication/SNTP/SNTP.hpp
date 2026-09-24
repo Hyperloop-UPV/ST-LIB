@@ -3,6 +3,8 @@
  *
  *  Created on: 21 feb. 2023
  *      Author: Ricardo
+ *  Edited on: 22 sep. 2026
+ *      by: Víctor
  */
 
 #pragma once
@@ -138,7 +140,7 @@ struct SNTP {
     static void process(const SNTP::Timestamps* timestamps);
 
     static void
-    recv(void *arg, struct udp_pcb* pcb, struct pbuf* p, const ip_addr_t* addr, u16_t port);
+    recv(void* arg, struct udp_pcb* pcb, struct pbuf* p, const ip_addr_t* addr, u16_t port);
 
 #if !SNTP_SUPPORT_MULTIPLE_SERVERS
     static constexpr void (*try_next_server)(void) = SNTP::retry;

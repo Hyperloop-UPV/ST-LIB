@@ -30,4 +30,3 @@ int main(void) {
 }
 ```
 Led is not needed but it is to show the board is doing work.
-
