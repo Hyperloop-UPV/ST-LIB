@@ -14,42 +14,45 @@
 #define TRANSFORMATION_FACTOR (SUBSECONDS_PER_SECOND / 999999.0)
 
 /* Start offset of the timestamps to extract from the SNTP packet */
-#define SNTP_OFFSET_TIMESTAMPS \
-    (SNTP::OFFSET_TRANSMIT_TIME + 8 - sizeof(SNTP::Timestamps))
+#define SNTP_OFFSET_TIMESTAMPS (SNTP::OFFSET_TRANSMIT_TIME + 8 - sizeof(SNTP::Timestamps))
 
 /* Number of seconds between 1970 and Feb 7, 2036 06:28:16 UTC (epoch 1) */
-#define DIFF_SEC_1970_2036          ((u32_t)2085978496L)
+#define DIFF_SEC_1970_2036 ((u32_t)2085978496L)
 
-#define SNTP_FRAC_TO_US(f)        ((u32_t)(((u64_t)(f) * 1000000UL) >> 32))
+#define SNTP_FRAC_TO_US(f) ((u32_t)(((u64_t)(f) * 1000000UL) >> 32))
 
-# define SNTP_GET_SYSTEM_TIME_NTP(s, f) do { \
-    u32_t sec_, usec_; \
-    SNTP_GET_SYSTEM_TIME(sec_, usec_); \
-    (s) = (s32_t)(sec_ - DIFF_SEC_1970_2036); \
-    (f) = usec_ * 4295 - ((usec_ * 2143) >> 16) + 2147; \
-  } while (0)
+#define SNTP_GET_SYSTEM_TIME_NTP(s, f)                                                             \
+    do {                                                                                           \
+        u32_t sec_, usec_;                                                                         \
+        SNTP_GET_SYSTEM_TIME(sec_, usec_);                                                         \
+        (s) = (s32_t)(sec_ - DIFF_SEC_1970_2036);                                                  \
+        (f) = usec_ * 4295 - ((usec_ * 2143) >> 16) + 2147;                                        \
+    } while (0)
 
 #define SNTP_SET_SYSTEM_TIME_US(sec, us) stlib_sntp_set_time((sec), (us))
-#define SNTP_GET_SYSTEM_TIME(sec, us)                                                            \
-  do {                                                                                           \
-    (sec) = stlib_sntp_get_rtc_seconds();                                                        \
-    (us) = stlib_sntp_get_rtc_microseconds();                                                    \
+#define SNTP_GET_SYSTEM_TIME(sec, us)                                                              \
+  do {                                                                                             \
+    (sec) = stlib_sntp_get_rtc_seconds();                                                          \
+    (us) = stlib_sntp_get_rtc_microseconds();                                                      \
   } while (0)
 
-#define SNTP_SET_SYSTEM_TIME_NTP(s, f) \
+#define SNTP_SET_SYSTEM_TIME_NTP(s, f)                                                             \
     SNTP_SET_SYSTEM_TIME_US((u32_t)((s) + DIFF_SEC_1970_2036), SNTP_FRAC_TO_US(f))
 
 namespace ST_LIB {
 
-void SNTP::start(uint8_t address_head, uint8_t address_second,
-                uint8_t address_third, uint8_t address_last)
-{
+void SNTP::start(
+    uint8_t address_head,
+    uint8_t address_second,
+    uint8_t address_third,
+    uint8_t address_last
+) {
     ip_addr_t address;
     IP_ADDR4(&address, address_head, address_second, address_third, address_last);
     SNTP::start(address);
 }
 
-void SNTP::start(const char *ip) {
+void SNTP::start(const char* ip) {
     IPV4 target(ip);
     SNTP::start(target.address);
 }
@@ -66,7 +69,7 @@ void SNTP::start(ip_addr_t address) {
             if (SNTP::opmode == SNTP::MODE) {
 #if SNTP_STARTUP_DELAY
                 request_task_id =
-                    Scheduler::set_timeout((uint32_t)SNTP_STARTUP_DELAY_FUNC*1000, SNTP::request);
+                    Scheduler::set_timeout((uint32_t)SNTP_STARTUP_DELAY_FUNC * 1000, SNTP::request);
 #else
                 SNTP::request();
 #endif
@@ -92,40 +95,37 @@ void SNTP::stop(void) {
     }
 }
 
-void SNTP::initialize_request(SNTP::Message *req)
+void SNTP::initialize_request(SNTP::Message* req)
 {
     memset(req, 0, SNTP::MSG_LEN);
-    req->li_vn_mode = SNTP::LEAP_INDICATOR_NO_WARNING |
-        SNTP::VERSION | SNTP::MODE_CLIENT;
+    req->li_vn_mode = SNTP::LEAP_INDICATOR_NO_WARNING | SNTP::VERSION | SNTP::MODE_CLIENT;
 
-//#if SNTP_CHECK_RESPONSE >= 2 || SNTP_COMP_ROUNDTRIP
     {
         s32_t secs;
         uint32_t sec, frac;
         /* Get the transmit timestamp */
         SNTP_GET_SYSTEM_TIME_NTP(secs, frac);
-        sec  = lwip_htonl((uint32_t)secs);
+        sec = lwip_htonl((uint32_t)secs);
         frac = lwip_htonl(frac);
 
 # if SNTP_CHECK_RESPONSE >= 2
-        sntp_last_timestamp_sent.sec  = sec;
+        sntp_last_timestamp_sent.sec = sec;
         sntp_last_timestamp_sent.frac = frac;
 # endif
         req->transmit_timestamp[0] = sec;
         req->transmit_timestamp[1] = frac;
     }
-//#endif /* SNTP_CHECK_RESPONSE >= 2 || SNTP_COMP_ROUNDTRIP */
 }
 
-void SNTP::send_request(const ip_addr_t *server_addr)
+void SNTP::send_request(const ip_addr_t* server_addr)
 {
-    struct pbuf *p;
+    struct pbuf* p;
 
     LWIP_ASSERT("server_addr != NULL", server_addr != NULL);
 
     p = pbuf_alloc(PBUF_TRANSPORT, SNTP::MSG_LEN, PBUF_RAM);
     if (p != NULL) {
-        SNTP::Message *sntpmsg = (SNTP::Message*)p->payload;
+        SNTP::Message* sntpmsg = (SNTP::Message*)p->payload;
         SNTP::initialize_request(sntpmsg);
         /* send request */
         udp_sendto(SNTP::pcb, p, server_addr, SNTP::PORT);
@@ -145,14 +145,13 @@ void SNTP::send_request(const ip_addr_t *server_addr)
     } else {
         /* out of memory: set up a timer to send a retry */
         SNTP::request_task_id =
-            Scheduler::set_timeout((uint32_t)SNTP::RETRY_TIMEOUT*1000, SNTP::request);
+            Scheduler::set_timeout((uint32_t)SNTP::RETRY_TIMEOUT * 1000, SNTP::request);
     }
 }
 
 void SNTP::retry(void) {
     /* set up a timer to send a retry and increase the retry delay */
-    SNTP::request_task_id =
-        Scheduler::set_timeout(SNTP::retry_timeout*1000, SNTP::request);
+    SNTP::request_task_id = Scheduler::set_timeout(SNTP::retry_timeout * 1000, SNTP::request);
 
 #if SNTP_RETRY_TIMEOUT_EXP
     {
@@ -176,14 +175,18 @@ void SNTP::request(void) {
     if (SNTP::servers[SNTP::current_server].name) {
         /* always resolve the name and rely on dns-internal caching & timeout */
         ip_addr_set_zero(&SNTP::servers[SNTP::current_server].addr);
-        err = dns_gethostbyname(SNTP::servers[SNTP::current_server].name, &sntp_server_address,
-                                SNTP::dns_found, NULL);
+        err = dns_gethostbyname(
+            SNTP::servers[SNTP::current_server].name,
+            &sntp_server_address,
+            SNTP::dns_found,
+            NULL
+        );
         if (err == ERR_INPROGRESS) {
-        /* DNS request sent, wait for sntp_dns_found being called */
-        return;
-    } else if (err == ERR_OK) {
-        SNTP::servers[SNTP::current_server].addr = sntp_server_address;
-    }
+            /* DNS request sent, wait for sntp_dns_found being called */
+            return;
+        } else if (err == ERR_OK) {
+            SNTP::servers[SNTP::current_server].addr = sntp_server_address;
+        }
     } else
 #endif /* SNTP_SERVER_DNS */
     {
@@ -196,22 +199,22 @@ void SNTP::request(void) {
     } else {
         /* address conversion failed, try another server */
         SNTP::try_next_server_task_id =
-            Scheduler::set_timeout((uint32_t)SNTP::RETRY_TIMEOUT*1000, SNTP::try_next_server);
+            Scheduler::set_timeout((uint32_t)SNTP::RETRY_TIMEOUT * 1000, SNTP::try_next_server);
     }
 }
 
-void SNTP::process(const SNTP::Timestamps *timestamps)
+void SNTP::process(const SNTP::Timestamps* timestamps)
 {
     s32_t sec;
     u32_t frac;
 
-    sec  = (s32_t)lwip_ntohl(timestamps->xmit.sec);
+    sec = (s32_t)lwip_ntohl(timestamps->xmit.sec);
     frac = lwip_ntohl(timestamps->xmit.frac);
 
 #if SNTP_COMP_ROUNDTRIP
-# if SNTP_CHECK_RESPONSE >= 2
+#if SNTP_CHECK_RESPONSE >= 2
     if (timestamps->recv.sec != 0 || timestamps->recv.frac != 0)
-# endif
+#endif
     {
         s32_t dest_sec;
         u32_t dest_frac;
@@ -220,10 +223,10 @@ void SNTP::process(const SNTP::Timestamps *timestamps)
         /* Get the destination time stamp, i.e. the current system time */
         SNTP_GET_SYSTEM_TIME_NTP(dest_sec, dest_frac);
 
-        step_sec = (dest_sec < sec) ? ((u32_t)sec - (u32_t)dest_sec)
-                : ((u32_t)dest_sec - (u32_t)sec);
+        step_sec = 
+            (dest_sec < sec) ? ((u32_t)sec - (u32_t)dest_sec) : ((u32_t)dest_sec - (u32_t)sec);
         /* In order to avoid overflows, skip the compensation if the clock step
-        * is larger than about 34 years. */
+         * is larger than about 34 years. */
         if ((step_sec >> 30) == 0) {
             s64_t t1, t2, t3, t4;
 
@@ -234,7 +237,7 @@ void SNTP::process(const SNTP::Timestamps *timestamps)
             /* Clock offset calculation according to RFC 4330 */
             t4 += ((t2 - t1) + (t3 - t4)) / 2;
 
-            sec  = (s32_t)((u64_t)t4 >> 32);
+            sec = (s32_t)((u64_t)t4 >> 32);
             frac = (u32_t)((u64_t)t4);
         }
     }
@@ -244,7 +247,7 @@ void SNTP::process(const SNTP::Timestamps *timestamps)
     LWIP_UNUSED_ARG(frac); /* might be unused if only seconds are set */
 }
 
-void SNTP::recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
+void SNTP::recv(void* arg, struct udp_pcb* pcb, struct pbuf* p, const ip_addr_t* addr, u16_t port)
 {
     SNTP::Timestamps timestamps;
     uint8_t mode;
@@ -259,7 +262,7 @@ void SNTP::recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t 
     /* check server address and port */
     if (((SNTP::opmode != SNTP::OPMODE_POLL) || ip_addr_cmp(addr, &sntp_last_server_address)) &&
         (port == SNTP::PORT))
-#else /* SNTP_CHECK_RESPONSE >= 1 */
+#else  /* SNTP_CHECK_RESPONSE >= 1 */
     LWIP_UNUSED_ARG(addr);
     LWIP_UNUSED_ARG(port);
 #endif /* SNTP_CHECK_RESPONSE >= 1 */
@@ -268,7 +271,7 @@ void SNTP::recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t 
         if (p->tot_len == SNTP::MSG_LEN) {
             mode = pbuf_get_at(p, 0) & SNTP::MODE_MASK;
             /* if this is a SNTP response... */
-            if (((SNTP::opmode == SNTP::OPMODE_POLL)       && (mode == SNTP::MODE_SERVER)) ||
+            if (((SNTP::opmode == SNTP::OPMODE_POLL) && (mode == SNTP::MODE_SERVER)) ||
                 ((SNTP::opmode == SNTP::OPMODE_LISTENONLY) && (mode == SNTP::MODE_BROADCAST))) {
                 stratum = pbuf_get_at(p, SNTP::OFFSET_STRATUM);
 
@@ -326,8 +329,7 @@ void SNTP::recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t 
             SNTP::retry_timeout = SNTP::RETRY_TIMEOUT;
 
             sntp_update_delay = (u32_t)SNTP::UPDATE_DELAY;
-            SNTP::request_task_id =
-                Scheduler::set_timeout(sntp_update_delay, SNTP::request);
+            SNTP::request_task_id = Scheduler::set_timeout(sntp_update_delay, SNTP::request);
         }
     } else if (err == SNTP::ERR_KOD) {
         /* KOD errors are only processed in case of an explicit poll response */

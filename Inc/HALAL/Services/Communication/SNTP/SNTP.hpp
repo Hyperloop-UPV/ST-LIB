@@ -85,10 +85,10 @@ struct SNTP {
 
 #pragma pack(push, 1)
     struct Message {
-        uint8_t  li_vn_mode;
-        uint8_t  stratum;
-        uint8_t  poll;
-        uint8_t  precision;
+        uint8_t li_vn_mode;
+        uint8_t stratum;
+        uint8_t poll;
+        uint8_t precision;
         uint32_t root_delay;
         uint32_t root_dispersion;
         uint32_t reference_identifier;
@@ -105,9 +105,9 @@ struct SNTP {
     /** The currently used server (initialized to 0) */
     static inline uint8_t sntp_current_server;
     static inline void try_next_server(const ip_addr_t* server_addr) {
-        #error SNTP multiple servers not supported.
+#error SNTP multiple servers not supported.
     }
-#else /* SNTP_SUPPORT_MULTIPLE_SERVERS */
+#else  /* SNTP_SUPPORT_MULTIPLE_SERVERS */
     static constexpr uint8_t current_server = 0;
 #endif /* SNTP_SUPPORT_MULTIPLE_SERVERS */
 
@@ -117,7 +117,12 @@ struct SNTP {
 
     static void start(ip_addr_t address);
     static void start(const char* ip);
-    static void start(uint8_t address_head, uint8_t address_second, uint8_t address_third, uint8_t address_last);
+    static void start(
+        uint8_t address_head,
+        uint8_t address_second,
+        uint8_t address_third,
+        uint8_t address_last
+    );
     static void stop(void);
 
     /* internals */
@@ -131,13 +136,15 @@ struct SNTP {
     static void retry(void);
     static void request(void);
     static void process(const SNTP::Timestamps* timestamps);
-    static void recv(void *arg, struct udp_pcb* pcb, struct pbuf* p, const ip_addr_t* addr, u16_t port);
+
+    static void
+    recv(void *arg, struct udp_pcb* pcb, struct pbuf* p, const ip_addr_t* addr, u16_t port);
 
 #if !SNTP_SUPPORT_MULTIPLE_SERVERS
     static constexpr void (*try_next_server)(void) = SNTP::retry;
 #endif
 }; // struct SNTP
-}; // ST_LIB
+}; // namespace ST_LIB
 
 #if 0
 static constexpr const char* DEFAULT_SERVER_IP = "192.168.0.9";
