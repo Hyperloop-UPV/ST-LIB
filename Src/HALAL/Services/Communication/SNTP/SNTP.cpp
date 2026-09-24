@@ -203,8 +203,7 @@ void SNTP::request(void) {
     }
 }
 
-void SNTP::process(const SNTP::Timestamps* timestamps)
-{
+void SNTP::process(const SNTP::Timestamps* timestamps) {
     s32_t sec;
     u32_t frac;
 
