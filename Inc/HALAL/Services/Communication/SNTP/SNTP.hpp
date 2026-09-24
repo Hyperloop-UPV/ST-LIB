@@ -26,6 +26,11 @@ struct SNTP {
     static constexpr uint32_t RECV_TIMEOUT = 15000;
     static constexpr uint32_t UPDATE_DELAY = 3600000;
 
+    /* to have a maximum amount of time SNTP is on for, we use retry_max and recv_max constants */
+
+    static constexpr uint16_t REQUEST_MAX = 512;
+    static constexpr uint16_t RECV_MAX = 8;
+
     static constexpr uint8_t OPMODE_POLL = 0;
     static constexpr uint8_t OPMODE_LISTENONLY = 1;
 
@@ -132,6 +137,9 @@ struct SNTP {
     static inline uint16_t request_task_id = Scheduler::INVALID_ID;
     static inline uint16_t try_next_server_task_id = Scheduler::INVALID_ID;
     static inline uint8_t opmode = SNTP::MODE;
+
+    static inline uint16_t request_count = 0;
+    static inline uint16_t recv_count = 0;
 
     static void initialize_request(SNTP::Message* req);
     static void send_request(const ip_addr_t* server_addr);

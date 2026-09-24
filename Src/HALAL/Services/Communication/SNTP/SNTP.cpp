@@ -62,6 +62,9 @@ void SNTP::start(const char* ip) {
 void SNTP::start(ip_addr_t address) {
     SNTP::servers[0].addr = address;
 
+    SNTP::recv_count = 0;
+    SNTP::request_count = 0;
+
     if (SNTP::pcb == NULL) {
         SNTP::pcb = udp_new_ip_type(IPADDR_TYPE_ANY);
         LWIP_ASSERT("Failed to allocate udp pcb for sntp client", SNTP::pcb != NULL);
@@ -95,6 +98,9 @@ void SNTP::stop(void) {
         udp_remove(SNTP::pcb);
         SNTP::pcb = NULL;
     }
+
+    SNTP::request_task_id = Scheduler::INVALID_ID;
+    SNTP::try_next_server_task_id = Scheduler::INVALID_ID;
 }
 
 void SNTP::initialize_request(SNTP::Message* req) {
@@ -200,6 +206,11 @@ void SNTP::request(void) {
         /* address conversion failed, try another server */
         SNTP::try_next_server_task_id =
             Scheduler::set_timeout((uint32_t)SNTP::RETRY_TIMEOUT * 1000, SNTP::try_next_server);
+    }
+
+    SNTP::request_count++;
+    if (SNTP::request_count > SNTP::REQUEST_MAX) {
+        SNTP::stop();
     }
 }
 
@@ -337,6 +348,11 @@ void SNTP::recv(void* arg, struct udp_pcb* pcb, struct pbuf* p, const ip_addr_t*
         }
     } else {
         /* ignore any broken packet, poll mode: retry after timeout to avoid flooding */
+    }
+
+    SNTP::recv_count++;
+    if (SNTP::recv_count > SNTP::RECV_MAX) {
+        SNTP::stop();
     }
 }
 
