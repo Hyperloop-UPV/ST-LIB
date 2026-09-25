@@ -15,12 +15,17 @@
 #include "C++Utilities/CppUtils.hpp"
 #include "HALAL/Services/Time/Scheduler.hpp"
 
+#ifndef STLIB_SNTP_PORT
+/* default port is 8123 */
+# define STLIB_SNTP_PORT 8123
+#endif
+
 namespace ST_LIB {
 
 struct SNTP {
     /* config values for SNTP */
 
-    static constexpr uint16_t PORT = 8123;
+    static constexpr uint16_t PORT = STLIB_SNTP_PORT;
     static constexpr uint8_t MAX_SERVERS = 1;
     static constexpr uint32_t RETRY_TIMEOUT = 15000;
     static constexpr uint32_t RECV_TIMEOUT = 15000;

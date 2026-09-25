@@ -6,6 +6,8 @@ After starting SNTP with `SNTP::start(...)` it will retry at maximum 512 times a
 
 If you need to use SNTP again for whatever reason after it stops automatically, call `SNTP::start(...)` again and it will reset the counters for retry and response.
 
+To change the SNTP port, `#define` STLIB_SNTP_PORT **before** `#include "ST-LIB.hpp"`
+
 ```cpp
 static void start(ip_addr_t address);
 static void start(const char* ip);
