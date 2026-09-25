@@ -17,7 +17,7 @@
 
 #ifndef STLIB_SNTP_PORT
 /* default port is 8123 */
-# define STLIB_SNTP_PORT 8123
+#define STLIB_SNTP_PORT 8123
 #endif
 
 namespace ST_LIB {
