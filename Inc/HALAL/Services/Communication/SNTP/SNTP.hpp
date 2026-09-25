@@ -36,6 +36,29 @@ struct SNTP {
     static constexpr uint16_t REQUEST_MAX = 512;
     static constexpr uint16_t RECV_MAX = 8;
 
+    /* start SNTP, will stop after REQUEST_MAX requests or
+     * RECV_MAX replies from the server
+     */
+    static void start(ip_addr_t address);
+    /* start SNTP, will stop after REQUEST_MAX requests or
+     * RECV_MAX replies from the server
+     */
+    static void start(const char* ip);
+    /* start SNTP, will stop after REQUEST_MAX requests or
+     * RECV_MAX replies from the server
+     */
+    static void start(
+        uint8_t address_head,
+        uint8_t address_second,
+        uint8_t address_third,
+        uint8_t address_last
+    );
+
+    /* manually stop STNP */
+    static void stop(void);
+
+    /* SNTP enum values */
+
     static constexpr uint8_t OPMODE_POLL = 0;
     static constexpr uint8_t OPMODE_LISTENONLY = 1;
 
@@ -126,16 +149,6 @@ struct SNTP {
     /** The UDP pcb used by the SNTP client */
     static inline struct udp_pcb* pcb;
     static inline uint32_t retry_timeout = SNTP::RETRY_TIMEOUT;
-
-    static void start(ip_addr_t address);
-    static void start(const char* ip);
-    static void start(
-        uint8_t address_head,
-        uint8_t address_second,
-        uint8_t address_third,
-        uint8_t address_last
-    );
-    static void stop(void);
 
     /* internals */
 
