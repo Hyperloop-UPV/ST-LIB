@@ -252,7 +252,7 @@ if(CMAKE_CROSSCOMPILING)
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_addr.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_frag.c
-      ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/apps/sntp/sntp.c
+      #${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/apps/sntp/sntp.c
       ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Middlewares/Third_Party/LwIP/src/netif/ethernet.c
     )
 
