@@ -289,6 +289,7 @@ SECTIONS
     *(.ram_d1_nc.user.rodata*)
     BYTE(0);
 
+    . = ALIGN(4);
     __eram_d1_nc_data = ABSOLUTE(.);
   } >RAM_D1 AT> FLASH
   __si_d1_nc_data = LOADADDR(.ram_d1_nc_data_rodata);
@@ -338,6 +339,7 @@ SECTIONS
     *(.ram_d1.user.rodata*)
     BYTE(0);
 
+    . = ALIGN(4);
     __eram_d1_data = ABSOLUTE(.);
     __d1_end = ABSOLUTE(.);
   } >RAM_D1 AT> FLASH
@@ -375,6 +377,7 @@ SECTIONS
     *(.ram_d2_nc.user.rodata*)
     BYTE(0);
 
+    . = ALIGN(4);
     __eram_d2_nc_data = ABSOLUTE(.);
   } >RAM_D2 AT> FLASH
   __si_d2_nc_data = LOADADDR(.ram_d2_nc_data_rodata);
@@ -421,6 +424,7 @@ SECTIONS
     *(.ram_d2.user.rodata*)
     BYTE(0);
 
+    . = ALIGN(4);
     __eram_d2_data = ABSOLUTE(.);
     __d2_end = ABSOLUTE(.);
   } >RAM_D2 AT> FLASH
@@ -458,6 +462,7 @@ SECTIONS
     *(.ram_d3_nc.user.rodata*)
     BYTE(0);
 
+    . = ALIGN(4);
     __eram_d3_nc_data = ABSOLUTE(.);
   } >RAM_D3 AT> FLASH
   __si_d3_nc_data = LOADADDR(.ram_d3_nc_data_rodata);
@@ -504,6 +509,7 @@ SECTIONS
     *(.ram_d3.user.rodata*)
     BYTE(0);
 
+    . = ALIGN(4);
     __eram_d3_data = ABSOLUTE(.);
     __d3_end = ABSOLUTE(.);
   } >RAM_D3 AT> FLASH
