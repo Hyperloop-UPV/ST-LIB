@@ -125,6 +125,11 @@ protected:
              .config = config},
         }};
 
+        auto tree = ST_LIB::ClockDomain::ClockTree{};
+        tree.spi123_src = ST_LIB::ClockDomain::ClockTree::Source::HSI;
+        tree.spi45_src = ST_LIB::ClockDomain::ClockTree::Source::HSI;
+        tree.spi6_src = ST_LIB::ClockDomain::ClockTree::Source::HSI;
+        ST_LIB::ClockDomain::s_tree = &tree;
         ST_LIB::SPIDomain::Init<1>::init(
             cfgs,
             std::span<ST_LIB::GPIODomain::Instance>{},

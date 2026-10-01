@@ -2,6 +2,7 @@
 #include <thread>
 #include <chrono>
 
+#include "HALAL/Models/Clocks/ClockDomain.hpp"
 #include "HALAL/Services/Time/Scheduler.hpp"
 
 int count = 0;
@@ -10,6 +11,7 @@ void fake_workload() { count++; }
 class SchedulerTests : public ::testing::Test {
 protected:
     void SetUp() override {
+        ::ST_LIB::ClockDomain::s_tree = &::ST_LIB::default_clock_tree;
         Scheduler::active_task_count_ = 0;
         Scheduler::free_bitmap_ = 0xFFFF'FFFF;
         Scheduler::ready_bitmap_ = 0;

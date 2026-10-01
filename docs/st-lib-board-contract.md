@@ -7,14 +7,13 @@ If you change a domain, add a new domain, or add a cross-domain composition rule
 
 ## 1. Mental Model
 
-`Board<Policy, ...>` is a compile-time build pipeline plus a runtime init pipeline.
+`Board<Policy, Tree, ...>` is a compile-time build pipeline plus a runtime init pipeline.
 
 - Compile time decides what exists and how it must be configured.
 - Runtime only materializes already-built configurations and links HAL handles.
 
 `Board` is intentionally declarative. Request objects describe intent; domains convert that intent
-into concrete configs. The first template argument is not a request object: it is the global fault
-runtime policy type used by `FaultController`.
+into concrete configs. The first template argument is the global fault runtime policy type used by `FaultController`.  The second is a precomputed `ClockDomain::ClockTree`.
 
 Protection declarations are also request objects. They do not inscribe hardware into `BuildCtx`;
 instead, `Board` filters them into a board-specific `ProtectionEngine` type.
@@ -31,6 +30,22 @@ That type must expose:
 
 `FaultPolicy<...>`, `FaultPolicyNoMachine<...>`, and `DefaultFaultPolicy` are the intended public
 helpers for this contract.
+
+## 1.2 Board Clock Tree
+
+The second template argument of `Board` must be a `ClockDomain::ClockTree`.
+
+```cpp
+template <BoardFaultPolicy FaultPolicyT, auto& ClockTreeDef, auto&... devs> struct Board { ... }
+```
+
+- Use `ST_LIB::default_clock_tree` (hardcoded for 8 MHz or 25 MHz HSE, 550 MHz SYSCLK) if no host-tool-generated tree is available.
+- `Board::build()` passes the tree to `ClockDomain::build()` for compile-time validation.
+- `Board::init()` passes the tree to `ClockDomain::Init::init()` for runtime HAL configuration.
+- Domains that depend on clock frequencies (Timer, SPI, ADC, SDMMC) receive the tree in their own
+  `Init::init()`.
+
+See [`clockdomain.md`](clockdomain.md) for the full ClockDomain contract.
 
 ## 2. Domain Contract
 

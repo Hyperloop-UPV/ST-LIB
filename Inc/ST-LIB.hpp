@@ -88,6 +88,7 @@ template <typename... Domains> struct BuildCtx {
 };
 
 using DomainsCtx = BuildCtx<
+    ClockDomain,
     MPUDomain,
     GPIODomain,
     TimerDomain,
@@ -169,7 +170,7 @@ using ProtectionEngineForRequests =
 
 } // namespace BuildUtils
 
-template <BoardFaultPolicy FaultPolicyT, auto&... devs> struct Board {
+template <BoardFaultPolicy FaultPolicyT, auto& ClockTreeDef, auto&... devs> struct Board {
 public:
     using ProtectionEngine = BuildUtils::ProtectionEngineForRequests<devs...>;
 
@@ -225,6 +226,7 @@ public:
         // ...
 
         struct ConfigBundle {
+            ClockDomain::ClockTree clock_tree;
             std::array<MPUDomain::Config, mpuN> mpu_cfgs;
             std::array<GPIODomain::Config, gpioN> gpio_cfgs;
             std::array<TimerDomain::Config, timN> tim_cfgs;
@@ -242,7 +244,11 @@ public:
             // ...
         };
 
+        // Build: validate the tree against peripheral requirements
+        ClockDomain::build(ctx.template span<ClockDomain>(), ClockTreeDef);
+
         return ConfigBundle{
+            .clock_tree = ClockTreeDef,
             .mpu_cfgs = MPUDomain::template build<mpuN>(ctx.template span<MPUDomain>()),
             .gpio_cfgs = GPIODomain::template build<gpioN>(ctx.template span<GPIODomain>()),
             .tim_cfgs = TimerDomain::template build<timN>(ctx.template span<TimerDomain>()),
@@ -273,6 +279,8 @@ public:
 
     static constexpr auto cfg = build();
 
+    static constexpr auto& clock_tree() { return cfg.clock_tree; }
+
     static void init() {
         constexpr std::size_t mpuN = domain_size<MPUDomain>();
         constexpr std::size_t gpioN = domain_size<GPIODomain>();
@@ -298,8 +306,7 @@ public:
         FaultController::template install_runtime<FaultPolicyT>();
 
         HAL_Init();
-        HALconfig::system_clock();
-        HALconfig::peripheral_clock();
+        ClockDomain::Init::init(cfg.clock_tree);
 
 #ifdef HAL_RTC_MODULE_ENABLED
         (void)Global_RTC::ensure_started();

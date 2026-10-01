@@ -9,6 +9,7 @@
 
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/DMA/DMA2.hpp"
+#include "HALAL/Models/Clocks/ClockDomain.hpp"
 #include "HALAL/Models/GPIO.hpp"
 
 #include "HALAL/Models/Pin.hpp"
@@ -60,21 +61,6 @@ struct ADCDomain {
         CYCLES_810_5 = ADC_SAMPLETIME_810CYCLES_5,
     };
 
-    enum class ClockPrescaler : uint32_t {
-        DIV1 = ADC_CLOCK_ASYNC_DIV1,
-        DIV2 = ADC_CLOCK_ASYNC_DIV2,
-        DIV4 = ADC_CLOCK_ASYNC_DIV4,
-        DIV6 = ADC_CLOCK_ASYNC_DIV6,
-        DIV8 = ADC_CLOCK_ASYNC_DIV8,
-        DIV10 = ADC_CLOCK_ASYNC_DIV10,
-        DIV12 = ADC_CLOCK_ASYNC_DIV12,
-        DIV16 = ADC_CLOCK_ASYNC_DIV16,
-        DIV32 = ADC_CLOCK_ASYNC_DIV32,
-        DIV64 = ADC_CLOCK_ASYNC_DIV64,
-        DIV128 = ADC_CLOCK_ASYNC_DIV128,
-        DIV256 = ADC_CLOCK_ASYNC_DIV256,
-    };
-
     enum class Channel : uint32_t {
         AUTO = 0xFFFFFFFFu,
         CH0 = ADC_CHANNEL_0,
@@ -109,23 +95,90 @@ struct ADCDomain {
         Channel channel;
         Resolution resolution;
         SampleTime sample_time;
-        ClockPrescaler prescaler;
+
         uint32_t sample_rate_hz;
         float* output;
     };
 
-    struct ADC {
+    template <uint32_t MaxADCCLK> struct ADCClockModel {
+        static constexpr auto group = ClockDomain::ClockGroup::ADC_G;
+
+        static constexpr uint32_t prescalers[] = {1, 2, 4, 6, 8, 10, 12, 16, 32, 64, 128, 256};
+        static constexpr uint32_t ADC_CLK_MIN = 500'000;
+
+        static constexpr bool try_solve(uint32_t kernel_clk) {
+            for (uint32_t p : prescalers) {
+                uint32_t adc_clk = kernel_clk / p;
+                if (adc_clk >= ADC_CLK_MIN && adc_clk <= MaxADCCLK)
+                    return true;
+            }
+            return false;
+        }
+    };
+
+    static constexpr uint32_t adc_max_clk(Resolution res) {
+        switch (res) {
+        case Resolution::BITS_16:
+            return 8'333'333;
+        case Resolution::BITS_14:
+            return 16'666'666;
+        case Resolution::BITS_12:
+            return 36'000'000;
+        case Resolution::BITS_10:
+            return 50'000'000;
+        case Resolution::BITS_8:
+            return 50'000'000;
+        }
+        return 36'000'000;
+    }
+
+    static constexpr uint32_t prescaler_to_hal(uint32_t p) {
+        switch (p) {
+        case 1:
+            return ADC_CLOCK_ASYNC_DIV1;
+        case 2:
+            return ADC_CLOCK_ASYNC_DIV2;
+        case 4:
+            return ADC_CLOCK_ASYNC_DIV4;
+        case 6:
+            return ADC_CLOCK_ASYNC_DIV6;
+        case 8:
+            return ADC_CLOCK_ASYNC_DIV8;
+        case 10:
+            return ADC_CLOCK_ASYNC_DIV10;
+        case 12:
+            return ADC_CLOCK_ASYNC_DIV12;
+        case 16:
+            return ADC_CLOCK_ASYNC_DIV16;
+        case 32:
+            return ADC_CLOCK_ASYNC_DIV32;
+        case 64:
+            return ADC_CLOCK_ASYNC_DIV64;
+        case 128:
+            return ADC_CLOCK_ASYNC_DIV128;
+        case 256:
+            return ADC_CLOCK_ASYNC_DIV256;
+        default:
+            return ADC_CLOCK_ASYNC_DIV4;
+        }
+    }
+
+    template <Resolution Res = Resolution::BITS_12> struct ADC {
         GPIODomain::GPIO gpio;
         using domain = ADCDomain;
+        using Model = ADCClockModel<adc_max_clk(Res)>;
 
+        static constexpr auto resolution = Res;
         Entry e;
+        ClockDomain::Device clock_device = {
+            .group = Model::group,
+            .try_solve = &Model::try_solve,
+        };
 
         consteval ADC(
             const GPIODomain::Pin& pin,
             float& output,
-            Resolution resolution = Resolution::BITS_12,
             SampleTime sample_time = SampleTime::CYCLES_8_5,
-            ClockPrescaler prescaler = ClockPrescaler::DIV1,
             uint32_t sample_rate_hz = 0,
             Peripheral peripheral = Peripheral::AUTO,
             Channel channel = Channel::AUTO
@@ -135,17 +188,14 @@ struct ADCDomain {
                 .pin = pin,
                 .peripheral = peripheral,
                 .channel = channel,
-                .resolution = resolution,
+                .resolution = Res,
                 .sample_time = sample_time,
-                .prescaler = prescaler,
                 .sample_rate_hz = sample_rate_hz,
                 .output = &output} {}
 
         consteval ADC(
             const GPIODomain::Pin& pin,
-            Resolution resolution = Resolution::BITS_12,
             SampleTime sample_time = SampleTime::CYCLES_8_5,
-            ClockPrescaler prescaler = ClockPrescaler::DIV1,
             uint32_t sample_rate_hz = 0,
             Peripheral peripheral = Peripheral::AUTO,
             Channel channel = Channel::AUTO
@@ -155,9 +205,8 @@ struct ADCDomain {
                 .pin = pin,
                 .peripheral = peripheral,
                 .channel = channel,
-                .resolution = resolution,
+                .resolution = Res,
                 .sample_time = sample_time,
-                .prescaler = prescaler,
                 .sample_rate_hz = sample_rate_hz,
                 .output = nullptr} {}
 
@@ -166,30 +215,19 @@ struct ADCDomain {
             Peripheral peripheral,
             Channel channel,
             float& output,
-            Resolution resolution = Resolution::BITS_12,
             SampleTime sample_time = SampleTime::CYCLES_8_5,
-            ClockPrescaler prescaler = ClockPrescaler::DIV1,
             uint32_t sample_rate_hz = 0
         )
-            : ADC(pin,
-                  output,
-                  resolution,
-                  sample_time,
-                  prescaler,
-                  sample_rate_hz,
-                  peripheral,
-                  channel) {}
+            : ADC(pin, output, sample_time, sample_rate_hz, peripheral, channel) {}
 
         consteval ADC(
             const GPIODomain::Pin& pin,
             Peripheral peripheral,
             Channel channel,
-            Resolution resolution = Resolution::BITS_12,
             SampleTime sample_time = SampleTime::CYCLES_8_5,
-            ClockPrescaler prescaler = ClockPrescaler::DIV1,
             uint32_t sample_rate_hz = 0
         )
-            : ADC(pin, resolution, sample_time, prescaler, sample_rate_hz, peripheral, channel) {}
+            : ADC(pin, sample_time, sample_rate_hz, peripheral, channel) {}
 
         template <class Ctx> consteval std::size_t inscribe(Ctx& ctx) const {
             const auto gpio_idx = gpio.inscribe(ctx);
@@ -198,6 +236,10 @@ struct ADCDomain {
             const auto resolved = resolve_mapping(entry);
             entry.peripheral = resolved.first;
             entry.channel = resolved.second;
+
+            // Register clock requirement with ClockDomain
+            clock_device.inscribe(ctx);
+
             return ctx.template add<ADCDomain>(entry, this);
         }
     };
@@ -210,7 +252,7 @@ struct ADCDomain {
         Channel channel;
         Resolution resolution;
         SampleTime sample_time;
-        ClockPrescaler prescaler;
+
         uint32_t sample_rate_hz;
         uint32_t dma_request;
         float* output;
@@ -552,7 +594,6 @@ struct ADCDomain {
         array<Config, N> cfgs{};
         array<bool, 3> periph_seen{};
         array<Resolution, 3> periph_resolution{};
-        array<ClockPrescaler, 3> periph_prescaler{};
         array<uint32_t, 3> periph_rate{};
         array<uint8_t, 3> periph_counts{};
 
@@ -578,14 +619,10 @@ struct ADCDomain {
             if (!periph_seen[pidx]) {
                 periph_seen[pidx] = true;
                 periph_resolution[pidx] = e.resolution;
-                periph_prescaler[pidx] = e.prescaler;
                 periph_rate[pidx] = e.sample_rate_hz;
             } else {
                 if (periph_resolution[pidx] != e.resolution) {
                     compile_error("ADC: resolution mismatch on same peripheral");
-                }
-                if (periph_prescaler[pidx] != e.prescaler) {
-                    compile_error("ADC: prescaler mismatch on same peripheral");
                 }
                 if (periph_rate[pidx] != e.sample_rate_hz) {
                     compile_error("ADC: sample rate mismatch on same peripheral");
@@ -614,7 +651,6 @@ struct ADCDomain {
                 .channel = channel,
                 .resolution = e.resolution,
                 .sample_time = e.sample_time,
-                .prescaler = e.prescaler,
                 .sample_rate_hz = e.sample_rate_hz,
                 .dma_request = dma_request(peripheral),
                 .output = e.output,
@@ -869,7 +905,18 @@ struct ADCDomain {
                 HAL_SYSCFG_AnalogSwitchConfig(SYSCFG_SWITCH_PC3, SYSCFG_SWITCH_PC3_OPEN);
             }
 
-            hadc->Init.ClockPrescaler = static_cast<uint32_t>(cfg.prescaler);
+            uint32_t kernel_clk = ClockDomain::get_kernel_clock(ClockDomain::ClockGroup::ADC_G);
+            uint32_t max_clk = adc_max_clk(cfg.resolution);
+            uint32_t prescaler = 4;
+            constexpr uint32_t prescalers[] = {1, 2, 4, 6, 8, 10, 12, 16, 32, 64, 128, 256};
+            for (uint32_t p : prescalers) {
+                uint32_t adc_clk = kernel_clk / p;
+                if (adc_clk >= 500'000 && adc_clk <= max_clk) {
+                    prescaler = p;
+                    break;
+                }
+            }
+            hadc->Init.ClockPrescaler = prescaler_to_hal(prescaler);
             hadc->Init.Resolution = static_cast<uint32_t>(cfg.resolution);
             hadc->Init.ScanConvMode = (channel_count > 1U) ? ADC_SCAN_ENABLE : ADC_SCAN_DISABLE;
             hadc->Init.EOCSelection = (channel_count > 1U) ? ADC_EOC_SEQ_CONV : ADC_EOC_SINGLE_CONV;

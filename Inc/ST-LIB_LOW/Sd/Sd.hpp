@@ -21,6 +21,7 @@
 #include "HALAL/Models/Pin.hpp"
 #include "HALAL/Models/MPU.hpp"
 #include "ST-LIB_LOW/DigitalInput2.hpp"
+#include "HALAL/Models/Clocks/ClockDomain.hpp"
 
 using ST_LIB::DigitalInputDomain;
 using ST_LIB::GPIODomain;
@@ -31,6 +32,25 @@ extern void* g_sdmmc1_instance_ptr;
 extern void* g_sdmmc2_instance_ptr;
 
 namespace ST_LIB {
+
+// SDMMC clock model — validates that a kernel clock can produce a valid
+// SDMMC clock (sdmmc_ker_ck / (2 × CLKDIV)) in [MinFreq, MaxFreq].
+template <uint32_t MaxFreq, uint32_t MinFreq> struct SDClockModel {
+    static constexpr auto group = ClockDomain::ClockGroup::SDMMC_G;
+
+    static constexpr uint32_t CLKDIV_MIN = 0;
+    static constexpr uint32_t CLKDIV_MAX = 1023;
+
+    static constexpr bool try_solve(uint32_t kernel_clk) {
+        for (uint32_t div = CLKDIV_MIN; div <= CLKDIV_MAX; div++) {
+            uint32_t sdmmc_clk = div == 0 ? kernel_clk : kernel_clk / (2 * div);
+            if (sdmmc_clk >= MinFreq && sdmmc_clk <= MaxFreq)
+                return true;
+        }
+        return false;
+    }
+};
+
 struct SdDomain {
 
     enum class Peripheral : uint32_t {
@@ -40,6 +60,8 @@ struct SdDomain {
 
     struct Entry {
         Peripheral peripheral;
+        uint32_t max_freq;
+        uint32_t min_freq;
         std::size_t mpu_buffer0_idx;
         std::size_t mpu_buffer1_idx;
         std::optional<std::pair<size_t, GPIO_PinState>>
@@ -54,11 +76,20 @@ struct SdDomain {
         std::size_t d3_pin_idx;
     };
 
-    template <std::size_t buffer_blocks> struct SdCard {
+    template <
+        std::size_t buffer_blocks,
+        uint32_t MaxFreq = 50'000'000,
+        uint32_t MinFreq = 1'000'000>
+    struct SdCard {
         using domain = SdDomain;
+        using Model = SDClockModel<MaxFreq, MinFreq>;
         Entry e;
 
         Peripheral peripheral;
+        ClockDomain::Device clock_device = {
+            .group = Model::group,
+            .try_solve = &Model::try_solve,
+        };
 
         MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>
             buffer0; // Alignment of 32-bit for SDMMC DMA
@@ -97,7 +128,8 @@ struct SdDomain {
                 write_protect_config,
             GPIODomain::Pin d0_pin_for_sdmmc1 = ST_LIB::PC8
         )
-            : e{.peripheral = sdmmc_peripheral}, peripheral(sdmmc_peripheral),
+            : e{.peripheral = sdmmc_peripheral, .max_freq = MaxFreq, .min_freq = MinFreq},
+              peripheral(sdmmc_peripheral),
               buffer0(MPUDomain::Buffer<std::array<uint32_t, 512 * buffer_blocks / 4>>(
                   MPUDomain::MemoryType::NonCached,
                   MPUDomain::MemoryDomain::D1
@@ -227,6 +259,9 @@ struct SdDomain {
             local_e.d2_pin_idx = d2.inscribe(ctx);
             local_e.d3_pin_idx = d3.inscribe(ctx);
 
+            // Register clock requirement with ClockDomain
+            clock_device.inscribe(ctx);
+
             return ctx.template add<SdDomain>(local_e, this);
         }
     };
@@ -235,6 +270,8 @@ struct SdDomain {
 
     struct Config {
         Peripheral peripheral;
+        uint32_t max_freq;
+        uint32_t min_freq;
         std::size_t mpu_buffer0_idx;
         std::size_t mpu_buffer1_idx;
         std::optional<std::pair<std::size_t, GPIO_PinState>> cd_pin_idx;
@@ -265,6 +302,8 @@ struct SdDomain {
             peripheral_used[peripheral_index] = true;
 
             cfgs[i].peripheral = e.peripheral;
+            cfgs[i].max_freq = e.max_freq;
+            cfgs[i].min_freq = e.min_freq;
             cfgs[i].mpu_buffer0_idx = e.mpu_buffer0_idx;
             cfgs[i].mpu_buffer1_idx = e.mpu_buffer1_idx;
             cfgs[i].cd_pin_idx = e.cd_pin_idx;
@@ -486,16 +525,16 @@ struct SdDomain {
                 inst.hsd.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
                 inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_4B;
                 inst.hsd.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_ENABLE;
-                uint32_t target_freq = 50000000; // Target frequency 50 MHz
+                uint32_t target_freq = cfg.max_freq;
 
 #ifdef SD_DEBUG_ENABLE
-                inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_1B; // For debugging, use 1-bit bus
-                target_freq = 400000;                      // For debugging, use 400 kHz
-#endif                                                     // SD_DEBUG_ENABLE
-
-                PLL1_ClocksTypeDef pll1_clock;
-                HAL_RCCEx_GetPLL1ClockFreq(&pll1_clock);
-                uint32_t sdmmc_clk = pll1_clock.PLL1_Q_Frequency;
+                inst.hsd.Init.BusWide = SDMMC_BUS_WIDE_1B;
+#endif
+                uint32_t sdmmc_clk =
+                    ClockDomain::get_kernel_clock(ClockDomain::ClockGroup::SDMMC_G);
+                if (sdmmc_clk == 0) {
+                    PANIC("SDMMC clock not configured by ClockDomain");
+                }
                 uint32_t target_div =
                     (sdmmc_clk + target_freq - 1) /
                     target_freq; // Target divider rounded up (target_freq is the maximum frequency)
@@ -524,22 +563,6 @@ struct SdDomain {
 
                 inst.card_initialized = false;
                 inst.current_buffer = BufferSelect::Buffer0;
-            }
-
-            // Initialize HAL SD
-            RCC_PeriphCLKInitTypeDef RCC_PeriphCLKInitStruct;
-            RCC_PeriphCLKInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SDMMC;
-            RCC_PeriphCLKInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL;
-            if (HAL_RCCEx_PeriphCLKConfig(&RCC_PeriphCLKInitStruct) != HAL_OK) {
-                PANIC("SDMMC clock configuration failed, maybe try with a slower clock or "
-                      "higher divider?");
-            }
-
-            // Ensure PLL1Q output is enabled
-            __HAL_RCC_PLLCLKOUT_ENABLE(RCC_PLL1_DIVQ);
-
-            if (HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SDMMC) == 0) {
-                PANIC("SDMMC clock frequency is 0");
             }
         }
     };

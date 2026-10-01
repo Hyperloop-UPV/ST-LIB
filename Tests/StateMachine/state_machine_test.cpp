@@ -141,6 +141,7 @@ static inline auto test_machine = []() consteval {
 class StateMachineTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        ::ST_LIB::ClockDomain::s_tree = &::ST_LIB::default_clock_tree;
         reset_test_state();
 
         test_machine.force_change_state((size_t)MasterState::A);

@@ -61,7 +61,6 @@ constexpr std::array<ST_LIB::ADCDomain::Entry, 1> auto_entry{{
      .channel = ST_LIB::ADCDomain::Channel::AUTO,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .output = &compile_time_output},
 }};
@@ -80,7 +79,6 @@ constexpr std::array<ST_LIB::ADCDomain::Entry, 1> auto_pf13_entry{{
      .channel = ST_LIB::ADCDomain::Channel::AUTO,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .output = &compile_time_output},
 }};
@@ -97,7 +95,6 @@ constexpr std::array<ST_LIB::ADCDomain::Entry, 1> auto_pc0_16bit_entry{{
      .channel = ST_LIB::ADCDomain::Channel::AUTO,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_16,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .output = &compile_time_output},
 }};
@@ -142,7 +139,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 2> shared_adc_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH16,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC1,
      .output = &synthesized_dma_output_0},
@@ -151,7 +147,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 2> shared_adc_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH15,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC1,
      .output = &synthesized_dma_output_1},
@@ -248,7 +243,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 1> single_adc1_init_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH16,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC1,
      .output = &adc_test_template_output_0},
@@ -260,7 +254,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 2> shared_adc1_init_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH16,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC1,
      .output = &adc_test_template_output_0},
@@ -269,7 +262,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 2> shared_adc1_init_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH15,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC1,
      .output = &adc_test_template_output_1},
@@ -281,7 +273,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 2> split_adc12_init_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH16,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC1,
      .output = &adc_test_template_output_0},
@@ -290,7 +281,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 2> split_adc12_init_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH2,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC2,
      .output = &adc_test_template_output_1},
@@ -327,7 +317,10 @@ protected:
         clear_dma_irq_table();
     }
 
-    void SetUp() override { reset_runtime_state(); }
+    void SetUp() override {
+        reset_runtime_state();
+        ST_LIB::ClockDomain::s_tree = &ST_LIB::default_clock_tree;
+    }
 
     template <std::size_t N, const std::array<ST_LIB::ADCDomain::Config, N>& InitCfgs>
     void init_adc_with_dma(const std::array<ST_LIB::ADCDomain::Config, N>& cfgs) {
@@ -372,7 +365,6 @@ TEST_F(ADCTest, InitWithExternalDMAStartsCircularTransferAndLinksHandle) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &output},
@@ -408,7 +400,6 @@ TEST_F(ADCTest, ReadUsesLatestDMABufferValueWithoutPolling) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &output},
@@ -442,7 +433,6 @@ TEST_F(ADCTest, MultiChannelDMAUsesSequenceSlotsPerPeripheral) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &out0},
@@ -451,7 +441,6 @@ TEST_F(ADCTest, MultiChannelDMAUsesSequenceSlotsPerPeripheral) {
          .channel = ST_LIB::ADCDomain::Channel::CH15,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &out1},
@@ -488,7 +477,6 @@ TEST_F(ADCTest, SeparatePeripheralsUseIndependentDMAHandlesAndBuffers) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &out1},
@@ -497,7 +485,6 @@ TEST_F(ADCTest, SeparatePeripheralsUseIndependentDMAHandlesAndBuffers) {
          .channel = ST_LIB::ADCDomain::Channel::CH2,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC2,
          .output = &out2},
@@ -528,7 +515,6 @@ TEST_F(ADCTest, Resolution10BitDMAClampsRawBufferToResolutionRange) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_10,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &output},
@@ -554,7 +540,6 @@ TEST_F(ADCTest, InitWithoutDMAInstancesFailsInsteadOfConfiguringDMAAtRuntime) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &output},
@@ -579,7 +564,6 @@ TEST_F(ADCTest, DMAStartFailureTriggersErrorPathAndLeavesInstanceUnreadable) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &output},
@@ -604,7 +588,6 @@ TEST_F(ADCTest, UnresolvedConfigDoesNotAliasAResolvedPeripheralInstance) {
          .channel = ST_LIB::ADCDomain::Channel::AUTO,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &unresolved},
@@ -613,7 +596,6 @@ TEST_F(ADCTest, UnresolvedConfigDoesNotAliasAResolvedPeripheralInstance) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &resolved},
@@ -636,11 +618,14 @@ TEST_F(ADCTest, TimedDMAWaitsForSequenceAndTransferCompletionBeforeUpdatingBuffe
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &output},
     }};
+
+    auto adc_test_tree = *ST_LIB::ClockDomain::s_tree;
+    adc_test_tree.adc_src = ST_LIB::ClockDomain::ClockTree::Source::HSI;
+    ST_LIB::ClockDomain::s_tree = &adc_test_tree;
 
     ST_LIB::MockedHAL::adc_enable_timed_dma(ADC1, true);
     ST_LIB::MockedHAL::adc_set_kernel_clock_hz(ADC1, 64'000'000ULL);
@@ -650,6 +635,8 @@ TEST_F(ADCTest, TimedDMAWaitsForSequenceAndTransferCompletionBeforeUpdatingBuffe
     });
 
     init_adc_with_dma<1, single_adc1_init_cfgs>(cfgs);
+
+    ST_LIB::ClockDomain::s_tree = &ST_LIB::default_clock_tree;
 
     auto& adc = SingleADCInit::instances[0];
     const uint64_t sequence_period_ns = ST_LIB::MockedHAL::adc_get_sequence_period_ns(ADC1);
@@ -684,7 +671,6 @@ TEST_F(ADCTest, TimedDMADetectsOverrunWhenTransferCannotKeepUp) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_16,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_1_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &out0},
@@ -693,7 +679,6 @@ TEST_F(ADCTest, TimedDMADetectsOverrunWhenTransferCannotKeepUp) {
          .channel = ST_LIB::ADCDomain::Channel::CH15,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_16,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_1_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &out1},
@@ -727,7 +712,6 @@ TEST_F(ADCTest, TimedDMASharedBusContentionShowsUpWithSimultaneousADCs) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_1_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &out1},
@@ -736,7 +720,6 @@ TEST_F(ADCTest, TimedDMASharedBusContentionShowsUpWithSimultaneousADCs) {
          .channel = ST_LIB::ADCDomain::Channel::CH2,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_1_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC2,
          .output = &out2},
@@ -780,62 +763,51 @@ TEST_F(ADCTest, TimedDMAFrequencySweepSeparatesStableAndUnstableOperatingRegions
         ST_LIB::ADCDomain::SampleTime::CYCLES_32_5,
         ST_LIB::ADCDomain::SampleTime::CYCLES_387_5,
     };
-    constexpr std::array prescalers{
-        ST_LIB::ADCDomain::ClockPrescaler::DIV1,
-        ST_LIB::ADCDomain::ClockPrescaler::DIV4,
-        ST_LIB::ADCDomain::ClockPrescaler::DIV16,
-    };
 
     for (const auto resolution : resolutions) {
         for (const auto sample_time : sample_times) {
-            for (const auto prescaler : prescalers) {
-                SCOPED_TRACE(static_cast<int>(resolution));
-                SCOPED_TRACE(static_cast<int>(sample_time));
-                SCOPED_TRACE(static_cast<int>(prescaler));
+            SCOPED_TRACE(static_cast<int>(resolution));
+            SCOPED_TRACE(static_cast<int>(sample_time));
 
-                reset_runtime_state();
+            reset_runtime_state();
 
-                float output = -1.0f;
-                const std::array<ST_LIB::ADCDomain::Config, 1> cfgs{{
-                    {.gpio_idx = 0,
-                     .peripheral = ST_LIB::ADCDomain::Peripheral::ADC_1,
-                     .channel = ST_LIB::ADCDomain::Channel::CH16,
-                     .resolution = resolution,
-                     .sample_time = sample_time,
-                     .prescaler = prescaler,
-                     .sample_rate_hz = 0,
-                     .dma_request = DMA_REQUEST_ADC1,
-                     .output = &output},
-                }};
+            float output = -1.0f;
+            const std::array<ST_LIB::ADCDomain::Config, 1> cfgs{{
+                {.gpio_idx = 0,
+                 .peripheral = ST_LIB::ADCDomain::Peripheral::ADC_1,
+                 .channel = ST_LIB::ADCDomain::Channel::CH16,
+                 .resolution = resolution,
+                 .sample_time = sample_time,
+                 .sample_rate_hz = 0,
+                 .dma_request = DMA_REQUEST_ADC1,
+                 .output = &output},
+            }};
 
-                ST_LIB::MockedHAL::adc_enable_timed_dma(ADC1, true);
-                ST_LIB::MockedHAL::adc_set_kernel_clock_hz(ADC1, 64'000'000ULL);
-                ST_LIB::MockedHAL::adc_set_channel_raw(ADC1, ADC_CHANNEL_16, 777U);
-                init_adc_with_dma<1, single_adc1_init_cfgs>(cfgs);
+            ST_LIB::MockedHAL::adc_enable_timed_dma(ADC1, true);
+            ST_LIB::MockedHAL::adc_set_kernel_clock_hz(ADC1, 64'000'000ULL);
+            ST_LIB::MockedHAL::adc_set_channel_raw(ADC1, ADC_CHANNEL_16, 777U);
+            init_adc_with_dma<1, single_adc1_init_cfgs>(cfgs);
 
-                const uint64_t sequence_period_ns =
-                    ST_LIB::MockedHAL::adc_get_sequence_period_ns(ADC1);
-                ASSERT_GT(sequence_period_ns, 0U);
+            const uint64_t sequence_period_ns = ST_LIB::MockedHAL::adc_get_sequence_period_ns(ADC1);
+            ASSERT_GT(sequence_period_ns, 0U);
 
-                ST_LIB::MockedHAL::dma_set_transfer_timing(0ULL, 0ULL);
-                ST_LIB::MockedHAL::adc_advance_time_ns(sequence_period_ns * 8ULL);
-                EXPECT_EQ(ST_LIB::MockedHAL::adc_get_overrun_count(ADC1), 0U);
-                EXPECT_EQ(ST_LIB::MockedHAL::adc_get_completed_sequence_count(ADC1), 8U);
+            ST_LIB::MockedHAL::dma_set_transfer_timing(0ULL, 0ULL);
+            ST_LIB::MockedHAL::adc_advance_time_ns(sequence_period_ns * 8ULL);
+            EXPECT_EQ(ST_LIB::MockedHAL::adc_get_overrun_count(ADC1), 0U);
+            EXPECT_EQ(ST_LIB::MockedHAL::adc_get_completed_sequence_count(ADC1), 8U);
 
-                reset_runtime_state();
+            reset_runtime_state();
 
-                ST_LIB::MockedHAL::adc_enable_timed_dma(ADC1, true);
-                ST_LIB::MockedHAL::adc_set_kernel_clock_hz(ADC1, 64'000'000ULL);
-                ST_LIB::MockedHAL::adc_set_channel_raw(ADC1, ADC_CHANNEL_16, 777U);
-                init_adc_with_dma<1, single_adc1_init_cfgs>(cfgs);
+            ST_LIB::MockedHAL::adc_enable_timed_dma(ADC1, true);
+            ST_LIB::MockedHAL::adc_set_kernel_clock_hz(ADC1, 64'000'000ULL);
+            ST_LIB::MockedHAL::adc_set_channel_raw(ADC1, ADC_CHANNEL_16, 777U);
+            init_adc_with_dma<1, single_adc1_init_cfgs>(cfgs);
 
-                const uint64_t unstable_period_ns =
-                    ST_LIB::MockedHAL::adc_get_sequence_period_ns(ADC1);
-                ST_LIB::MockedHAL::dma_set_transfer_timing(unstable_period_ns * 2ULL, 0ULL);
-                ST_LIB::MockedHAL::adc_advance_time_ns(unstable_period_ns * 8ULL);
-                EXPECT_GT(ST_LIB::MockedHAL::adc_get_overrun_count(ADC1), 0U);
-                EXPECT_LT(ST_LIB::MockedHAL::adc_get_completed_sequence_count(ADC1), 8U);
-            }
+            const uint64_t unstable_period_ns = ST_LIB::MockedHAL::adc_get_sequence_period_ns(ADC1);
+            ST_LIB::MockedHAL::dma_set_transfer_timing(unstable_period_ns * 2ULL, 0ULL);
+            ST_LIB::MockedHAL::adc_advance_time_ns(unstable_period_ns * 8ULL);
+            EXPECT_GT(ST_LIB::MockedHAL::adc_get_overrun_count(ADC1), 0U);
+            EXPECT_LT(ST_LIB::MockedHAL::adc_get_completed_sequence_count(ADC1), 8U);
         }
     }
 }

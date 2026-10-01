@@ -273,7 +273,6 @@ set(HALAL_C_NO_ETH
 set(HALAL_CPP_NO_ETH
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/HALAL.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/DMA/DMA.cpp
-  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/HALconfig/Halconfig.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/LowPowerTimer/LowPowerTimer.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/MDMA/MDMA.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/MPUManager/MPUManager.cpp

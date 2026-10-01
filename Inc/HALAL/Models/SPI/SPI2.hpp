@@ -15,10 +15,42 @@
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "HALAL/Models/DMA/DMA2.hpp"
 #include "HALAL/Models/SPI/SPIConfig.hpp"
+#include "HALAL/Models/Clocks/ClockDomain.hpp"
 
 using ST_LIB::DMADomain;
 using ST_LIB::GPIODomain;
 using ST_LIB::SPIConfigTypes;
+
+namespace ST_LIB {
+
+// ─────────────────────────────────────────────
+//  SPI clock model — prescaler search for the solver
+// ─────────────────────────────────────────────
+
+template <ClockDomain::ClockGroup Group, uint32_t MaxBaud, uint32_t MinBaud> struct SPIClockModel {
+    static_assert(
+        Group == ClockDomain::ClockGroup::SPI123_G || Group == ClockDomain::ClockGroup::SPI45_G ||
+            Group == ClockDomain::ClockGroup::SPI6_G,
+        "SPIClockModel: group must be SPI123, SPI45, or SPI6"
+    );
+
+    static constexpr auto group = Group;
+
+    static constexpr uint32_t prescalers[] = {2, 4, 8, 16, 32, 64, 128, 256};
+    static constexpr uint32_t prescaler_count = sizeof(prescalers) / sizeof(prescalers[0]);
+
+    static constexpr bool try_solve(uint32_t kernel_clk) {
+        for (uint32_t i = 0; i < prescaler_count; i++) {
+            uint32_t baud = kernel_clk / prescalers[i];
+            if (baud <= MaxBaud && baud >= MinBaud) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+} // namespace ST_LIB
 
 // Forward declaration of IRQ handlers and HAL callbacks
 extern "C" {
@@ -156,6 +188,29 @@ struct SPIDomain {
     // Forward declaration
     static uint32_t calculate_prescaler(uint32_t src_freq, uint32_t max_baud);
 
+    static constexpr ClockDomain::ClockGroup spi_group(SPIPeripheral p) {
+        using enum SPIPeripheral;
+        using enum ClockDomain::ClockGroup;
+        switch (p) {
+        case spi1:
+        case spi2:
+        case spi3:
+            return SPI123_G;
+        case spi4:
+        case spi5:
+            return SPI45_G;
+        case spi6:
+            return SPI6_G;
+        default:
+            if consteval {
+                compile_error("Invalid SPI peripheral");
+            } else {
+                PANIC("Invalid SPI peripheral");
+                return SPI123_G;
+            }
+        }
+    }
+
     static constexpr std::size_t max_instances{6};
 
     struct Entry {
@@ -170,8 +225,9 @@ struct SPIDomain {
         std::size_t dma_rx_idx;
         std::size_t dma_tx_idx;
 
-        uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
-        SPIConfig config;      // User-defined SPI configuration
+        uint32_t max_baudrate;
+        uint32_t min_baudrate;
+        SPIConfig config;
     };
 
     struct Config {
@@ -186,8 +242,9 @@ struct SPIDomain {
         std::size_t dma_rx_idx;
         std::size_t dma_tx_idx;
 
-        uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
-        SPIConfig config;      // User-defined SPI configuration
+        uint32_t max_baudrate;
+        uint32_t min_baudrate;
+        SPIConfig config;
     };
 
     /**
@@ -195,13 +252,18 @@ struct SPIDomain {
      *              Request Object
      * =========================================
      */
-    template <DMADomain::Stream dma_rx_stream, DMADomain::Stream dma_tx_stream> struct Device {
+    template <
+        DMADomain::Stream dma_rx_stream,
+        DMADomain::Stream dma_tx_stream,
+        SPIPeripheral Periph,
+        uint32_t MaxBaud,
+        uint32_t MinBaud = 0>
+    struct Device {
         using domain = SPIDomain;
 
-        SPIPeripheral peripheral;
+        static constexpr auto peripheral = Periph;
         SPIMode mode;
-        uint32_t max_baudrate; // Will set the baudrate as fast as possible under this value
-        SPIConfig config;      // User-defined SPI configuration
+        SPIConfig config;
 
         GPIODomain::GPIO sck_gpio;
         GPIODomain::GPIO miso_gpio;
@@ -210,24 +272,23 @@ struct SPIDomain {
 
         DMADomain::DMA<dma_rx_stream, dma_tx_stream> dma_rx_tx;
 
+        ClockDomain::Device clock_device;
+
         consteval Device(
             SPIMode mode,
-            SPIPeripheral peripheral,
-            uint32_t max_baudrate,
             GPIODomain::Pin sck_pin,
             GPIODomain::Pin miso_pin,
             GPIODomain::Pin mosi_pin,
             GPIODomain::Pin nss_pin,
             SPIConfig config = SPIConfig{}
         )
-            : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate}, config{config},
-              sck_gpio(
-                  sck_pin,
-                  GPIODomain::OperationMode::ALT_PP,
-                  GPIODomain::Pull::None,
-                  GPIODomain::Speed::VeryHigh,
-                  get_af(sck_pin, peripheral)
-              ),
+            : mode{mode}, config{config}, sck_gpio(
+                                              sck_pin,
+                                              GPIODomain::OperationMode::ALT_PP,
+                                              GPIODomain::Pull::None,
+                                              GPIODomain::Speed::VeryHigh,
+                                              get_af(sck_pin, peripheral)
+                                          ),
               miso_gpio(
                   miso_pin,
                   GPIODomain::OperationMode::ALT_PP,
@@ -249,7 +310,11 @@ struct SPIDomain {
                   GPIODomain::Speed::VeryHigh,
                   get_af(nss_pin, peripheral)
               )),
-              dma_rx_tx(dma_peripheral(peripheral)) {
+              dma_rx_tx(dma_peripheral(peripheral)),
+              clock_device{
+                  .group = spi_group(peripheral),
+                  .try_solve = &SPIClockModel<spi_group(peripheral), MaxBaud, MinBaud>::try_solve,
+              } {
             config.validate();
 
             if (config.nss_mode == NSSMode::SOFTWARE) {
@@ -265,21 +330,18 @@ struct SPIDomain {
         // Constructor without NSS pin (for software NSS mode)
         consteval Device(
             SPIMode mode,
-            SPIPeripheral peripheral,
-            uint32_t max_baudrate,
             GPIODomain::Pin sck_pin,
             GPIODomain::Pin miso_pin,
             GPIODomain::Pin mosi_pin,
             SPIConfig config
         )
-            : peripheral{peripheral}, mode{mode}, max_baudrate{max_baudrate}, config{config},
-              sck_gpio(
-                  sck_pin,
-                  GPIODomain::OperationMode::ALT_PP,
-                  GPIODomain::Pull::None,
-                  GPIODomain::Speed::VeryHigh,
-                  get_af(sck_pin, peripheral)
-              ),
+            : mode{mode}, config{config}, sck_gpio(
+                                              sck_pin,
+                                              GPIODomain::OperationMode::ALT_PP,
+                                              GPIODomain::Pull::None,
+                                              GPIODomain::Speed::VeryHigh,
+                                              get_af(sck_pin, peripheral)
+                                          ),
               miso_gpio(
                   miso_pin,
                   GPIODomain::OperationMode::ALT_PP,
@@ -295,7 +357,11 @@ struct SPIDomain {
                   get_af(mosi_pin, peripheral)
               ),
               nss_gpio(std::nullopt), // No NSS GPIO
-              dma_rx_tx(dma_peripheral(peripheral)) {
+              dma_rx_tx(dma_peripheral(peripheral)),
+              clock_device{
+                  .group = spi_group(peripheral),
+                  .try_solve = &SPIClockModel<spi_group(peripheral), MaxBaud, MinBaud>::try_solve,
+              } {
             config.validate();
 
             if (config.nss_mode == NSSMode::HARDWARE) {
@@ -326,8 +392,11 @@ struct SPIDomain {
             e.nss_gpio_idx = nss_idx;
             e.dma_rx_idx = dma_indices[0];
             e.dma_tx_idx = dma_indices[1];
-            e.max_baudrate = max_baudrate;
+            e.max_baudrate = MaxBaud;
+            e.min_baudrate = MinBaud;
             e.config = config;
+
+            clock_device.inscribe(ctx);
 
             return ctx.template add<SPIDomain>(e, this);
         }
@@ -1285,6 +1354,7 @@ struct SPIDomain {
             cfgs[i].dma_rx_idx = entries[i].dma_rx_idx;
             cfgs[i].dma_tx_idx = entries[i].dma_tx_idx;
             cfgs[i].max_baudrate = entries[i].max_baudrate;
+            cfgs[i].min_baudrate = entries[i].min_baudrate;
             cfgs[i].config = entries[i].config;
 
             auto peripheral = entries[i].peripheral;
@@ -1342,55 +1412,24 @@ struct SPIDomain {
                 instances[i].error_count = 0;
                 instances[i].was_aborted = false;
 
-                // Configure clock and store handle
-                RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+                // Enable bus clock (mux configured centrally by ClockDomain)
                 uint8_t spi_number = 0;
                 if (peripheral == SPIPeripheral::spi1) {
-                    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI1;
-                    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
-                    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        PANIC("Unable to configure SPI1 clock");
-                    }
                     __HAL_RCC_SPI1_CLK_ENABLE();
                     spi_number = 1;
                 } else if (peripheral == SPIPeripheral::spi2) {
-                    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2;
-                    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
-                    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        PANIC("Unable to configure SPI2 clock");
-                    }
                     __HAL_RCC_SPI2_CLK_ENABLE();
                     spi_number = 2;
                 } else if (peripheral == SPIPeripheral::spi3) {
-                    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3;
-                    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
-                    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        PANIC("Unable to configure SPI3 clock");
-                    }
                     __HAL_RCC_SPI3_CLK_ENABLE();
                     spi_number = 3;
                 } else if (peripheral == SPIPeripheral::spi4) {
-                    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI4;
-                    PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_HSI;
-                    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        PANIC("Unable to configure SPI4 clock");
-                    }
                     __HAL_RCC_SPI4_CLK_ENABLE();
                     spi_number = 4;
                 } else if (peripheral == SPIPeripheral::spi5) {
-                    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI5;
-                    PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_HSI;
-                    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        PANIC("Unable to configure SPI5 clock");
-                    }
                     __HAL_RCC_SPI5_CLK_ENABLE();
                     spi_number = 5;
                 } else if (peripheral == SPIPeripheral::spi6) {
-                    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI6;
-                    PeriphClkInitStruct.Spi6ClockSelection = RCC_SPI6CLKSOURCE_PLL2;
-                    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-                        PANIC("Unable to configure SPI6 clock");
-                    }
                     __HAL_RCC_SPI6_CLK_ENABLE();
                     spi_number = 6;
                 }
@@ -1427,15 +1466,10 @@ struct SPIDomain {
                 auto& init = hspi.Init;
                 if (e.mode == SPIMode::MASTER) {
                     init.Mode = SPI_MODE_MASTER;
-                    // Baudrate prescaler calculation
-                    uint32_t pclk_freq;
-                    if (peripheral == SPIPeripheral::spi1 || peripheral == SPIPeripheral::spi2 ||
-                        peripheral == SPIPeripheral::spi3) {
-                        pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI123);
-                    } else if (peripheral == SPIPeripheral::spi4 || peripheral == SPIPeripheral::spi5) {
-                        pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI45);
-                    } else {
-                        pclk_freq = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI6);
+                    // Baudrate prescaler from solved tree
+                    uint32_t pclk_freq = ClockDomain::get_kernel_clock(spi_group(peripheral));
+                    if (pclk_freq == 0) {
+                        PANIC("SPI kernel clock not configured by ClockDomain");
                     }
                     init.BaudRatePrescaler = calculate_prescaler(pclk_freq, e.max_baudrate);
                 } else {

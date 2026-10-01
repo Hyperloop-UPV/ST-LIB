@@ -38,6 +38,8 @@ add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/spi2_test.cpp
     ${CMAKE_CURRENT_LIST_DIR}/dma2_test.cpp
     ${CMAKE_CURRENT_LIST_DIR}/dfsdm_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Clocks/clock_group_test.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/Clocks/clock_stress_test.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/common_tests.cpp
 )
 

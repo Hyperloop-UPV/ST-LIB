@@ -40,7 +40,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 1> single_adc1_init_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH16,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC1,
      .output = &adc_sensor_template_output_0},
@@ -52,7 +51,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 2> split_adc12_init_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH16,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC1,
      .output = &adc_sensor_template_output_0},
@@ -61,7 +59,6 @@ constexpr std::array<ST_LIB::ADCDomain::Config, 2> split_adc12_init_cfgs{{
      .channel = ST_LIB::ADCDomain::Channel::CH2,
      .resolution = ST_LIB::ADCDomain::Resolution::BITS_16,
      .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-     .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
      .sample_rate_hz = 0,
      .dma_request = DMA_REQUEST_ADC2,
      .output = &adc_sensor_template_output_1},
@@ -88,6 +85,7 @@ void clear_dma_irq_table() {
 class ADCSensorTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        ST_LIB::ClockDomain::s_tree = &ST_LIB::default_clock_tree;
         ST_LIB::MockedHAL::adc_reset();
         ST_LIB::MockedHAL::dma_reset();
         clear_nvic_enables();
@@ -113,7 +111,6 @@ TEST_F(ADCSensorTest, LinearSensorUsesNormalizedADCVoltageForItsTransferFunction
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_10,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &output},
@@ -136,7 +133,6 @@ TEST_F(ADCSensorTest, FilteredLinearSensorReusesTheSameADCConversionPath) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &output},
@@ -164,7 +160,6 @@ TEST_F(ADCSensorTest, LookupSensorMapsEquivalentNormalizedReadingsAcrossResoluti
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = nullptr},
@@ -173,7 +168,6 @@ TEST_F(ADCSensorTest, LookupSensorMapsEquivalentNormalizedReadingsAcrossResoluti
          .channel = ST_LIB::ADCDomain::Channel::CH2,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_16,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC2,
          .output = nullptr},
@@ -210,7 +204,6 @@ TEST_F(ADCSensorTest, PT100ReadsFromADCVoltageAndSupportsFilteredMode) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = &direct_output},
@@ -243,7 +236,6 @@ TEST_F(ADCSensorTest, NTCUsesNormalizedADCCountsAcrossResolutions) {
          .channel = ST_LIB::ADCDomain::Channel::CH16,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_12,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC1,
          .output = nullptr},
@@ -252,7 +244,6 @@ TEST_F(ADCSensorTest, NTCUsesNormalizedADCCountsAcrossResolutions) {
          .channel = ST_LIB::ADCDomain::Channel::CH2,
          .resolution = ST_LIB::ADCDomain::Resolution::BITS_16,
          .sample_time = ST_LIB::ADCDomain::SampleTime::CYCLES_8_5,
-         .prescaler = ST_LIB::ADCDomain::ClockPrescaler::DIV1,
          .sample_rate_hz = 0,
          .dma_request = DMA_REQUEST_ADC2,
          .output = nullptr},

@@ -18,6 +18,7 @@
 #include <array>
 
 #include "ErrorHandler/ErrorHandler.hpp"
+#include "HALAL/Models/Clocks/ClockDomain.hpp"
 
 #ifndef SCHEDULER_TIMER_DOMAIN
 /* default is tim2 */
@@ -888,19 +889,12 @@ struct TimerDomain {
         uint32_t result = 0;
         if ((tim == TIM2) || (tim == TIM3) || (tim == TIM4) || (tim == TIM5) || (tim == TIM6) ||
             (tim == TIM7) || (tim == TIM12) || (tim == TIM13) || (tim == TIM14)) {
-            result = HAL_RCC_GetPCLK1Freq();
-            if ((RCC->D2CFGR & RCC_D2CFGR_D2PPRE1) != RCC_HCLK_DIV1) {
-                result *= 2;
-            }
+            result = ClockDomain::timer_apb1();
         } else if ((tim == TIM1) || (tim == TIM8) || (tim == TIM15) || (tim == TIM16) || (tim == TIM17) || (tim == TIM23) || (tim == TIM24)) {
-            result = HAL_RCC_GetPCLK2Freq();
-            if ((RCC->D2CFGR & RCC_D2CFGR_D2PPRE2) != RCC_HCLK_DIV1) {
-                result *= 2;
-            }
+            result = ClockDomain::timer_apb2();
         } else {
             PANIC("Invalid timer ptr");
         }
-
         return result;
     }
 };

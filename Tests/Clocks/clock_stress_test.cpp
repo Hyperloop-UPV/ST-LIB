@@ -1,0 +1,92 @@
+#include "HALAL/Models/Clocks/ClockDomain.hpp"
+#include "HALAL/Models/SPI/SPI2.hpp"
+
+using namespace ST_LIB;
+
+namespace {
+constexpr ClockDomain::ClockTree tree_8m{
+    .hse_frequency = 8'000'000,
+    .hse_bypass = true,
+    .pll1_m = 4,
+    .pll1_n = 275,
+    .pll1_p = 1,
+    .pll1_q = 4,
+    .pll1_r = 2,
+    .d1cpre = 2,
+};
+} // namespace
+
+static_assert([] {
+    using Spi = SPIClockModel<ClockDomain::ClockGroup::SPI123_G, 50'000'000, 0>;
+    return Spi::try_solve(64'000'000);
+}());
+
+static_assert([] {
+    using Spi = SPIClockModel<ClockDomain::ClockGroup::SPI45_G, 10'000'000, 5'000'000>;
+    return Spi::try_solve(64'000'000) && !Spi::try_solve(4'000'000);
+}());
+
+static_assert([] {
+    using Spi = SPIClockModel<ClockDomain::ClockGroup::SPI6_G, 1'000'000, 1'000'000>;
+    return Spi::try_solve(64'000'000) && !Spi::try_solve(30'000'000);
+}());
+
+static_assert([] {
+    using SpiA = SPIClockModel<ClockDomain::ClockGroup::SPI45_G, 5'000'000, 1'000'000>;
+    using SpiB = SPIClockModel<ClockDomain::ClockGroup::SPI45_G, 20'000'000, 10'000'000>;
+    constexpr auto tree = [] {
+        auto t = tree_8m;
+        t.spi45_src = ClockDomain::ClockTree::Source::PCLK2;
+        return t;
+    }();
+    constexpr std::array<ClockDomain::Entry, 2> entries{{
+        {.group = SpiA::group, .try_solve = &SpiA::try_solve},
+        {.group = SpiB::group, .try_solve = &SpiB::try_solve},
+    }};
+    ClockDomain::validate(tree, std::span<const ClockDomain::Entry, 2>{entries});
+    return true;
+}());
+
+static_assert([] {
+    using Spi1 = SPIClockModel<ClockDomain::ClockGroup::SPI123_G, 50'000'000, 0>;
+    using Spi4 = SPIClockModel<ClockDomain::ClockGroup::SPI45_G, 5'000'000, 0>;
+    using Spi6 = SPIClockModel<ClockDomain::ClockGroup::SPI6_G, 20'000'000, 0>;
+    constexpr auto tree = [] {
+        auto t = tree_8m;
+        t.spi123_src = ClockDomain::ClockTree::Source::HSI;
+        t.spi45_src = ClockDomain::ClockTree::Source::HSI;
+        t.spi6_src = ClockDomain::ClockTree::Source::HSI;
+        return t;
+    }();
+    constexpr std::array<ClockDomain::Entry, 3> entries{{
+        {.group = Spi1::group, .try_solve = &Spi1::try_solve},
+        {.group = Spi4::group, .try_solve = &Spi4::try_solve},
+        {.group = Spi6::group, .try_solve = &Spi6::try_solve},
+    }};
+    ClockDomain::validate(tree, std::span<const ClockDomain::Entry, 3>{entries});
+    return true;
+}());
+
+static_assert([] {
+    using Spi = SPIClockModel<ClockDomain::ClockGroup::SPI45_G, 9'600, 0>;
+    return !Spi::try_solve(64'000'000) && !Spi::try_solve(4'000'000) &&
+           !Spi::try_solve(8'000'000) && !Spi::try_solve(137'500'000);
+}());
+
+static_assert([] {
+    using Spi = SPIClockModel<ClockDomain::ClockGroup::SPI123_G, 50'000'000, 0>;
+    constexpr auto tree = [] {
+        auto t = tree_8m;
+        t.spi123_src = ClockDomain::ClockTree::Source::HSI;
+        return t;
+    }();
+    constexpr std::array<ClockDomain::Entry, 10> entries = [&] {
+        std::array<ClockDomain::Entry, 10> e{};
+        for (size_t i = 0; i < 10; i++) {
+            e[i] = {.group = Spi::group, .try_solve = &Spi::try_solve};
+        }
+        return e;
+    }();
+    ClockDomain::validate(tree, std::span<const ClockDomain::Entry, 10>{entries});
+    return true;
+}());
