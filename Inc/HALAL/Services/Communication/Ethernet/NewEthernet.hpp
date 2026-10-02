@@ -338,7 +338,6 @@ struct EthernetDomain {
             ::Ethernet::is_running = true;
 
             instances[0] = Instance{};
-            instances[0].sntp_server = e.sntp_server;
         }
     };
 };

@@ -74,7 +74,7 @@ void SNTP::start(ip_addr_t address) {
             if (SNTP::opmode == SNTP::MODE) {
 #if SNTP_STARTUP_DELAY
                 request_task_id =
-                    Scheduler::set_timeout((uint32_t)SNTP_STARTUP_DELAY_FUNC * 1000, SNTP::request);
+                    Scheduler::set_timeout((uint32_t)SNTP_STARTUP_DELAY_FUNC * 100, SNTP::request);
 #else
                 SNTP::request();
 #endif
@@ -143,7 +143,7 @@ void SNTP::send_request(const ip_addr_t* server_addr) {
 #endif /* SNTP_MONITOR_SERVER_REACHABILITY */
         /* set up receive timeout: try next server or retry on timeout */
         SNTP::try_next_server_task_id =
-            Scheduler::set_timeout((uint32_t)SNTP::RECV_TIMEOUT * 1000, SNTP::try_next_server);
+            Scheduler::set_timeout((uint32_t)SNTP::RECV_TIMEOUT, SNTP::try_next_server);
 #if SNTP_CHECK_RESPONSE >= 1
         /* save server address to verify it in sntp_recv */
         ip_addr_copy(sntp_last_server_address, *server_addr);
@@ -151,13 +151,13 @@ void SNTP::send_request(const ip_addr_t* server_addr) {
     } else {
         /* out of memory: set up a timer to send a retry */
         SNTP::request_task_id =
-            Scheduler::set_timeout((uint32_t)SNTP::RETRY_TIMEOUT * 1000, SNTP::request);
+            Scheduler::set_timeout((uint32_t)SNTP::RETRY_TIMEOUT, SNTP::request);
     }
 }
 
 void SNTP::retry(void) {
     /* set up a timer to send a retry and increase the retry delay */
-    SNTP::request_task_id = Scheduler::set_timeout(SNTP::retry_timeout * 1000, SNTP::request);
+    SNTP::request_task_id = Scheduler::set_timeout(SNTP::retry_timeout, SNTP::request);
 
 #if SNTP_RETRY_TIMEOUT_EXP
     {
@@ -205,7 +205,7 @@ void SNTP::request(void) {
     } else {
         /* address conversion failed, try another server */
         SNTP::try_next_server_task_id =
-            Scheduler::set_timeout((uint32_t)SNTP::RETRY_TIMEOUT * 1000, SNTP::try_next_server);
+            Scheduler::set_timeout((uint32_t)SNTP::RETRY_TIMEOUT, SNTP::try_next_server);
     }
 
     SNTP::request_count++;
