@@ -1326,7 +1326,7 @@ struct SPIDomain {
     }
 
     template <std::size_t N> struct Init {
-        static inline std::array<Instance, N> instances{};
+        static inline std::array<Instance, N> instances;
 
         static void init(
             std::span<const Config, N> cfgs,

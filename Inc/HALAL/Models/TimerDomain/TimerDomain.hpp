@@ -230,8 +230,6 @@ struct InputCaptureInfo {
     uint32_t frequency;
 };
 
-static ST_LIB::InputCaptureInfo input_capture_info_dummy;
-
 constexpr std::array<uint8_t, 25> create_timer_idxmap() {
     std::array<uint8_t, 25> result{};
 
@@ -284,6 +282,7 @@ struct TimerDomain {
     /* 2x as big as necessary but this makes indexing easier & faster */
     static InputCaptureInfo* input_capture_info[max_instances][input_capture_channels];
     static InputCaptureInfo input_capture_info_backing[max_instances][input_capture_channels];
+    static InputCaptureInfo input_capture_info_dummy;
 
     struct Entry {
         std::array<char, 8> name; /* max length = 7 */

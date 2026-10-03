@@ -1,10 +1,3 @@
-/*
- * EXTI.cpp
- *
- *  Created on: Nov 5, 2022
- *      Author: alejandro
- */
-
 #include "HALAL/Services/EXTI/EXTI.hpp"
 
 ST_LIB::EXTIDomain::Instance* ST_LIB::EXTIDomain::g_instances[ST_LIB::EXTIDomain::max_instances];

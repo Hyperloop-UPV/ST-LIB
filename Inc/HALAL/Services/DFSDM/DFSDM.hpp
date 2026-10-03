@@ -6,7 +6,7 @@
 #include "HALAL/Models/DMA/DMA2.hpp"
 #include "HALAL/Models/MPU.hpp"
 
-#define STLIB_DFSDM_DMA_BUFFER_ATTR D1_NC
+#define STLIB_DFSDM_DMA_BUFFER_ATTR(x) D2_NC_BSS_INLINE(x)
 
 #define Oversampling_MAX 1024
 #define Oversampling_MAX_Filter_4 215
@@ -992,14 +992,14 @@ struct DFSDM_CHANNEL_DOMAIN {
             sizes.filter0 + sizes.filter1 + sizes.filter2 + sizes.filter3;
 
         // Filter Buffers
-        alignas(32) STLIB_DFSDM_DMA_BUFFER_ATTR
-            static inline int32_t Buffer_Filter0[sizes.filter0 > 0 ? sizes.filter0 : 1]{};
-        alignas(32) STLIB_DFSDM_DMA_BUFFER_ATTR
-            static inline int32_t Buffer_Filter1[sizes.filter1 > 0 ? sizes.filter1 : 1]{};
-        alignas(32) STLIB_DFSDM_DMA_BUFFER_ATTR
-            static inline int32_t Buffer_Filter2[sizes.filter2 > 0 ? sizes.filter2 : 1]{};
-        alignas(32) STLIB_DFSDM_DMA_BUFFER_ATTR
-            static inline int32_t Buffer_Filter3[sizes.filter3 > 0 ? sizes.filter3 : 1]{};
+        alignas(32) STLIB_DFSDM_DMA_BUFFER_ATTR(Buffer_Filter0
+        ) static int32_t Buffer_Filter0[sizes.filter0 > 0 ? sizes.filter0 : 1]{};
+        alignas(32) STLIB_DFSDM_DMA_BUFFER_ATTR(Buffer_Filter1
+        ) static int32_t Buffer_Filter1[sizes.filter1 > 0 ? sizes.filter1 : 1]{};
+        alignas(32) STLIB_DFSDM_DMA_BUFFER_ATTR(Buffer_Filter2
+        ) static int32_t Buffer_Filter2[sizes.filter2 > 0 ? sizes.filter2 : 1]{};
+        alignas(32) STLIB_DFSDM_DMA_BUFFER_ATTR(Buffer_Filter3
+        ) static int32_t Buffer_Filter3[sizes.filter3 > 0 ? sizes.filter3 : 1]{};
 
         static inline std::array<Instance, N> instances{};
 

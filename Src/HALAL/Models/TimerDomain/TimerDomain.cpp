@@ -27,6 +27,7 @@ void* TimerDomain::callback_data[TimerDomain::max_instances] = {nullptr};
 ST_LIB::InputCaptureInfo* TimerDomain::input_capture_info[max_instances][input_capture_channels];
 ST_LIB::InputCaptureInfo TimerDomain::input_capture_info_backing[max_instances]
                                                                 [input_capture_channels];
+ST_LIB::InputCaptureInfo TimerDomain::input_capture_info_dummy;
 
 static void TIM_IC_CaptureCallback(const uint32_t timer_idx, uint32_t channel) {
     TIM_HandleTypeDef* htim = TimerDomain::hal_handles[timer_idx];

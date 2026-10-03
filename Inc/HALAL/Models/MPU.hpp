@@ -41,51 +41,173 @@
 #include "stm32h7xx_hal.h"
 #include "HALAL/Models/MPUManager/MPUManager.hpp"
 
-// Defines for attributes
-// Note1: Variables declared with these attributes will likely not be initialized by the startup
-// Note2: These attributes can only be used for static/global variables
 #ifdef SIM_ON
-#define D1_NC
-#define D2_NC
-#define D3_NC
-#define D1_C
-#define D2_C
-#define D3_C
+
+#define D1_NC_DATA
+#define D1_NC_BSS
+#define D1_NC_RODATA
+#define D1_NC_DATA_INLINE(name) inline
+#define D1_NC_BSS_INLINE(name) inline
+#define D1_NC_RODATA_INLINE(name) inline
+#define D2_NC_DATA
+#define D2_NC_BSS
+#define D2_NC_RODATA
+#define D2_NC_DATA_INLINE(name) inline
+#define D2_NC_BSS_INLINE(name) inline
+#define D2_NC_RODATA_INLINE(name) inline
+#define D3_NC_DATA
+#define D3_NC_BSS
+#define D3_NC_RODATA
+#define D3_NC_DATA_INLINE(name) inline
+#define D3_NC_BSS_INLINE(name) inline
+#define D3_NC_RODATA_INLINE(name) inline
+#define D1_C_DATA
+#define D1_C_BSS
+#define D1_C_RODATA
+#define D1_C_DATA_INLINE(name) inline
+#define D1_C_BSS_INLINE(name) inline
+#define D1_C_RODATA_INLINE(name) inline
+#define D2_C_DATA
+#define D2_C_BSS
+#define D2_C_RODATA
+#define D2_C_DATA_INLINE(name) inline
+#define D2_C_BSS_INLINE(name) inline
+#define D2_C_RODATA_INLINE(name) inline
+#define D3_C_DATA
+#define D3_C_BSS
+#define D3_C_RODATA
+#define D3_C_DATA_INLINE(name) inline
+#define D3_C_BSS_INLINE(name) inline
+#define D3_C_RODATA_INLINE(name) inline
 #define RAM_CODE
+#define RAM_CODE_INLINE(name) inline
+#define DTCM_RODATA
+#define DTCM_RODATA_INLINE(name) inline
+
 #else
 
-#define D1_NC __attribute__((section(".mpu_ram_d1_nc.user"), used)) volatile
-#define D2_NC __attribute__((section(".mpu_ram_d2_nc.user"), used)) volatile
-#define D3_NC __attribute__((section(".mpu_ram_d3_nc.user"), used)) volatile
-#define D1_C __attribute__((section(".ram_d1.user"), used))
-#define D2_C __attribute__((section(".ram_d2.user"), used))
-#define D3_C __attribute__((section(".ram_d3.user"), used))
+#define MPU_STR2(x) #x
+#define MPU_STR(x) MPU_STR2(x)
+#define MPU_SECTION_WITH_NAME(base, name) base "." MPU_STR(name)
+
+// Initialized data in non-cached D1 RAM
+#define D1_NC_DATA __attribute__((section(".ram_d1_nc.user.data"))) volatile
+// Uninitialized data in non-cached D1 RAM
+#define D1_NC_BSS __attribute__((section(".ram_d1_nc.user.bss"))) volatile
+// Read-only data in non-cached D1 RAM (mainly for rx buffers) @note Not protected by MPU
+#define D1_NC_RODATA __attribute__((section(".ram_d1_nc.user.rodata"))) const volatile
+#define D1_NC_DATA_INLINE(name)                                                                    \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d1_nc.user.data", name)))) volatile
+#define D1_NC_BSS_INLINE(name)                                                                     \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d1_nc.user.bss", name)))) volatile
+#define D1_NC_RODATA_INLINE(name)                                                                  \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d1_nc.user.rodata", name))))         \
+    const volatile
+// Initialized data in non-cached D2 RAM
+#define D2_NC_DATA __attribute__((section(".ram_d2_nc.user.data"))) volatile
+// Uninitialized data in non-cached D2 RAM
+#define D2_NC_BSS __attribute__((section(".ram_d2_nc.user.bss"))) volatile
+// Read-only data in non-cached D2 RAM (mainly for rx buffers) @note Not protected by MPU
+#define D2_NC_RODATA __attribute__((section(".ram_d2_nc.user.rodata"))) const volatile
+#define D2_NC_DATA_INLINE(name)                                                                    \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d2_nc.user.data", name)))) volatile
+#define D2_NC_BSS_INLINE(name)                                                                     \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d2_nc.user.bss", name)))) volatile
+#define D2_NC_RODATA_INLINE(name)                                                                  \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d2_nc.user.rodata", name))))         \
+    const volatile
+// Initialized data in non-cached D3 RAM
+#define D3_NC_DATA __attribute__((section(".ram_d3_nc.user.data"))) volatile
+// Uninitialized data in non-cached D3 RAM
+#define D3_NC_BSS __attribute__((section(".ram_d3_nc.user.bss"))) volatile
+// Read-only data in non-cached D3 RAM (mainly for rx buffers) @note Not protected by MPU
+#define D3_NC_RODATA __attribute__((section(".ram_d3_nc.user.rodata"))) const volatile
+#define D3_NC_DATA_INLINE(name)                                                                    \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d3_nc.user.data", name)))) volatile
+#define D3_NC_BSS_INLINE(name)                                                                     \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d3_nc.user.bss", name)))) volatile
+#define D3_NC_RODATA_INLINE(name)                                                                  \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d3_nc.user.rodata", name))))         \
+    const volatile
+// Initialized data in cached D1 RAM
+#define D1_C_DATA __attribute__((section(".ram_d1.user.data")))
+// Uninitialized data in cached D1 RAM
+#define D1_C_BSS __attribute__((section(".ram_d1.user.bss")))
+// Read-only data in cached D1 RAM (mainly for rx buffers) @note Not protected by MPU
+#define D1_C_RODATA __attribute__((section(".ram_d1.user.rodata"))) const
+#define D1_C_DATA_INLINE(name)                                                                     \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d1.user.data", name))))
+#define D1_C_BSS_INLINE(name)                                                                      \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d1.user.bss", name))))
+#define D1_C_RODATA_INLINE(name)                                                                   \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d1.user.rodata", name)))) const
+// Initialized data in cached D2 RAM
+#define D2_C_DATA __attribute__((section(".ram_d2.user.data")))
+// Uninitialized data in cached D2 RAM
+#define D2_C_BSS __attribute__((section(".ram_d2.user.bss")))
+// Read-only data in cached D2 RAM (mainly for rx buffers) @note Not protected by MPU
+#define D2_C_RODATA __attribute__((section(".ram_d2.user.rodata"))) const
+#define D2_C_DATA_INLINE(name)                                                                     \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d2.user.data", name))))
+#define D2_C_BSS_INLINE(name)                                                                      \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d2.user.bss", name))))
+#define D2_C_RODATA_INLINE(name)                                                                   \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d2.user.rodata", name)))) const
+// Initialized data in cached D3 RAM
+#define D3_C_DATA __attribute__((section(".ram_d3.user.data")))
+// Uninitialized data in cached D3 RAM
+#define D3_C_BSS __attribute__((section(".ram_d3.user.bss")))
+// Read-only data in cached D3 RAM (mainly for rx buffers) @note Not protected by MPU
+#define D3_C_RODATA __attribute__((section(".ram_d3.user.rodata"))) const
+#define D3_C_DATA_INLINE(name)                                                                     \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d3.user.data", name))))
+#define D3_C_BSS_INLINE(name)                                                                      \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d3.user.bss", name))))
+#define D3_C_RODATA_INLINE(name)                                                                   \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_d3.user.rodata", name)))) const
+
 #define RAM_CODE __attribute__((section(".ram_code")))
+#define RAM_CODE_INLINE(name)                                                                      \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".ram_code", name))))
+
+// Constants in DTCM (default is FLASH because DTCM is small) @note Not protected by MPU
+#define DTCM_RODATA __attribute__((section(".dtcm.rodata"))) const
+#define DTCM_RODATA_INLINE(name)                                                                   \
+    inline __attribute__((section(MPU_SECTION_WITH_NAME(".dtcm.rodata", name)))) const
+
 #endif
 
+// Retrocompatibility macros
+#define D1_NC D1_NC_BSS
+#define D2_NC D2_NC_BSS
+#define D3_NC D3_NC_BSS
+#define D1_C D1_C_BSS
+#define D2_C D2_C_BSS
+#define D3_C D3_C_BSS
+
 // Memory Bank Symbols from Linker
-extern "C" const char __itcm_base;
-extern "C" const char __itcm_size;
-extern "C" const char __dtcm_base;
-extern "C" const char __dtcm_size;
-extern "C" const char __flash_base;
-extern "C" const char __flash_size;
-extern "C" const char __ram_d1_base;
-extern "C" const char __ram_d1_size;
-extern "C" const char __ram_d2_base;
-extern "C" const char __ram_d2_size;
-extern "C" const char __ram_d3_base;
-extern "C" const char __ram_d3_size;
-extern "C" const char __peripheral_base;
-extern "C" const char __peripheral_size;
+extern "C" const char _itcm_base;
+extern "C" const char _itcm_size;
+extern "C" const char _dtcm_base;
+extern "C" const char _dtcm_size;
+extern "C" const char _flash_base;
+extern "C" const char _flash_size;
+extern "C" const char _ram_d1_base;
+extern "C" const char _ram_d1_size;
+extern "C" const char _ram_d2_base;
+extern "C" const char _ram_d2_size;
+extern "C" const char _ram_d3_base;
+extern "C" const char _ram_d3_size;
+extern "C" const char _peripheral_base;
+extern "C" const char _peripheral_size;
 
 // MPU Non-Cached Section Symbols from Linker
-extern "C" const char __mpu_d1_nc_start;
-extern "C" const char __mpu_d1_nc_end;
-extern "C" const char __mpu_d2_nc_start;
-extern "C" const char __mpu_d2_nc_end;
-extern "C" const char __mpu_d3_nc_start;
-extern "C" const char __mpu_d3_nc_end;
+extern "C" const char _ram_d1_nc_start;
+extern "C" const char _ram_d1_nc_end;
+extern "C" const char _ram_d2_nc_start;
+extern "C" const char _ram_d2_nc_end;
+extern "C" const char _ram_d3_nc_start;
+extern "C" const char _ram_d3_nc_end;
 
 inline constexpr std::array<std::size_t, 6> mpu_supported_alignments = {32, 16, 8, 4, 2, 1};
 
@@ -281,9 +403,9 @@ struct MPUDomain {
         template <auto& Target, typename... Args> auto& construct(Args&&... args) {
             using Request = std::remove_cvref_t<decltype(Target)>;
             static_assert(mpu_buffer_request<Request>, "Target must be a valid MPUDomain buffer");
-            constexpr bool is_nc = Request::e.memory_type == MemoryType::NonCached;
+            constexpr bool is_nc = Target.e.memory_type == MemoryType::NonCached;
             static_assert(
-                is_nc && std::is_volatile_v<typename Request::buffer_type>,
+                !is_nc || std::is_volatile_v<typename Request::buffer_type>,
                 "Non cached buffers must be volatile to work as intended"
             );
             using T = typename Request::buffer_type;
@@ -293,9 +415,9 @@ struct MPUDomain {
         template <auto& Target> auto* as() {
             using Request = std::remove_cvref_t<decltype(Target)>;
             static_assert(mpu_buffer_request<Request>, "Target must be a valid MPUDomain buffer");
-            constexpr bool is_nc = Request::e.memory_type == MemoryType::NonCached;
+            constexpr bool is_nc = Target.e.memory_type == MemoryType::NonCached;
             static_assert(
-                is_nc && std::is_volatile_v<typename Request::buffer_type>,
+                !is_nc || std::is_volatile_v<typename Request::buffer_type>,
                 "Non cached buffers must be volatile to work as intended"
             );
             using T = typename Request::buffer_type;
@@ -323,32 +445,35 @@ struct MPUDomain {
 
         static constexpr auto Sizes = calculate_total_sizes(cfgs);
 
-        // Sections defined in Linker Script (aligned to 32 bytes just in case)
 #ifdef SIM_ON
-        alignas(32
-        ) static inline uint8_t d1_nc_buffer[Sizes.d1_nc_total > 0 ? Sizes.d1_nc_total : 1];
+
+        alignas(32) static inline volatile uint8_t
+            d1_nc_buffer[Sizes.d1_nc_total > 0 ? Sizes.d1_nc_total : 1];
         alignas(32) static inline uint8_t d1_c_buffer[Sizes.d1_c_total > 0 ? Sizes.d1_c_total : 1];
-        alignas(32
-        ) static inline uint8_t d2_nc_buffer[Sizes.d2_nc_total > 0 ? Sizes.d2_nc_total : 1];
+        alignas(32) static inline volatile uint8_t
+            d2_nc_buffer[Sizes.d2_nc_total > 0 ? Sizes.d2_nc_total : 1];
         alignas(32) static inline uint8_t d2_c_buffer[Sizes.d2_c_total > 0 ? Sizes.d2_c_total : 1];
-        alignas(32
-        ) static inline uint8_t d3_nc_buffer[Sizes.d3_nc_total > 0 ? Sizes.d3_nc_total : 1];
+        alignas(32) static inline volatile uint8_t
+            d3_nc_buffer[Sizes.d3_nc_total > 0 ? Sizes.d3_nc_total : 1];
         alignas(32) static inline uint8_t d3_c_buffer[Sizes.d3_c_total > 0 ? Sizes.d3_c_total : 1];
+
 #else
-        __attribute__((section(".mpu_ram_d1_nc.buffer"))) alignas(32
-        ) static inline uint8_t d1_nc_buffer[Sizes.d1_nc_total > 0 ? Sizes.d1_nc_total : 1];
+
+        __attribute__((section(".ram_d1_nc.buffer"))) alignas(32) static inline volatile uint8_t
+            d1_nc_buffer[Sizes.d1_nc_total > 0 ? Sizes.d1_nc_total : 1];
         __attribute__((section(".ram_d1.buffer"))) alignas(32
         ) static inline uint8_t d1_c_buffer[Sizes.d1_c_total > 0 ? Sizes.d1_c_total : 1];
 
-        __attribute__((section(".mpu_ram_d2_nc.buffer"))) alignas(32) static inline volatile uint8_t
+        __attribute__((section(".ram_d2_nc.buffer"))) alignas(32) static inline volatile uint8_t
             d2_nc_buffer[Sizes.d2_nc_total > 0 ? Sizes.d2_nc_total : 1];
         __attribute__((section(".ram_d2.buffer"))) alignas(32
         ) static inline uint8_t d2_c_buffer[Sizes.d2_c_total > 0 ? Sizes.d2_c_total : 1];
 
-        __attribute__((section(".mpu_ram_d3_nc.buffer"))) alignas(32) static inline volatile uint8_t
+        __attribute__((section(".ram_d3_nc.buffer"))) alignas(32) static inline volatile uint8_t
             d3_nc_buffer[Sizes.d3_nc_total > 0 ? Sizes.d3_nc_total : 1];
         __attribute__((section(".ram_d3.buffer"))) alignas(32
         ) static inline uint8_t d3_c_buffer[Sizes.d3_c_total > 0 ? Sizes.d3_c_total : 1];
+
 #endif
 
         static void init() {
@@ -357,18 +482,18 @@ struct MPUDomain {
 
             // Dynamic Configuration based on Linker Symbols
             configure_dynamic_region(
-                reinterpret_cast<uintptr_t>(&__mpu_d1_nc_start),
-                reinterpret_cast<uintptr_t>(&__mpu_d1_nc_end),
+                reinterpret_cast<uintptr_t>(&_ram_d1_nc_start),
+                reinterpret_cast<uintptr_t>(&_ram_d1_nc_end),
                 MPU_REGION_NUMBER3
             );
             configure_dynamic_region(
-                reinterpret_cast<uintptr_t>(&__mpu_d2_nc_start),
-                reinterpret_cast<uintptr_t>(&__mpu_d2_nc_end),
+                reinterpret_cast<uintptr_t>(&_ram_d2_nc_start),
+                reinterpret_cast<uintptr_t>(&_ram_d2_nc_end),
                 MPU_REGION_NUMBER5
             );
             configure_dynamic_region(
-                reinterpret_cast<uintptr_t>(&__mpu_d3_nc_start),
-                reinterpret_cast<uintptr_t>(&__mpu_d3_nc_end),
+                reinterpret_cast<uintptr_t>(&_ram_d3_nc_start),
+                reinterpret_cast<uintptr_t>(&_ram_d3_nc_end),
                 MPU_REGION_NUMBER7
             );
 
@@ -440,8 +565,8 @@ private:
         // Peripherals (Device, Buffered)
         // Guarded against speculative execution and cache
         configure_region(
-            reinterpret_cast<uintptr_t>(&__peripheral_base),
-            reinterpret_cast<size_t>(&__peripheral_size),
+            reinterpret_cast<uintptr_t>(&_peripheral_base),
+            reinterpret_cast<size_t>(&_peripheral_size),
             MPU_REGION_NUMBER8,
             MPU_TEX_LEVEL0,
             MPU_REGION_FULL_ACCESS,
@@ -455,8 +580,8 @@ private:
         // TEX=0, C=1, B=0: Normal, Write-Through, No Read-Allocate (Read optimized)
         // Not Shareable to allow full caching
         configure_region(
-            reinterpret_cast<uintptr_t>(&__flash_base),
-            reinterpret_cast<size_t>(&__flash_size),
+            reinterpret_cast<uintptr_t>(&_flash_base),
+            reinterpret_cast<size_t>(&_flash_size),
             MPU_REGION_NUMBER1,
             MPU_TEX_LEVEL0,
             MPU_REGION_FULL_ACCESS,
@@ -470,8 +595,8 @@ private:
         // TEX=1, C=1, B=1: Normal, Write-Back, Write and Read Allocate
         // TCMs are like Cache, so they are not really cacheable, and the MPU settings are ignored
         configure_region(
-            reinterpret_cast<uintptr_t>(&__dtcm_base),
-            reinterpret_cast<size_t>(&__dtcm_size),
+            reinterpret_cast<uintptr_t>(&_dtcm_base),
+            reinterpret_cast<size_t>(&_dtcm_size),
             MPU_REGION_NUMBER10,
             MPU_TEX_LEVEL1,
             MPU_REGION_FULL_ACCESS,
@@ -485,8 +610,8 @@ private:
         // TEX=0, C=1, B=0: Normal, Write-Through, No Read-Allocate (Read optimized)
         // TCMs are like Cache, so they are not really cacheable, and the MPU settings are ignored
         configure_region(
-            reinterpret_cast<uintptr_t>(&__itcm_base),
-            reinterpret_cast<size_t>(&__itcm_size),
+            reinterpret_cast<uintptr_t>(&_itcm_base),
+            reinterpret_cast<size_t>(&_itcm_size),
             MPU_REGION_NUMBER11,
             MPU_TEX_LEVEL0,
             MPU_REGION_FULL_ACCESS,
@@ -496,12 +621,25 @@ private:
             MPU_ACCESS_NOT_BUFFERABLE
         );
 
+        // Null-pointer guard: blocks first 32 bytes of ITCM to catch null dereferences
+        configure_region(
+            0x00000000,
+            32,
+            MPU_REGION_NUMBER12,
+            MPU_TEX_LEVEL0,
+            MPU_REGION_NO_ACCESS,
+            MPU_INSTRUCTION_ACCESS_DISABLE,
+            MPU_ACCESS_NOT_SHAREABLE,
+            MPU_ACCESS_NOT_CACHEABLE,
+            MPU_ACCESS_NOT_BUFFERABLE
+        );
+
         // D1 RAM Cached (Normal, WBWA)
         // TEX=1, C=1, B=1: Normal, Write-Back, Write-Allocate
         // Shareable since it can be accessed by multiple masters (CPU, DMA, etc)
         configure_region(
-            reinterpret_cast<uintptr_t>(&__ram_d1_base),
-            reinterpret_cast<size_t>(&__ram_d1_size),
+            reinterpret_cast<uintptr_t>(&_ram_d1_base),
+            reinterpret_cast<size_t>(&_ram_d1_size),
             MPU_REGION_NUMBER2,
             MPU_TEX_LEVEL1,
             MPU_REGION_FULL_ACCESS,
@@ -515,8 +653,8 @@ private:
         // TEX=1, C=1, B=1: Normal, Write-Back, Write-Allocate
         // Shareable since it can be accessed by multiple masters (CPU, DMA, etc)
         configure_region(
-            reinterpret_cast<uintptr_t>(&__ram_d2_base),
-            reinterpret_cast<size_t>(&__ram_d2_size),
+            reinterpret_cast<uintptr_t>(&_ram_d2_base),
+            reinterpret_cast<size_t>(&_ram_d2_size),
             MPU_REGION_NUMBER4,
             MPU_TEX_LEVEL1,
             MPU_REGION_FULL_ACCESS,
@@ -530,8 +668,8 @@ private:
         // TEX=1, C=1, B=1: Normal, Write-Back, Write-Allocate
         // Shareable since it can be accessed by multiple masters (CPU, DMA, etc)
         configure_region(
-            reinterpret_cast<uintptr_t>(&__ram_d3_base),
-            reinterpret_cast<size_t>(&__ram_d3_size),
+            reinterpret_cast<uintptr_t>(&_ram_d3_base),
+            reinterpret_cast<size_t>(&_ram_d3_size),
             MPU_REGION_NUMBER6,
             MPU_TEX_LEVEL1,
             MPU_REGION_FULL_ACCESS,

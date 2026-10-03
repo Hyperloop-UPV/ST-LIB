@@ -385,3 +385,10 @@ public:
 };
 
 } // namespace ST_LIB
+
+/**
+ * @brief   This is a function that gets called early in the startup process,
+ *          before the global constructors and main() are called.
+ *          It is responsible for initializing the hardware and peripherals
+ */
+extern "C" void BoardInit(void);

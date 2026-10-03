@@ -13,10 +13,10 @@
 
 #include "HALAL/Models/Pin.hpp"
 #ifdef SIM_ON
-#define STLIB_ADC_DMA_BUFFER_ATTR
+#define STLIB_ADC_DMA_BUFFER_ATTR(x) inline
 #else
 #include "HALAL/Models/MPU.hpp"
-#define STLIB_ADC_DMA_BUFFER_ATTR D1_NC
+#define STLIB_ADC_DMA_BUFFER_ATTR(x) D2_NC_BSS_INLINE(x)
 #endif
 
 using std::array;
@@ -780,8 +780,8 @@ struct ADCDomain {
             "ADC DMA buffer size exceeds max_instances"
         );
 
-        alignas(32) STLIB_ADC_DMA_BUFFER_ATTR
-            static inline uint16_t dma_buffer_pool[total_dma_slots > 0 ? total_dma_slots : 1]{};
+        alignas(32) static uint16_t STLIB_ADC_DMA_BUFFER_ATTR(dma_buffer_pool
+        ) dma_buffer_pool[total_dma_slots > 0 ? total_dma_slots : 1]{};
 
         static constexpr bool is_resolved_config(const Config& cfg) {
             return cfg.peripheral != Peripheral::AUTO && cfg.channel != Channel::AUTO;
