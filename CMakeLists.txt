@@ -537,8 +537,8 @@ target_include_directories(${STLIB_LIBRARY} PUBLIC
   $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/stdc>
   $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/system/arch>
 
-  $<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${STM32CUBEH7}/Drivers/BSP/Components
-  $<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>,$<BOOL:${USE_PHY_LAN8742}>>:${STM32CUBEH7}/Drivers/BSP/Components/lan8742>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${STM32CUBEH7}/Drivers/BSP/Components>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>,$<BOOL:${USE_PHY_LAN8742}>>:${STM32CUBEH7}/Drivers/BSP/Components/lan8742>
 
   $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet>
   $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/LWIP/App>
