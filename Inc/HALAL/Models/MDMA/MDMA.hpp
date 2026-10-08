@@ -16,6 +16,9 @@
 #undef MDMA
 #endif
 
+// TODO: Want to make this work with the simulator but there are a ton of addresses here which are literally just uint32_t. What do we do?
+#ifndef SIMULATOR
+
 #ifndef TRANSFER_QUEUE_MAX_SIZE
 #define TRANSFER_QUEUE_MAX_SIZE 50
 #endif
@@ -308,3 +311,5 @@ public:
     static void
     transfer_list(volatile MDMA::LinkedListNode* first_node, volatile bool* check = nullptr);
 };
+
+#endif // SIMULATOR

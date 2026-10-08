@@ -483,15 +483,15 @@ target_compile_definitions(${STLIB_LIBRARY} PUBLIC
 )
 
 target_compile_options(${STLIB_LIBRARY} PRIVATE
-  $<${STLIB_FULL_BUILD}:-mcpu=cortex-m7>
-  $<${STLIB_FULL_BUILD}:-mfpu=fpv5-d16>
-  $<${STLIB_FULL_BUILD}:-mfloat-abi=hard>
-  $<${STLIB_FULL_BUILD}:-mthumb>
-  $<${STLIB_FULL_BUILD}:-specs=nosys.specs>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-mcpu=cortex-m7>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-mfpu=fpv5-d16>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-mfloat-abi=hard>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-mthumb>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-specs=nosys.specs>
   $<$<CONFIG:Debug>:-g>
   $<$<CONFIG:RelWithDebInfo>:-g>
-  $<${STLIB_FULL_BUILD}:-ffunction-sections>
-  $<${STLIB_FULL_BUILD}:-fdata-sections>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-ffunction-sections>
+  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fdata-sections>
   $<${STLIB_FULL_BUILD}:-fno-exceptions>
 
   $<$<AND:$<BOOL:${ENABLE_LTO}>,$<NOT:$<CONFIG:DEBUG>>>:-flto=auto>
