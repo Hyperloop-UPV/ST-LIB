@@ -325,7 +325,7 @@ set(HALAL_CPP_ETH_LWIP
 )
 
 set(HALAL_C_ETH_PHY)
-if(USE_ETHERNET)
+if(USE_ETHERNET AND USE_ETHERNET)
   list(APPEND HALAL_C_ETH_PHY
     ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/phy_select.c
   )
