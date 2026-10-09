@@ -28,8 +28,10 @@ option(TARGET_NUCLEO "Targets the STM32H723 Nucleo development board" OFF)
 option(USE_CCACHE "Use ccache if available" ON)
 option(STLIB_USE_PCH "Enable precompiled headers for ST-LIB" ON)
 option(STLIB_ENABLE_SANITIZERS "Enable AddressSanitizer + UBSan for simulator builds" OFF)
+option(SIMULATOR_BUILD "Build ST-LIB with the full MCU source set on a host toolchain" OFF)
+
 if(NOT DEFINED ENABLE_LTO)
-  if(CMAKE_CROSSCOMPILING)
+  if(CMAKE_CROSSCOMPILING OR SIMULATOR_BUILD)
     set(ENABLE_LTO OFF)
   else()
     set(ENABLE_LTO ON)
@@ -40,6 +42,16 @@ set(LAN8742_PHY_ADDRESS 0 CACHE STRING "LAN8742 PHY address (strap-dependent)")
 set(LAN8700_PHY_ADDRESS 31 CACHE STRING "LAN8700 PHY address (strap-dependent)")
 set(KSZ8041_PHY_ADDRESS 1 CACHE STRING "KSZ8041 PHY address (strap-dependent)")
 set(LAN8700_FORCE_100FD OFF CACHE BOOL "Force LAN8700 to 100Mbps Full Duplex (debug)")
+
+# board/new simulator build
+set(STLIB_FULL_BUILD
+  "$<OR:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${SIMULATOR_BUILD}>>"
+  CACHE INTERNAL "")
+
+# mocked/old simulator build
+set(STLIB_MOCK_BUILD
+  "$<NOT:$<OR:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${SIMULATOR_BUILD}>>>"
+  CACHE INTERNAL "")
 
 if(USE_CCACHE)
   find_program(CCACHE_PROGRAM ccache)
@@ -89,9 +101,10 @@ endif()
 message(STATUS "${PROJECT_NAME} Ethernet: ${USE_ETHERNET}")
 message(STATUS "${PROJECT_NAME} Nucleo:   ${TARGET_NUCLEO}")
 message(STATUS "${PROJECT_NAME} Crosscompiling: ${CMAKE_CROSSCOMPILING}")
+message(STATUS "${PROJECT_NAME} Simulator build: ${SIMULATOR_BUILD}")
 message(STATUS "${PROJECT_NAME} Sanitizers: ${STLIB_ENABLE_SANITIZERS}")
 
-if(NOT CMAKE_CROSSCOMPILING)
+if(NOT CMAKE_CROSSCOMPILING AND NOT SIMULATOR_BUILD)
   add_library(stlib_sim_dev_flags INTERFACE)
 
   if(STLIB_ENABLE_SANITIZERS)
@@ -110,7 +123,7 @@ if(NOT CMAKE_CROSSCOMPILING)
 
 endif()
 
-if(CMAKE_CROSSCOMPILING)
+if(CMAKE_CROSSCOMPILING OR SIMULATOR_BUILD)
   if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7/Drivers)
     execute_process(
       COMMAND git submodule update --init --depth 1
@@ -126,7 +139,7 @@ if(CMAKE_CROSSCOMPILING)
   endif()
 endif()
 
-if(NOT CMAKE_CROSSCOMPILING)
+if(NOT CMAKE_CROSSCOMPILING AND NOT SIMULATOR_BUILD)
   message(STATUS "Compiling for simulator")
   add_subdirectory(Tests)
 else()
@@ -142,11 +155,11 @@ endif()
 # STM32CubeH7 (HAL + LWIP)
 # ============================
 set(STM32CUBEH7 "${CMAKE_CURRENT_LIST_DIR}/STM32CubeH7")
-if(CMAKE_CROSSCOMPILING)
+if(CMAKE_CROSSCOMPILING OR SIMULATOR_BUILD)
   message(STATUS "STM32CUBEH7: ${STM32CUBEH7}")
 endif()
 
-if(CMAKE_CROSSCOMPILING)
+if(CMAKE_CROSSCOMPILING OR SIMULATOR_BUILD)
   message(STATUS "Compiling for STM32H723G")
 
   set(HAL_DRIVER_SRC_DIR ${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Src)
@@ -325,6 +338,7 @@ set(HALAL_CPP_ETH_LWIP
 )
 
 set(HALAL_C_ETH_PHY)
+# NOTE: There was some sort of improvement wanted here but it was 2am and the next day I forgot..
 if(USE_ETHERNET)
   list(APPEND HALAL_C_ETH_PHY
     ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet/PHY/phy_select.c
@@ -398,45 +412,45 @@ set(STLIB_HIGH_CPP_NO_ETH
 # ============================
 
 add_library(${STLIB_LIBRARY} OBJECT
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HAL_SOURCES_COMMON}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HAL_SOURCES_ETH}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_SOURCES}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${USER_LWIP_SOURCES}>
+  $<${STLIB_FULL_BUILD}:${HAL_SOURCES_COMMON}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${HAL_SOURCES_ETH}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_SOURCES}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${USER_LWIP_SOURCES}>
 
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HALAL_C_NO_ETH}>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${HALAL_CPP_NO_ETH}>
+  $<${STLIB_FULL_BUILD}:${HALAL_C_NO_ETH}>
+  $<${STLIB_FULL_BUILD}:${HALAL_CPP_NO_ETH}>
 
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HALAL_C_ETH_CORE}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HALAL_CPP_ETH_CORE}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${HALAL_C_ETH_CORE}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${HALAL_CPP_ETH_CORE}>
 
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HALAL_C_ETH_LWIP}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HALAL_CPP_ETH_LWIP}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${HALAL_C_ETH_PHY}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${HALAL_C_ETH_LWIP}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${HALAL_CPP_ETH_LWIP}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${HALAL_C_ETH_PHY}>
 
+  $<${STLIB_FULL_BUILD}:${CMAKE_CURRENT_LIST_DIR}/System.c>
+  $<${STLIB_FULL_BUILD}:${CPP_UTILITIES_C}>
+  $<${STLIB_FULL_BUILD}:${CPP_UTILITIES_CPP}>
 
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CMAKE_CURRENT_LIST_DIR}/System.c>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CPP_UTILITIES_C}>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${CPP_UTILITIES_CPP}>
+  $<${STLIB_FULL_BUILD}:${STLIB_LOW_C_NO_ETH}>
+  $<${STLIB_FULL_BUILD}:${STLIB_LOW_CPP_NO_ETH}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${STLIB_LOW_C_ETH}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${STLIB_LOW_CPP_ETH}>
 
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_LOW_C_NO_ETH}>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_LOW_CPP_NO_ETH}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_LOW_C_ETH}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_LOW_CPP_ETH}>
+  $<${STLIB_FULL_BUILD}:${STLIB_HIGH_C_NO_ETH}>
+  $<${STLIB_FULL_BUILD}:${STLIB_HIGH_CPP_NO_ETH}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${STLIB_HIGH_C_ETH}>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${STLIB_HIGH_CPP_ETH}>
 
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_HIGH_C_NO_ETH}>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STLIB_HIGH_CPP_NO_ETH}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_HIGH_C_ETH}>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STLIB_HIGH_CPP_ETH}>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/Scheduler.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/TimerDomain/TimerDomain.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/MPUManager/MPUManager.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_hal_adc.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_hal_dma.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_hal_spi.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_ll_tim.cpp>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_system_stm32h7xx.c>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/stm32h723xx_wrapper.c>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/NVIC.cpp>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Time/Scheduler.cpp>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/TimerDomain/TimerDomain.cpp>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/MPUManager/MPUManager.cpp>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_hal_adc.cpp>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_hal_dma.cpp>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_hal_spi.cpp>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_ll_tim.cpp>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/mocked_system_stm32h7xx.c>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/stm32h723xx_wrapper.c>
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Src/MockedDrivers/NVIC.cpp>
 )
 
 set_target_properties(${STLIB_LIBRARY} PROPERTIES
@@ -446,13 +460,13 @@ set_target_properties(${STLIB_LIBRARY} PROPERTIES
   C_STANDARD_REQUIRED YES
 )
 
-if(NOT CMAKE_CROSSCOMPILING)
+if(NOT CMAKE_CROSSCOMPILING AND NOT SIMULATOR_BUILD)
   target_link_libraries(${STLIB_LIBRARY} PUBLIC stlib_sim_dev_flags)
 endif()
 
 target_compile_definitions(${STLIB_LIBRARY} PUBLIC
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:USE_HAL_DRIVER>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:STM32H723xx>
+  $<${STLIB_FULL_BUILD}:USE_HAL_DRIVER>
+  $<${STLIB_FULL_BUILD}:STM32H723xx>
 
   $<$<BOOL:${USE_PHY_LAN8742}>:USE_PHY_LAN8742>
   $<$<BOOL:${USE_PHY_LAN8700}>:USE_PHY_LAN8700>
@@ -462,7 +476,7 @@ target_compile_definitions(${STLIB_LIBRARY} PUBLIC
   $<$<BOOL:${USE_PHY_KSZ8041}>:KSZ8041_PHY_ADDRESS=${KSZ8041_PHY_ADDRESS}>
   $<$<AND:$<BOOL:${USE_PHY_LAN8700}>,$<BOOL:${LAN8700_FORCE_100FD}>>:LAN8700_FORCE_100FD>
 
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:SIM_ON>
+  $<${STLIB_MOCK_BUILD}:SIM_ON>
 
   $<$<BOOL:${USE_ETHERNET}>:STLIB_ETH>
   $<IF:$<BOOL:${TARGET_NUCLEO}>,NUCLEO,BOARD>
@@ -479,7 +493,7 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
   $<$<CONFIG:RelWithDebInfo>:-g>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-ffunction-sections>
   $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fdata-sections>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:-fno-exceptions>
+  $<${STLIB_FULL_BUILD}:-fno-exceptions>
 
   $<$<AND:$<BOOL:${ENABLE_LTO}>,$<NOT:$<CONFIG:DEBUG>>>:-flto=auto>
 
@@ -498,35 +512,38 @@ target_compile_options(${STLIB_LIBRARY} PRIVATE
 
 target_include_directories(${STLIB_LIBRARY} PUBLIC
   # CMSIS + HAL
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/CMSIS/Core_A/Include>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc>
-  $<$<BOOL:${CMAKE_CROSSCOMPILING}>:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
-  $<$<NOT:$<BOOL:${CMAKE_CROSSCOMPILING}>>:${CMAKE_CURRENT_LIST_DIR}/Inc/MockedDrivers>
+  $<${STLIB_FULL_BUILD}:${STM32CUBEH7}/Drivers/CMSIS/Device/ST/STM32H7xx/Include>
+  $<${STLIB_FULL_BUILD}:${STM32CUBEH7}/Drivers/CMSIS/Include>
+  $<${STLIB_FULL_BUILD}:${STM32CUBEH7}/Drivers/CMSIS/Core_A/Include>
+  $<${STLIB_FULL_BUILD}:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc>
+  $<${STLIB_FULL_BUILD}:${STM32CUBEH7}/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy>
+
+  $<${STLIB_MOCK_BUILD}:${CMAKE_CURRENT_LIST_DIR}/Inc/MockedDrivers>
   ${CMAKE_CURRENT_LIST_DIR}/Inc/STM32CubeH7Wrapper
 
   # LWIP includes
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/system>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/netif/ppp>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/lwip>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/lwip/apps>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/lwip/priv>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/lwip/prot>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/netif>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/posix>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/posix/arpa>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/posix/net>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/posix/sys>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/stdc>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/system/arch>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${STM32CUBEH7}/Drivers/BSP/Components>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>,$<BOOL:${USE_PHY_LAN8742}>>:${STM32CUBEH7}/Drivers/BSP/Components/lan8742>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/LWIP/App>
-  $<$<AND:$<BOOL:${CMAKE_CROSSCOMPILING}>,$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/LWIP/Target>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/system>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/netif/ppp>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/lwip>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/lwip/apps>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/lwip/priv>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/lwip/prot>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/netif>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/posix>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/posix/arpa>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/posix/net>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/posix/sys>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/src/include/compat/stdc>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${LWIP_DIR}/system/arch>
+
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${STM32CUBEH7}/Drivers/BSP/Components>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>,$<BOOL:${USE_PHY_LAN8742}>>:${STM32CUBEH7}/Drivers/BSP/Components/lan8742>
+
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Services/Communication/Ethernet>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/LWIP/App>
+  $<$<AND:${STLIB_FULL_BUILD},$<BOOL:${USE_ETHERNET}>>:${CMAKE_CURRENT_LIST_DIR}/LWIP/Target>
 
   ${CMAKE_CURRENT_LIST_DIR}/Inc
   ${CMAKE_CURRENT_LIST_DIR}/Inc/ST-LIB_LOW
@@ -556,14 +573,14 @@ if(PROJECT_IS_TOP_LEVEL)
     ${CMAKE_CURRENT_BINARY_DIR}
   )
 else()
-  if(CMAKE_CROSSCOMPILING)
+  if(CMAKE_CROSSCOMPILING OR SIMULATOR_BUILD)
     target_include_directories(${STLIB_LIBRARY} PUBLIC
       ${CMAKE_SOURCE_DIR}/Core/Inc
     )
   endif()
 endif()
 
-if(CMAKE_CROSSCOMPILING)
+if(CMAKE_CROSSCOMPILING OR SIMULATOR_BUILD)
   add_library(stlib_compile_check_board_protections OBJECT
     ${CMAKE_CURRENT_LIST_DIR}/Tests/compile_checks/board_protection_contract.cpp
   )
