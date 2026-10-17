@@ -51,7 +51,7 @@ class DualPWM {
         }
         TIM_OC_InitTypeDef sConfigOC = {
             .OCMode = TIM_OCMODE_PWM1,
-            .Pulse = 0,
+            .Pulse = timer->template get_ccrx<pin.channel>(),
 
             .OCPolarity = polarity,
             .OCNPolarity = negated_polarity,
