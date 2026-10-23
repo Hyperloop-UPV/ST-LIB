@@ -80,7 +80,7 @@ bool ProtectionADJV3Packet::tcp_client_send(ProtectionADJV3Packet::Package& pack
     pack.data.subseconds = static_cast<uint8_t>((rtc.counter * 256) / (RTC_MAX_COUNTER + 1));
 #endif // if HAL_RTC was not enabled  all values were initialized before to 0
     err_t err = tcp_write(tpcb, &pack.data, pack.packageSize, TCP_WRITE_FLAG_COPY);
-    if (err != ERR_OK) {
+    if (err != ERR_MEM) {
         return false;
     }
     return tcp_output(tpcb) == ERR_OK;
