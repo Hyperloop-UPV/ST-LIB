@@ -17,9 +17,9 @@
 struct tcp_pcb;
 
 namespace ST_LIB {
-struct ProtectionADJV3Packet {
+struct ProtectionADJv3Packet {
 
-    struct Package_Data {
+    struct Data {
         uint16_t id;
         uint8_t hours;
         uint8_t minutes;
@@ -30,28 +30,16 @@ struct ProtectionADJV3Packet {
 
     struct Package {
         size_t packageSize;
-        Package_Data data;
+        Data data;
         // Maximum is 8 bytes, not all will be sent always
         uint8_t value[8];
-        const void* source;
     };
 
-    template <typename T>
-    static inline Package make(uint16_t measurement_id, Protections::RuleKind prot, T* value) {
-        static_assert(sizeof(T) <= 8, "Value size must be <= 8 bytes");
-        return make(measurement_id, prot, static_cast<void*>(value), sizeof(T));
-    }
-
-private:
-    static Package make(
-        uint16_t measurement_id,
-        Protections::RuleKind prot,
-        void* value,
-        size_t valueSize
-    ); // Foolproof
 public:
+    static Package
+    make(uint16_t measurement_id, Protections::RuleKind protection, size_t value_size);
     static bool tcp_client_init(const char* ip, uint16_t port);
-    static bool tcp_client_send(Package& pack);
+    static bool tcp_client_send(Package& pack, const void* value);
 
     static struct tcp_pcb* tpcb;
     static bool is_connected;
