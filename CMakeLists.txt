@@ -384,7 +384,9 @@ set(STLIB_LOW_CPP_NO_ETH
 
 set(STLIB_HIGH_C_ETH)
 
-set(STLIB_HIGH_CPP_ETH)
+set(STLIB_HIGH_CPP_ETH
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/Protections/ProtectionMessages.cpp
+)
 
 set(STLIB_HIGH_C_NO_ETH)
 
