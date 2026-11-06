@@ -229,12 +229,10 @@ private:
 
 class OrderProtocolDiagnosticSink final : public DiagnosticSink {
 public:
-    explicit OrderProtocolDiagnosticSink(const char* ip = "192.168.0.9", uint16_t port = 31) {
-        ST_LIB::ProtectionADJv3Packet::tcp_client_init(ip, port);
-    }
+    explicit OrderProtocolDiagnosticSink(const char* ip = "192.168.0.9", uint16_t port = 31) {}
     bool publish(const DiagnosticRecord& record) override {
         auto package = ST_LIB::ProtectionADJv3Packet::make(
-            1234,
+            Order::last_order_ip,
             record.payload.protection.rule_kind,
             record.payload.protection.sample_encoding
         );

@@ -31,8 +31,11 @@ struct ProtectionADJv3Packet {
     };
 
 public:
-    static Package
-    make(uint16_t measurement_id, Protections::RuleKind protection, Protections::SampleEncoding value_size);
+    static Package make(
+        uint16_t measurement_id,
+        Protections::RuleKind protection,
+        Protections::SampleEncoding value_size
+    );
     static bool tcp_client_init(const char* ip, uint16_t port);
     static bool tcp_client_send(Package& pack, const void* value);
 

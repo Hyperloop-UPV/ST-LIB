@@ -14,12 +14,14 @@ namespace ST_LIB {
 struct tcp_pcb* ProtectionADJv3Packet::tpcb = nullptr;
 bool ProtectionADJv3Packet::is_connected = false;
 
-ProtectionADJv3Packet::Package
-ProtectionADJv3Packet::make(uint16_t measurement_id, Protections::RuleKind prot, Protections::SampleEncoding valueSize) {
+ProtectionADJv3Packet::Package ProtectionADJv3Packet::make(
+    uint16_t measurement_id,
+    Protections::RuleKind prot,
+    Protections::SampleEncoding valueSize
+) {
     // Bit packing of protection into 3 most significant bits of id (Look adjv3 format)
     uint8_t numericValueSize;
-    switch (valueSize)
-    {
+    switch (valueSize) {
     case Protections::SampleEncoding::BOOL:
         numericValueSize = 1;
         break;
@@ -82,6 +84,7 @@ bool ProtectionADJv3Packet::tcp_client_init(const char* ip, uint16_t port) {
         tpcb = nullptr;
         return false;
     }
+    tcp_output(tpcb);
     return true;
 }
 bool ProtectionADJv3Packet::tcp_client_send(
