@@ -84,6 +84,7 @@ bool ProtectionADJv3Packet::tcp_client_init(const char* ip, uint16_t port) {
         tpcb = nullptr;
         return false;
     }
+    tcp_output(tpcb);
     return true;
 }
 bool ProtectionADJv3Packet::tcp_client_send(
