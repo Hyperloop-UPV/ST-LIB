@@ -232,7 +232,7 @@ public:
     explicit OrderProtocolDiagnosticSink(const char* ip = "192.168.0.9", uint16_t port = 31) {}
     bool publish(const DiagnosticRecord& record) override {
         auto package = ST_LIB::ProtectionADJv3Packet::make(
-            Order::last_order_id,
+            Order::last_order_ip,
             record.payload.protection.rule_kind,
             record.payload.protection.sample_encoding
         );
