@@ -110,5 +110,3 @@ bool ProtectionADJv3Packet::tcp_client_send(
 }
 
 } // namespace ST_LIB
-#define IP_ADDRESS "192.168.1.8"
-#define IP_MASK "255.255.0.0"
