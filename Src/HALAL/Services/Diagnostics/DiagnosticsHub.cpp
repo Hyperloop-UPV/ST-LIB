@@ -2,9 +2,7 @@
 #ifdef STLIB_ETH
 #include "HALAL/Services/Time/Scheduler.hpp"
 #endif
-
 namespace Diagnostics {
-
 array<Hub::SinkStorage, Config::max_sinks> Hub::sink_storage = {};
 array<DiagnosticSink*, Config::max_sinks> Hub::sinks = {};
 size_t Hub::sink_count = 0;

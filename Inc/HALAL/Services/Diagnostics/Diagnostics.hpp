@@ -2,6 +2,7 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ST-LIB_HIGH/Protections/ProtectionTypes.hpp"
+#include "ST-LIB_HIGH/Protections/ProtectionMessages.hpp"
 
 namespace ST_LIB::TestAccess {
 struct DiagnosticsHub;
@@ -266,6 +267,6 @@ private:
 #ifdef STLIB_ETH
 class OrderProtocol;
 namespace Diagnostics {
-void install_ethernet_sink(OrderProtocol* target);
+void install_ethernet_sink(const char* ip, uint16_t port);
 }
 #endif

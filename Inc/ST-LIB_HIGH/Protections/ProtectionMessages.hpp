@@ -5,14 +5,9 @@
  *  Created on: Oct 22, 2026
  *      Author: Aleks
  */
-#include "ST-LIB_HIGH/Protections/SampleSource.hpp"
-#include "HALAL/Services/Diagnostics/Diagnostics.hpp"
-#include "ST-LIB_HIGH/Protections/FaultController.hpp"
-#include "ST-LIB_HIGH/Protections/Protection.hpp"
 #include "ST-LIB_HIGH/Protections/ProtectionTypes.hpp"
 #include <cstdint>
 #include <cstddef>
-#include <cstring>
 
 struct tcp_pcb;
 
@@ -36,8 +31,11 @@ struct ProtectionADJv3Packet {
     };
 
 public:
-    static Package
-    make(uint16_t measurement_id, Protections::RuleKind protection, size_t value_size);
+    static Package make(
+        uint16_t measurement_id,
+        Protections::RuleKind protection,
+        Protections::SampleEncoding value_size
+    );
     static bool tcp_client_init(const char* ip, uint16_t port);
     static bool tcp_client_send(Package& pack, const void* value);
 
