@@ -1,4 +1,6 @@
 #include "HALAL/Services/Diagnostics/Diagnostics.hpp"
+#include "ST-LIB_HIGH/Protections/ProtectionMessages.hpp"
+#include "ST-LIB_HIGH/Protections/ProtectionTypes.hpp"
 
 #if defined(HAL_UART_MODULE_ENABLED) && !defined(SIM_ON)
 #include "HALAL/Services/Communication/UART/UART.hpp"
@@ -227,26 +229,14 @@ private:
 
 class OrderProtocolDiagnosticSink final : public DiagnosticSink {
 public:
-    explicit OrderProtocolDiagnosticSink(OrderProtocol* target = nullptr) : target_socket(target) {
-        DiagnosticTransportOrder::forward_target = target;
+    explicit OrderProtocolDiagnosticSink(const char* ip = "192.168.0.9", uint16_t port = 31) {
+       ST_LIB::ProtectionADJv3Packet::tcp_client_init(ip, port);
     }
-
     bool publish(const DiagnosticRecord& record) override {
-        if (target_socket == nullptr) {
-            return false;
-        }
-        char description[Config::formatted_message_capacity + 1]{};
-        DiagnosticFormatter::describe(record, description, sizeof(description));
-        transport_order.set_record(record, description);
-        transport_order.build();
-        bool delivered = target_socket->send_order(transport_order);
-        transport_order.reset_for_receive();
+        auto package = ST_LIB::ProtectionADJv3Packet::make(1234, record.payload.protection.rule_kind, record.payload.protection.sample_encoding);
+        bool delivered = ST_LIB::ProtectionADJv3Packet::tcp_client_send(package, &record.payload.protection.observed_value);
         return delivered;
     }
-
-private:
-    OrderProtocol* target_socket;
-    DiagnosticTransportOrder transport_order{};
 };
 #endif
 
@@ -265,8 +255,8 @@ void Runtime::install_default_sinks() {
 }
 
 #ifdef STLIB_ETH
-void install_ethernet_sink(OrderProtocol* target) {
-    (void)Hub::emplace_sink<OrderProtocolDiagnosticSink>(target);
+void install_ethernet_sink(const char* ip = "192.168.0.9", uint16_t port = 31) {
+    (void)Hub::emplace_sink<OrderProtocolDiagnosticSink>(ip, port);
 }
 #endif
 
