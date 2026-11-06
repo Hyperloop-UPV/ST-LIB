@@ -70,7 +70,7 @@ public:
 #ifdef STLIB_ETH
 class DiagnosticTransportOrder final : public Order {
 public:
-    static inline OrderProtocol* forward_target = nullptr;
+    [[maybe_unused]] static inline OrderProtocol* forward_target = nullptr;
     DiagnosticTransportOrder() {
         Packet::packets[DIAGNOSTIC_FAULT_ORDER_ID] = this;
         Packet::packets[DIAGNOSTIC_WARNING_ORDER_ID] = this;
