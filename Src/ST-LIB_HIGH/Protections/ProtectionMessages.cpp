@@ -49,44 +49,6 @@ ProtectionADJv3Packet::Package ProtectionADJv3Packet::make(
     pack.data.reserved = 0;
     return pack;
 }
-
-static err_t tcp_client_connected_callback(void* arg, struct tcp_pcb* pcb, err_t err) {
-    LWIP_UNUSED_ARG(arg);
-    LWIP_UNUSED_ARG(pcb);
-    if (err == ERR_OK) {
-        ProtectionADJv3Packet::is_connected = true;
-    }
-    return ERR_OK;
-}
-static void tcp_client_err_callback(void* arg, err_t err) {
-    LWIP_UNUSED_ARG(arg);
-    LWIP_UNUSED_ARG(err);
-    ProtectionADJv3Packet::tpcb = nullptr; // lwip already has freed the tpcb, only pointer is left
-    ProtectionADJv3Packet::is_connected = false;
-}
-
-bool ProtectionADJv3Packet::tcp_client_init(const char* ip, uint16_t port) {
-    if (tpcb != nullptr) { // it means we already have one tpcb initialized
-        return false;
-    }
-    ip_addr_t destIPADDR;
-    if (!ip4addr_aton(ip, &destIPADDR)) {
-        return false; // ip was not converted
-    }
-    tpcb = tcp_new();
-    if (tpcb == nullptr) {
-        return false; // tpcb was not initialized
-    }
-    tcp_err(tpcb, tcp_client_err_callback);
-    err_t err = tcp_connect(tpcb, &destIPADDR, port, tcp_client_connected_callback);
-    if (err != ERR_OK) { // we got an error while connecting
-        tcp_abort(tpcb);
-        tpcb = nullptr;
-        return false;
-    }
-    tcp_output(tpcb);
-    return true;
-}
 bool ProtectionADJv3Packet::tcp_client_send(
     ProtectionADJv3Packet::Package& pack,
     const void* value

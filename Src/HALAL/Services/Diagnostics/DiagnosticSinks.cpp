@@ -229,7 +229,11 @@ private:
 
 class OrderProtocolDiagnosticSink final : public DiagnosticSink {
 public:
-    explicit OrderProtocolDiagnosticSink(const char* ip = "192.168.0.9", uint16_t port = 31) {}
+    OrderProtocolDiagnosticSink() = default;
+    explicit OrderProtocolDiagnosticSink(const char* ip, uint16_t port) {
+        (void)ip;
+        (void)port;
+    }
     bool publish(const DiagnosticRecord& record) override {
         auto package = ST_LIB::ProtectionADJv3Packet::make(
             Order::last_order_ip,
@@ -255,13 +259,18 @@ void Runtime::install_default_sinks() {
 #if defined(HAL_UART_MODULE_ENABLED) && !defined(SIM_ON)
     (void)Hub::emplace_sink<UartDiagnosticSink>();
 #endif
+#ifdef STLIB_ETH
+    (void)Hub::emplace_sink<OrderProtocolDiagnosticSink>();
+#endif
 
     defaults_installed = true;
 }
 
 #ifdef STLIB_ETH
-void install_ethernet_sink(const char* ip = "192.168.0.9", uint16_t port = 31) {
-    (void)Hub::emplace_sink<OrderProtocolDiagnosticSink>(ip, port);
+void install_ethernet_sink(const char* ip, uint16_t port) {
+    (void)ip;
+    (void)port;
+    (void)Hub::emplace_sink<OrderProtocolDiagnosticSink>();
 }
 #endif
 

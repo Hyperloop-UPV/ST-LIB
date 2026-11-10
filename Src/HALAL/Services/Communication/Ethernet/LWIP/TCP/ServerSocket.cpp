@@ -163,6 +163,16 @@ void ServerSocket::clear_packet_queues() {
 ServerSocket::~ServerSocket() {
     close();
 
+    if (server_control_block != nullptr) {
+        tcp_arg(server_control_block, nullptr);
+        tcp_accept(server_control_block, nullptr);
+        err_t close_error = tcp_close(server_control_block);
+        if (close_error != ERR_OK) {
+            tcp_abort(server_control_block);
+        }
+        server_control_block = nullptr;
+    }
+
     auto listener_it = listening_sockets.find(local_port);
     if (listener_it != listening_sockets.end() && listener_it->second == this) {
         listening_sockets.erase(listener_it);
@@ -192,30 +202,23 @@ void ServerSocket::close() {
         }
         client_control_block = nullptr;
     }
-    if (server_control_block != nullptr) {
-        tcp_arg(server_control_block, nullptr);
-        tcp_accept(server_control_block, nullptr);
-        err_t close_error = tcp_close(server_control_block);
-        if (close_error != ERR_OK) {
-            tcp_abort(server_control_block);
-        }
-        server_control_block = nullptr;
-    }
     clear_packet_queues();
     rx_stream_buffer.clear();
-    state = CLOSED;
 
-    ST_LIB::ProtectionADJv3Packet::tpcb =
-        nullptr; // Protection from hard Fault (idk how it works by the moment)
+    ST_LIB::ProtectionADJv3Packet::tpcb = nullptr;
     ST_LIB::ProtectionADJv3Packet::is_connected = false;
 
-    auto listener_it = listening_sockets.find(local_port);
-    if (listener_it != listening_sockets.end() && listener_it->second == this) {
-        listening_sockets.erase(listener_it);
-    }
-
-    if (priority > 1) {
-        priority--;
+    if (server_control_block != nullptr) {
+        state = LISTENING;
+    } else {
+        state = CLOSED;
+        auto listener_it = listening_sockets.find(local_port);
+        if (listener_it != listening_sockets.end() && listener_it->second == this) {
+            listening_sockets.erase(listener_it);
+        }
+        if (priority > 1) {
+            priority--;
+        }
     }
 }
 
@@ -389,9 +392,16 @@ err_t ServerSocket::accept_callback(
         server_socket = it->second;
     }
 
+    if (server_socket->client_control_block != nullptr &&
+        server_socket->client_control_block != incoming_control_block) {
+        server_socket->close();
+    }
+
     server_socket->state = ACCEPTED;
     server_socket->client_control_block = incoming_control_block;
     server_socket->remote_ip = IPV4(incoming_control_block->remote_ip);
+    ST_LIB::ProtectionADJv3Packet::tpcb = incoming_control_block;
+    ST_LIB::ProtectionADJv3Packet::is_connected = true;
     server_socket->rx_packet_buffer = {};
     server_socket->rx_stream_buffer.clear();
     server_socket->rx_stream_buffer.reserve(TcpOrderStreamParser::MAX_RX_STREAM_BUFFER_BYTES);
@@ -406,16 +416,6 @@ err_t ServerSocket::accept_callback(
     tcp_err(incoming_control_block, error_callback);
     tcp_poll(incoming_control_block, poll_callback, 1);
     config_keepalive(incoming_control_block, server_socket);
-
-    if (server_socket->server_control_block != nullptr) {
-        tcp_arg(server_socket->server_control_block, nullptr);
-        tcp_accept(server_socket->server_control_block, nullptr);
-        err_t close_error = tcp_close(server_socket->server_control_block);
-        if (close_error != ERR_OK) {
-            tcp_abort(server_socket->server_control_block);
-        }
-        server_socket->server_control_block = nullptr;
-    }
 
     if (priority < 255) {
         priority++;
@@ -470,9 +470,11 @@ void ServerSocket::error_callback(void* arg, err_t error) {
 
     // tcp_err is called once the pcb is already freed by lwIP.
     server_socket->client_control_block = nullptr;
-    server_socket->state = CLOSED;
+    server_socket->state = server_socket->server_control_block != nullptr ? LISTENING : CLOSED;
     server_socket->clear_packet_queues();
     server_socket->rx_stream_buffer.clear();
+    ST_LIB::ProtectionADJv3Packet::tpcb = nullptr;
+    ST_LIB::ProtectionADJv3Packet::is_connected = false;
 }
 
 err_t ServerSocket::poll_callback(void* arg, struct tcp_pcb* client_control_block) {

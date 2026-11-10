@@ -26,6 +26,7 @@ public:
     }
     static void process_data(OrderProtocol* socket, uint8_t* data) {
         uint16_t id = Packet::get_id(data);
+        last_order_ip = id;
         if (orders.contains(id)) {
             orders[id]->parse(socket, data);
             orders[id]->process();

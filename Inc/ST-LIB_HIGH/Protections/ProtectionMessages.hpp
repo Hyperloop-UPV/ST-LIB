@@ -36,7 +36,6 @@ public:
         Protections::RuleKind protection,
         Protections::SampleEncoding value_size
     );
-    static bool tcp_client_init(const char* ip, uint16_t port);
     static bool tcp_client_send(Package& pack, const void* value);
 
     static struct tcp_pcb* tpcb;
