@@ -12,7 +12,6 @@
 class Order : public Packet {
 public:
     string* remote_ip;
-    static inline uint16_t last_order_ip = 0;
     static map<uint16_t, Order*> orders;
     virtual void set_callback(void (*callback)(void)) = 0;
     virtual void process() = 0;
@@ -26,7 +25,6 @@ public:
     }
     static void process_data(OrderProtocol* socket, uint8_t* data) {
         uint16_t id = Packet::get_id(data);
-        last_order_ip = id;
         if (orders.contains(id)) {
             orders[id]->parse(socket, data);
             orders[id]->process();

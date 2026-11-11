@@ -70,7 +70,7 @@ public:
 #ifdef STLIB_ETH
 class DiagnosticTransportOrder final : public Order {
 public:
-    [[maybe_unused]] static inline OrderProtocol* forward_target = nullptr;
+    static inline OrderProtocol* forward_target = nullptr;
     DiagnosticTransportOrder() {
         Packet::packets[DIAGNOSTIC_FAULT_ORDER_ID] = this;
         Packet::packets[DIAGNOSTIC_WARNING_ORDER_ID] = this;
@@ -229,11 +229,10 @@ private:
 
 class OrderProtocolDiagnosticSink final : public DiagnosticSink {
 public:
-    OrderProtocolDiagnosticSink() = default;
-    explicit OrderProtocolDiagnosticSink(const char* ip, uint16_t port) {
-        (void)ip;
-        (void)port;
+    explicit OrderProtocolDiagnosticSink(OrderProtocol* target = nullptr) : target_socket(target) {
+        DiagnosticTransportOrder::forward_target = target;
     }
+
     bool publish(const DiagnosticRecord& record) override {
         if (record.category == Category::PROTECTION_EVENT) {
             auto package = ST_LIB::ProtectionADJv3Packet::make(
@@ -246,9 +245,23 @@ public:
                 &record.payload.protection.observed_value
             );
             return delivered;
-        } else
-            return true;
+        } else {
+            if (target_socket == nullptr) {
+                return true;
+            }
+            char description[Config::formatted_message_capacity + 1]{};
+            DiagnosticFormatter::describe(record, description, sizeof(description));
+            transport_order.set_record(record, description);
+            transport_order.build();
+            bool delivered = target_socket->send_order(transport_order);
+            transport_order.reset_for_receive();
+            return delivered;
+        }
     }
+
+private:
+    OrderProtocol* target_socket;
+    DiagnosticTransportOrder transport_order{};
 };
 #endif
 
@@ -262,18 +275,12 @@ void Runtime::install_default_sinks() {
 #if defined(HAL_UART_MODULE_ENABLED) && !defined(SIM_ON)
     (void)Hub::emplace_sink<UartDiagnosticSink>();
 #endif
-#ifdef STLIB_ETH
-    (void)Hub::emplace_sink<OrderProtocolDiagnosticSink>();
-#endif
-
     defaults_installed = true;
 }
 
 #ifdef STLIB_ETH
-void install_ethernet_sink(const char* ip, uint16_t port) {
-    (void)ip;
-    (void)port;
-    (void)Hub::emplace_sink<OrderProtocolDiagnosticSink>();
+void install_ethernet_sink(OrderProtocol* target) {
+    (void)Hub::emplace_sink<OrderProtocolDiagnosticSink>(target);
 }
 #endif
 

@@ -270,6 +270,6 @@ private:
 #ifdef STLIB_ETH
 class OrderProtocol;
 namespace Diagnostics {
-void install_ethernet_sink(const char* ip, uint16_t port);
+void install_ethernet_sink(OrderProtocol* target);
 }
 #endif
