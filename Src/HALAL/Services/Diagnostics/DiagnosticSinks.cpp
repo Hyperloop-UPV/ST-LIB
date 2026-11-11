@@ -235,16 +235,19 @@ public:
         (void)port;
     }
     bool publish(const DiagnosticRecord& record) override {
-        auto package = ST_LIB::ProtectionADJv3Packet::make(
-            Order::last_order_ip,
-            record.payload.protection.rule_kind,
-            record.payload.protection.sample_encoding
-        );
-        bool delivered = ST_LIB::ProtectionADJv3Packet::tcp_client_send(
-            package,
-            &record.payload.protection.observed_value
-        );
-        return delivered;
+        if (record.category == Category::PROTECTION_EVENT) {
+            auto package = ST_LIB::ProtectionADJv3Packet::make(
+                record.payload.protection.measurement_id,
+                record.payload.protection.rule_kind,
+                record.payload.protection.sample_encoding
+            );
+            bool delivered = ST_LIB::ProtectionADJv3Packet::tcp_client_send(
+                package,
+                &record.payload.protection.observed_value
+            );
+            return delivered;
+        } else
+            return true;
     }
 };
 #endif

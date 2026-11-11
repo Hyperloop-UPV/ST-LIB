@@ -13,7 +13,7 @@ inline constexpr size_t max_name_length = 48;
 } // namespace Config
 
 enum class RuleKind : uint8_t {
-    BELOW = 0,
+    BELOW = 1,
     ABOVE,
     RANGE,
     EQUALS,
