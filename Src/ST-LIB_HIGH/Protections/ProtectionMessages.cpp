@@ -20,7 +20,7 @@ ProtectionADJv3Packet::Package ProtectionADJv3Packet::make(
     Protections::SampleEncoding valueSize
 ) {
     // Bit packing of protection into 3 most significant bits of id (Look adjv3 format)
-    uint8_t numericValueSize;
+    uint8_t numericValueSize = 0;
     switch (valueSize) {
     case Protections::SampleEncoding::BOOL:
         numericValueSize = 1;
