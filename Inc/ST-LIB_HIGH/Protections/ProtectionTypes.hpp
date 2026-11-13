@@ -12,7 +12,7 @@ inline constexpr uint64_t notify_delay_in_microseconds = 2'000'000ULL;
 inline constexpr size_t max_name_length = 48;
 } // namespace Config
 
-enum class RuleKind : uint8_t { RANGE = 1, ABOVE, BELOW, EQUALS, NOT_EQUALS, TIME_ACCUMULATION };
+enum class RuleKind : uint8_t { RANGE, ABOVE, BELOW, EQUALS, NOT_EQUALS, TIME_ACCUMULATION };
 
 enum class RuleState : uint8_t { NORMAL = 0, WARNING, FAULT };
 

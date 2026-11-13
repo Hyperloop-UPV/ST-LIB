@@ -36,7 +36,7 @@ struct ProtectionCodeTable { // global structure that is used to define order of
             }
             break;
         }
-        return static_cast<uint8_t>(kind);
+        return 1;
     }
 
     static void set(uint16_t id, std::initializer_list<Protections::RuleKind> kinds) {
