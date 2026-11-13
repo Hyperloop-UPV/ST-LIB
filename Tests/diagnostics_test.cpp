@@ -79,31 +79,34 @@ void reset_operational_machine() {
 void on_fault_enter() { fault_enter_calls++; }
 
 inline float monitored_value = 2.0f;
-inline constexpr uint16_t measurement_id = 1002;
+inline constexpr uint16_t measurement_id1 = 6767;
 inline constexpr auto monitored_protection =
-    Protections::protection<"monitored_value", measurement_id, monitored_value>(
+    Protections::protection<"monitored_value", measurement_id1, monitored_value>(
         Protections::Rules::below(1.0f, 1.5f)
     );
 using MonitoredProtectionEngine = Protections::ProtectionEngine<monitored_protection>;
 
 inline volatile float volatile_monitored_value = 2.0f;
+inline constexpr uint16_t measurement_id2 = 6967;
 inline constexpr auto volatile_monitored_protection =
-    Protections::protection<"volatile_monitored_value", measurement_id, volatile_monitored_value>(
+    Protections::protection<"volatile_monitored_value", measurement_id2, volatile_monitored_value>(
         Protections::Rules::below(1.0f, 1.5f)
     );
 using VolatileMonitoredProtectionEngine =
     Protections::ProtectionEngine<volatile_monitored_protection>;
 
 inline float time_value = 0.0f;
+inline constexpr uint16_t measurement_id3 = 6769;
 inline constexpr auto time_protection =
-    Protections::protection<"time_value", measurement_id, time_value>(
+    Protections::protection<"time_value", measurement_id3, time_value>(
         Protections::Rules::time_accumulation(10.0f, 0.001f)
     );
 using TimeProtectionEngine = Protections::ProtectionEngine<time_protection>;
 
 inline float time_reset_value = 0.0f;
+inline constexpr uint16_t measurement_id4 = 6969;
 inline constexpr auto time_reset_protection =
-    Protections::protection<"time_reset_value", measurement_id, time_reset_value>(
+    Protections::protection<"time_reset_value", measurement_id4, time_reset_value>(
         Protections::Rules::time_accumulation(10.0f, 0.001f)
     );
 using TimeResetProtectionEngine = Protections::ProtectionEngine<time_reset_protection>;

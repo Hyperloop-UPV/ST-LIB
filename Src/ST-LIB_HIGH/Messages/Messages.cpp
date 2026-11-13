@@ -17,21 +17,24 @@ bool MessageADJv3Packet::is_connected = false;
 
 MessageADJv3Packet::Package
 MessageADJv3Packet::make(uint16_t id, const char* origin, const char* message) {
-    size_t origin_len = strnlen(origin, 47); // 47 symbols + 1 byte for \0 = 48 bytes as maximum
-    size_t message_len =
-        strnlen(message, 319); // 319 symbols + 1 byte for \0 = 320 bytes as maximum
+    size_t origin_len = strnlen(origin, 47);    // 47 symbols + 1 byte for \0 = 48 bytes as much
+    size_t message_len = strnlen(message, 319); // 319 symbols + 1 byte for \0 = 320 bytes as much
     Package pack = {
         .packageSize = origin_len + message_len + sizeof(Data) + 2
-    }; // adding 2 because we need to pass \0 for both origin and message
+    }; // adding 2 because we need to include \0 for both origin and message
     pack.data.id = id;
     pack.data.hours = 0;
     pack.data.minutes = 0;
     pack.data.seconds = 0;
     pack.data.subseconds = 0;
-    memcpy(pack.payload, origin, origin_len);
-    pack.payload[origin_len] = '\0';
-    memcpy(pack.payload + origin_len + 1, message, message_len);
-    pack.payload[origin_len + 1 + message_len] = '\0';
+    memcpy(pack.payload, origin, origin_len); // copy value from origin to package's reserved memory
+    pack.payload[origin_len] = '\0';          // add null terminator to the end of origin
+    memcpy(
+        pack.payload + origin_len + 1,
+        message,
+        message_len
+    ); // copy valye from message to package's reserved memory
+    pack.payload[origin_len + 1 + message_len] = '\0'; // add null terminator to the end of message
     return pack;
 }
 bool MessageADJv3Packet::tcp_client_send(MessageADJv3Packet::Package& pack) {
