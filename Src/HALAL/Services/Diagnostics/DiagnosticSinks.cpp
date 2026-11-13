@@ -257,11 +257,8 @@ public:
             }
             char description[Config::formatted_message_capacity + 1]{};
             DiagnosticFormatter::describe(record, description, sizeof(description));
-            auto package = ST_LIB::MessageADJv3Packet::make(
-                msg_id,
-                record.origin,
-                description
-            ) return ST_LIB::MessageADJv3Packet::tcp_client_send(package);
+            auto package = ST_LIB::MessageADJv3Packet::make(msg_id, record.origin, description);
+            return ST_LIB::MessageADJv3Packet::tcp_client_send(package);
         }
     }
 
