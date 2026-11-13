@@ -41,7 +41,9 @@ ProtectionADJv3Packet::Package ProtectionADJv3Packet::make(
         break;
     }
     Package pack = {.packageSize = sizeof(Data) + numericValueSize, .data = {}};
-    pack.data.id = (measurement_id & 0x1FFF) | (static_cast<uint16_t>(prot) << 13);
+    pack.data.id =
+        (measurement_id & 0x1FFF) |
+        (static_cast<uint16_t>(ProtectionCodeTable::find(measurement_id, prot) & 0x07) << 13);
     pack.data.hours = 0;
     pack.data.minutes = 0;
     pack.data.seconds = 0;

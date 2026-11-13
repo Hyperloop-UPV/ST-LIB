@@ -1,6 +1,7 @@
 #include "HALAL/Services/Diagnostics/Diagnostics.hpp"
 #include "ST-LIB_HIGH/Protections/ProtectionMessages.hpp"
 #include "ST-LIB_HIGH/Protections/ProtectionTypes.hpp"
+#include "ST-LIB_HIGH/Messages/Messages.hpp"
 
 #if defined(HAL_UART_MODULE_ENABLED) && !defined(SIM_ON)
 #include "HALAL/Services/Communication/UART/UART.hpp"
@@ -246,16 +247,21 @@ public:
             );
             return delivered;
         } else {
-            if (target_socket == nullptr) {
-                return true;
+            uint16_t msg_id = 12; // INFO by default
+            if (record.severity == Severity::FAULT) {
+                msg_id = 10;
+            } else if (record.severity == Severity::WARNING) {
+                msg_id = 11;
+            } else if (record.category == Category::RUNTIME_PANIC) {
+                msg_id = 13;
             }
             char description[Config::formatted_message_capacity + 1]{};
             DiagnosticFormatter::describe(record, description, sizeof(description));
-            transport_order.set_record(record, description);
-            transport_order.build();
-            bool delivered = target_socket->send_order(transport_order);
-            transport_order.reset_for_receive();
-            return delivered;
+            auto package = ST_LIB::MessageADJv3Packet::make(
+                msg_id,
+                record.origin,
+                description
+            ) return ST_LIB::MessageADJv3Packet::tcp_client_send(package);
         }
     }
 

@@ -8,10 +8,63 @@
 #include "ST-LIB_HIGH/Protections/ProtectionTypes.hpp"
 #include <cstdint>
 #include <cstddef>
-
+#include <array>
+#include <initializer_list>
 struct tcp_pcb;
 
 namespace ST_LIB {
+struct ProtectionCodeTable { // global structure that is used to define order of protections for
+                             // every id we have (and will be used to generate code later)
+    struct Entry {
+        uint16_t measurement_id{0};
+        std::array<Protections::RuleKind, 7> order{};
+        uint8_t count{0};
+    };
+
+    static std::array<Entry, 32> entries;
+    static inline uint8_t entries_count{0};
+
+    static uint8_t find(uint16_t id, Protections::RuleKind kind) {
+        for (size_t j = 0; j < entries_count; ++j) {
+            if (entries[j].measurement_id != id) {
+                continue;
+            }
+            for (size_t i = 0; i < entries[j].count; ++i) {
+                if (entries[j].order[i] == kind) {
+                    return static_cast<uint8_t>(i + 1);
+                }
+            }
+            break;
+        }
+        return static_cast<uint8_t>(kind);
+    }
+
+    static void set(uint16_t id, std::initializer_list<Protections::RuleKind> kinds) {
+        Entry* target = nullptr;
+        for (size_t j = 0; j < entries_count; ++j) {
+            if (entries[j].measurement_id == id) {
+                target = &entries[j];
+                break;
+            }
+        }
+        if (target == nullptr) {
+            if (entries_count >= entries.size()) {
+                return;
+            }
+            target = &entries[entries_count++];
+            target->measurement_id = id;
+        }
+        target->count = 0;
+        for (Protections::RuleKind kind : kinds) {
+            if (target->count >= target->order.size()) {
+                break;
+            }
+            target->order[target->count++] = kind;
+        }
+    }
+};
+
+inline std::array<ProtectionCodeTable::Entry, 32> ProtectionCodeTable::entries{};
 struct ProtectionADJv3Packet {
 
     struct Data {
