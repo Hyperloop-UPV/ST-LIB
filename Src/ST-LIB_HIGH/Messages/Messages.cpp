@@ -58,4 +58,9 @@ bool MessageADJv3Packet::tcp_client_send(MessageADJv3Packet::Package& pack) {
     return tcp_output(tpcb) == ERR_OK;
 }
 
+bool MessageADJv3Packet::create_message(MessageType type, const char* origin, const char* message) {
+    Package pack = make(static_cast<uint16_t>(type), origin, message);
+    return tcp_client_send(pack);
+}
+
 } // namespace ST_LIB
