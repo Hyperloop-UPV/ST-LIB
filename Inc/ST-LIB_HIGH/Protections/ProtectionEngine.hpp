@@ -1,7 +1,7 @@
 #pragma once
 
 #include "HALAL/Services/Diagnostics/Diagnostics.hpp"
-#if defined(HAL_RTC_MODULE_ENABLED) && !defined(SIM_ON)
+#if !defined(SIM_ON)
 #include "HALAL/Services/Time/RTC.hpp"
 #endif
 #include "ST-LIB_HIGH/Protections/FaultController.hpp"
@@ -89,12 +89,14 @@ template <std::size_t N> struct FixedString {
 
 template <std::size_t N> FixedString(const char (&)[N]) -> FixedString<N>;
 
-template <FixedString Name, auto& Source, std::size_t RuleCount> struct ProtectionSpec {
+template <FixedString Name, uint16_t Id, auto& Source, std::size_t RuleCount>
+struct ProtectionSpec {
     using source_type = std::remove_reference_t<decltype(Source)>;
     using sample_type = detail::sample_type_from_source_t<source_type>;
     using source_model_type = decltype(detail::to_sample_source(Source));
 
     static constexpr auto name = Name;
+    static constexpr auto id = Id;
     static constexpr auto& source = Source;
     static constexpr std::size_t rule_count = RuleCount;
 
@@ -103,18 +105,18 @@ template <FixedString Name, auto& Source, std::size_t RuleCount> struct Protecti
     template <class Ctx> consteval void inscribe(Ctx&) const {}
 };
 
-template <FixedString Name, auto& Source, typename... RuleDefs>
-consteval auto protection(RuleDefs... definitions) {
+template <FixedString Name, uint16_t Id, auto& Source, typename... RuleDefs>
+constexpr auto protection(RuleDefs... definitions) {
     using SampleType = detail::sample_type_from_source_t<decltype(Source)>;
-    return ProtectionSpec<Name, Source, sizeof...(RuleDefs)>{
+    return ProtectionSpec<Name, Id, Source, sizeof...(RuleDefs)>{
         detail::bake_rules<SampleType>(definitions...)
     };
 }
 
 template <typename T> struct IsProtectionSpec : std::false_type {};
 
-template <FixedString Name, auto& Source, std::size_t RuleCount>
-struct IsProtectionSpec<ProtectionSpec<Name, Source, RuleCount>> : std::true_type {};
+template <FixedString Name, uint16_t Id, auto& Source, std::size_t RuleCount>
+struct IsProtectionSpec<ProtectionSpec<Name, Id, Source, RuleCount>> : std::true_type {};
 
 template <typename T>
 concept ProtectionSpecLike = IsProtectionSpec<std::remove_cvref_t<T>>::value;
@@ -168,6 +170,7 @@ private:
 
         return Protection<SampleType, SpecType::rule_count, SourceType>{
             SpecType::name.c_str(),
+            SpecType::id,
             detail::to_sample_source(SpecType::source),
             ProtectionSpec.rules.definitions
         };
@@ -208,6 +211,7 @@ private:
 
             Diagnostics::Hub::publish_protection_event(
                 protection_ref.get_name(),
+                protection_ref.get_measurement_id(),
                 event.state,
                 event.edge,
                 event.snapshot
@@ -230,6 +234,7 @@ private:
 
         FaultController::request_fault(FaultCause::protection(
             protection_ref.get_name(),
+            protection_ref.get_measurement_id(),
             evaluation.active_fault_edge,
             evaluation.active_fault_snapshot
         ));

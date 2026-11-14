@@ -39,6 +39,7 @@ struct FaultRuntimePayload {
 
 struct FaultProtectionPayload {
     Protections::RuleEdge edge{Protections::RuleEdge::NONE};
+    uint16_t measurement_id;
     Protections::RuleSnapshot snapshot{};
 };
 
@@ -59,6 +60,7 @@ struct FaultCause {
     );
     static FaultCause protection(
         const char* protection_name,
+        uint16_t measurement_id,
         Protections::RuleEdge edge,
         const Protections::RuleSnapshot& snapshot
     );

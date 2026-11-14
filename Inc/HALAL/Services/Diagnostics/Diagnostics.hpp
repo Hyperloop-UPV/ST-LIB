@@ -60,6 +60,7 @@ struct ProtectionDiagnosticPayload {
     Protections::NumericValue observed_value{};
     Protections::NumericValue threshold_a{};
     Protections::NumericValue threshold_b{};
+    uint16_t measurement_id{0};
     bool has_threshold_b{false};
     bool uses_warning_threshold{false};
     float time_window_s{0.0f};
@@ -136,6 +137,7 @@ DiagnosticRecord runtime_info(
 
 DiagnosticRecord protection_event(
     const char* protection_name,
+    uint16_t measurement_id,
     Protections::RuleState state,
     Protections::RuleEdge edge,
     const Protections::RuleSnapshot& snapshot,
@@ -201,6 +203,7 @@ public:
     );
     static void publish_protection_event(
         const char* protection_name,
+        uint16_t measurement_id,
         Protections::RuleState state,
         Protections::RuleEdge edge,
         const Protections::RuleSnapshot& snapshot

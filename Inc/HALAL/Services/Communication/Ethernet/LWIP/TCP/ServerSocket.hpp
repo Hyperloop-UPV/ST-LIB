@@ -173,7 +173,7 @@ private:
      * than one listener socket on the same port, and a ServerSocket shouldn't be
      * able to handle more than one connection by design.
      */
-    static err_t accept_callback(void* arg, struct tcp_pcb* incomming_control_block, err_t error);
+    static err_t accept_callback(void* arg, struct tcp_pcb* incoming_control_block, err_t error);
 
     /**
      * @brief callback that handles receiving a packet.
