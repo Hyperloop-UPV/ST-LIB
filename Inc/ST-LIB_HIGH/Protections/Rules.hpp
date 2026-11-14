@@ -280,8 +280,8 @@ template <ProtectionSample T>
 constexpr expected<RuleDefinition<T>, RuleConfigError> time_accumulation(
     T threshold,
     float window_seconds,
-    RuleKind condition = RuleKind::ABOVE,
-    bool is_fault = true
+    RuleKind condition,
+    bool is_fault
 ) {
     if (window_seconds <= 0.0f) {
         return unexpected(RuleConfigError::INVALID_WINDOW);

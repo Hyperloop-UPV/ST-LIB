@@ -9,7 +9,7 @@
 #include <cstddef>
 struct tcp_pcb;
 inline const uint8_t max_origin_size = 48;
-inline const uint8_t max_message_size = 320;
+inline const uint16_t max_message_size = 320;
 
 namespace ST_LIB {
 struct MessageADJv3Packet {

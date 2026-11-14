@@ -15,12 +15,33 @@ struct tcp_pcb* ProtectionADJv3Packet::tpcb = nullptr;
 bool ProtectionADJv3Packet::is_connected = false;
 
 ProtectionADJv3Packet::Package ProtectionADJv3Packet::make(
-    uint16_t measurement_id,
+    uint16_t protection_id,
     Protections::RuleKind prot,
-    uint8_t valueSize
+    Protections::SampleEncoding sample_encoding
 ) {
-    Package pack = {.packageSize = sizeof(Data) + valueSize, .data = {}};
-    pack.data.id = (measurement_id & 0x1FFF) | (static_cast<uint16_t>(prot) << 13);
+    uint8_t numericValueSize = 0;
+    switch (sample_encoding) {
+    case Protections::SampleEncoding::BOOL:
+        numericValueSize = 1;
+        break;
+    case Protections::SampleEncoding::FLOAT32:
+        numericValueSize = 4;
+        break;
+    case Protections::SampleEncoding::FLOAT64:
+    case Protections::SampleEncoding::SIGNED:
+    case Protections::SampleEncoding::UNSIGNED:
+        numericValueSize = 8;
+        break;
+    default:
+        break;
+    }
+    Package pack = {.packageSize = sizeof(Data) + numericValueSize, .data = {}};
+    uint16_t position = (protection_id >> 13) & 0x07;
+    if (position == 0) {
+        position = static_cast<uint16_t>(prot) & 0x07;
+    }
+    uint16_t measurement_id = protection_id & 0x1FFF;
+    pack.data.id = (measurement_id & 0x1FFF) | (position << 13);
     pack.data.hours = 0;
     pack.data.minutes = 0;
     pack.data.seconds = 0;

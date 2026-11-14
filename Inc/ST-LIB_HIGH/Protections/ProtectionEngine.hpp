@@ -106,7 +106,7 @@ struct ProtectionSpec {
 };
 
 template <FixedString Name, uint16_t Id, auto& Source, typename... RuleDefs>
-consteval auto protection(RuleDefs... definitions) {
+constexpr auto protection(RuleDefs... definitions) {
     using SampleType = detail::sample_type_from_source_t<decltype(Source)>;
     return ProtectionSpec<Name, Id, Source, sizeof...(RuleDefs)>{
         detail::bake_rules<SampleType>(definitions...)
