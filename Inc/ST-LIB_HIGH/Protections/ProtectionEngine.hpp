@@ -1,7 +1,7 @@
 #pragma once
 
 #include "HALAL/Services/Diagnostics/Diagnostics.hpp"
-#if defined(HAL_RTC_MODULE_ENABLED) && !defined(SIM_ON)
+#if !defined(SIM_ON)
 #include "HALAL/Services/Time/RTC.hpp"
 #endif
 #include "ST-LIB_HIGH/Protections/FaultController.hpp"
