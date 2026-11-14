@@ -178,18 +178,23 @@ template <ComparableSample T> struct RangeEvaluator {
 
 template <EqualityComparableSample T> struct EqualsEvaluator {
     static constexpr RuleState compute(const T& sample, const EqualsRuleConfig<T>& config) {
-        return detail::is_equal_to(sample, config.expected) ? RuleState::FAULT : RuleState::NORMAL;
+        if (detail::is_equal_to(sample, config.expected)) {
+            return config.is_fault ? RuleState::FAULT : RuleState::WARNING;
+        }
+        return RuleState::NORMAL;
     }
 };
 
 template <EqualityComparableSample T> struct NotEqualsEvaluator {
     static constexpr RuleState compute(const T& sample, const NotEqualsRuleConfig<T>& config) {
-        return detail::is_not_equal_to(sample, config.expected) ? RuleState::FAULT
-                                                                : RuleState::NORMAL;
+        if (detail::is_not_equal_to(sample, config.expected)) {
+            return config.is_fault ? RuleState::FAULT : RuleState::WARNING;
+        }
+        return RuleState::NORMAL;
     }
 };
 
-template <FloatingSample T> struct TimeAccumulationEvaluator {
+template <ProtectionSample T> struct TimeAccumulationEvaluator {
     static RuleState compute(
         const T& sample,
         const TimeAccumulationRuleConfig<T>& config,
@@ -208,12 +213,27 @@ template <FloatingSample T> struct TimeAccumulationEvaluator {
 
         active_magnitude = detail::absolute_value(sample);
 
-        if (detail::is_above(active_magnitude, config.fault_threshold)) {
+        bool fault_condition = false;
+        switch (config.condition_kind) {
+        case RuleKind::EQUALS:
+            fault_condition = detail::is_equal_to(sample, config.fault_threshold);
+            break;
+        case RuleKind::NOT_EQUALS:
+            fault_condition = detail::is_not_equal_to(sample, config.fault_threshold);
+            break;
+        case RuleKind::BELOW:
+            fault_condition = detail::is_below(sample, config.fault_threshold);
+            break;
+        case RuleKind::ABOVE:
+        default:
+            fault_condition = detail::is_above(sample, config.fault_threshold);
+            break;
+        }
+        if (fault_condition) {
             fault_active_time_us += elapsed_us;
         } else {
             fault_active_time_us = 0;
         }
-
         if (config.warning_threshold.has_value() &&
             detail::is_above(active_magnitude, config.warning_threshold.value())) {
             warning_active_time_us += elapsed_us;
@@ -223,12 +243,7 @@ template <FloatingSample T> struct TimeAccumulationEvaluator {
 
         if (fault_active_time_us >= configured_window_us) {
             active_time_s = static_cast<float>(fault_active_time_us) / 1'000'000.0f;
-            return RuleState::FAULT;
-        }
-        if (config.warning_threshold.has_value() &&
-            warning_active_time_us >= configured_window_us) {
-            active_time_s = static_cast<float>(warning_active_time_us) / 1'000'000.0f;
-            return RuleState::WARNING;
+            return config.is_fault ? RuleState::FAULT : RuleState::WARNING;
         }
 
         active_time_s =
@@ -352,7 +367,7 @@ template <EqualityComparableSample T> struct NotEqualsRule {
     }
 };
 
-template <FloatingSample T> struct TimeAccumulationRule {
+template <ProtectionSample T> struct TimeAccumulationRule {
     TimeAccumulationRule() = default;
 
     explicit TimeAccumulationRule(TimeAccumulationRuleConfig<T> config) : config(config) {
@@ -425,7 +440,7 @@ template <ProtectionSample T> struct RuleModel {
     RangeRule<T> range{};
     EqualsRule<T> equals{};
     NotEqualsRule<T> not_equals{};
-    TimeAccumulationRuleModel<T> time_accumulation{};
+    TimeAccumulationRule<T> time_accumulation{};
 
     RuleEvaluation evaluate(const T& sample) {
         switch (kind) {
@@ -440,11 +455,7 @@ template <ProtectionSample T> struct RuleModel {
         case RuleKind::NOT_EQUALS:
             return not_equals.evaluate(sample);
         case RuleKind::TIME_ACCUMULATION:
-            if constexpr (FloatingSample<T>) {
-                return time_accumulation.evaluate(sample);
-            } else {
-                std::unreachable();
-            }
+            return time_accumulation.evaluate(sample);
         }
         std::unreachable();
     }
@@ -475,14 +486,10 @@ inline RuleModel<T> make_rule_model(const RuleDefinition<T>& definition) {
         model.not_equals.config = std::get<NotEqualsRuleConfig<T>>(definition);
         return model;
     case 5:
-        if constexpr (FloatingSample<T>) {
-            model.kind = RuleKind::TIME_ACCUMULATION;
-            model.time_accumulation =
-                TimeAccumulationRule<T>{std::get<TimeAccumulationRuleConfig<T>>(definition)};
-            return model;
-        } else {
-            std::unreachable();
-        }
+        model.kind = RuleKind::TIME_ACCUMULATION;
+        model.time_accumulation =
+            TimeAccumulationRule<T>{std::get<TimeAccumulationRuleConfig<T>>(definition)};
+        return model;
     default:
         std::unreachable();
     }

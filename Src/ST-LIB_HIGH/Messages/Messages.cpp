@@ -17,8 +17,10 @@ bool MessageADJv3Packet::is_connected = false;
 
 MessageADJv3Packet::Package
 MessageADJv3Packet::make(uint16_t id, const char* origin, const char* message) {
-    size_t origin_len = strnlen(origin, 47);    // 47 symbols + 1 byte for \0 = 48 bytes as much
-    size_t message_len = strnlen(message, 319); // 319 symbols + 1 byte for \0 = 320 bytes as much
+    size_t origin_len =
+        strnlen(origin, max_origin_size - 1); // 47 symbols + 1 byte for \0 = 48 bytes as much
+    size_t message_len =
+        strnlen(message, max_message_size - 1); // 319 symbols + 1 byte for \0 = 320 bytes as much
     Package pack = {
         .packageSize = origin_len + message_len + sizeof(Data) + 2
     }; // adding 2 because we need to include \0 for both origin and message
@@ -33,7 +35,7 @@ MessageADJv3Packet::make(uint16_t id, const char* origin, const char* message) {
         pack.payload + origin_len + 1,
         message,
         message_len
-    ); // copy valye from message to package's reserved memory
+    ); // copy value from message to package's reserved memory
     pack.payload[origin_len + 1 + message_len] = '\0'; // add null terminator to the end of message
     return pack;
 }

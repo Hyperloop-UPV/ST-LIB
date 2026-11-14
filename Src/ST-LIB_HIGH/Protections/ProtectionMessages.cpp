@@ -17,33 +17,10 @@ bool ProtectionADJv3Packet::is_connected = false;
 ProtectionADJv3Packet::Package ProtectionADJv3Packet::make(
     uint16_t measurement_id,
     Protections::RuleKind prot,
-    Protections::SampleEncoding valueSize
+    uint8_t valueSize
 ) {
-    // Bit packing of protection into 3 most significant bits of id (Look adjv3 format)
-    uint8_t numericValueSize = 0;
-    switch (valueSize) {
-    case Protections::SampleEncoding::BOOL:
-        numericValueSize = 1;
-        break;
-    case Protections::SampleEncoding::FLOAT32:
-        numericValueSize = 4;
-        break;
-    case Protections::SampleEncoding::FLOAT64:
-        numericValueSize = 8;
-        break;
-    case Protections::SampleEncoding::SIGNED:
-        numericValueSize = 8;
-        break;
-    case Protections::SampleEncoding::UNSIGNED:
-        numericValueSize = 8;
-        break;
-    default:
-        break;
-    }
-    Package pack = {.packageSize = sizeof(Data) + numericValueSize, .data = {}};
-    pack.data.id =
-        (measurement_id & 0x1FFF) |
-        (static_cast<uint16_t>(ProtectionCodeTable::find(measurement_id, prot) & 0x07) << 13);
+    Package pack = {.packageSize = sizeof(Data) + valueSize, .data = {}};
+    pack.data.id = (measurement_id & 0x1FFF) | (static_cast<uint16_t>(prot) << 13);
     pack.data.hours = 0;
     pack.data.minutes = 0;
     pack.data.seconds = 0;

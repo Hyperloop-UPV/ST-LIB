@@ -2,7 +2,6 @@
 
 #include "C++Utilities/CppUtils.hpp"
 #include "ST-LIB_HIGH/Protections/ProtectionTypes.hpp"
-#include "ST-LIB_HIGH/Protections/ProtectionMessages.hpp"
 
 namespace ST_LIB::TestAccess {
 struct DiagnosticsHub;

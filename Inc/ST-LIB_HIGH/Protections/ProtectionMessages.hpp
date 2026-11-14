@@ -6,6 +6,8 @@
  *      Author: Aleks
  */
 #include "ST-LIB_HIGH/Protections/ProtectionTypes.hpp"
+#include "ST-LIB_HIGH/Protections/ProtectionEngine.hpp"
+#include "ST-LIB_HIGH/Protections/Rules.hpp"
 #include <cstdint>
 #include <cstddef>
 #include <array>
@@ -13,58 +15,58 @@
 struct tcp_pcb;
 
 namespace ST_LIB {
-struct ProtectionCodeTable { // global structure that is used to define order of protections for
-                             // every id we have (and will be used to generate code later)
-    struct Entry {
-        uint16_t measurement_id{0};
-        std::array<Protections::RuleKind, 7> order{};
-        uint8_t count{0};
-    };
+// struct ProtectionCodeTable { // global structure that is used to define order of protections for
+//                              // every id we have (and will be used to generate code later)
+//     struct Entry {
+//         uint16_t measurement_id{0};
+//         std::array<Protections::RuleKind, 7> order{};
+//         uint8_t count{0};
+//     };
 
-    static std::array<Entry, 32> entries;
-    static inline uint8_t entries_count{0};
+//     static std::array<Entry, 32> entries;
+//     static inline uint8_t entries_count{0};
 
-    static uint8_t find(uint16_t id, Protections::RuleKind kind) {
-        for (size_t j = 0; j < entries_count; ++j) {
-            if (entries[j].measurement_id != id) {
-                continue;
-            }
-            for (size_t i = 0; i < entries[j].count; ++i) {
-                if (entries[j].order[i] == kind) {
-                    return static_cast<uint8_t>(i + 1);
-                }
-            }
-            break;
-        }
-        return 1;
-    }
+//     static uint8_t find(uint16_t id, Protections::RuleKind kind) {
+//         for (size_t j = 0; j < entries_count; ++j) {
+//             if (entries[j].measurement_id != id) {
+//                 continue;
+//             }
+//             for (size_t i = 0; i < entries[j].count; ++i) {
+//                 if (entries[j].order[i] == kind) {
+//                     return static_cast<uint8_t>(i + 1);
+//                 }
+//             }
+//             break;
+//         }
+//         return 1;
+//     }
 
-    static void set(uint16_t id, std::initializer_list<Protections::RuleKind> kinds) {
-        Entry* target = nullptr;
-        for (size_t j = 0; j < entries_count; ++j) {
-            if (entries[j].measurement_id == id) {
-                target = &entries[j];
-                break;
-            }
-        }
-        if (target == nullptr) {
-            if (entries_count >= entries.size()) {
-                return;
-            }
-            target = &entries[entries_count++];
-            target->measurement_id = id;
-        }
-        target->count = 0;
-        for (Protections::RuleKind kind : kinds) {
-            if (target->count >= target->order.size()) {
-                break;
-            }
-            target->order[target->count++] = kind;
-        }
-    }
-};
+//     static void set(uint16_t id, std::initializer_list<Protections::RuleKind> kinds) {
+//         Entry* target = nullptr;
+//         for (size_t j = 0; j < entries_count; ++j) {
+//             if (entries[j].measurement_id == id) {
+//                 target = &entries[j];
+//                 break;
+//             }
+//         }
+//         if (target == nullptr) {
+//             if (entries_count >= entries.size()) {
+//                 return;
+//             }
+//             target = &entries[entries_count++];
+//             target->measurement_id = id;
+//         }
+//         target->count = 0;
+//         for (Protections::RuleKind kind : kinds) {
+//             if (target->count >= target->order.size()) {
+//                 break;
+//             }
+//             target->order[target->count++] = kind;
+//         }
+//     }
+// };
 
-inline std::array<ProtectionCodeTable::Entry, 32> ProtectionCodeTable::entries{};
+// inline std::array<ProtectionCodeTable::Entry, 32> ProtectionCodeTable::entries{};
 struct ProtectionADJv3Packet {
 
     struct Data {
@@ -84,15 +86,85 @@ struct ProtectionADJv3Packet {
     };
 
 public:
-    static Package make(
-        uint16_t measurement_id,
-        Protections::RuleKind protection,
-        Protections::SampleEncoding value_size
-    );
+    static Package
+    make(uint16_t measurement_id, Protections::RuleKind protection, uint8_t value_size);
     static bool tcp_client_send(Package& pack, const void* value);
+    template <uint16_t id, auto& measurement, typename T>
+    static auto create_protection(
+        Protections::RuleKind kind,
+        bool doFault,
+        uint64_t cooldown_micros,
+        T firstCriticalValue,
+        T secondCriticalValue = {}
+    ) {
+        uint8_t protection_id = id >> 13;
+        uint16_t measurement_id = id & 0x1FFF; // obtain a measurement_id of  general id
+        if (cooldown_micros ==
+            0) { // protections which will be sent instanly when value is out of range
+            if (doFault) {
+                if (kind == Protections::RuleKind::RANGE) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::range(firstCriticalValue, secondCriticalValue)
+                    );
+                }
+                if (kind == Protections::RuleKind::EQUALS) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::equals(firstCriticalValue)
+                    );
+                }
+                if (kind == Protections::RuleKind::ABOVE) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::above(firstCriticalValue)
+                    );
+                }
+                if (kind == Protections::RuleKind::BELOW) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::below(firstCriticalValue)
+                    );
+                }
 
+                if (kind == Protections::RuleKind::NOT_EQUALS) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::not_equals(firstCriticalValue)
+                    );
+                }
+            } else { // doWarning
+                if (kind == Protections::RuleKind::RANGE) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::range_warning(firstCriticalValue, secondCriticalValue)
+                    );
+                }
+                if (kind == Protections::RuleKind::EQUALS) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::equals_warning(firstCriticalValue)
+                    );
+                }
+                if (kind == Protections::RuleKind::ABOVE) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::above_warning(firstCriticalValue)
+                    );
+                }
+                if (kind == Protections::RuleKind::BELOW) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::below_warning(firstCriticalValue)
+                    );
+                }
+
+                if (kind == Protections::RuleKind::NOT_EQUALS) {
+                    return Protections::protection<"", id, measurement>(
+                        Protections::Rules::not_equals_warning(firstCriticalValue)
+                    );
+                }
+            }
+        } else { // protections which will be sent if value is out of range during some time
+            float time_s = static_cast<float>(cooldown_micros) / 1'000'000.0f;
+            return Protections::protection<"", id, measurement>(
+                Protections::Rules::time_accumulation(firstCriticalValue, time_s, kind, doFault)
+            );
+        }
+    }
     static struct tcp_pcb* tpcb;
     static bool is_connected;
 };
 
-} // namespace ST_LIB
+}; // namespace ST_LIB
