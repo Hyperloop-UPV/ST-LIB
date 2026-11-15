@@ -50,8 +50,8 @@ bool MessagePacket::tcp_client_send(MessagePacket::Package& pack) {
     return PacketTransport::send(&pack.data, pack.packageSize);
 }
 
-bool MessagePacket::create_message(MessageType type, const char* origin, const char* message) {
-    Package pack = make(static_cast<uint16_t>(type), origin, message);
+bool MessagePacket::create_message(uint16_t id, const char* origin, const char* message) {
+    Package pack = make(id, origin, message);
     return tcp_client_send(pack);
 }
 

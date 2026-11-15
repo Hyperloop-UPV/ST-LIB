@@ -247,17 +247,17 @@ public:
             );
             return delivered;
         } else {
-            ST_LIB::MessageType msg_type = ST_LIB::MessageType::INFO;
+            uint16_t msg_id = 1;
             if (record.severity == Severity::FAULT) {
-                msg_type = ST_LIB::MessageType::FAULT;
+                msg_id = 2;
             } else if (record.severity == Severity::WARNING) {
-                msg_type = ST_LIB::MessageType::WARNING;
+                msg_id = 3;
             } else if (record.category == Category::RUNTIME_PANIC) {
-                msg_type = ST_LIB::MessageType::PANIC;
+                msg_id = 13;
             }
             char description[Config::formatted_message_capacity + 1]{};
             DiagnosticFormatter::describe(record, description, sizeof(description));
-            return ST_LIB::MessagePacket::create_message(msg_type, record.origin, description);
+            return ST_LIB::MessagePacket::create_message(msg_id, record.origin, description);
         }
     }
 

@@ -7,12 +7,12 @@
  */
 #include <cstdint>
 #include <cstddef>
+#include <type_traits>
+
 inline const uint8_t max_origin_size = 48;
 inline const uint16_t max_message_size = 320;
 
 namespace ST_LIB {
-
-enum class MessageType : uint16_t { INFO = 1, FAULT = 2, WARNING = 3, PANIC = 13 };
 
 struct MessagePacket {
     struct __attribute__((packed)) Data {
@@ -32,11 +32,23 @@ struct MessagePacket {
 public:
     static Package make(uint16_t id, const char* origin, const char* message);
     static bool tcp_client_send(Package& pack);
-    static bool create_message(MessageType type, const char* origin, const char* message);
+    static bool create_message(uint16_t id, const char* origin, const char* message);
+
+    template <typename Enum>
+        requires std::is_enum_v<Enum>
+    static bool create_message(Enum type, const char* origin, const char* message) {
+        return create_message(static_cast<uint16_t>(type), origin, message);
+    }
 };
 
-inline bool create_message(MessageType type, const char* origin, const char* message) {
-    return MessagePacket::create_message(type, origin, message);
+inline bool create_message(uint16_t id, const char* origin, const char* message) {
+    return MessagePacket::create_message(id, origin, message);
+}
+
+template <typename Enum>
+    requires std::is_enum_v<Enum>
+inline bool create_message(Enum type, const char* origin, const char* message) {
+    return MessagePacket::create_message(static_cast<uint16_t>(type), origin, message);
 }
 
 } // namespace ST_LIB
