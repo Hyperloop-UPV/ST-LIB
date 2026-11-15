@@ -492,12 +492,11 @@ public:
     );
 
     Protection(
-        const char* name,
         uint16_t measurement_id,
         Source source,
         const std::array<RuleDefinition<T>, RuleCount>& definitions
     )
-        : name(name), measurement_id(measurement_id), source(source), definitions(definitions),
+        : measurement_id(measurement_id), source(source), definitions(definitions),
           rules(make_rule_models(definitions, std::make_index_sequence<RuleCount>{})) {}
 
     const char* get_name() const { return name; }
@@ -552,7 +551,7 @@ private:
         return {make_rule_model(definitions[Indices])...};
     }
 
-    const char* name{nullptr};
+    const char* name{""};
     uint16_t measurement_id;
     Source source;
     std::array<RuleDefinition<T>, RuleCount> definitions{};

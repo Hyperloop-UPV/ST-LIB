@@ -33,22 +33,10 @@ public:
     static Package make(uint16_t id, const char* origin, const char* message);
     static bool tcp_client_send(Package& pack);
     static bool create_message(uint16_t id, const char* origin, const char* message);
-
-    template <typename Enum>
-        requires std::is_enum_v<Enum>
-    static bool create_message(Enum type, const char* origin, const char* message) {
-        return create_message(static_cast<uint16_t>(type), origin, message);
-    }
 };
 
 inline bool create_message(uint16_t id, const char* origin, const char* message) {
     return MessagePacket::create_message(id, origin, message);
-}
-
-template <typename Enum>
-    requires std::is_enum_v<Enum>
-inline bool create_message(Enum type, const char* origin, const char* message) {
-    return MessagePacket::create_message(static_cast<uint16_t>(type), origin, message);
 }
 
 } // namespace ST_LIB
