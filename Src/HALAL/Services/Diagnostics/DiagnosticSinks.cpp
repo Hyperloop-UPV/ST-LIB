@@ -236,12 +236,12 @@ public:
 
     bool publish(const DiagnosticRecord& record) override {
         if (record.category == Category::PROTECTION_EVENT) {
-            auto package = ST_LIB::ProtectionADJv3Packet::make(
+            auto package = ST_LIB::ProtectionPacket::make(
                 record.payload.protection.measurement_id,
                 record.payload.protection.rule_kind,
                 record.payload.protection.sample_encoding
             );
-            bool delivered = ST_LIB::ProtectionADJv3Packet::tcp_client_send(
+            bool delivered = ST_LIB::ProtectionPacket::tcp_client_send(
                 package,
                 &record.payload.protection.observed_value
             );
@@ -257,7 +257,7 @@ public:
             }
             char description[Config::formatted_message_capacity + 1]{};
             DiagnosticFormatter::describe(record, description, sizeof(description));
-            return ST_LIB::MessageADJv3Packet::create_message(msg_type, record.origin, description);
+            return ST_LIB::MessagePacket::create_message(msg_type, record.origin, description);
         }
     }
 

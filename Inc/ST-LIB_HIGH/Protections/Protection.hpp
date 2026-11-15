@@ -421,18 +421,6 @@ template <ProtectionSample T> struct TimeAccumulationRule {
     float active_time_s{0.0f};
 };
 
-template <ProtectionSample T, bool IsFloating = FloatingSample<T>>
-struct TimeAccumulationRuleSelector {
-    using type = std::monostate;
-};
-
-template <ProtectionSample T> struct TimeAccumulationRuleSelector<T, true> {
-    using type = TimeAccumulationRule<T>;
-};
-
-template <ProtectionSample T>
-using TimeAccumulationRuleModel = typename TimeAccumulationRuleSelector<T>::type;
-
 template <ProtectionSample T> struct RuleModel {
     RuleKind kind{RuleKind::BELOW};
     BelowRule<T> below{};

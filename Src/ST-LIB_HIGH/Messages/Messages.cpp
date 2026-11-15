@@ -6,17 +6,13 @@
  */
 
 #include "ST-LIB_HIGH/Messages/Messages.hpp"
+#include "ST-LIB_HIGH/Transport/PacketTransport.hpp"
 #include "HALAL/Services/Time/RTC.hpp"
-#include "lwip/tcp.h"
 #include <cstring>
 
 namespace ST_LIB {
 
-struct tcp_pcb* MessageADJv3Packet::tpcb = nullptr;
-bool MessageADJv3Packet::is_connected = false;
-
-MessageADJv3Packet::Package
-MessageADJv3Packet::make(uint16_t id, const char* origin, const char* message) {
+MessagePacket::Package MessagePacket::make(uint16_t id, const char* origin, const char* message) {
     size_t origin_len =
         strnlen(origin, max_origin_size - 1); // 47 symbols + 1 byte for \0 = 48 bytes as much
     size_t message_len =
@@ -39,8 +35,8 @@ MessageADJv3Packet::make(uint16_t id, const char* origin, const char* message) {
     pack.payload[origin_len + 1 + message_len] = '\0'; // add null terminator to the end of message
     return pack;
 }
-bool MessageADJv3Packet::tcp_client_send(MessageADJv3Packet::Package& pack) {
-    if (tpcb == nullptr || !is_connected) {
+bool MessagePacket::tcp_client_send(MessagePacket::Package& pack) {
+    if (!PacketTransport::is_connected) {
         return false;
     }
 
@@ -51,14 +47,10 @@ bool MessageADJv3Packet::tcp_client_send(MessageADJv3Packet::Package& pack) {
     pack.data.seconds = rtc.second;
     pack.data.subseconds = static_cast<uint8_t>((rtc.counter * 256) / (RTC_MAX_COUNTER + 1));
 #endif // if HAL_RTC was not enabled  all values were initialized before to 0
-    err_t err = tcp_write(tpcb, &pack.data, pack.packageSize, TCP_WRITE_FLAG_COPY);
-    if (err != ERR_OK) {
-        return false;
-    }
-    return tcp_output(tpcb) == ERR_OK;
+    return PacketTransport::send(&pack.data, pack.packageSize);
 }
 
-bool MessageADJv3Packet::create_message(MessageType type, const char* origin, const char* message) {
+bool MessagePacket::create_message(MessageType type, const char* origin, const char* message) {
     Package pack = make(static_cast<uint16_t>(type), origin, message);
     return tcp_client_send(pack);
 }

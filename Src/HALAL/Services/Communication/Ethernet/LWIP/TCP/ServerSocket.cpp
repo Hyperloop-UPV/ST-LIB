@@ -11,8 +11,7 @@
 #include "HALAL/Services/Communication/Ethernet/LWIP/TCP/TcpOrderStreamParser.hpp"
 #include "ErrorHandler/ErrorHandler.hpp"
 #include "lwip/priv/tcp_priv.h"
-#include "ST-LIB_HIGH/Protections/ProtectionMessages.hpp"
-#include "ST-LIB_HIGH/Messages/Messages.hpp"
+#include "ST-LIB_HIGH/Transport/PacketTransport.hpp"
 #ifdef HAL_ETH_MODULE_ENABLED
 
 uint8_t ServerSocket::priority = 1;
@@ -206,10 +205,8 @@ void ServerSocket::close() {
     clear_packet_queues();
     rx_stream_buffer.clear();
 
-    ST_LIB::ProtectionADJv3Packet::tpcb = nullptr;
-    ST_LIB::ProtectionADJv3Packet::is_connected = false;
-    ST_LIB::MessageADJv3Packet::tpcb = nullptr;
-    ST_LIB::MessageADJv3Packet::is_connected = false;
+    ST_LIB::PacketTransport::tpcb = nullptr;
+    ST_LIB::PacketTransport::is_connected = false;
 
     if (server_control_block != nullptr) {
         state = LISTENING;
@@ -403,10 +400,8 @@ err_t ServerSocket::accept_callback(
     server_socket->state = ACCEPTED;
     server_socket->client_control_block = incoming_control_block;
     server_socket->remote_ip = IPV4(incoming_control_block->remote_ip);
-    ST_LIB::ProtectionADJv3Packet::tpcb = incoming_control_block;
-    ST_LIB::ProtectionADJv3Packet::is_connected = true;
-    ST_LIB::MessageADJv3Packet::tpcb = incoming_control_block;
-    ST_LIB::MessageADJv3Packet::is_connected = true;
+    ST_LIB::PacketTransport::tpcb = incoming_control_block;
+    ST_LIB::PacketTransport::is_connected = true;
     server_socket->rx_packet_buffer = {};
     server_socket->rx_stream_buffer.clear();
     server_socket->rx_stream_buffer.reserve(TcpOrderStreamParser::MAX_RX_STREAM_BUFFER_BYTES);
@@ -478,10 +473,8 @@ void ServerSocket::error_callback(void* arg, err_t error) {
     server_socket->state = server_socket->server_control_block != nullptr ? LISTENING : CLOSED;
     server_socket->clear_packet_queues();
     server_socket->rx_stream_buffer.clear();
-    ST_LIB::ProtectionADJv3Packet::tpcb = nullptr;
-    ST_LIB::ProtectionADJv3Packet::is_connected = false;
-    ST_LIB::MessageADJv3Packet::tpcb = nullptr;
-    ST_LIB::MessageADJv3Packet::is_connected = false;
+    ST_LIB::PacketTransport::tpcb = nullptr;
+    ST_LIB::PacketTransport::is_connected = false;
 }
 
 err_t ServerSocket::poll_callback(void* arg, struct tcp_pcb* client_control_block) {

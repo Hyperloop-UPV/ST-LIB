@@ -155,9 +155,14 @@ validate_range(T low_fault, T high_fault, optional<T> low_warning, optional<T> h
     }};
 }
 
-template <FloatingSample T>
-constexpr expected<RuleDefinition<T>, RuleConfigError>
-validate_time_accumulation(T fault_threshold, optional<T> warning_threshold, float window_seconds) {
+template <ComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError> validate_time_accumulation(
+    T fault_threshold,
+    optional<T> warning_threshold,
+    float window_seconds,
+    RuleKind condition = RuleKind::ABOVE,
+    bool is_fault = true
+) {
     const auto window_validation = validate_with_consteval<RuleConfigError>(
         [&] { return window_seconds > 0.0f; },
         RuleConfigError::INVALID_WINDOW,
@@ -169,9 +174,14 @@ validate_time_accumulation(T fault_threshold, optional<T> warning_threshold, flo
 
     if (warning_threshold.has_value()) {
         const auto warning_validation = validate_with_consteval<RuleConfigError>(
-            [&] { return warning_threshold.value() <= fault_threshold; },
+            [&] {
+                if (condition == RuleKind::BELOW) {
+                    return warning_threshold.value() >= fault_threshold;
+                }
+                return warning_threshold.value() <= fault_threshold;
+            },
             RuleConfigError::INVALID_WARNING_THRESHOLD,
-            "time_accumulation warning threshold must be below or equal to the fault threshold"
+            "time_accumulation warning threshold must be valid with respect to fault threshold"
         );
         if (!warning_validation.has_value()) {
             return unexpected(warning_validation.error());
@@ -182,6 +192,8 @@ validate_time_accumulation(T fault_threshold, optional<T> warning_threshold, flo
         .fault_threshold = fault_threshold,
         .warning_threshold = warning_threshold,
         .time_window_s = window_seconds,
+        .condition_kind = condition,
+        .is_fault = is_fault,
     }};
 }
 
@@ -259,30 +271,45 @@ constexpr expected<RuleDefinition<T>, RuleConfigError> not_equals_warning(T valu
     return RuleDefinition<T>{NotEqualsRuleConfig<T>{.expected = value, .is_fault = false}};
 }
 
-template <FloatingSample T>
+template <ComparableSample T>
 constexpr expected<RuleDefinition<T>, RuleConfigError>
 time_accumulation(T fault_threshold, float window_seconds) {
-    return detail::validate_time_accumulation<T>(fault_threshold, nullopt, window_seconds);
+    return detail::validate_time_accumulation<T>(
+        fault_threshold,
+        nullopt,
+        window_seconds,
+        RuleKind::ABOVE,
+        true
+    );
 }
-// this time_accumulation function is for below rule only
-template <FloatingSample T>
+
+template <ComparableSample T>
 constexpr expected<RuleDefinition<T>, RuleConfigError>
 time_accumulation_below(T fault_threshold, float window_seconds) {
-    return detail::validate_time_accumulation<T>(fault_threshold, nullopt, window_seconds, true);
+    return detail::validate_time_accumulation<T>(
+        fault_threshold,
+        nullopt,
+        window_seconds,
+        RuleKind::BELOW,
+        true
+    );
 }
-// this time_accumulation function is for other rules left
-template <FloatingSample T>
+
+template <ComparableSample T>
 constexpr expected<RuleDefinition<T>, RuleConfigError>
 time_accumulation_above(T fault_threshold, float window_seconds) {
-    return detail::validate_time_accumulation<T>(fault_threshold, nullopt, window_seconds, false);
+    return detail::validate_time_accumulation<T>(
+        fault_threshold,
+        nullopt,
+        window_seconds,
+        RuleKind::ABOVE,
+        true
+    );
 }
-template <ProtectionSample T>
-constexpr expected<RuleDefinition<T>, RuleConfigError> time_accumulation(
-    T threshold,
-    float window_seconds,
-    RuleKind condition,
-    bool is_fault
-) {
+
+template <EqualityComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError>
+time_accumulation(T threshold, float window_seconds, RuleKind condition, bool is_fault) {
     if (window_seconds <= 0.0f) {
         return unexpected(RuleConfigError::INVALID_WINDOW);
     }

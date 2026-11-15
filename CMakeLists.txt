@@ -387,6 +387,7 @@ set(STLIB_HIGH_C_ETH)
 set(STLIB_HIGH_CPP_ETH
   ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/Protections/ProtectionMessages.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/Messages/Messages.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/ST-LIB_HIGH/Transport/PacketTransport.cpp
 )
 
 set(STLIB_HIGH_C_NO_ETH)

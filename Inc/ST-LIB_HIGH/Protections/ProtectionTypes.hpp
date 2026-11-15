@@ -83,6 +83,21 @@ template <ProtectionSample T> constexpr SampleEncoding sample_encoding_for() {
     std::unreachable();
 }
 
+inline constexpr uint8_t sample_size(SampleEncoding encoding) {
+    switch (encoding) {
+    case SampleEncoding::BOOL:
+        return 1;
+    case SampleEncoding::FLOAT32:
+        return 4;
+    case SampleEncoding::FLOAT64:
+    case SampleEncoding::SIGNED:
+    case SampleEncoding::UNSIGNED:
+        return 8;
+    default:
+        return 0;
+    }
+}
+
 template <ProtectionSample T> constexpr NumericValue to_numeric_value(T value) {
     NumericValue numeric{};
     if constexpr (std::is_same_v<T, bool>) {

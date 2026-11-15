@@ -6,35 +6,17 @@
  */
 #include "ST-LIB_HIGH/Protections/ProtectionMessages.hpp"
 #include "HALAL/Services/Time/RTC.hpp"
-#include "lwip/tcp.h"
+#include "ST-LIB_HIGH/Transport/PacketTransport.hpp"
 #include <cstring>
 
 namespace ST_LIB {
 
-struct tcp_pcb* ProtectionADJv3Packet::tpcb = nullptr;
-bool ProtectionADJv3Packet::is_connected = false;
-
-ProtectionADJv3Packet::Package ProtectionADJv3Packet::make(
+ProtectionPacket::Package ProtectionPacket::make(
     uint16_t protection_id,
     Protections::RuleKind prot,
     Protections::SampleEncoding sample_encoding
 ) {
-    uint8_t numericValueSize = 0;
-    switch (sample_encoding) {
-    case Protections::SampleEncoding::BOOL:
-        numericValueSize = 1;
-        break;
-    case Protections::SampleEncoding::FLOAT32:
-        numericValueSize = 4;
-        break;
-    case Protections::SampleEncoding::FLOAT64:
-    case Protections::SampleEncoding::SIGNED:
-    case Protections::SampleEncoding::UNSIGNED:
-        numericValueSize = 8;
-        break;
-    default:
-        break;
-    }
+    uint8_t numericValueSize = Protections::sample_size(sample_encoding);
     Package pack = {.packageSize = sizeof(Data) + numericValueSize, .data = {}};
     uint16_t position = (protection_id >> 13) & 0x07;
     if (position == 0) {
@@ -49,14 +31,7 @@ ProtectionADJv3Packet::Package ProtectionADJv3Packet::make(
     pack.data.reserved = 0;
     return pack;
 }
-bool ProtectionADJv3Packet::tcp_client_send(
-    ProtectionADJv3Packet::Package& pack,
-    const void* value
-) {
-    if (tpcb == nullptr || !is_connected) {
-        return false;
-    }
-
+bool ProtectionPacket::tcp_client_send(ProtectionPacket::Package& pack, const void* value) {
     memcpy(pack.value, value, pack.packageSize - sizeof(Data));
 #if defined(HAL_RTC_MODULE_ENABLED) && !defined(SIM_ON)
     RTCData rtc = Global_RTC::get_rtc_timestamp();
@@ -65,11 +40,7 @@ bool ProtectionADJv3Packet::tcp_client_send(
     pack.data.seconds = rtc.second;
     pack.data.subseconds = static_cast<uint8_t>((rtc.counter * 256) / (RTC_MAX_COUNTER + 1));
 #endif // if HAL_RTC was not enabled  all values were initialized before to 0
-    err_t err = tcp_write(tpcb, &pack.data, pack.packageSize, TCP_WRITE_FLAG_COPY);
-    if (err != ERR_OK) {
-        return false;
-    }
-    return tcp_output(tpcb) == ERR_OK;
+    return PacketTransport::send(&pack.data, pack.packageSize);
 }
 
 } // namespace ST_LIB

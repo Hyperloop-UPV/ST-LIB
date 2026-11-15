@@ -113,6 +113,11 @@ constexpr auto protection(RuleDefs... definitions) {
     };
 }
 
+template <uint16_t Id, auto& Source, typename... RuleDefs>
+constexpr auto protection(RuleDefs... definitions) {
+    return protection<"", Id, Source>(definitions...);
+}
+
 template <typename T> struct IsProtectionSpec : std::false_type {};
 
 template <FixedString Name, uint16_t Id, auto& Source, std::size_t RuleCount>
