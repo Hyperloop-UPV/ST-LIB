@@ -192,7 +192,7 @@ private:
             }
 
             Diagnostics::Hub::publish_protection_event(
-                protection_ref.get_name(),
+                "",
                 protection_ref.get_measurement_id(),
                 event.state,
                 event.edge,
@@ -215,7 +215,7 @@ private:
         }
 
         FaultController::request_fault(FaultCause::protection(
-            protection_ref.get_name(),
+            "",
             protection_ref.get_measurement_id(),
             evaluation.active_fault_edge,
             evaluation.active_fault_snapshot

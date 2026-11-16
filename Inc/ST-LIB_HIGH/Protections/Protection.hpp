@@ -499,7 +499,6 @@ public:
         : measurement_id(measurement_id), source(source), definitions(definitions),
           rules(make_rule_models(definitions, std::make_index_sequence<RuleCount>{})) {}
 
-    const char* get_name() const { return name; }
     uint16_t get_measurement_id() const { return measurement_id; }
     void initialize() {}
 
@@ -551,7 +550,6 @@ private:
         return {make_rule_model(definitions[Indices])...};
     }
 
-    const char* name{""};
     uint16_t measurement_id;
     Source source;
     std::array<RuleDefinition<T>, RuleCount> definitions{};
