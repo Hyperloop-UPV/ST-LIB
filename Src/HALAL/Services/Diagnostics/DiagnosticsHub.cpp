@@ -207,7 +207,6 @@ DiagnosticRecord RecordFactory::runtime_info(
 }
 
 DiagnosticRecord RecordFactory::protection_event(
-    const char* protection_name,
     uint16_t measurement_id,
     Protections::RuleState state,
     Protections::RuleEdge edge,
@@ -230,7 +229,6 @@ DiagnosticRecord RecordFactory::protection_event(
 
     record.category = Category::PROTECTION_EVENT;
     record.timestamp = DiagnosticTimestampProvider::capture();
-    copy_c_string(record.origin, protection_name);
     record.payload.protection.measurement_id = measurement_id;
     record.payload.protection.rule_kind = snapshot.kind;
     record.payload.protection.state = state;
@@ -294,14 +292,12 @@ void Hub::publish_runtime_info(
 }
 
 void Hub::publish_protection_event(
-    const char* protection_name,
     uint16_t measurement_id,
     Protections::RuleState state,
     Protections::RuleEdge edge,
     const Protections::RuleSnapshot& snapshot
 ) {
-    publish(RecordFactory::protection_event(protection_name, measurement_id, state, edge, snapshot)
-    );
+    publish(RecordFactory::protection_event(measurement_id, state, edge, snapshot));
 }
 
 void Hub::flush_pending(bool urgent_only) {

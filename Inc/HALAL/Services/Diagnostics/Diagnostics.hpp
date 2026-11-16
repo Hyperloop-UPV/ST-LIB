@@ -136,7 +136,6 @@ DiagnosticRecord runtime_info(
 );
 
 DiagnosticRecord protection_event(
-    const char* protection_name,
     uint16_t measurement_id,
     Protections::RuleState state,
     Protections::RuleEdge edge,
@@ -202,7 +201,6 @@ public:
         const char* file
     );
     static void publish_protection_event(
-        const char* protection_name,
         uint16_t measurement_id,
         Protections::RuleState state,
         Protections::RuleEdge edge,

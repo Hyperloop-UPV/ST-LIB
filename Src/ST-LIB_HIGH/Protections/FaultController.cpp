@@ -62,7 +62,6 @@ Diagnostics::DiagnosticRecord to_record(const FaultCause& cause) {
         );
     case FaultCauseKind::PROTECTION:
         return Diagnostics::RecordFactory::protection_event(
-            cause.origin,
             cause.protection_event.measurement_id,
             Protections::RuleState::FAULT,
             cause.protection_event.edge,
@@ -123,14 +122,12 @@ FaultCause FaultCause::runtime_fault(
 }
 
 FaultCause FaultCause::protection(
-    const char* protection_name,
     uint16_t measurement_id,
     Protections::RuleEdge edge,
     const Protections::RuleSnapshot& snapshot
 ) {
     FaultCause cause{};
     cause.kind = FaultCauseKind::PROTECTION;
-    copy_c_string(cause.origin, protection_name);
     cause.protection_event.measurement_id = measurement_id;
     cause.protection_event.edge = edge;
     cause.protection_event.snapshot = snapshot;

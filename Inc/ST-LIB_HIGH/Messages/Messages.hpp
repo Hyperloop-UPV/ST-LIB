@@ -19,22 +19,16 @@ union MessageKindValues_t {
         uint8_t INFO;
         uint8_t WARNING;
         uint8_t FAULT;
+        uint8_t PANIC;
     } val;
-    uint8_t arr[3];
+    uint8_t arr[4];
 };
 
-inline MessageKindValues_t MessageKindValues =
-    {.val = {
-         .INFO = 1,
-         .WARNING = 3,
-         .FAULT = 2,
-     }};
-
-enum class MessageKind : uint8_t {
-    INFO = 0,
-    WARNING = 1,
-    FAULT = 2,
+inline MessageKindValues_t MessageKindValues = {
+    .val = {.INFO = 12, .WARNING = 11, .FAULT = 10, .PANIC = 13}
 };
+
+enum class MessageKind : uint8_t { INFO = 0, WARNING = 1, FAULT = 2, PANIC = 3 };
 
 struct MessagePacket {
     struct __attribute__((packed)) Data {

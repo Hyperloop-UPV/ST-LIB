@@ -253,7 +253,7 @@ public:
             } else if (record.severity == Severity::WARNING) {
                 msg_id = ST_LIB::MessageKindValues.val.WARNING;
             } else if (record.category == Category::RUNTIME_PANIC) {
-                msg_id = 13;
+                msg_id = ST_LIB::MessageKindValues.val.PANIC;
             }
             char description[Config::formatted_message_capacity + 1]{};
             DiagnosticFormatter::describe(record, description, sizeof(description));
