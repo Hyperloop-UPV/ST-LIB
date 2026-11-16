@@ -247,11 +247,11 @@ public:
             );
             return delivered;
         } else {
-            uint16_t msg_id = 1;
+            uint16_t msg_id = ST_LIB::MessageKindValues.val.INFO;
             if (record.severity == Severity::FAULT) {
-                msg_id = 2;
+                msg_id = ST_LIB::MessageKindValues.val.FAULT;
             } else if (record.severity == Severity::WARNING) {
-                msg_id = 3;
+                msg_id = ST_LIB::MessageKindValues.val.WARNING;
             } else if (record.category == Category::RUNTIME_PANIC) {
                 msg_id = 13;
             }

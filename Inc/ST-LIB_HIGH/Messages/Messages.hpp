@@ -14,6 +14,28 @@ inline const uint16_t max_message_size = 320;
 
 namespace ST_LIB {
 
+union MessageKindValues_t {
+    struct {
+        uint8_t INFO;
+        uint8_t WARNING;
+        uint8_t FAULT;
+    } val;
+    uint8_t arr[3];
+};
+
+inline MessageKindValues_t MessageKindValues =
+    {.val = {
+         .INFO = 1,
+         .WARNING = 3,
+         .FAULT = 2,
+     }};
+
+enum class MessageKind : uint8_t {
+    INFO = 0,
+    WARNING = 1,
+    FAULT = 2,
+};
+
 struct MessagePacket {
     struct __attribute__((packed)) Data {
         uint16_t id;
@@ -33,10 +55,17 @@ public:
     static Package make(uint16_t id, const char* origin, const char* message);
     static bool tcp_client_send(Package& pack);
     static bool create_message(uint16_t id, const char* origin, const char* message);
+    static bool create_message(MessageKind kind, const char* origin, const char* message) {
+        return create_message(MessageKindValues.arr[static_cast<size_t>(kind)], origin, message);
+    }
 };
 
 inline bool create_message(uint16_t id, const char* origin, const char* message) {
     return MessagePacket::create_message(id, origin, message);
+}
+
+inline bool create_message(MessageKind kind, const char* origin, const char* message) {
+    return MessagePacket::create_message(kind, origin, message);
 }
 
 } // namespace ST_LIB
