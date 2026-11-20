@@ -6,6 +6,12 @@ The revived semantic-versioning baseline starts at `v5.0.0`.
 Historical releases that predate this file remain available in Git tags such as
 `v1.0.0`, `v3.0.0`, `v4.0.0-beta`, and `h10`.
 
+## v7.0.1 - 2026-11-20
+
+### Fixes
+
+- fix to allow STMCubeCLT 1.21.0 version and later version
+
 ## v7.0.0 - 2026-10-18
 
 ### Breaking Changes
