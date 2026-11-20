@@ -103,10 +103,10 @@ function(_stm32_validate_explicit_root _env_name _env_value _out_var)
         )
     endif()
 
-    if(NOT _version STREQUAL STM32_CLT_REQUIRED_VERSION)
+    if(_version VERSION_LESS STM32_CLT_REQUIRED_VERSION)
         message(FATAL_ERROR
-            "${_env_name} resolves to STM32CubeCLT ${_version}, but ${STM32_CLT_REQUIRED_VERSION} "
-            "is required:\n  ${_root}"
+            "${_env_name} resolves to STM32CubeCLT ${_version}, but version "
+            "${STM32_CLT_REQUIRED_VERSION} or newer is required:\n  ${_root}"
         )
     endif()
 
@@ -162,7 +162,7 @@ if(NOT STM32_CLT_ROOT)
         )
 
         file(GLOB _stm32_clt_globbed LIST_DIRECTORIES true
-            "${_base_dir}/[Ss][Tt][Mm]32[Cc][Uu][Bb][Ee][Cc][Ll][Tt][_-]${STM32_CLT_REQUIRED_VERSION}*"
+            "${_base_dir}/[Ss][Tt][Mm]32[Cc][Uu][Bb][Ee][Cc][Ll][Tt][_-]*"
         )
         list(APPEND _stm32_clt_candidate_roots ${_stm32_clt_globbed})
     endforeach()
@@ -176,7 +176,7 @@ if(NOT STM32_CLT_ROOT)
         endif()
 
         _stm32_extract_version("${_candidate_root}" _candidate_version)
-        if(_candidate_version STREQUAL STM32_CLT_REQUIRED_VERSION)
+        if(_candidate_version AND NOT _candidate_version VERSION_LESS STM32_CLT_REQUIRED_VERSION)
             set(STM32_CLT_ROOT "${_candidate_root}")
             break()
         endif()
@@ -191,7 +191,7 @@ if(NOT STM32_CLT_ROOT)
     )
     if(NOT _stm32_arm_gcc)
         message(FATAL_ERROR
-            "STM32CubeCLT ${STM32_CLT_REQUIRED_VERSION} is required, but arm-none-eabi-gcc was not found. "
+            "STM32CubeCLT ${STM32_CLT_REQUIRED_VERSION} or newer is required, but arm-none-eabi-gcc was not found. "
             "Install the required CLT and/or set HYPER_STM32CLT_ROOT or STM32_CLT_ROOT."
         )
     endif()
@@ -199,7 +199,7 @@ if(NOT STM32_CLT_ROOT)
     _stm32_normalize_root("${_stm32_arm_gcc}" _stm32_path_root)
     if(NOT _stm32_path_root)
         message(FATAL_ERROR
-            "STM32CubeCLT ${STM32_CLT_REQUIRED_VERSION} is required, but the compiler found in PATH "
+            "STM32CubeCLT ${STM32_CLT_REQUIRED_VERSION} or newer is required, but the compiler found in PATH "
             "does not belong to a STM32CubeCLT GNU-tools-for-STM32 layout:\n  ${_stm32_arm_gcc}"
         )
     endif()
@@ -207,14 +207,14 @@ if(NOT STM32_CLT_ROOT)
     _stm32_extract_version("${_stm32_path_root}" _stm32_path_version)
     if(NOT _stm32_path_version)
         message(FATAL_ERROR
-            "STM32CubeCLT ${STM32_CLT_REQUIRED_VERSION} is required, but the compiler found in PATH "
+            "STM32CubeCLT ${STM32_CLT_REQUIRED_VERSION} or newer is required, but the compiler found in PATH "
             "comes from a CLT install whose real path does not expose a version:\n  ${_stm32_path_root}"
         )
     endif()
 
-    if(NOT _stm32_path_version STREQUAL STM32_CLT_REQUIRED_VERSION)
+    if(_stm32_path_version VERSION_LESS STM32_CLT_REQUIRED_VERSION)
         message(FATAL_ERROR
-            "STM32CubeCLT ${STM32_CLT_REQUIRED_VERSION} is required, but PATH resolves to "
+            "STM32CubeCLT ${STM32_CLT_REQUIRED_VERSION} or newer is required, but PATH resolves to "
             "${_stm32_path_version}:\n  ${_stm32_path_root}"
         )
     endif()
