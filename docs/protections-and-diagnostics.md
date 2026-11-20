@@ -65,7 +65,7 @@ Protections are compile-time board requests. A protection request:
 - is passed to `Board<...>` with the rest of the board request objects
 
 Rules are created through the factories in `Protections::Rules` and passed to
-`Protections::protection<"name", source>(...)`.
+`Protections::protection<id, source>(...)`.
 
 Available rule factories:
 
@@ -130,9 +130,8 @@ using namespace ST_LIB;
 
 constexpr auto led = DigitalOutputDomain::DigitalOutput(PF13);
 
-float bus_voltage = 0.0f;
-
-inline constexpr auto bus_voltage_protection = Protections::protection<"bus_voltage", bus_voltage>(
+constexpr uint16_t bus_voltage_id = 1001;
+inline constexpr auto bus_voltage_protection = Protections::protection<bus_voltage_id, bus_voltage>(
     Protections::Rules::below(350.0f, 370.0f),
     Protections::Rules::time_accumulation(20.0f, 15.0f, 0.5f)
 );
@@ -331,7 +330,7 @@ The key boundaries are:
 
 Public API:
 
-- `Protections::protection<"name", source>(...)`
+- `Protections::protection<id, source>(...)`
 - `Board::ProtectionEngine`
 - `Board::evaluate_protections()`
 - `Protections::Rules::*`

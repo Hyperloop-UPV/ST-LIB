@@ -12,14 +12,7 @@ inline constexpr uint64_t notify_delay_in_microseconds = 2'000'000ULL;
 inline constexpr size_t max_name_length = 48;
 } // namespace Config
 
-enum class RuleKind : uint8_t {
-    BELOW = 0,
-    ABOVE,
-    RANGE,
-    EQUALS,
-    NOT_EQUALS,
-    TIME_ACCUMULATION,
-};
+enum class RuleKind : uint8_t { RANGE, ABOVE, BELOW, EQUALS, NOT_EQUALS, TIME_ACCUMULATION };
 
 enum class RuleState : uint8_t { NORMAL = 0, WARNING, FAULT };
 
@@ -88,6 +81,21 @@ template <ProtectionSample T> constexpr SampleEncoding sample_encoding_for() {
         return SampleEncoding::UNSIGNED;
     }
     std::unreachable();
+}
+
+inline constexpr uint8_t sample_size(SampleEncoding encoding) {
+    switch (encoding) {
+    case SampleEncoding::BOOL:
+        return 1;
+    case SampleEncoding::FLOAT32:
+        return 4;
+    case SampleEncoding::FLOAT64:
+    case SampleEncoding::SIGNED:
+    case SampleEncoding::UNSIGNED:
+        return 8;
+    default:
+        return 0;
+    }
 }
 
 template <ProtectionSample T> constexpr NumericValue to_numeric_value(T value) {

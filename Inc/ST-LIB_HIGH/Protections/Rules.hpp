@@ -25,16 +25,20 @@ template <typename T> struct RangeRuleConfig {
 
 template <typename T> struct EqualsRuleConfig {
     T expected{};
+    bool is_fault = true;
 };
 
 template <typename T> struct NotEqualsRuleConfig {
     T expected{};
+    bool is_fault = true;
 };
 
 template <typename T> struct TimeAccumulationRuleConfig {
     T fault_threshold{};
     optional<T> warning_threshold{};
     float time_window_s{0.0f};
+    RuleKind condition_kind{RuleKind::ABOVE};
+    bool is_fault{true};
 };
 
 template <ProtectionSample T>
@@ -151,9 +155,14 @@ validate_range(T low_fault, T high_fault, optional<T> low_warning, optional<T> h
     }};
 }
 
-template <FloatingSample T>
-constexpr expected<RuleDefinition<T>, RuleConfigError>
-validate_time_accumulation(T fault_threshold, optional<T> warning_threshold, float window_seconds) {
+template <ComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError> validate_time_accumulation(
+    T fault_threshold,
+    optional<T> warning_threshold,
+    float window_seconds,
+    RuleKind condition = RuleKind::ABOVE,
+    bool is_fault = true
+) {
     const auto window_validation = validate_with_consteval<RuleConfigError>(
         [&] { return window_seconds > 0.0f; },
         RuleConfigError::INVALID_WINDOW,
@@ -165,9 +174,14 @@ validate_time_accumulation(T fault_threshold, optional<T> warning_threshold, flo
 
     if (warning_threshold.has_value()) {
         const auto warning_validation = validate_with_consteval<RuleConfigError>(
-            [&] { return warning_threshold.value() <= fault_threshold; },
+            [&] {
+                if (condition == RuleKind::BELOW) {
+                    return warning_threshold.value() >= fault_threshold;
+                }
+                return warning_threshold.value() <= fault_threshold;
+            },
             RuleConfigError::INVALID_WARNING_THRESHOLD,
-            "time_accumulation warning threshold must be below or equal to the fault threshold"
+            "time_accumulation warning threshold must be valid with respect to fault threshold"
         );
         if (!warning_validation.has_value()) {
             return unexpected(warning_validation.error());
@@ -178,6 +192,8 @@ validate_time_accumulation(T fault_threshold, optional<T> warning_threshold, flo
         .fault_threshold = fault_threshold,
         .warning_threshold = warning_threshold,
         .time_window_s = window_seconds,
+        .condition_kind = condition,
+        .is_fault = is_fault,
     }};
 }
 
@@ -197,6 +213,11 @@ below(T fault_threshold, T warning_threshold) {
 }
 
 template <ComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError> below_warning(T warning_threshold) {
+    return detail::validate_below<T>(warning_threshold, std::numeric_limits<T>::lowest());
+}
+
+template <ComparableSample T>
 constexpr expected<RuleDefinition<T>, RuleConfigError> above(T fault_threshold) {
     return detail::validate_above<T>(nullopt, fault_threshold);
 }
@@ -206,7 +227,10 @@ constexpr expected<RuleDefinition<T>, RuleConfigError>
 above(T fault_threshold, T warning_threshold) {
     return detail::validate_above<T>(warning_threshold, fault_threshold);
 }
-
+template <ComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError> above_warning(T warning_threshold) {
+    return detail::validate_above<T>(warning_threshold, std::numeric_limits<T>::max());
+}
 template <ComparableSample T>
 constexpr expected<RuleDefinition<T>, RuleConfigError> range(T low_fault, T high_fault) {
     return detail::validate_range<T>(low_fault, high_fault, nullopt, nullopt);
@@ -217,10 +241,24 @@ constexpr expected<RuleDefinition<T>, RuleConfigError>
 range(T low_fault, T high_fault, T low_warning, T high_warning) {
     return detail::validate_range<T>(low_fault, high_fault, low_warning, high_warning);
 }
-
+template <ComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError>
+range_warning(T low_warning, T high_warning) {
+    return detail::validate_range<T>(
+        std::numeric_limits<T>::lowest(),
+        std::numeric_limits<T>::max(),
+        low_warning,
+        high_warning
+    );
+}
 template <EqualityComparableSample T>
 constexpr expected<RuleDefinition<T>, RuleConfigError> equals(T value) {
     return RuleDefinition<T>{EqualsRuleConfig<T>{.expected = value}};
+}
+
+template <EqualityComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError> equals_warning(T value) {
+    return RuleDefinition<T>{EqualsRuleConfig<T>{.expected = value, .is_fault = false}};
 }
 
 template <EqualityComparableSample T>
@@ -228,20 +266,60 @@ constexpr expected<RuleDefinition<T>, RuleConfigError> not_equals(T value) {
     return RuleDefinition<T>{NotEqualsRuleConfig<T>{.expected = value}};
 }
 
-template <FloatingSample T>
-constexpr expected<RuleDefinition<T>, RuleConfigError>
-time_accumulation(T fault_threshold, float window_seconds) {
-    return detail::validate_time_accumulation<T>(fault_threshold, nullopt, window_seconds);
+template <EqualityComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError> not_equals_warning(T value) {
+    return RuleDefinition<T>{NotEqualsRuleConfig<T>{.expected = value, .is_fault = false}};
 }
 
-template <FloatingSample T>
+template <ComparableSample T>
 constexpr expected<RuleDefinition<T>, RuleConfigError>
-time_accumulation(T fault_threshold, T warning_threshold, float window_seconds) {
+time_accumulation(T fault_threshold, float window_seconds) {
     return detail::validate_time_accumulation<T>(
         fault_threshold,
-        warning_threshold,
-        window_seconds
+        nullopt,
+        window_seconds,
+        RuleKind::ABOVE,
+        true
     );
+}
+
+template <ComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError>
+time_accumulation_below(T fault_threshold, float window_seconds) {
+    return detail::validate_time_accumulation<T>(
+        fault_threshold,
+        nullopt,
+        window_seconds,
+        RuleKind::BELOW,
+        true
+    );
+}
+
+template <ComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError>
+time_accumulation_above(T fault_threshold, float window_seconds) {
+    return detail::validate_time_accumulation<T>(
+        fault_threshold,
+        nullopt,
+        window_seconds,
+        RuleKind::ABOVE,
+        true
+    );
+}
+
+template <EqualityComparableSample T>
+constexpr expected<RuleDefinition<T>, RuleConfigError>
+time_accumulation(T threshold, float window_seconds, RuleKind condition, bool is_fault) {
+    if (window_seconds <= 0.0f) {
+        return unexpected(RuleConfigError::INVALID_WINDOW);
+    }
+    return RuleDefinition<T>{TimeAccumulationRuleConfig<T>{
+        .fault_threshold = threshold,
+        .warning_threshold = nullopt,
+        .time_window_s = window_seconds,
+        .condition_kind = condition,
+        .is_fault = is_fault,
+    }};
 }
 
 } // namespace Rules
