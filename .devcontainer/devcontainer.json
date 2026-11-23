@@ -1,0 +1,22 @@
+{
+  "name": "ST-LIB Dev Container",
+  "build": {
+    "dockerfile": "Containerfile"
+  },
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "containerEnv": {
+    "CONTAINER_NAME": "stm32-project"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "marus25.cortex-debug",
+        "twxs.cmake",
+        "ms-vscode.cmake-tools"
+      ]
+    }
+  },
+  "containerUser": "root",
+  "updateRemoteUserUID": true
+}

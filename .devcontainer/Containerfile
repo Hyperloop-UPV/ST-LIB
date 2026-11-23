@@ -1,0 +1,3 @@
+FROM ghcr.io/hyperloop-upv/hyperloop-firmware-toolchain:latest
+
+WORKDIR /workspaces
