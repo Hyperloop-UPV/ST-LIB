@@ -278,6 +278,7 @@ set(HALAL_CPP_NO_ETH
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/MDMA/MDMA.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/MPUManager/MPUManager.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/Packets/Packet.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/Packets/Order.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/Packets/SPIOrder.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/SPI/SPI2.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Src/HALAL/Models/DMA/DMA2.cpp

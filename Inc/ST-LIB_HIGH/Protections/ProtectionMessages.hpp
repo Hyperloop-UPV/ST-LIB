@@ -112,7 +112,7 @@ public:
         } else { // protections which will be sent if value is out of range during some time
             float time_s = static_cast<float>(cooldown_micros) / 1'000'000.0f;
             return Protections::protection<protection_id, measurement>(
-                Protections::Rules::time_accumulation(firstCriticalValue, time_s, kind, doFault)
+                Protections::Rules::time_accumulation(firstCriticalValue, time_s, kind, doFault, secondCriticalValue)
             );
         }
         return Protections::protection<protection_id, measurement>(

@@ -18,6 +18,8 @@ message(STATUS "Generating test executable for ST-LIB")
 
 add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/../Src/HALAL/Models/Packets/Packet.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../Src/HALAL/Models/Packets/Order.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../Src/ST-LIB_LOW/StateMachine/StateOrder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../Src/HALAL/Services/Diagnostics/DiagnosticFormatter.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../Src/HALAL/Services/Diagnostics/DiagnosticSinks.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../Src/HALAL/Services/Diagnostics/DiagnosticTimestampProvider.cpp
@@ -28,6 +30,8 @@ add_executable(${STLIB_TEST_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/../Src/HALAL/Models/DMA/DMA2.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../Src/HALAL/Services/DFSDM/DFSDM.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../Src/ST-LIB_HIGH/Protections/FaultController.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../Src/ST-LIB_HIGH/Protections/ProtectionMessages.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../Src/ST-LIB_HIGH/Messages/Messages.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/encoder_test.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/scheduler_test.cpp
     ${CMAKE_CURRENT_LIST_DIR}/Time/timer_wrapper_test.cpp

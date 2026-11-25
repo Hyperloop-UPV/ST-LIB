@@ -39,6 +39,7 @@ template <typename T> struct TimeAccumulationRuleConfig {
     float time_window_s{0.0f};
     RuleKind condition_kind{RuleKind::ABOVE};
     bool is_fault{true};
+    T second_threshold{};
 };
 
 template <ProtectionSample T>
@@ -161,7 +162,8 @@ constexpr expected<RuleDefinition<T>, RuleConfigError> validate_time_accumulatio
     optional<T> warning_threshold,
     float window_seconds,
     RuleKind condition = RuleKind::ABOVE,
-    bool is_fault = true
+    bool is_fault = true,
+    T second_threshold = {}
 ) {
     const auto window_validation = validate_with_consteval<RuleConfigError>(
         [&] { return window_seconds > 0.0f; },
@@ -194,6 +196,7 @@ constexpr expected<RuleDefinition<T>, RuleConfigError> validate_time_accumulatio
         .time_window_s = window_seconds,
         .condition_kind = condition,
         .is_fault = is_fault,
+        .second_threshold = second_threshold,
     }};
 }
 
@@ -309,7 +312,7 @@ time_accumulation_above(T fault_threshold, float window_seconds) {
 
 template <EqualityComparableSample T>
 constexpr expected<RuleDefinition<T>, RuleConfigError>
-time_accumulation(T threshold, float window_seconds, RuleKind condition, bool is_fault) {
+time_accumulation(T threshold, float window_seconds, RuleKind condition, bool is_fault, T second_threshold = {}) {
     if (window_seconds <= 0.0f) {
         return unexpected(RuleConfigError::INVALID_WINDOW);
     }
@@ -319,6 +322,7 @@ time_accumulation(T threshold, float window_seconds, RuleKind condition, bool is
         .time_window_s = window_seconds,
         .condition_kind = condition,
         .is_fault = is_fault,
+        .second_threshold = second_threshold,
     }};
 }
 

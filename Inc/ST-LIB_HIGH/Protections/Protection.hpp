@@ -215,6 +215,10 @@ template <ProtectionSample T> struct TimeAccumulationEvaluator {
 
         bool fault_condition = false;
         switch (config.condition_kind) {
+        case RuleKind::RANGE:
+            fault_condition = detail::is_below(sample, config.fault_threshold) ||
+                              detail::is_above(sample, config.second_threshold);
+            break;
         case RuleKind::EQUALS:
             fault_condition = detail::is_equal_to(sample, config.fault_threshold);
             break;
