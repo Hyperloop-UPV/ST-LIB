@@ -25,6 +25,5 @@
 
 #ifdef STLIB_ETH
 #include "Communication/Server/Server.hpp"
-#include "StateMachine/HeapStateOrder.hpp"
-#include "StateMachine/StackStateOrder.hpp"
+#include "StateMachine/StateOrder.hpp"
 #endif

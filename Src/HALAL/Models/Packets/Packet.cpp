@@ -1,5 +1,8 @@
 #include "HALAL/Models/Packets/Packet.hpp"
-#include "HALAL/Models/Packets/Order.hpp"
 
-map<uint16_t, Order*> Order::orders = {};
-map<uint16_t, Packet*> Packet::packets = {};
+void Packet::parse_data(uint8_t* raw_data) {
+    auto packet = Packet::get_packet(Packet::get_id(raw_data));
+    if (packet != nullptr) {
+        packet->parse(raw_data);
+    }
+}

@@ -22,6 +22,7 @@ private:
     queue<struct pbuf*> tx_packet_buffer;
     queue<struct pbuf*> rx_packet_buffer;
     vector<uint8_t> rx_stream_buffer;
+    friend class ForwardOrder;
     void clear_packet_queues();
     void process_data();
     bool try_send_immediately(Order& order);

@@ -11,8 +11,8 @@ public:
     static OrderProtocol* informer_socket;
     static uint16_t state_orders_ids_size;
     static std::span<uint16_t> state_orders_ids;
-    static StackOrder<0, uint16_t, std::span<uint16_t>> add_state_orders_order;
-    static StackOrder<0, uint16_t, std::span<uint16_t>> remove_state_orders_order;
+    static Order remove_state_orders_order;
+    static Order add_state_orders_order;
 
     static void set_socket(OrderProtocol& socket) { informer_socket = &socket; }
 

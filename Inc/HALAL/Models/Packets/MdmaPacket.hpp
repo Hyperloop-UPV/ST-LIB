@@ -111,7 +111,9 @@ struct MdmaPacketDomain {
             : id(id), size((sizeof(Types) + ...) + sizeof(uint16_t)),
               value_pointers(&this->id, values...) {
 
-            packets[this->id] = this;
+            if (Packet::count < MaxTypesPackets) {
+                Packet::PacketPtrWarehouse[Packet::count++] = this;
+            }
             this->buffer = instance.packet_buffer;
             MDMA::LinkedListNode* nodes = instance.nodes;
 
