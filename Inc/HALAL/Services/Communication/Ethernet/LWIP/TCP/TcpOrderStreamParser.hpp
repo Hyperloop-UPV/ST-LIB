@@ -18,13 +18,13 @@ inline void process(OrderProtocol* protocol, IPV4& remote_ip, vector<uint8_t>& s
     while (stream_buffer.size() - parsed_bytes >= sizeof(uint16_t)) {
         uint8_t* packet_ptr = stream_buffer.data() + parsed_bytes;
         uint16_t order_id = Packet::get_id(packet_ptr);
-        auto order_it = Order::orders.find(order_id);
-        if (order_it == Order::orders.end()) {
+        Order* order = Order::get_order(order_id);
+        if (order == nullptr) {
             parsed_bytes += 1;
             continue;
         }
 
-        const size_t order_size = order_it->second->get_size();
+        const size_t order_size = order->get_size();
         if (order_size > 0) {
             if (order_size < sizeof(uint16_t)) {
                 parsed_bytes += 1;
@@ -35,16 +35,16 @@ inline void process(OrderProtocol* protocol, IPV4& remote_ip, vector<uint8_t>& s
             }
         }
 
-        order_it->second->store_ip_order(remote_ip.string_address);
+        order->store_ip_order(remote_ip.string_address);
         Order::process_data(protocol, packet_ptr);
 
-        const size_t consumed = order_it->second->get_size();
+        const size_t consumed = order->get_size();
         if (consumed > 0) {
             parsed_bytes += consumed;
         } else {
             parsed_bytes += sizeof(uint16_t);
         }
-        order_it->second->reset_for_receive();
+        order->reset_for_receive();
     }
 
     if (parsed_bytes > 0) {

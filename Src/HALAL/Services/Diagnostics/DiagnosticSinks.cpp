@@ -73,12 +73,10 @@ class DiagnosticTransportOrder final : public Order {
 public:
     static inline OrderProtocol* forward_target = nullptr;
     DiagnosticTransportOrder() {
-        Packet::packets[DIAGNOSTIC_FAULT_ORDER_ID] = this;
-        Packet::packets[DIAGNOSTIC_WARNING_ORDER_ID] = this;
-        Packet::packets[DIAGNOSTIC_OK_ORDER_ID] = this;
-        orders[DIAGNOSTIC_FAULT_ORDER_ID] = this;
-        orders[DIAGNOSTIC_WARNING_ORDER_ID] = this;
-        orders[DIAGNOSTIC_OK_ORDER_ID] = this;
+        if (Packet::count < MaxTypesPackets)
+            Packet::PacketPtrWarehouse[Packet::count++] = this;
+        if (Order::count < MaxNumOrders)
+            Order::OrderPtrWarehouse[Order::count++] = this;
     }
 
     void set_record(const DiagnosticRecord& record, const char* description) {
@@ -96,9 +94,9 @@ public:
         size = encoded_size();
     }
 
-    void set_callback(void (*callback)(void)) override { this->callback = callback; }
+    void set_callback(void (*callback)(void)) { this->callback = callback; }
 
-    void parse(OrderProtocol* socket, uint8_t* data) override {
+    void parse(OrderProtocol* socket, uint8_t* data) {
         (void)socket;
         if (data == nullptr)
             return;
@@ -128,7 +126,7 @@ public:
                sizeof(day) + sizeof(month) + sizeof(year);
     }
 
-    void process() override {
+    void process() {
         switch (id) {
         case DIAGNOSTIC_FAULT_ORDER_ID:
             Hub::publish_runtime_fault(message, false, 0, origin, "");
@@ -142,7 +140,7 @@ public:
         }
     }
 
-    uint8_t* build() override {
+    uint8_t* build() {
         auto bytes = span<byte>(buffer.data(), buffer.size());
         size_t offset = 0;
 
@@ -163,13 +161,13 @@ public:
         return reinterpret_cast<uint8_t*>(buffer.data());
     }
 
-    size_t get_size() override { return size; }
+    size_t get_size() { return size; }
 
     void reset_for_receive() { size = 0; }
 
-    uint16_t get_id() override { return id; }
+    uint16_t get_id() { return id; }
 
-    void set_pointer(size_t index, void* pointer) override {
+    void set_pointer(size_t index, void* pointer) {
         (void)index;
         (void)pointer;
     }
